@@ -182,12 +182,14 @@ const CategorySelector = observer(React.forwardRef<HTMLDivElement, PropsType>(({
     >
       {
         // Unassigned
-        categoryTree.unassignedCat && !categoryFiltered(null, categoryTree.unassignedCat, filter, types)
+        categoryTree.unassignedCat && !categoryFiltered(null, categoryTree.unassignedCat, filter,
+          types)
           ? (
             <CategorySelectorCategory
               key={`${categoryTree.budget.id}:${categoryTree.unassignedCat.id}`}
               category={categoryTree.unassignedCat}
-              selected={selectedCategory !== null && categoryTree.unassignedCat.id === selectedCategory.id}
+              selected={selectedCategory !== null && categoryTree.unassignedCat
+                .id === selectedCategory.id}
               onSelect={onSelect}
               level={0}
             />
@@ -196,12 +198,14 @@ const CategorySelector = observer(React.forwardRef<HTMLDivElement, PropsType>(({
       }
       {
         // Funding Pool
-        categoryTree.budget.fundingPoolCat && !categoryFiltered(null, categoryTree.budget.fundingPoolCat, filter, types)
+        categoryTree.budget.fundingPoolCat && !categoryFiltered(null, categoryTree.budget
+          .fundingPoolCat, filter, types)
           ? (
             <CategorySelectorCategory
               key={`${categoryTree.budget.id}:${categoryTree.budget.fundingPoolCat.id}`}
               category={categoryTree.budget.fundingPoolCat}
-              selected={selectedCategory !== null && categoryTree.budget.fundingPoolCat.id === selectedCategory.id}
+              selected={selectedCategory !== null && categoryTree.budget.fundingPoolCat
+                .id === selectedCategory.id}
               onSelect={onSelect}
               level={0}
             />
@@ -210,12 +214,14 @@ const CategorySelector = observer(React.forwardRef<HTMLDivElement, PropsType>(({
       }
       {
         // Account Transfer
-        categoryTree.accountTransferCat && !categoryFiltered(null, categoryTree.accountTransferCat, filter, types)
+        categoryTree.accountTransferCat && !categoryFiltered(null, categoryTree.accountTransferCat,
+          filter, types)
           ? (
             <CategorySelectorCategory
               key={`${categoryTree.budget.id}:${categoryTree.accountTransferCat.id}`}
               category={categoryTree.accountTransferCat}
-              selected={selectedCategory !== null && categoryTree.accountTransferCat.id === selectedCategory.id}
+              selected={selectedCategory !== null && categoryTree.accountTransferCat
+                .id === selectedCategory.id}
               onSelect={onSelect}
               level={0}
             />

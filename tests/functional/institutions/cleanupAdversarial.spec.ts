@@ -33,8 +33,10 @@ test.group('Plaid cleanup adversarial review', (group) => {
     await Cleanup.query().delete()
     const encryption = { ...app.config.get<{ activeKey: string, keys: string }>('plaidCleanup') }
     const plaid = { ...app.config.get<PlaidConfig>('plaid') }
-    app.config.set('plaidCleanup', { activeKey: 'review-v1', keys: JSON.stringify({ 'review-v1': randomBytes(32).toString('base64') }) })
-    app.config.set('plaid', { environment: 'sandbox', clientId: 'synthetic-review-client', sandboxSecret: 'synthetic-provider-secret', productionSecret: '' })
+    app.config.set('plaidCleanup', { activeKey: 'review-v1', keys: JSON.stringify({
+      'review-v1': randomBytes(32).toString('base64') }) })
+    app.config.set('plaid', { environment: 'sandbox', clientId: 'synthetic-review-client',
+      sandboxSecret: 'synthetic-provider-secret', productionSecret: '' })
     provider = new PlaidWrapper(app.config.get('plaid'))
     app.container.swap(PlaidWrapper, () => provider)
     service = new Service()
@@ -58,7 +60,8 @@ test.group('Plaid cleanup adversarial review', (group) => {
   })
   const protect = () => service.protect(randomUUID(), secret)
 
-  test('malformed IDs never reach SQL or echo hostile input in exceptions').with(['attempt', 'retry', 'extend', 'setup']).run(async ({ assert }, action) => {
+  test('malformed IDs never reach SQL or echo hostile input in exceptions').with(['attempt',
+    'retry', 'extend', 'setup']).run(async ({ assert }, action) => {
     let error: unknown
     const trx = action === 'setup' ? await db.transaction() : undefined
     try {
@@ -72,11 +75,14 @@ test.group('Plaid cleanup adversarial review', (group) => {
     assert.equal(calls, 0)
   })
 
-  test('resolved provider context must agree with the recorded context', async ({ assert, cleanup }) => {
+  test('resolved provider context must agree with the recorded context', async ({ assert,
+    cleanup }) => {
     const row = await protect()
-    const wrong = new PlaidWrapper({ environment: 'sandbox', clientId: 'different-synthetic-client', sandboxSecret: 'other-synthetic-secret', productionSecret: '' })
+    const wrong = new PlaidWrapper({ environment: 'sandbox', clientId: 'different-synthetic-client',
+      sandboxSecret: 'other-synthetic-secret', productionSecret: '' })
     let wrongCalls = 0
-    const removal = mock.method(wrong, 'removeItem', async () => { wrongCalls++; return { request_id: 'wrong-context' } })
+    const removal = mock.method(wrong, 'removeItem', async () => { wrongCalls++; return {
+      request_id: 'wrong-context' } })
     cleanup(() => removal.mock.restore())
     app.container.swap(PlaidWrapper, () => wrong)
     await service.attempt(row.id, true)
@@ -86,7 +92,8 @@ test.group('Plaid cleanup adversarial review', (group) => {
     assert.isNotNull(row.encryptedAccessToken)
   })
 
-  test('ciphertext swapping and identity substitution fail closed').with(['swap', 'item', 'version', 'context']).run(async ({ assert }, attack) => {
+  test('ciphertext swapping and identity substitution fail closed').with(['swap', 'item', 'version',
+    'context']).run(async ({ assert }, attack) => {
     const row = await protect()
     if (attack === 'swap') row.encryptedAccessToken = (await protect()).encryptedAccessToken
     if (attack === 'item') row.itemId = randomUUID()
@@ -103,13 +110,15 @@ test.group('Plaid cleanup adversarial review', (group) => {
 
   test('replacing an old key never silently falls back', async ({ assert }) => {
     const row = await protect()
-    app.config.set('plaidCleanup.keys', JSON.stringify({ 'review-v1': randomBytes(32).toString('base64') }))
+    app.config.set('plaidCleanup.keys', JSON.stringify({ 'review-v1': randomBytes(32).toString(
+      'base64') }))
     await service.attempt(row.id, true)
     assert.equal(calls, 0)
     assert.equal((await row.refresh()).lastErrorClass, 'decryption_failed')
   })
 
-  test('malformed or unavailable active-key configuration fails readiness safely').with(['not-json', '[]', '{}', '{"review-v1":"short"}']).run(async ({ assert }, config) => {
+  test('malformed or unavailable active-key configuration fails readiness safely').with(['not-json',
+    '[]', '{}', '{"review-v1":"short"}']).run(async ({ assert }, config) => {
     app.config.set('plaidCleanup.keys', config)
     let error: unknown
     try { await service.ready() } catch (caught) { error = caught }
@@ -118,17 +127,21 @@ test.group('Plaid cleanup adversarial review', (group) => {
     assert.equal(calls, 0)
   })
 
-  test('terminal state constraint rejects credentials').with(['cancelled', 'completed']).run(async ({ assert }, status) => {
+  test('terminal state constraint rejects credentials').with(['cancelled', 'completed']).run(async (
+    { assert }, status) => {
     const row = await protect()
-    await assert.rejects(() => db.from('plaid_item_cleanups').where('id', row.id).update({ status }))
+    await assert.rejects(() => db.from('plaid_item_cleanups').where('id', row.id).update({
+      status }))
     await row.refresh()
     assert.equal(row.status, 'protected')
     assert.isNotNull(row.encryptedAccessToken)
   })
 
-  test('terminal cleanup cannot automatically or administratively revive').with(['cancelled', 'completed']).run(async ({ assert }, status) => {
+  test('terminal cleanup cannot automatically or administratively revive').with(['cancelled',
+    'completed']).run(async ({ assert }, status) => {
     const row = await protect()
-    if (status === 'cancelled') await db.transaction(async (trx) => service.cancelSetup(await service.lockSetup(row.id, trx)))
+    if (status === 'cancelled') await db.transaction(async (trx) => service.cancelSetup(
+      await service.lockSetup(row.id, trx)))
     else await service.attempt(row.id, true)
     const before = row.toJSON()
     await row.refresh()
@@ -158,15 +171,18 @@ test.group('Plaid cleanup adversarial review', (group) => {
 
   test('concurrent administrative retries permit one transition', async ({ assert }) => {
     const row = await protect()
-    row.status = 'review_required'; row.credentialExpiresAt = DateTime.utc().plus({ days: 1 }); await row.save()
-    const results = await Promise.allSettled([service.administer(row.id, 'retry'), service.administer(row.id, 'retry')])
+    row.status = 'review_required'; row.credentialExpiresAt = DateTime.utc().plus({ days: 1 });
+      await row.save()
+    const results = await Promise.allSettled([service.administer(row.id, 'retry'), service
+      .administer(row.id, 'retry')])
     assert.lengthOf(results.filter((result) => result.status === 'fulfilled'), 1)
     await Promise.all([service.attempt(row.id), service.attempt(row.id)])
     assert.equal(calls, 1)
     assert.equal((await row.refresh()).attemptCount, 1)
   })
 
-  test('active removal excludes expiry and duplicate jobs without consuming more attempts', async ({ assert }) => {
+  test('active removal excludes expiry and duplicate jobs without consuming more attempts', async ({
+    assert }) => {
     const row = await protect()
     row.credentialExpiresAt = DateTime.utc().plus({ days: 1 }); await row.save()
     finish = deferred()
@@ -208,22 +224,28 @@ test.group('Plaid cleanup adversarial review', (group) => {
     assert.equal((await row.refresh()).status, 'completed')
   })
 
-  test('safe classification and real structured logging exclude provider credential strings', async ({ assert, cleanup }) => {
+  test('safe classification and real structured logging exclude provider credential strings',
+    async ({ assert, cleanup }) => {
     const rows: string[] = []
-    const capture = new Logger({ enabled: true, level: 'error', destination: { write: (line: string) => { rows.push(line) } } })
+    const capture = new Logger({ enabled: true, level: 'error', destination: { write: (
+      line: string) => { rows.push(line) } } })
     const original = Logger.prototype.error
-    const logging = mock.method(Logger.prototype, 'error', function (...args: Parameters<Logger['error']>) { original.apply(capture, args) })
+    const logging = mock.method(Logger.prototype, 'error', function (...args: Parameters<Logger[
+      'error']>) { original.apply(capture, args) })
     cleanup(() => logging.mock.restore())
     const row = await protect()
-    failure = new PlaidException({ response: { status: 400, data: { error_type: secret, error_code: secret, error_message: secret } } })
+    failure = new PlaidException({ response: { status: 400, data: { error_type: secret,
+      error_code: secret, error_message: secret } } })
     await service.attempt(row.id, true)
     assert.notInclude(rows.join(''), secret)
     assert.notInclude(JSON.stringify((await row.refresh()).toJSON()), secret)
   })
 
-  test('Ace list and hostile retention arguments never reveal stored credentials', async ({ assert, cleanup }) => {
+  test('Ace list and hostile retention arguments never reveal stored credentials', async ({ assert,
+    cleanup }) => {
     const row = await protect()
-    row.status = 'review_required'; row.credentialExpiresAt = DateTime.utc().plus({ days: 1 }); await row.save()
+    row.status = 'review_required'; row.credentialExpiresAt = DateTime.utc().plus({ days: 1 });
+      await row.save()
     const command = await ace.create(CleanupCommand, ['list'])
     const output: string[] = []
     const logging = mock.method(command.logger, 'info', (value: string) => { output.push(value) })
@@ -231,7 +253,8 @@ test.group('Plaid cleanup adversarial review', (group) => {
     await command.run()
     assert.notInclude(output.join(''), secret)
     assert.notInclude(output.join(''), row.encryptedAccessToken ?? 'missing ciphertext')
-    for (const days of [-1, 0, 366, Infinity, 1.5]) await assert.rejects(() => service.administer(row.id, 'extend', days))
+    for (const days of [-1, 0, 366, Infinity, 1.5]) await assert.rejects(() => service.administer(
+      row.id, 'extend', days))
     await assert.rejects(() => service.administer(randomUUID(), 'retry'))
     assert.equal(calls, 0)
   })
@@ -243,9 +266,11 @@ test.group('Plaid cleanup adversarial review', (group) => {
     const isolated = new BullMQ(original.connection)
     const name = `cleanup-review-${randomUUID()}`
     const inspect = isolated.queue<{ cleanupId: string }, null>(name)
-    const routing = mock.method(isolated, 'queue', () => original.queue<{ cleanupId: string }, null>(name))
+    const routing = mock.method(isolated, 'queue', () => original.queue<{ cleanupId: string },
+      null>(name))
     app.container.swap(BullMQ, () => isolated)
-    cleanup(async () => { routing.mock.restore(); app.container.restore(BullMQ); await inspect.obliterate({ force: true }); await inspect.close() })
+    cleanup(async () => { routing.mock.restore(); app.container.restore(BullMQ); await inspect
+      .obliterate({ force: true }); await inspect.close() })
     await Promise.all([service.sweep(), service.sweep()])
     const jobs = await inspect.getWaiting()
     assert.lengthOf(jobs, 2)
@@ -258,16 +283,21 @@ test.group('Plaid cleanup adversarial review', (group) => {
     assert.equal(calls, 1)
     assert.equal((await row.refresh()).attemptCount, 1)
   })
-  test('authenticated provider and Item identities cannot be substituted through delimiter ambiguity', async ({ assert, cleanup }) => {
+  test(
+    'authenticated provider and Item identities cannot be substituted through delimiter ambiguity',
+    async ({ assert, cleanup }) => {
     const row = await service.protect('segment:synthetic-item', secret)
     row.providerContext = 'sandbox:synthetic-review-client:segment'
     row.itemId = 'synthetic-item'
     await row.save()
-    const config: PlaidConfig = { environment: 'sandbox', clientId: 'synthetic-review-client:segment', sandboxSecret: 'synthetic-provider-secret', productionSecret: '' }
+    const config: PlaidConfig = { environment: 'sandbox', clientId:
+      'synthetic-review-client:segment', sandboxSecret: 'synthetic-provider-secret',
+      productionSecret: '' }
     app.config.set('plaid', config)
     const matching = new PlaidWrapper(config)
     let substitutedCalls = 0
-    const removal = mock.method(matching, 'removeItem', async () => { substitutedCalls++; return { request_id: 'substitution' } })
+    const removal = mock.method(matching, 'removeItem', async () => { substitutedCalls++; return {
+      request_id: 'substitution' } })
     cleanup(() => removal.mock.restore())
     app.container.swap(PlaidWrapper, () => matching)
     await service.attempt(row.id, true)
@@ -275,18 +305,21 @@ test.group('Plaid cleanup adversarial review', (group) => {
     assert.equal((await row.refresh()).lastErrorClass, 'decryption_failed')
   })
 
-  test('crash before or after ledger commit converges from durable state').with(['before commit', 'after commit']).run(async ({ assert, cleanup }, stage) => {
+  test('crash before or after ledger commit converges from durable state').with(['before commit',
+    'after commit']).run(async ({ assert, cleanup }, stage) => {
     const row = await protect()
     const originalSave = Cleanup.prototype.save
     const restores: (() => void)[] = []
     const interrupted = mock.method(Cleanup.prototype, 'save', async function (this: Cleanup) {
       const result = await originalSave.call(this)
       if (this.status === 'pending' && this.attemptCount === 1) {
-        if (stage === 'before commit') throw new Error('Synthetic interruption before ledger commit')
+        if (stage === 'before commit') throw new Error(
+          'Synthetic interruption before ledger commit')
         const trx = this.$trx
         if (!trx) throw new Error('Expected ledger transaction')
         const originalCommit = trx.commit
-        const commit = mock.method(trx, 'commit', async () => { await originalCommit.call(trx); throw new Error('Synthetic interruption after ledger commit') })
+        const commit = mock.method(trx, 'commit', async () => { await originalCommit.call(trx);
+          throw new Error('Synthetic interruption after ledger commit') })
         restores.push(() => commit.mock.restore())
       }
       return result
@@ -309,7 +342,8 @@ test.group('Plaid cleanup adversarial review', (group) => {
 
   test('retention extension currently resets a deadline relative to now', async ({ assert }) => {
     const row = await protect()
-    row.status = 'review_required'; row.credentialExpiresAt = DateTime.utc().plus({ days: 30 }); await row.save()
+    row.status = 'review_required'; row.credentialExpiresAt = DateTime.utc().plus({ days: 30 });
+      await row.save()
     const previousDeadline = row.credentialExpiresAt.toMillis()
     await service.administer(row.id, 'extend', 1)
     await row.refresh()
@@ -317,26 +351,30 @@ test.group('Plaid cleanup adversarial review', (group) => {
     assert.isAbove(row.credentialExpiresAt?.toMillis() ?? 0, Date.now())
   })
 
-  test('duplicate JSON key versions choose the last key but cannot decrypt old data', async ({ assert }) => {
+  test('duplicate JSON key versions choose the last key but cannot decrypt old data', async ({
+    assert }) => {
     const row = await protect()
     const keys: unknown = JSON.parse(app.config.get<string>('plaidCleanup.keys'))
     if (typeof keys !== 'object' || keys === null) throw new Error('Expected test keys')
     const original: unknown = Reflect.get(keys, 'review-v1')
     if (typeof original !== 'string') throw new Error('Expected test key')
-    app.config.set('plaidCleanup.keys', `{"review-v1":${JSON.stringify(original)},"review-v1":${JSON.stringify(randomBytes(32).toString('base64'))}}`)
+    app.config.set('plaidCleanup.keys', `{"review-v1":${JSON.stringify(original)},"review-v1":${JSON
+      .stringify(randomBytes(32).toString('base64'))}}`)
     await service.ready()
     await service.attempt(row.id, true)
     assert.equal(calls, 0)
     assert.equal((await row.refresh()).lastErrorClass, 'decryption_failed')
   })
 
-  test('nonce/tag tampering and an aliased key version cannot decrypt').with(['tampered', 'aliased version', 'legacy binding']).run(async ({ assert }, attack) => {
+  test('nonce/tag tampering and an aliased key version cannot decrypt').with(['tampered',
+    'aliased version', 'legacy binding']).run(async ({ assert }, attack) => {
     const row = await protect()
     if (attack === 'tampered') {
       const cipher = row.encryptedAccessToken
       if (!cipher) throw new Error('Expected ciphertext')
       const index = Math.floor(cipher.length / 2)
-      row.encryptedAccessToken = cipher.slice(0, index) + (cipher[index] === 'A' ? 'B' : 'A') + cipher.slice(index + 1)
+      row.encryptedAccessToken = cipher.slice(0, index) + (cipher[index] === 'A' ? 'B' : 'A') +
+        cipher.slice(index + 1)
     } else if (attack === 'legacy binding') {
       row.encryptedAccessToken = row.encryptedAccessToken?.replace('binding-v2:', '') ?? null
     } else {
@@ -353,14 +391,18 @@ test.group('Plaid cleanup adversarial review', (group) => {
     assert.equal((await row.refresh()).lastErrorClass, 'decryption_failed')
   })
 
-  test('expiry and administrative extension serialize without corrupting state').with(['extension first', 'expiry first']).run(async ({ assert }, order) => {
+  test('expiry and administrative extension serialize without corrupting state').with([
+    'extension first', 'expiry first']).run(async ({ assert }, order) => {
     const row = await protect()
-    row.status = 'review_required'; row.credentialExpiresAt = DateTime.utc().minus({ days: 1 }); await row.save()
+    row.status = 'review_required'; row.credentialExpiresAt = DateTime.utc().minus({ days: 1 });
+      await row.save()
     const blocker = await db.transaction()
     await Cleanup.query({ client: blocker }).where('id', row.id).forUpdate().firstOrFail()
     const wait = async (count: number) => {
       for (let i = 0; i < 100; i++) {
-        const state = await db.rawQuery("SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock' AND query LIKE '%plaid_item_cleanups%'")
+        const state = await db.rawQuery(
+          "SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname=current_database() \
+AND wait_event_type='Lock' AND query LIKE '%plaid_item_cleanups%'")
         if (state.rows[0].count >= count) return
         await new Promise((resolve) => setTimeout(resolve, 5))
       }
@@ -369,11 +411,14 @@ test.group('Plaid cleanup adversarial review', (group) => {
     let first: Promise<unknown> | undefined
     let second: Promise<unknown> | undefined
     try {
-      first = order === 'extension first' ? service.administer(row.id, 'extend', 30) : service.attempt(row.id)
-      // Attach handlers before releasing the lock to avoid an expected admin rejection becoming unhandled.
+      first = order === 'extension first' ? service.administer(row.id, 'extend', 30) : service
+        .attempt(row.id)
+      // Attach handlers before releasing the lock to avoid an expected admin rejection becoming
+      // unhandled.
       first = first.then(() => 'ok', () => 'rejected')
       await wait(1)
-      second = order === 'extension first' ? service.attempt(row.id) : service.administer(row.id, 'extend', 30)
+      second = order === 'extension first' ? service.attempt(row.id) : service.administer(row.id,
+        'extend', 30)
       second = second.then(() => 'ok', () => 'rejected')
       await wait(2)
     } finally { await blocker.rollback() }
@@ -390,7 +435,8 @@ test.group('Plaid cleanup adversarial review', (group) => {
     }
   })
 
-  test('Ace retry/extend reject malformed IDs without echoing their values').with(['retry', 'extend']).run(async ({ assert }, action) => {
+  test('Ace retry/extend reject malformed IDs without echoing their values').with(['retry',
+    'extend']).run(async ({ assert }, action) => {
     const command = await ace.create(CleanupCommand, [action, secret])
     let error: unknown
     try { await command.run() } catch (caught) { error = caught }
@@ -400,7 +446,8 @@ test.group('Plaid cleanup adversarial review', (group) => {
     assert.equal(calls, 0)
   })
 
-  test('completion before failed BullMQ acknowledgment makes redelivery harmless', async ({ assert, cleanup }) => {
+  test('completion before failed BullMQ acknowledgment makes redelivery harmless', async ({ assert,
+    cleanup }) => {
     const row = await protect()
     row.nextAttemptAt = DateTime.utc().minus({ seconds: 1 }); await row.save()
     const bull = await app.container.make('bullmq')
@@ -410,7 +457,8 @@ test.group('Plaid cleanup adversarial review', (group) => {
       await service.attempt(job.data.cleanupId)
       throw new Error('Synthetic failure after database completion')
     }, { connection: bull.connection, autorun: false })
-    cleanup(async () => { await worker.close(); await queue.obliterate({ force: true }); await queue.close() })
+    cleanup(async () => { await worker.close(); await queue.obliterate({ force: true }); await queue
+      .close() })
     await queue.add('cleanup', { cleanupId: row.id })
     await worker.waitUntilReady()
     const lock = randomUUID()
@@ -427,30 +475,38 @@ test.group('Plaid cleanup adversarial review', (group) => {
     assert.equal(row.attemptCount, 1)
   })
 
-  test('listener retries startup analysis failures and suppresses overlapping sweeps').with(['missing migration', 'database unavailable', 'Redis unavailable']).run(async ({ assert, cleanup }, failureClass) => {
+  test('listener retries startup analysis failures and suppresses overlapping sweeps').with([
+    'missing migration', 'database unavailable', 'Redis unavailable']).run(async ({ assert,
+    cleanup }, failureClass) => {
     const original = await app.container.make('bullmq')
     const isolated = new BullMQ(original.connection)
     const name = `cleanup-startup-review-${randomUUID()}`
     const queue = original.queue<{ cleanupId: string }, null>(name)
     let closeWorker: (() => Promise<void>) | undefined
-    const routing = mock.method(isolated, 'worker', (_name: string, callback: Parameters<BullMQ['worker']>[1]) => {
-      const worker = original.worker(name, callback, { connection: original.connection, autorun: false })
+    const routing = mock.method(isolated, 'worker', (_name: string, callback: Parameters<BullMQ[
+      'worker']>[1]) => {
+      const worker = original.worker(name, callback, { connection: original.connection,
+        autorun: false })
       closeWorker = () => worker.close()
       return worker
     })
     app.container.swap(BullMQ, () => isolated)
-    cleanup(async () => { routing.mock.restore(); app.container.restore(BullMQ); if (closeWorker) await closeWorker(); await queue.obliterate({ force: true }); await queue.close() })
+    cleanup(async () => { routing.mock.restore(); app.container.restore(BullMQ); if (
+      closeWorker) await closeWorker(); await queue.obliterate({ force: true }); await queue.close(
+      ) })
     const firstStarted = deferred()
     const firstFinish = deferred()
     let sweeps = 0
     const sweep = mock.method(Service.prototype, 'sweep', async () => {
       sweeps++
-      if (sweeps === 1) { firstStarted.resolve(); await firstFinish.promise; throw new Error(`Synthetic ${failureClass}`) }
+      if (sweeps === 1) { firstStarted.resolve(); await firstFinish.promise; throw new Error(
+        `Synthetic ${failureClass}`) }
     })
     cleanup(() => sweep.mock.restore())
     let tick: (() => void) | undefined
     const originalInterval = globalThis.setInterval
-    const interval = mock.method(globalThis, 'setInterval', (callback: () => void, milliseconds?: number) => {
+    const interval = mock.method(globalThis, 'setInterval', (callback: () => void,
+      milliseconds?: number) => {
       tick = callback
       const timer = originalInterval(callback, milliseconds)
       cleanup(() => clearInterval(timer))
@@ -470,9 +526,11 @@ test.group('Plaid cleanup adversarial review', (group) => {
     assert.equal(sweeps, 2)
   })
 
-  test('query debugging sees ciphertext rather than the recovered credential', async ({ assert }) => {
+  test('query debugging sees ciphertext rather than the recovered credential', async ({ assert }) =>
+    {
     const queries: { sql: string, bindings?: readonly unknown[] }[] = []
-    const listener = (query: { sql: string, bindings?: readonly unknown[] }) => { queries.push(query) }
+    const listener = (query: { sql: string, bindings?: readonly unknown[] }) => { queries.push(
+      query) }
     const connection = db.connection().getWriteClient()
     connection.on('query', listener)
     try {
@@ -483,20 +541,24 @@ test.group('Plaid cleanup adversarial review', (group) => {
     assert.notInclude(JSON.stringify(queries), secret)
   })
 
-  test('expired credentials are destroyed in PostgreSQL even when Redis enqueue fails', async ({ assert, cleanup }) => {
+  test('expired credentials are destroyed in PostgreSQL even when Redis enqueue fails', async ({
+    assert, cleanup }) => {
     const expired = await protect()
-    expired.status = 'review_required'; expired.credentialExpiresAt = DateTime.utc().minus({ days: 1 }); await expired.save()
+    expired.status = 'review_required'; expired.credentialExpiresAt = DateTime.utc().minus({
+      days: 1 }); await expired.save()
     const due = await protect()
     due.nextAttemptAt = DateTime.utc().minus({ seconds: 1 }); await due.save()
     const original = await app.container.make('bullmq')
     const isolated = new BullMQ(original.connection)
     const name = `cleanup-expiry-review-${randomUUID()}`
     const queue = original.queue<{ cleanupId: string }, null>(name)
-    const enqueue = mock.method(queue, 'add', async () => { throw new Error('Synthetic Redis enqueue failure') })
+    const enqueue = mock.method(queue, 'add', async () => { throw new Error(
+      'Synthetic Redis enqueue failure') })
     const routing = mock.method(isolated, 'queue', () => queue)
     app.container.swap(BullMQ, () => isolated)
     cleanup(() => { enqueue.mock.restore(); routing.mock.restore(); app.container.restore(BullMQ) })
-    cleanup(async () => { const fresh = original.queue(name); await fresh.obliterate({ force: true }); await fresh.close() })
+    cleanup(async () => { const fresh = original.queue(name); await fresh.obliterate({
+      force: true }); await fresh.close() })
     await assert.rejects(() => service.sweep())
     assert.isNull((await expired.refresh()).encryptedAccessToken)
     assert.equal(expired.lastErrorClass, 'credential_expired')
@@ -506,7 +568,8 @@ test.group('Plaid cleanup adversarial review', (group) => {
     assert.equal(calls, 0)
   })
 
-  test('a stalled Redis enqueue is bounded so later retention sweeps can run', async ({ assert, cleanup }) => {
+  test('a stalled Redis enqueue is bounded so later retention sweeps can run', async ({ assert,
+    cleanup }) => {
     const row = await protect()
     row.nextAttemptAt = DateTime.utc().minus({ seconds: 1 }); await row.save()
     const original = await app.container.make('bullmq')
@@ -515,14 +578,17 @@ test.group('Plaid cleanup adversarial review', (group) => {
     const queue = original.queue<{ cleanupId: string }, null>(name)
     const started = deferred()
     const release = deferred()
-    const enqueue = mock.method(queue, 'add', async () => { started.resolve(); await release.promise; throw new Error('Synthetic enqueue failure') })
+    const enqueue = mock.method(queue, 'add', async () => { started.resolve(); await release
+      .promise; throw new Error('Synthetic enqueue failure') })
     const routing = mock.method(isolated, 'queue', () => queue)
     app.container.swap(BullMQ, () => isolated)
     cleanup(() => { enqueue.mock.restore(); routing.mock.restore(); app.container.restore(BullMQ) })
-    cleanup(async () => { const fresh = original.queue(name); await fresh.obliterate({ force: true }); await fresh.close() })
+    cleanup(async () => { const fresh = original.queue(name); await fresh.obliterate({
+      force: true }); await fresh.close() })
     let timeout: (() => void) | undefined
     const originalTimeout = globalThis.setTimeout
-    const timer = mock.method(globalThis, 'setTimeout', (callback: () => void, milliseconds?: number) => {
+    const timer = mock.method(globalThis, 'setTimeout', (callback: () => void,
+      milliseconds?: number) => {
       if (milliseconds === 5_000) timeout = callback
       return originalTimeout(callback, milliseconds)
     })

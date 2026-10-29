@@ -7,12 +7,17 @@ import { legacyIncomeBody } from '../../fixtures/reports/legacyIncomeBody.js'
 // Execute actual old/new method bodies through a small relational adapter.
 // It models joins/grouping/filtering, not PostgreSQL precision or query plans.
 async function currentBody() {
-  const s = ts.createSourceFile('report.ts', await readFile('app/Controllers/Http/ReportController.ts', 'utf8'), ts.ScriptTarget.Latest, true)
-  return s.statements.find(ts.isClassDeclaration).members.find((n) => ts.isMethodDeclaration(n) && n.name.getText(s) === 'incomeVsExpenses').body.getText(s)
+  const s = ts.createSourceFile('report.ts', await readFile(
+    'app/Controllers/Http/ReportController.ts', 'utf8'), ts.ScriptTarget.Latest, true)
+  return s.statements.find(ts.isClassDeclaration).members.find((n) => ts.isMethodDeclaration(n) && n
+    .name.getText(s) === 'incomeVsExpenses').body.getText(s)
 }
-const tx = (id, changes = {}) => ({ id, application_id: 1, type: 5, date: '2025-02-01', deleted: false, ...changes })
-const link = (id, transactionId, amount, accountId = 1) => ({ id, transaction_id: transactionId, account_id: accountId, amount, pending: false })
-const transfer = (id, amount, transactionId = 1, categoryId = 99) => ({ id, amount, transaction_id: transactionId, category_id: categoryId })
+const tx = (id, changes = {}) => ({ id, application_id: 1, type: 5, date: '2025-02-01',
+  deleted: false, ...changes })
+const link = (id, transactionId, amount, accountId = 1) => ({ id, transaction_id: transactionId,
+  account_id: accountId, amount, pending: false })
+const transfer = (id, amount, transactionId = 1, categoryId = 99) => ({ id, amount,
+  transaction_id: transactionId, category_id: categoryId })
 function domain(transfers = [], changes = {}) {
   const data = { transactions: [tx(1)], account_transactions: [link(1, 1, 50)],
     accounts: [{ id: 1, tracking: 'Transactions', closed: true, start_date: '2026-01-01' }],
@@ -24,42 +29,55 @@ function domain(transfers = [], changes = {}) {
 }
 function engine(tables) {
   const builders = [], observed = { movements: [], transfers: [], executions: 0 }
-  const prefix = (rows, alias) => rows.map((row) => Object.fromEntries(Object.entries(row).map(([key, value]) => [`${alias}.${key}`, value])))
+  const prefix = (rows, alias) => rows.map((row) => Object.fromEntries(Object.entries(row).map(([
+    key, value]) => [`${alias}.${key}`, value])))
   function query() {
-    const q = { source: '', alias: '', ctes: new Map(), selections: [], sums: [], groups: [], filters: [], joins: [],
+    const q = { source: '', alias: '', ctes: new Map(), selections: [], sums: [], groups: [],
+      filters: [], joins: [],
       from(name) { this.source = name; return this }, as(name) { this.alias = name; return this },
       with(name, builder) { this.ctes.set(name, builder); return this },
-      select(...values) { this.selections.push(...values); return this }, sum(value) { this.sums.push(value); return this },
+      select(...values) { this.selections.push(...values); return this }, sum(value) { this.sums
+        .push(value); return this },
       join(table, a, b) { this.joins.push({ table, a, b }); return this },
       joinRaw(sql) { this.joins.push({ raw: sql }); return this },
       leftJoin(table, a, b) {
         const join = { table, a, b, left: true, extra: [] }
         if (typeof a === 'function') {
-          a({ on(x, y) { join.a = x; join.b = y; return this }, andOnVal(key, _op, value) { join.extra.push([key, value]); return this } })
+          a({ on(x, y) { join.a = x; join.b = y; return this }, andOnVal(key, _op, value) { join
+            .extra.push([key, value]); return this } })
         }
         this.joins.push(join); return this
       },
-      where(key, op, value) { this.filters.push([key, value === undefined ? '=' : op, value === undefined ? op : value]); return this },
-      andWhere(...args) { return this.where(...args) }, groupBy(value) { this.groups.push(value); return this },
+      where(key, op, value) { this.filters.push([key, value === undefined ? '=' : op,
+        value === undefined ? op : value]); return this },
+      andWhere(...args) { return this.where(...args) }, groupBy(value) { this.groups.push(value);
+        return this },
       groupByRaw(value) { this.groups.push(value); return this }, orderBy() { return this },
       rows() {
         const [name, alias = name] = this.source.split(' as ')
         let rows = prefix(tables[name], alias)
         for (const join of this.joins) {
           if (join.raw) {
-            if (!join.raw.includes('jsonb_to_recordset(transfer_transaction.categories)')) throw new Error('Unexpected JSON source')
-            rows = rows.flatMap((row) => (row['transfer_transaction.categories'] ?? []).map((allocation, index) => ({
-              ...row, 'transfer.categoryId': allocation.categoryId, 'transfer.amount': allocation.amount,
+            if (!join.raw.includes(
+              'jsonb_to_recordset(transfer_transaction.categories)')) throw new Error(
+              'Unexpected JSON source')
+            rows = rows.flatMap((row) => (row['transfer_transaction.categories'] ?? []).map((
+              allocation, index) => ({
+              ...row, 'transfer.categoryId': allocation.categoryId, 'transfer.amount': allocation
+                .amount,
               'transfer.id': `${row['transfer_transaction.id']}:${index}`,
             })))
             continue
           }
           const right = typeof join.table === 'string' ? (() => {
-            const [table, as = table] = join.table.split(' as '); return prefix(this.ctes.has(table) ? this.ctes.get(table).rows() : tables[table], as)
+            const [table, as = table] = join.table.split(' as '); return prefix(this.ctes.has(
+              table) ? this.ctes.get(table).rows() : tables[table], as)
           })() : prefix(join.table.rows(), join.table.alias)
           rows = rows.flatMap((row) => {
-            const matches = right.map((r) => ({ ...row, ...r })).filter((r) => r[join.a] === r[join.b]
-              && join.extra?.every(([key, value]) => r[key.includes('.') ? key : `tc.${key}`] === value) !== false)
+            const matches = right.map((r) => ({ ...row, ...r })).filter((r) => r[join.a] === r[join
+              .b]
+              && join.extra?.every(([key, value]) => r[key.includes(
+                '.') ? key : `tc.${key}`] === value) !== false)
             return matches.length ? matches : join.left ? [row] : []
           })
         }
@@ -79,10 +97,12 @@ function engine(tables) {
           }
           return [...groups.values()]
         }
-        if (!this.selections.some((s) => s.includes('COALESCE(tc.amount, 0)'))) throw new Error('Unknown report formula')
+        if (!this.selections.some((s) => s.includes('COALESCE(tc.amount, 0)'))) throw new Error(
+          'Unknown report formula')
         observed.movements = [...new Set(rows.map((r) => r['at.id']))].sort((a, b) => a - b)
         if (this.ctes.size === 0) {
-          observed.transfers = [...new Set(rows.map((r) => r['tc.id']).filter((id) => id !== undefined))].sort((a, b) => a - b)
+          observed.transfers = [...new Set(rows.map((r) => r['tc.id']).filter((id) =>
+            id !== undefined))].sort((a, b) => a - b)
         }
         const result = new Map()
         for (const row of rows) {
@@ -94,7 +114,8 @@ function engine(tables) {
         }
         return [...result.values()].sort((a, b) => a.month.localeCompare(b.month))
       },
-      then(resolve, reject) { observed.executions++; return Promise.resolve().then(() => this.rows()).then(resolve, reject) },
+      then(resolve, reject) { observed.executions++; return Promise.resolve().then(() => this.rows(
+        )).then(resolve, reject) },
     }
     builders.push(q); return q
   }
@@ -103,8 +124,10 @@ function engine(tables) {
 async function run(tables, old = false) {
   const f = engine(tables)
   const body = old ? legacyIncomeBody : await currentBody()
-  const method = runInNewContext(ts.transpileModule(`(async function(budget) ${body})`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText,
-    { db: f.db, TrackingType: { Transactions: 'Transactions' }, TransactionType: { STARTING_BALANCE: 4 } })
+  const method = runInNewContext(ts.transpileModule(`(async function(budget) ${body})`, {
+    compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText,
+    { db: f.db, TrackingType: { Transactions: 'Transactions' }, TransactionType: {
+      STARTING_BALANCE: 4 } })
   const result = await method({ id: 1, getAccountTransferCategory: async () => ({ id: 99 }) })
   return { ...f, result, body }
 }
@@ -120,7 +143,8 @@ test.group('Income transfer cardinality without database', () => {
     assert.deepEqual(f.result, [['2025-02', scenario.expected, 0, scenario.expected]])
     assert.equal(f.observed.executions, 1)
   })
-  test('original 50 versus20+30 defect is characterized alongside correction', async ({ assert }) => {
+  test('original 50 versus20+30 defect is characterized alongside correction', async ({ assert }) =>
+    {
     const one = domain([transfer(1, 50)]), split = domain([transfer(1, 20), transfer(2, 30)])
     assert.equal((await run(one, true)).result[0][1], 0)
     assert.equal((await run(split, true)).result[0][1], 50)
@@ -134,10 +158,13 @@ test.group('Income transfer cardinality without database', () => {
     { amount: -50, transfers: [-80], income: 0, expenses: 30 },
     { amount: 0, transfers: [20, 20], income: -40, expenses: 0 },
   ]).run(async ({ assert }, s) => {
-    const f = await run(domain(s.transfers.map((n, i) => transfer(i + 1, n)), { account_transactions: [link(1, 1, s.amount)] }))
+    const f = await run(domain(s.transfers.map((n, i) => transfer(i + 1, n)), {
+      account_transactions: [link(1, 1, s.amount)] }))
     assert.deepEqual(f.result, [['2025-02', s.income, s.expenses, s.income + s.expenses]])
   })
-  test('multiple movements, Accounts and same-Transaction links retain existing per-link subtraction', async ({ assert }) => {
+  test(
+    'multiple movements, Accounts and same-Transaction links retain existing per-link subtraction',
+    async ({ assert }) => {
     const data = domain([transfer(1, 20), transfer(2, 30), transfer(3, -10, 2)], {
       transactions: [tx(1), tx(2), tx(3, { date: '2025-03-01' })],
       accounts: [{ id: 1, tracking: 'Transactions' }, { id: 2, tracking: 'Transactions' }],
@@ -147,11 +174,16 @@ test.group('Income transfer cardinality without database', () => {
     assert.deepEqual(f.result, [['2025-02', 0, -130, -130], ['2025-03', 8, 0, 8]])
     assert.deepEqual(f.observed.movements, [1, 2, 3, 4])
   })
-  test('movement selection is unchanged; JSON matching Category/Budget defines deduction', async ({ assert }) => {
-    const data = domain([transfer(1, 20), transfer(2, 30), transfer(3, 99, 2), transfer(4, 999, 1, 100), transfer(5, 999, 3)], {
-      transactions: [tx(1, { deleted: true }), tx(2, { type: 4 }), tx(3, { application_id: 2 }), tx(4)],
-      accounts: [{ id: 1, tracking: 'Transactions', closed: true }, { id: 2, tracking: 'Balances' }],
-      account_transactions: [{ ...link(1, 1, 50), pending: true }, link(2, 2, 7), link(3, 3, 8), link(4, 4, 9, 2)],
+  test('movement selection is unchanged; JSON matching Category/Budget defines deduction', async ({
+    assert }) => {
+    const data = domain([transfer(1, 20), transfer(2, 30), transfer(3, 99, 2), transfer(4, 999, 1,
+      100), transfer(5, 999, 3)], {
+      transactions: [tx(1, { deleted: true }), tx(2, { type: 4 }), tx(3, { application_id: 2 }), tx(
+        4)],
+      accounts: [{ id: 1, tracking: 'Transactions', closed: true }, { id: 2, tracking:
+        'Balances' }],
+      account_transactions: [{ ...link(1, 1, 50), pending: true }, link(2, 2, 7), link(3, 3, 8),
+        link(4, 4, 9, 2)],
     })
     const before = await run(data, true), after = await run(data)
     assert.deepEqual(before.observed.movements, after.observed.movements)
@@ -162,13 +194,15 @@ test.group('Income transfer cardinality without database', () => {
     assert.deepEqual(after.observed.transfers, ['1:0', '1:1', '2:0'])
     assert.deepEqual(before.observed.transfers, [1, 2])
     assert.deepEqual(after.result, [['2025-02', 0, 0, 0]])
-    assert.deepEqual(data.transactions[0].categories, [{ categoryId: 99, amount: 20 }, { categoryId: 99, amount: 30 }, { categoryId: 100, amount: 999 }])
+    assert.deepEqual(data.transactions[0].categories, [{ categoryId: 99, amount: 20 }, {
+      categoryId: 99, amount: 30 }, { categoryId: 100, amount: 999 }])
   })
   test('empty selected movements keep empty response', async ({ assert }) => {
     assert.deepEqual((await run(domain([], { account_transactions: [] }))).result, [])
   })
   test('Transaction calendar date still controls period and ordering', async ({ assert }) => {
-    const f = await run(domain([], { transactions: [tx(1, { date: '2025-01-01' }), tx(2, { date: '2024-12-31' })],
+    const f = await run(domain([], { transactions: [tx(1, { date: '2025-01-01' }), tx(2, { date:
+      '2024-12-31' })],
       account_transactions: [link(1, 1, 50), link(2, 2, -20)] }))
     assert.deepEqual(f.result, [['2024-12', 0, -20, -20], ['2025-01', 50, 0, 50]])
   })
@@ -182,16 +216,20 @@ test.group('Income transfer cardinality without database', () => {
     }))
     assert.deepEqual(f.result, [['2025-02', s.expected, 0, s.expected]])
   })
-  test('source contract uses scoped JSON deduction and retains original selectors/response', async ({ assert }) => {
+  test('source contract uses scoped JSON deduction and retains original selectors/response', async (
+    { assert }) => {
     const f = await run(domain())
     const aggregate = f.builders[0]
     assert.equal(aggregate.source, 'transactions as transfer_transaction')
     assert.deepEqual(aggregate.groups, ['transfer_transaction.id'])
     assert.deepEqual(aggregate.sums, ['transfer.amount as amount'])
-    assert.deepEqual(aggregate.filters, [['transfer_transaction.application_id', '=', 1], ['transfer.categoryId', '=', 99]])
-    assert.notInclude(f.body, 'DISTINCT'); assert.include(f.body, 'jsonb_to_recordset'); assert.notInclude(f.body, 'transaction_categories')
+    assert.deepEqual(aggregate.filters, [['transfer_transaction.application_id', '=', 1], [
+      'transfer.categoryId', '=', 99]])
+    assert.notInclude(f.body, 'DISTINCT'); assert.include(f.body, 'jsonb_to_recordset'); assert
+      .notInclude(f.body, 'transaction_categories')
     assert.notInclude(f.body, '.save('); assert.notInclude(f.body, '.forUpdate(')
-    assert.notInclude(f.body, 'pending'); assert.notInclude(f.body, 'deleted'); assert.notInclude(f.body, 'startDate')
+    assert.notInclude(f.body, 'pending'); assert.notInclude(f.body, 'deleted'); assert.notInclude(f
+      .body, 'startDate')
     assert.include(f.body, 'parseFloat(row.income) + parseFloat(row.expenses)')
   })
 })

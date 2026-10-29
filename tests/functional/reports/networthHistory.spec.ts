@@ -22,19 +22,26 @@ test.group('Net-worth history independence', (group) => {
     return db.transaction(async (trx) => {
       const budget = await Budget.create({}, { client: trx })
       await budget.initialize()
-      const user = await budget.related('users').create({ username: `networth-history-${++sequence}`, email: `networth-history-${sequence}@example.com`, password: 'testPassw0rd' })
-      const institution = await budget.related('institutions').create({ name: 'History dependency bank' })
+      const user = await budget.related('users').create({
+        username: `networth-history-${++sequence}`,
+        email: `networth-history-${sequence}@example.com`, password: 'testPassw0rd' })
+      const institution = await budget.related('institutions').create({ name:
+        'History dependency bank' })
       const today = DateTime.utc().startOf('day')
-      const account = await institution.related('accounts').create({ name: 'Transaction account', balance: 100,
+      const account = await institution.related('accounts').create({ name: 'Transaction account',
+        balance: 100,
         type: AccountType.Depository, subtype: 'checking', tracking: TrackingType.Transactions,
         startDate: today.minus({ days: 6 }), rate: 0, closed: false })
       return { budget, user, institution, today, account }
     })
   }
 
-  async function movement(f: Awaited<ReturnType<typeof fixture>>, date: DateTime, amount: number, type = TransactionType.MANUAL_TRANSACTION) {
-    const transaction = await f.budget.related('transactions').create({ date, type, categories: [], taxes: [], version: 0, sortOrder: 0, deleted: false })
-    await f.account.related('accountTransactions').create({ transactionId: transaction.id, amount, name: 'Report movement', provider: 'NONE', pending: false })
+  async function movement(f: Awaited<ReturnType<typeof fixture>>, date: DateTime, amount: number,
+    type = TransactionType.MANUAL_TRANSACTION) {
+    const transaction = await f.budget.related('transactions').create({ date, type, categories: [],
+      taxes: [], version: 0, sortOrder: 0, deleted: false })
+    await f.account.related('accountTransactions').create({ transactionId: transaction.id, amount,
+      name: 'Report movement', provider: 'NONE', pending: false })
   }
 
   async function report(client: ApiClient, f: Awaited<ReturnType<typeof fixture>>) {
@@ -46,17 +53,20 @@ test.group('Net-worth history independence', (group) => {
     console.log(JSON.stringify({ characterization: 'networth-history', tracking: account.tracking,
       startDate: account.startDate.toISODate(), currentBalance: account.balance,
       history: history.map((row) => ({ date: row.date.toISODate(), balance: row.balance })),
-      transactions: transactions.map((row) => ({ date: row.transaction.date.toISODate(), amount: row.amount, type: row.transaction.type })),
+      transactions: transactions.map((row) => ({ date: row.transaction.date.toISODate(), amount: row
+        .amount, type: row.transaction.type })),
       report: response.body() }))
     return response.body()
   }
 
-  test('transactions without stored history produce daily closing balances', async ({ client, assert }) => {
+  test('transactions without stored history produce daily closing balances', async ({ client,
+    assert }) => {
     const f = await fixture()
     await movement(f, f.today.minus({ days: 5 }), 10)
     await movement(f, f.today.minus({ days: 2 }), -5)
     assert.deepEqual(await report(client, f), [['date', 'Transaction account'],
-      [f.today.minus({ days: 5 }).toISODate(), '105.00'], [f.today.minus({ days: 2 }).toISODate(), '100.00']])
+      [f.today.minus({ days: 5 }).toISODate(), '105.00'], [f.today.minus({ days: 2 }).toISODate(),
+        '100.00']])
   })
 
   test('later or OFX-style snapshots do not supply new chart points or change balances')
@@ -65,7 +75,8 @@ test.group('Net-worth history independence', (group) => {
       await movement(f, f.today.minus({ days: 5 }), 10)
       await movement(f, f.today.minus({ days: 2 }), -5)
       const before = await report(client, f)
-      const history = await f.account.related('balanceHistory').create({ date: f.today.minus({ days: daysAgo }), balance: 999999 })
+      const history = await f.account.related('balanceHistory').create({ date: f.today.minus({
+        days: daysAgo }), balance: 999999 })
       assert.deepEqual(await report(client, f), before)
       assert.equal((await Account.findOrFail(f.account.id)).balance, 100)
       await history.delete()
@@ -81,7 +92,8 @@ test.group('Net-worth history independence', (group) => {
       await movement(f, first, 10)
       await movement(f, second, -5)
       const before = await report(client, f)
-      const history = await f.account.related('balanceHistory').create({ date: f.today.minus({ days: scenario.age }), balance: 999999 })
+      const history = await f.account.related('balanceHistory').create({ date: f.today.minus({
+        days: scenario.age }), balance: 999999 })
       // These ages previously forced weekly, monthly, and yearly rebucketing.
       assert.deepEqual(await report(client, f), before)
       await history.delete()
@@ -96,7 +108,8 @@ test.group('Net-worth history independence', (group) => {
       await movement(f, date, 10)
       const bucket = scenario.unit === 'week' ? date.startOf('week')
         : scenario.unit === 'month' ? date.startOf('month') : date.startOf('year')
-      assert.deepEqual(await report(client, f), [['date', 'Transaction account'], [bucket.toISODate(), '100.00']])
+      assert.deepEqual(await report(client, f), [['date', 'Transaction account'], [bucket.toISODate(
+        ), '100.00']])
     })
 
   test('authoritative Statement dates still determine grouping without history')
@@ -105,18 +118,22 @@ test.group('Net-worth history independence', (group) => {
       const f = await fixture()
       await f.account.merge({ tracking: TrackingType.Balances }).save()
       const date = f.today.minus({ days: scenario.age })
-      await f.account.related('statements').create({ startDate: date, endDate: date, startingBalance: 100, endingBalance: 100, data: null })
+      await f.account.related('statements').create({ startDate: date, endDate: date,
+        startingBalance: 100, endingBalance: 100, data: null })
       const bucket = scenario.unit === 'week' ? date.startOf('week')
         : scenario.unit === 'month' ? date.startOf('month') : date.startOf('year')
-      assert.deepEqual(await report(client, f), [['date', 'Transaction account'], [bucket.toISODate(), '100.00']])
+      assert.deepEqual(await report(client, f), [['date', 'Transaction account'], [bucket.toISODate(
+        ), '100.00']])
     })
 
-  test('Initial Funding supplies an opening snapshot and controls grouping', async ({ client, assert }) => {
+  test('Initial Funding supplies an opening snapshot and controls grouping', async ({ client,
+    assert }) => {
     const f = await fixture()
     await f.account.merge({ startDate: f.today.minus({ days: 4000 }) }).save()
     await movement(f, f.account.startDate, 105, TransactionType.STARTING_BALANCE)
     await movement(f, f.today.minus({ days: 2 }), -5)
-    assert.deepEqual(await report(client, f), [['date', 'Transaction account'], [f.account.startDate.startOf('year').toISODate(), '105.00'], [f.today.startOf('year').toISODate(), '100.00']])
+    assert.deepEqual(await report(client, f), [['date', 'Transaction account'], [f.account.startDate
+      .startOf('year').toISODate(), '105.00'], [f.today.startOf('year').toISODate(), '100.00']])
   })
 
   test('an Initial-Funding-only account supplies its opening row', async ({ client, assert }) => {
@@ -124,7 +141,8 @@ test.group('Net-worth history independence', (group) => {
     await movement(f, f.account.startDate, 100, TransactionType.STARTING_BALANCE)
     const response = await client.get('/api/v1/reports/networth').accept('json').loginAs(f.user)
     response.assertStatus(200)
-    assert.deepEqual(response.body(), [['date', 'Transaction account'], [f.account.startDate.toISODate(), '100.00']])
+    assert.deepEqual(response.body(), [['date', 'Transaction account'], [f.account.startDate
+      .toISODate(), '100.00']])
   })
 
   test('Statement-only balance history ignores stale stored history')
@@ -132,21 +150,28 @@ test.group('Net-worth history independence', (group) => {
       const f = await fixture()
       await f.account.merge({ tracking: TrackingType.Balances }).save()
       const date = f.today.minus({ days: 3 })
-      await f.account.related('statements').create({ startDate: date, endDate: date, startingBalance: 100, endingBalance: 100, data: null })
+      await f.account.related('statements').create({ startDate: date, endDate: date,
+        startingBalance: 100, endingBalance: 100, data: null })
       if (mixed) {
-        const account = await f.institution.related('accounts').create({ name: 'Second transaction account', balance: 50,
+        const account = await f.institution.related('accounts').create({ name:
+          'Second transaction account', balance: 50,
           type: AccountType.Depository, subtype: 'checking', tracking: TrackingType.Transactions,
           startDate: f.today.minus({ days: 6 }), rate: 0, closed: false })
-        const transaction = await f.budget.related('transactions').create({ date, type: TransactionType.MANUAL_TRANSACTION, categories: [], taxes: [], version: 0, sortOrder: 0, deleted: false })
-        await account.related('accountTransactions').create({ transactionId: transaction.id, amount: 5, name: 'Mixed report movement', provider: 'NONE', pending: false })
+        const transaction = await f.budget.related('transactions').create({ date,
+          type: TransactionType.MANUAL_TRANSACTION, categories: [], taxes: [], version: 0,
+          sortOrder: 0, deleted: false })
+        await account.related('accountTransactions').create({ transactionId: transaction.id,
+          amount: 5, name: 'Mixed report movement', provider: 'NONE', pending: false })
       }
       const before = await report(client, f)
       assert.lengthOf(before, 2)
-      assert.sameMembers(before[0], mixed ? ['date', 'Second transaction account', 'Transaction account'] : ['date', 'Transaction account'])
+      assert.sameMembers(before[0], mixed ? ['date', 'Second transaction account',
+        'Transaction account'] : ['date', 'Transaction account'])
       assert.equal(before[1][0], date.toISODate())
       assert.equal(before[1][before[0].indexOf('Transaction account')], '100.00')
       if (mixed) assert.equal(before[1][before[0].indexOf('Second transaction account')], '50.00')
-      await f.account.related('balanceHistory').create({ date: f.today.minus({ days: 4000 }), balance: 999999 })
+      await f.account.related('balanceHistory').create({ date: f.today.minus({ days: 4000 }),
+        balance: 999999 })
       assert.deepEqual(await report(client, f), before)
     })
 })

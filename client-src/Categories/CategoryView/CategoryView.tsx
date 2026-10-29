@@ -88,9 +88,12 @@ const CategoryView: React.FC = observer(() => {
 
     return (
       <div className={styles.system}>
-        <SystemCategory category={categoryTree.unassignedCat} onCategorySelected={handleCategorySelected} />
-        <SystemCategory category={categoryTree.budget.fundingPoolCat} onCategorySelected={handleCategorySelected} />
-        <SystemCategory category={categoryTree.accountTransferCat} onCategorySelected={handleCategorySelected} />
+        <SystemCategory category={categoryTree.unassignedCat} onCategorySelected={
+          handleCategorySelected} />
+        <SystemCategory category={categoryTree.budget.fundingPoolCat} onCategorySelected={
+          handleCategorySelected} />
+        <SystemCategory category={categoryTree.accountTransferCat} onCategorySelected={
+          handleCategorySelected} />
         <div
           className={rebalancesClassName}
           onClick={handleRebalancesClick}

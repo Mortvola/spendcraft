@@ -86,7 +86,8 @@ test.group('Lucid transaction serialization', () => {
         account: { id: 20, name: 'Checking', institution: { name: 'Bank' } },
       },
     })
-    assert.notAnyProperties(serialized, ['account_transaction', 'sort_order', 'budgetId', 'deleted'])
+    assert.notAnyProperties(serialized, ['account_transaction', 'sort_order', 'budgetId',
+      'deleted'])
     assert.notAnyProperties(serialized.accountTransaction, [
       'id', 'provider', 'providerTransactionId', 'merchantName', 'accountId', 'transactionId',
       'payment_channel', 'account_owner', 'statement_id',
@@ -105,15 +106,18 @@ test.group('Transaction allocation API strings', () => {
       ]
       const row = new Transaction().merge({ id: 1, type, categories })
       const before = globalThis.structuredClone(row.$attributes)
-      for (const response of [row.serialize(), row.serialize(transactionFields), JSON.parse(JSON.stringify(row))]) {
+      for (const response of [row.serialize(), row.serialize(transactionFields), JSON.parse(JSON
+        .stringify(row))]) {
         assert.deepEqual(response.categories, [
-          { ...categories[0], amount: '0.30', baseAmount: '1.00' }, { ...categories[1], amount: '-0.12' }, { ...categories[2], amount: '0.00' },
+          { ...categories[0], amount: '0.30', baseAmount: '1.00' }, { ...categories[1], amount:
+            '-0.12' }, { ...categories[2], amount: '0.00' },
         ])
       }
       assert.deepEqual(row.$attributes, before)
       assert.strictEqual(row.categories[0].amount, 0.1 + 0.2)
     })
-  test('unsafe Category amounts cannot be serialized').with([NaN, Infinity, Number.MAX_SAFE_INTEGER])
+  test('unsafe Category amounts cannot be serialized').with([NaN, Infinity, Number
+    .MAX_SAFE_INTEGER])
     .run(({ assert }, amount) => {
       const row = new Transaction().merge({ categories: [{ categoryId: 1, amount }] })
       assert.throws(() => row.serialize())
@@ -122,7 +126,8 @@ test.group('Transaction allocation API strings', () => {
 
 
 test.group('AccountTransaction amount API strings', () => {
-  test('amount serialization is canonical while model amounts and other fields remain unchanged').with([
+  test('amount serialization is canonical while model amounts and other fields remain unchanged')
+    .with([
     { amount: 12.5, expected: '12.50' }, { amount: -12.5, expected: '-12.50' },
     { amount: 0, expected: '0.00' }, { amount: -0, expected: '0.00' },
     { amount: 0.1 + 0.2, expected: '0.30' }, { amount: 0.125, expected: '0.13' },
@@ -140,15 +145,18 @@ test.group('AccountTransaction amount API strings', () => {
     assert.deepEqual(row.$attributes, before)
   })
   test('hydrated database amounts serialize without making the model dirty', ({ assert }) => {
-    const row = AccountTransaction.$createFromAdapterResult({ id: 1, amount: '-12.34', principle: null })
+    const row = AccountTransaction.$createFromAdapterResult({ id: 1, amount: '-12.34',
+      principle: null })
     assert.isNotNull(row)
     assert.strictEqual(row?.amount, -12.34)
     assert.strictEqual(row?.serialize().amount, '-12.34')
     assert.isNull(row?.serialize().principle)
     assert.isFalse(row?.$isDirty)
   })
-  test('invalid amounts cannot be emitted as valid monetary strings').with([NaN, Infinity, -Infinity, Number.MAX_SAFE_INTEGER])
-    .run(({ assert }, amount) => assert.throws(() => accountTransaction().merge({ amount }).serialize()))
+  test('invalid amounts cannot be emitted as valid monetary strings').with([NaN, Infinity, -
+    Infinity, Number.MAX_SAFE_INTEGER])
+    .run(({ assert }, amount) => assert.throws(() => accountTransaction().merge({ amount })
+      .serialize()))
 })
 
 
@@ -163,8 +171,10 @@ test.group('Transaction tax API strings', () => {
       { type: 'estimated_tax_payments', amount: 0 }]
     const row = new Transaction().merge({ taxes })
     const before = globalThis.structuredClone(row.$attributes)
-    for (const response of [row.serialize(), row.serialize(transactionFields), JSON.parse(JSON.stringify(row))]) {
-      assert.deepEqual(response.taxes, [{ ...taxes[0], amount: expected }, { ...taxes[1], amount: '0.00' }])
+    for (const response of [row.serialize(), row.serialize(transactionFields), JSON.parse(JSON
+      .stringify(row))]) {
+      assert.deepEqual(response.taxes, [{ ...taxes[0], amount: expected }, { ...taxes[1], amount:
+        '0.00' }])
     }
     assert.deepEqual(row.$attributes, before)
     assert.strictEqual(row.taxes[0].amount, amount)
@@ -174,8 +184,10 @@ test.group('Transaction tax API strings', () => {
     assert.isNull(Transaction.$createFromAdapterResult({ taxes: null })?.serialize().taxes)
     assert.notProperty(new Transaction().serialize(), 'taxes')
   })
-  test('invalid tax amounts cannot be emitted').with([NaN, Infinity, -Infinity, Number.MAX_SAFE_INTEGER])
-    .run(({ assert }, amount) => assert.throws(() => new Transaction().merge({ taxes: [{ type: 'x', amount }] }).serialize()))
+  test('invalid tax amounts cannot be emitted').with([NaN, Infinity, -Infinity, Number
+    .MAX_SAFE_INTEGER])
+    .run(({ assert }, amount) => assert.throws(() => new Transaction().merge({ taxes: [{ type: 'x',
+      amount }] }).serialize()))
 })
 
 
@@ -185,7 +197,8 @@ test.group('Account balance API strings', () => {
     { balance: -12.34, plaidBalance: -12.34, expected: '-12.34', plaid: '-12.34' },
     { balance: 0, plaidBalance: null, expected: '0.00', plaid: null },
   ]).run(({ assert }, value) => {
-    const account = new Account().merge({ id: 1, balance: value.balance, plaidBalance: value.plaidBalance, rate: 1.25 })
+    const account = new Account().merge({ id: 1, balance: value.balance, plaidBalance: value
+      .plaidBalance, rate: 1.25 })
     const before = globalThis.structuredClone(account.$attributes)
     for (const response of [account.serialize(), JSON.parse(JSON.stringify(account))]) {
       assert.strictEqual(response.balance, value.expected)
@@ -196,8 +209,10 @@ test.group('Account balance API strings', () => {
     assert.strictEqual(account.balance, value.balance)
     assert.strictEqual(account.plaidBalance, value.plaidBalance)
   })
-  test('database hydration retains numbers and remains clean during response serialization', ({ assert }) => {
-    const account = Account.$createFromAdapterResult({ id: 1, balance: '12.50', plaid_balance: '-0.30' })
+  test('database hydration retains numbers and remains clean during response serialization', ({
+    assert }) => {
+    const account = Account.$createFromAdapterResult({ id: 1, balance: '12.50', plaid_balance:
+      '-0.30' })
     assert.strictEqual(account?.serialize().balance, '12.50')
     assert.strictEqual(account?.serialize().plaidBalance, '-0.30')
     assert.strictEqual(account?.balance, 12.5)
@@ -207,7 +222,8 @@ test.group('Account balance API strings', () => {
 })
 
 
-test('connected-account responses encode balances without changing model values', async ({ assert }) => {
+test('connected-account responses encode balances without changing model values', async ({
+  assert }) => {
   const budget = new Budget()
   const account = new Account().merge({ id: 1, balance: 12.5, plaidBalance: 0.3 })
   account.$extras.pendingBalance = '0.00'
@@ -223,7 +239,8 @@ test('connected-account responses encode balances without changing model values'
     assert.strictEqual(result[0].accounts[0].pendingBalance, '0.00')
     assert.strictEqual(account.balance, 12.5)
     assert.strictEqual(account.plaidBalance, 0.3)
-    for (const [stored, expected] of [[null, '0.00'], ['-37.00', '-37.00'], ['12.50', '12.50']] as const) {
+    for (const [stored, expected] of [[null, '0.00'], ['-37.00', '-37.00'], ['12.50',
+      '12.50']] as const) {
       account.$extras.pendingBalance = stored
       const response = await budget.getConnectedAccounts()
       assert.strictEqual(response[0].accounts[0].pendingBalance, expected)
@@ -246,7 +263,8 @@ test('Category responses encode balances while runtime values remain numeric', (
 })
 
 
-test('funding API serialization preserves percentages, nulls, metadata and numeric models', ({ assert }) => {
+test('funding API serialization preserves percentages, nulls, metadata and numeric models', ({
+  assert }) => {
   const rules = [{ categoryId: 1, amount: -0.125, percentage: false, note: 'keep' },
     { categoryId: 2, amount: 12.75, percentage: true },
     { categoryId: 3, amount: null, percentage: false }, { categoryId: 4, percentage: false }]
@@ -265,26 +283,32 @@ test('funding API serialization preserves percentages, nulls, metadata and numer
   const transaction = new Transaction().merge({ categories })
   const before = globalThis.structuredClone(transaction.$attributes)
   const response = transaction.serialize(transactionFields).categories
-  assert.deepEqual(response[0], { ...before.categories[0], amount: '0.00', baseAmount: '0.30', fundingCategories: expected })
-  assert.deepEqual(response[1], { categoryId: 2, amount: '0.00', baseAmount: null, fundingCategories: null })
+  assert.deepEqual(response[0], { ...before.categories[0], amount: '0.00', baseAmount: '0.30',
+    fundingCategories: expected })
+  assert.deepEqual(response[1], { categoryId: 2, amount: '0.00', baseAmount: null,
+    fundingCategories: null })
   assert.notProperty(response[2], 'baseAmount')
   assert.deepEqual(transaction.$attributes, before)
 })
 
 
-test('auto-assignment responses encode fixed dollars and preserve numeric model amounts', ({ assert }) => {
+test('auto-assignment responses encode fixed dollars and preserve numeric model amounts', ({
+  assert }) => {
   for (const [amount, expected] of [[12.5, '12.50'], [-0.125, '-0.12'], [0.125, '0.13'],
     [1.005, '1.00'], [0.1 + 0.2, '0.30'], [-0, '0.00']] as const) {
     for (const percentage of [false, null, true]) {
-      const rule = AutoAssignmentCategory.$createFromAdapterResult({ id: 1, category_id: 20, amount: String(amount), percentage })
+      const rule = AutoAssignmentCategory.$createFromAdapterResult({ id: 1, category_id: 20,
+        amount: String(amount), percentage })
       if (!rule) throw new Error('Expected hydrated rule')
       const before = globalThis.structuredClone(rule.$attributes)
       assert.strictEqual(rule.amount, amount === 0 ? 0 : amount)
-      assert.strictEqual(rule.serialize().amount, percentage === true ? (amount === 0 ? 0 : amount) : expected)
+      assert.strictEqual(rule.serialize().amount, percentage === true ? (
+        amount === 0 ? 0 : amount) : expected)
       assert.strictEqual(rule.serialize().percentage, percentage)
       const assignment = new AutoAssignment().merge({ id: 2 })
       assignment.$setRelated('categories', [rule])
-      assert.strictEqual(JSON.parse(JSON.stringify(assignment)).categories[0].amount, percentage === true ? (amount === 0 ? 0 : amount) : expected)
+      assert.strictEqual(JSON.parse(JSON.stringify(assignment)).categories[0].amount,
+        percentage === true ? (amount === 0 ? 0 : amount) : expected)
       assert.deepEqual(rule.$attributes, before)
       assert.isFalse(rule.$isDirty)
     }
@@ -292,7 +316,8 @@ test('auto-assignment responses encode fixed dollars and preserve numeric model 
 })
 
 
-test('AccountTransaction principal serialization preserves numeric models and nulls', ({ assert }) => {
+test('AccountTransaction principal serialization preserves numeric models and nulls', ({
+  assert }) => {
   for (const [principle, expected] of [[12.5, '12.50'], [0, '0.00'], [-0.125, '-0.12'],
     [0.125, '0.13'], [1.005, '1.00'], [0.1 + 0.2, '0.30'], [null, null]] as const) {
     const row = accountTransaction().merge({ principle })
@@ -305,7 +330,8 @@ test('AccountTransaction principal serialization preserves numeric models and nu
 })
 
 
-test('Loan responses encode balances while preserving numeric model values and rates', async ({ assert }) => {
+test('Loan responses encode balances while preserving numeric model values and rates', async ({
+  assert }) => {
   for (const [amount, expected] of [[12.5, '12.50'], [-0.125, '-0.12'], [0.125, '0.13'],
     [1.005, '1.00'], [0.1 + 0.2, '0.30'], [-0, '0.00']] as const) {
     const loan = new Loan().merge({ id: 1, balance: amount, startingBalance: amount, rate: 5.125 })
@@ -322,7 +348,8 @@ test('Loan responses encode balances while preserving numeric model values and r
     assert.strictEqual(transaction.serialize().principle, expected)
     assert.strictEqual(transaction.principle, amount)
   }
-  const hydrated = Loan.$createFromAdapterResult({ id: 1, balance: '-12.50', starting_balance: '100.00', rate: 5 })
+  const hydrated = Loan.$createFromAdapterResult({ id: 1, balance: '-12.50', starting_balance:
+    '100.00', rate: 5 })
   if (!hydrated) throw new Error('Expected hydrated Loan')
   assert.strictEqual(hydrated.balance, -12.5)
   assert.strictEqual(hydrated.startingBalance, 100)

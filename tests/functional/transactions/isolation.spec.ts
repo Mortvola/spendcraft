@@ -47,7 +47,8 @@ async function createDomain(label: string) {
       startDate: DateTime.fromISO('2025-02-01'), endDate: DateTime.fromISO('2025-02-28'),
       startingBalance: 90, endingBalance: 100,
     })
-    return { budget, user, institution, account, category, transaction, accountTransaction, statement }
+    return { budget, user, institution, account, category, transaction, accountTransaction,
+      statement }
   })
 }
 
@@ -71,7 +72,8 @@ test.group('Transaction budget isolation', (group) => {
     return Promise.all([
       db.from('transactions').whereIn('application_id', budgets).orderBy('id'),
       db.from('accounts').whereIn('id', accounts).orderBy('id'),
-      db.from('categories').select('categories.*').join('groups', 'groups.id', 'categories.group_id')
+      db.from('categories').select('categories.*').join('groups', 'groups.id',
+        'categories.group_id')
         .whereIn('groups.application_id', budgets).orderBy('categories.id'),
       db.from('account_transactions').whereIn('account_id', accounts).orderBy('id'),
       db.from('statements').whereIn('account_id', accounts).orderBy('id'),
@@ -80,42 +82,51 @@ test.group('Transaction budget isolation', (group) => {
     ])
   }
 
-  test('owner and shared-budget user can read a transaction').with(['owner', 'shared']).run(async ({ client, assert }, actor) => {
+  test('owner and shared-budget user can read a transaction').with(['owner', 'shared']).run(async ({
+    client, assert }, actor) => {
     const user = actor === 'owner' ? fixture.own.user : fixture.shared
-    const response = await client.get(`/api/v1/transaction/${fixture.own.transaction.id}`).accept('json').loginAs(user)
+    const response = await client.get(`/api/v1/transaction/${fixture.own.transaction.id}`).accept(
+      'json').loginAs(user)
     response.assertStatus(200)
     assert.equal(response.body().id, fixture.own.transaction.id)
     assert.equal(response.body().accountTransaction.name, 'own private purchase')
   })
 
-  test('foreign transaction read returns not found without financial data', async ({ client, assert }) => {
-    const response = await client.get(`/api/v1/transaction/${fixture.foreign.transaction.id}`).accept('json').loginAs(fixture.own.user)
+  test('foreign transaction read returns not found without financial data', async ({ client,
+    assert }) => {
+    const response = await client.get(`/api/v1/transaction/${fixture.foreign.transaction.id}`)
+      .accept('json').loginAs(fixture.own.user)
     response.assertStatus(404)
     assert.notInclude(response.text(), 'foreign private purchase')
     assert.notInclude(response.text(), 'foreign private comment')
   })
 
   test('unknown transaction has the same not-found contract', async ({ client }) => {
-    const response = await client.get('/api/v1/transaction/2147483647').accept('json').loginAs(fixture.own.user)
+    const response = await client.get('/api/v1/transaction/2147483647').accept('json').loginAs(
+      fixture.own.user)
     response.assertStatus(404)
   })
 
-  test('owner and shared-budget user can update a transaction').with(['owner', 'shared']).run(async ({ client, assert }, actor) => {
+  test('owner and shared-budget user can update a transaction').with(['owner', 'shared']).run(
+    async ({ client, assert }, actor) => {
     const user = actor === 'owner' ? fixture.own.user : fixture.shared
     const response = await client.patch(`/api/v1/transaction/${fixture.own.transaction.id}`)
-      .json(transactionRequest({ version: 0, name: 'Updated purchase', amount: 15, categories: [{ categoryId: fixture.own.category.id, amount: 15 }] }))
+      .json(transactionRequest({ version: 0, name: 'Updated purchase', amount: 15, categories: [{
+        categoryId: fixture.own.category.id, amount: 15 }] }))
       .accept('json').loginAs(user)
     response.assertStatus(200)
     assert.equal((await Account.findOrFail(fixture.own.account.id)).balance, 105)
     assert.equal((await Category.findOrFail(fixture.own.category.id)).balance, 25)
     assert.equal((await Transaction.findOrFail(fixture.own.transaction.id)).version, 1)
-    assert.equal((await AccountTransaction.findOrFail(fixture.own.accountTransaction.id)).name, 'Updated purchase')
+    assert.equal((await AccountTransaction.findOrFail(fixture.own.accountTransaction.id)).name,
+      'Updated purchase')
   })
 
   test('foreign transaction update leaves both budgets unchanged', async ({ client, assert }) => {
     const before = await state()
     const response = await client.patch(`/api/v1/transaction/${fixture.foreign.transaction.id}`)
-      .json(transactionRequest({ version: 0, name: 'Unauthorized update', amount: 999 })).accept('json').loginAs(fixture.own.user)
+      .json(transactionRequest({ version: 0, name: 'Unauthorized update', amount: 999 })).accept(
+        'json').loginAs(fixture.own.user)
     assert.deepEqual(await state(), before)
     response.assertStatus(404)
   })
@@ -134,23 +145,28 @@ test.group('Transaction budget isolation', (group) => {
   test('foreign statement rejects the whole own-transaction update', async ({ client, assert }) => {
     const before = await state()
     const response = await client.patch(`/api/v1/transaction/${fixture.own.transaction.id}`)
-      .json(transactionRequest({ version: 0, amount: 999, statementId: fixture.foreign.statement.id })).accept('json').loginAs(fixture.own.user)
+      .json(transactionRequest({ version: 0, amount: 999, statementId: fixture.foreign.statement
+        .id })).accept('json').loginAs(fixture.own.user)
     assert.deepEqual(await state(), before)
     response.assertStatus(404)
   })
 
-  test('own statement can be assigned and cleared').with(['owner', 'shared']).run(async ({ client, assert }, actor) => {
+  test('own statement can be assigned and cleared').with(['owner', 'shared']).run(async ({ client,
+    assert }, actor) => {
     const user = actor === 'owner' ? fixture.own.user : fixture.shared
     for (const statementId of [fixture.own.statement.id, null]) {
       const transaction = await Transaction.findOrFail(fixture.own.transaction.id)
       const response = await client.patch(`/api/v1/transaction/${transaction.id}`)
-        .json(transactionRequest({ version: transaction.version, statementId })).accept('json').loginAs(user)
+        .json(transactionRequest({ version: transaction.version, statementId })).accept('json')
+          .loginAs(user)
       response.assertStatus(200)
-      assert.equal((await AccountTransaction.findOrFail(fixture.own.accountTransaction.id)).statementId, statementId)
+      assert.equal((await AccountTransaction.findOrFail(fixture.own.accountTransaction.id))
+        .statementId, statementId)
     }
   })
 
-  test('different-account statement rejects the entire update').with(['owner', 'shared']).run(async ({ client, assert }, actor) => {
+  test('different-account statement rejects the entire update').with(['owner', 'shared']).run(
+    async ({ client, assert }, actor) => {
     const user = actor === 'owner' ? fixture.own.user : fixture.shared
     const otherAccount = await fixture.own.institution.related('accounts').create({
       name: 'Other own account', balance: 200, type: AccountType.Depository,
@@ -164,33 +180,40 @@ test.group('Transaction budget isolation', (group) => {
     await fixture.own.accountTransaction.merge({ statementId: fixture.own.statement.id }).save()
     const before = await state([otherAccount.id])
     const response = await client.patch(`/api/v1/transaction/${fixture.own.transaction.id}`)
-      .json(transactionRequest({ version: 0, statementId: otherStatement.id, amount: 999, name: 'Rejected update',
+      .json(transactionRequest({ version: 0, statementId: otherStatement.id, amount: 999, name:
+        'Rejected update',
         categories: [{ categoryId: fixture.own.category.id, amount: 999 }] }))
       .accept('json').loginAs(user)
-    assert.equal((await AccountTransaction.findOrFail(fixture.own.accountTransaction.id)).statementId,
+    assert.equal((await AccountTransaction.findOrFail(fixture.own.accountTransaction.id))
+      .statementId,
       fixture.own.statement.id)
     assert.deepEqual(await state([otherAccount.id]), before)
     response.assertStatus(422)
   })
 
-  test('nonexistent statement retains not-found behavior without mutation', async ({ client, assert }) => {
+  test('nonexistent statement retains not-found behavior without mutation', async ({ client,
+    assert }) => {
     const before = await state()
     const response = await client.patch(`/api/v1/transaction/${fixture.own.transaction.id}`)
-      .json(transactionRequest({ version: 0, statementId: 2147483647, amount: 999 })).accept('json').loginAs(fixture.own.user)
+      .json(transactionRequest({ version: 0, statementId: 2147483647, amount: 999 })).accept('json')
+        .loginAs(fixture.own.user)
     assert.deepEqual(await state(), before)
     response.assertStatus(404)
   })
 
-  test('owner and shared-budget user can delete a transaction').with(['owner', 'shared']).run(async ({ client, assert }, actor) => {
+  test('owner and shared-budget user can delete a transaction').with(['owner', 'shared']).run(
+    async ({ client, assert }, actor) => {
     const user = actor === 'owner' ? fixture.own.user : fixture.shared
-    const response = await client.delete(`/api/v1/transaction/${fixture.own.transaction.id}`).accept('json').loginAs(user)
+    const response = await client.delete(`/api/v1/transaction/${fixture.own.transaction.id}`)
+      .accept('json').loginAs(user)
     response.assertStatus(200)
     assert.isTrue((await Transaction.findOrFail(fixture.own.transaction.id)).deleted)
     assert.equal((await Account.findOrFail(fixture.own.account.id)).balance, 90)
     assert.equal((await Category.findOrFail(fixture.own.category.id)).balance, 10)
   })
 
-  test('stored foreign categories cannot participate in update or deletion').with(['patch', 'delete']).run(async ({ client, assert }, operation) => {
+  test('stored foreign categories cannot participate in update or deletion').with(['patch',
+    'delete']).run(async ({ client, assert }, operation) => {
     await writeHistoricalTransactionFixture(fixture.own.transaction, { categories: [
       { categoryId: fixture.own.category.id, amount: 5 },
       { categoryId: fixture.foreign.category.id, amount: 5 },
@@ -199,18 +222,22 @@ test.group('Transaction budget isolation', (group) => {
     const before = await state()
     const url = `/api/v1/transaction/${fixture.own.transaction.id}`
     const response = operation === 'patch'
-      ? await client.patch(url).json(transactionRequest({ version: 0, categories: [{ categoryId: fixture.own.category.id, amount: 10 }] })).accept('json').loginAs(fixture.own.user)
+      ? await client.patch(url).json(transactionRequest({ version: 0, categories: [{
+        categoryId: fixture.own.category.id, amount: 10 }] })).accept('json').loginAs(fixture.own
+        .user)
       : await client.delete(url).accept('json').loginAs(fixture.own.user)
     assert.deepEqual(await state(), before)
     response.assertStatus(404)
   })
 
-  test('stored foreign account cannot participate in update or deletion').with(['patch', 'delete']).run(async ({ client, assert }, operation) => {
+  test('stored foreign account cannot participate in update or deletion').with(['patch', 'delete'])
+    .run(async ({ client, assert }, operation) => {
     await fixture.own.accountTransaction.merge({ accountId: fixture.foreign.account.id }).save()
     const before = await state()
     const url = `/api/v1/transaction/${fixture.own.transaction.id}`
     const response = operation === 'patch'
-      ? await client.patch(url).json(transactionRequest({ version: 0, amount: 999 })).accept('json').loginAs(fixture.own.user)
+      ? await client.patch(url).json(transactionRequest({ version: 0, amount: 999 })).accept('json')
+        .loginAs(fixture.own.user)
       : await client.delete(url).accept('json').loginAs(fixture.own.user)
     assert.deepEqual(await state(), before)
     response.assertStatus(404)
@@ -218,14 +245,17 @@ test.group('Transaction budget isolation', (group) => {
 
   test('foreign transaction deletion leaves both budgets unchanged', async ({ client, assert }) => {
     const before = await state()
-    const response = await client.delete(`/api/v1/transaction/${fixture.foreign.transaction.id}`).accept('json').loginAs(fixture.own.user)
+    const response = await client.delete(`/api/v1/transaction/${fixture.foreign.transaction.id}`)
+      .accept('json').loginAs(fixture.own.user)
     assert.deepEqual(await state(), before)
     response.assertStatus(404)
   })
 
-  test('bulk read rejects mixed-budget IDs without disclosing records', async ({ client, assert }) => {
+  test('bulk read rejects mixed-budget IDs without disclosing records', async ({ client,
+    assert }) => {
     const response = await client.get('/api/v1/transactions')
-      .qs({ t: [fixture.own.transaction.id, fixture.foreign.transaction.id] }).accept('json').loginAs(fixture.shared)
+      .qs({ t: [fixture.own.transaction.id, fixture.foreign.transaction.id] }).accept('json')
+        .loginAs(fixture.shared)
     response.assertStatus(404)
     assert.notInclude(response.text(), 'foreign private purchase')
   })
@@ -235,21 +265,27 @@ test.group('Transaction budget isolation', (group) => {
       .qs({ t: [fixture.own.transaction.id] }).accept('json').loginAs(fixture.shared)
     response.assertStatus(200)
     assert.strictEqual(response.body().data.balance, '0.00')
-    assert.deepEqual(response.body().data.transactions.map((row: { id: number }) => row.id), [fixture.own.transaction.id])
+    assert.deepEqual(response.body().data.transactions.map((row: { id: number }) => row.id), [
+      fixture.own.transaction.id])
   })
 
   test('foreign dedup leaves both budgets unchanged', async ({ client, assert }) => {
-    await fixture.foreign.transaction.merge({ duplicateOfTransactionId: fixture.foreign.transaction.id }).save()
+    await fixture.foreign.transaction.merge({ duplicateOfTransactionId: fixture.foreign.transaction
+      .id }).save()
     const before = await state()
-    const response = await client.post(`/api/v1/transaction/${fixture.foreign.transaction.id}/dedup`).accept('json').loginAs(fixture.own.user)
+    const response = await client.post(`/api/v1/transaction/${fixture.foreign.transaction
+      .id}/dedup`).accept('json').loginAs(fixture.own.user)
     assert.deepEqual(await state(), before)
     response.assertStatus(404)
   })
 
   test('shared-budget user can clear own duplicate marker', async ({ client, assert }) => {
-    await fixture.own.transaction.merge({ duplicateOfTransactionId: fixture.own.transaction.id }).save()
-    const response = await client.post(`/api/v1/transaction/${fixture.own.transaction.id}/dedup`).accept('json').loginAs(fixture.shared)
+    await fixture.own.transaction.merge({ duplicateOfTransactionId: fixture.own.transaction.id })
+      .save()
+    const response = await client.post(`/api/v1/transaction/${fixture.own.transaction.id}/dedup`)
+      .accept('json').loginAs(fixture.shared)
     response.assertStatus(200)
-    assert.isNull((await Transaction.findOrFail(fixture.own.transaction.id)).duplicateOfTransactionId)
+    assert.isNull((await Transaction.findOrFail(fixture.own.transaction.id))
+      .duplicateOfTransactionId)
   })
 })

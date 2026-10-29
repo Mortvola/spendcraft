@@ -9,7 +9,8 @@ import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
 
 let sequence = 0
 function details() {
-  return { username: `rollback-order-${++sequence}`, email: `rollback-order-${sequence}@example.com`, password: 'testPassw0rd' }
+  return { username: `rollback-order-${++sequence}`,
+    email: `rollback-order-${sequence}@example.com`, password: 'testPassw0rd' }
 }
 function signal() {
   let release: () => void = () => { throw new Error('Signal not initialized') }
@@ -17,11 +18,13 @@ function signal() {
   return { promise, release }
 }
 async function persisted() {
-  return Promise.all(['applications', 'users', 'groups', 'categories'].map((table) => db.from(table).orderBy('id')))
+  return Promise.all(['applications', 'users', 'groups', 'categories'].map((table) => db.from(table)
+    .orderBy('id')))
 }
 
 test.group('UserService rollback completion ordering', () => {
-  test('successful creation completes its transaction through commit', async ({ assert, cleanup }) => {
+  test('successful creation completes its transaction through commit', async ({ assert,
+    cleanup }) => {
     mail.fake()
     cleanup(() => mail.restore())
     const captured: TransactionClientContract[] = []
@@ -39,11 +42,14 @@ test.group('UserService rollback completion ordering', () => {
   })
 
   for (const gated of [false, true]) {
-    test(gated ? 'service waits for gated rollback before rejecting' : 'failure completes rollback before propagating the original error', async ({ assert, cleanup }) => {
+    test(gated ? 'service waits for gated rollback before rejecting' :
+      'failure completes rollback before propagating the original error', async ({ assert,
+      cleanup }) => {
       const before = await persisted()
       const failure = new Error('Injected failure after budget initialization')
       const initialize = Budget.prototype.initialize
-      const failureInjection = mock.method(Budget.prototype, 'initialize', async function (this: Budget) {
+      const failureInjection = mock.method(Budget.prototype, 'initialize', async function (
+        this: Budget) {
         await initialize.call(this)
         throw failure
       })
@@ -73,8 +79,10 @@ test.group('UserService rollback completion ordering', () => {
       // Handle rejection immediately; no unhandled rejection or timing-based observation.
       let settled = false
       const outcome = new UserService().create(details()).then(
-        () => { settled = true; return { rejected: false, error: undefined, completed: captured[0]?.isCompleted } },
-        (error: unknown) => { settled = true; return { rejected: true, error, completed: captured[0]?.isCompleted } },
+        () => { settled = true; return { rejected: false, error: undefined, completed: captured[0]
+          ?.isCompleted } },
+        (error: unknown) => { settled = true; return { rejected: true, error, completed: captured[0]
+          ?.isCompleted } },
       )
       try {
         await started.promise

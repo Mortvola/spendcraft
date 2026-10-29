@@ -98,7 +98,8 @@ const GroupDialog: React.FC<PropsType & ModalProps> = ({
 
     options.push({ value: root.id, label: root.name, level: 0 })
 
-    let stack: { group: (GroupInterface | CategoryInterface), level: number }[] = root.children.map((child) => ({
+    let stack: { group: (GroupInterface | CategoryInterface), level: number }[] = root.children.map(
+      (child) => ({
       group: child,
       level: 1,
     }))
@@ -161,7 +162,8 @@ const GroupDialog: React.FC<PropsType & ModalProps> = ({
 
                 const Option = (props: OptionProps<OptionType>) => (
                   <components.Option {...props}>
-                    <div style={{ color: 'black', paddingLeft: props.data.level * 14, textWrap: 'nowrap' }}>{props.data.label}</div>
+                    <div style={{ color: 'black', paddingLeft: props.data.level * 14, textWrap:
+                      'nowrap' }}>{props.data.label}</div>
                   </components.Option>
                 )
 

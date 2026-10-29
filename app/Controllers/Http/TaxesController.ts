@@ -3,7 +3,8 @@ import { validateSubmittedTaxForecast } from '#services/taxMonetaryCodec'
 import { replaceTaxForecast } from '#services/taxMonetaryStorage'
 // import type { HttpContext } from '@adonisjs/core/http'
 
-import { ApiResponse, DecimalMoneyString, TaxActualProps, TaxCategoriesProps, TaxProps } from "#common/ResponseTypes";
+import { ApiResponse, DecimalMoneyString, TaxActualProps, TaxCategoriesProps, TaxProps } from
+  "#common/ResponseTypes";
 import Statement from "#models/Statement";
 import Tax from "#models/Tax";
 import TaxCategory from "#models/TaxCategory";
@@ -56,8 +57,10 @@ export default class TaxesController {
       })
       .select(
         db.raw("EXTRACT(MONTH from end_date)::integer as month"),
-        db.raw("sum(COALESCE((data->>'longTermCapitalGains')::real, 0)) as \"longTermCapitalGains\""),
-        db.raw("sum(COALESCE((data->>'shortTermCapitalGains')::real, 0)) as \"shortTermCapitalGains\""),
+        db.raw(
+          "sum(COALESCE((data->>'longTermCapitalGains')::real, 0)) as \"longTermCapitalGains\""),
+        db.raw(
+          "sum(COALESCE((data->>'shortTermCapitalGains')::real, 0)) as \"shortTermCapitalGains\""),
         db.raw("sum(COALESCE((data->>'dividends')::real, 0)) as \"ordinaryDividends\""),
         db.raw("sum(COALESCE((data->>'taxableInterest')::real, 0)) as \"taxableInterest\""),
       )
@@ -73,7 +76,8 @@ export default class TaxesController {
         db.raw("sum(COALESCE((transTaxes.amount), 0)) as \"tax_amount\"")
       )
       .joinRaw(
-        'cross join lateral jsonb_to_recordset(transactions.taxes) as transTaxes(type varchar, amount real)'
+        'cross join lateral jsonb_to_recordset(transactions.taxes) as transTaxes(type varchar, \
+amount real)'
       )
       .whereBetween('date', [`${year}-01-01`, `${year}-12-31`])
       .groupByRaw('EXTRACT(MONTH from date)')
@@ -98,8 +102,10 @@ export default class TaxesController {
           month: i,
           taxableInterest: encodeMonetaryAmount(fromStatements.$extras.taxableInterest ?? 0),
           ordinaryDividends: encodeMonetaryAmount(fromStatements.$extras.ordinaryDividends ?? 0),
-          shortTermCapitalGains: encodeMonetaryAmount(fromStatements.$extras.shortTermCapitalGains ?? 0),
-          longTermCapitalGains: encodeMonetaryAmount(fromStatements.$extras.longTermCapitalGains ?? 0),
+          shortTermCapitalGains: encodeMonetaryAmount(fromStatements.$extras
+            .shortTermCapitalGains ?? 0),
+          longTermCapitalGains: encodeMonetaryAmount(fromStatements.$extras.longTermCapitalGains ??
+            0),
           taxes: {},
         }
       }

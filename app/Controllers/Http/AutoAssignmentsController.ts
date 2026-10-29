@@ -72,7 +72,8 @@ export default class AutoAssignmentsController {
         .forUpdate()
         .firstOrFail();
 
-      await authorizeCategories(budget.id, requestData.categories.map((category) => category.categoryId), { client: trx });
+      await authorizeCategories(budget.id, requestData.categories.map((category) => category
+        .categoryId), { client: trx });
 
       const autoAssignment = await budget.related('autoAssignment')
         .create({
@@ -128,8 +129,10 @@ export default class AutoAssignmentsController {
       const autoAssignment = await AutoAssignment.query({ client: trx })
         .where('budgetId', user.budgetId).where('id', id).firstOrFail();
 
-      await authorizeCategories(user.budgetId, requestData.categories.map((category) => category.categoryId), { client: trx });
-      for (const childId of new Set(requestData.categories.filter((category) => category.id >= 0).map((category) => category.id))) {
+      await authorizeCategories(user.budgetId, requestData.categories.map((category) => category
+        .categoryId), { client: trx });
+      for (const childId of new Set(requestData.categories.filter((category) => category.id >= 0)
+        .map((category) => category.id))) {
         await autoAssignment.related('categories').query().where('id', childId).firstOrFail();
       }
 
@@ -143,7 +146,8 @@ export default class AutoAssignmentsController {
       for (const category of requestData.categories) {
         if (category.id >= 0) {
            
-          const autoAssignCategory = await autoAssignment.related('categories').query().where('id', category.id).firstOrFail()
+          const autoAssignCategory = await autoAssignment.related('categories').query().where('id',
+            category.id).firstOrFail()
 
            
           await autoAssignCategory.merge({

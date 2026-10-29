@@ -1,5 +1,6 @@
 export interface FundingPercentageIssue {
-  rule: 'fundingPercentageNumber' | 'fundingPercentageNonnegative' | 'fundingPercentagePrecision' | 'fundingPercentageTotal'
+  rule: 'fundingPercentageNumber' | 'fundingPercentageNonnegative' | 'fundingPercentagePrecision' |
+    'fundingPercentageTotal'
   message: string
   index?: number
 }
@@ -9,13 +10,16 @@ export function fundingPercentageUnits(value: unknown): bigint | FundingPercenta
   const number = typeof value === 'number' ? value
     : typeof value === 'string' && value.trim() !== '' ? Number(value) : NaN
   if (!Number.isFinite(number)) {
-    return { rule: 'fundingPercentageNumber', message: 'Funding percentages must be finite numbers.' }
+    return { rule: 'fundingPercentageNumber', message:
+      'Funding percentages must be finite numbers.' }
   }
   if (number < 0) {
-    return { rule: 'fundingPercentageNonnegative', message: 'Funding percentages must be nonnegative.' }
+    return { rule: 'fundingPercentageNonnegative', message:
+      'Funding percentages must be nonnegative.' }
   }
   const units = Math.round(number * 100)
-  if (!Number.isSafeInteger(units)) return { rule: 'fundingPercentagePrecision', message: 'Unsafe funding percentage precision.' }
+  if (!Number.isSafeInteger(units)) return { rule: 'fundingPercentagePrecision', message:
+    'Unsafe funding percentage precision.' }
   return BigInt(units)
 }
 
@@ -32,7 +36,8 @@ export function validateFundingPercentages(
     total += units
   }
   if (hasPercentage && total !== 10000n) {
-    return { rule: 'fundingPercentageTotal', message: 'Funding percentages must total exactly 100%.' }
+    return { rule: 'fundingPercentageTotal', message:
+      'Funding percentages must total exactly 100%.' }
   }
   return undefined
 }

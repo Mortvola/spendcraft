@@ -14,7 +14,8 @@ const commonValues = {
   REDIS_CONNECTION: 'local', REDIS_HOST: '127.0.0.1', REDIS_PORT: '6379',
   ACCESS_TOKEN_EXPIRE: '10', REFRESH_TOKEN_EXPIRE: '1440',
 }
-const metadata = Object.entries(commonValues).map(([name, value]) => ({ name, type: 'value', value }))
+const metadata = Object.entries(commonValues).map(([name, value]) => ({ name, type: 'value',
+  value }))
 
 test.group('Installer consolidated automatic values (temporary files only)', (group) => {
   let root
@@ -27,14 +28,19 @@ test.group('Installer consolidated automatic values (temporary files only)', (gr
     await mkdir(join(release, 'installer'), { recursive: true })
     if (contents !== null) await writeFile(join(root, 'spendcraft-env'), contents, { mode: 0o600 })
     await symlink('../spendcraft-env', join(release, '.env'))
-    if (requirements !== null) await writeFile(join(release, 'installer/installer.env.required.json'), JSON.stringify(requirements))
-    return () => spawnSync(process.execPath, [resolve('installer/configureInstallerEnv.mjs'), '--target', 'staging', '--env-file', '.env', '--requirements', 'installer/installer.env.required.json'], {
+    if (requirements !== null) await writeFile(join(release,
+      'installer/installer.env.required.json'), JSON.stringify(requirements))
+    return () => spawnSync(process.execPath, [resolve('installer/configureInstallerEnv.mjs'),
+      '--target', 'staging', '--env-file', '.env', '--requirements',
+      'installer/installer.env.required.json'], {
       cwd: release, env: { PATH: process.env.PATH }, encoding: 'utf8',
     })
   }
-  test('release automatic values retain defaults and environment-specific webhooks', async ({ assert }) => {
+  test('release automatic values retain defaults and environment-specific webhooks', async ({
+    assert }) => {
     const required = JSON.parse(await readFile('installer/installer.env.required.json', 'utf8'))
-    const releaseValues = { ...commonValues, PLAID_WEBHOOK: { production: 'https://spendcraft.app/wh', staging: 'https://staging.spendcraft.app/wh' } }
+    const releaseValues = { ...commonValues, PLAID_WEBHOOK: { production:
+      'https://spendcraft.app/wh', staging: 'https://staging.spendcraft.app/wh' } }
     for (const [name, value] of Object.entries(releaseValues)) {
       const matches = required.filter((entry) => entry.name === name)
       assert.lengthOf(matches, 1)
@@ -49,19 +55,24 @@ test.group('Installer consolidated automatic values (temporary files only)', (gr
     const result = run()
     assert.equal(result.status, 0, result.stderr)
     const env = parseEnv(await readFile(join(root, 'spendcraft-env'), 'utf8'))
-    for (const [name, value] of Object.entries(releaseValues)) assert.equal(env[name], typeof value === 'object' ? value.staging : value)
+    for (const [name, value] of Object.entries(releaseValues)) assert.equal(env[name],
+      typeof value === 'object' ? value.staging : value)
     for (const entry of required.filter((item) => item.type === 'value')) {
-      assert.equal(env[entry.name], String(typeof entry.value === 'object' ? entry.value.staging : entry.value))
+      assert.equal(env[entry.name], String(typeof entry.value === 'object' ? entry.value
+        .staging : entry.value))
     }
   })
-  test('adds automatic values without a terminal, preserves secrets, symlink and permissions, and is idempotent', async ({ assert }) => {
+  test(
+    'adds automatic values without a terminal, preserves secrets, symlink and permissions, and is \
+idempotent', async ({ assert }) => {
     const original = '# Keep this comment\nAPP_KEY="private-key"\nPG_PASSWORD="private-password"'
     const run = await fixture(original)
     const result = run()
     assert.equal(result.status, 0, result.stderr)
     const contents = await readFile(join(root, 'spendcraft-env'), 'utf8')
     assert.isTrue(contents.startsWith(original + '\n'))
-    assert.deepEqual(parseEnv(contents), { APP_KEY: 'private-key', PG_PASSWORD: 'private-password', ...commonValues })
+    assert.deepEqual(parseEnv(contents), { APP_KEY: 'private-key', PG_PASSWORD: 'private-password',
+      ...commonValues })
     assert.isTrue((await lstat(join(root, 'spendcraft.new/.env'))).isSymbolicLink())
     assert.equal((await stat(join(root, 'spendcraft-env'))).mode & 0o777, 0o600)
     assert.notInclude(result.stdout + result.stderr, 'private-key')
@@ -80,11 +91,15 @@ test.group('Installer consolidated automatic values (temporary files only)', (gr
     assert.include(result.stderr, 'configured value is not allowed for staging')
     assert.equal(await readFile(join(root, 'spendcraft-env'), 'utf8'), original)
   })
-  test('fills empty placeholders and preserves exported matching assignments and CRLF', async ({ assert }) => {
-    const original = '# HASH_DRIVER=argon\r\nexport SESSION_DRIVER="cookie"\r\nHASH_DRIVER=\r\nPLAID_WEBHOOK=\r\n'
-    const run = await fixture(original, metadata.filter((entry) => ['SESSION_DRIVER', 'HASH_DRIVER', 'PLAID_WEBHOOK'].includes(entry.name)))
+  test('fills empty placeholders and preserves exported matching assignments and CRLF', async ({
+    assert }) => {
+    const original =
+      '# HASH_DRIVER=argon\r\nexport SESSION_DRIVER="cookie"\r\nHASH_DRIVER=\r\nPLAID_WEBHOOK=\r\n'
+    const run = await fixture(original, metadata.filter((entry) => ['SESSION_DRIVER', 'HASH_DRIVER',
+      'PLAID_WEBHOOK'].includes(entry.name)))
     assert.equal(run().status, 0)
-    assert.equal(await readFile(join(root, 'spendcraft-env'), 'utf8'), original + 'HASH_DRIVER="bcrypt"\r\n')
+    assert.equal(await readFile(join(root, 'spendcraft-env'), 'utf8'), original +
+      'HASH_DRIVER="bcrypt"\r\n')
   })
   test('missing target file fails without creating a new environment', async ({ assert }) => {
     await fixture(null)
@@ -103,7 +118,9 @@ test.group('Installer consolidated automatic values (temporary files only)', (gr
     assert.equal(run().status, 1)
     assert.equal(await readFile(join(root, 'spendcraft-env'), 'utf8'), original)
   })
-  test('installer packages only consolidated metadata and initializes configuration before application commands', async ({ assert }) => {
+  test(
+    'installer packages only consolidated metadata and initializes configuration before \
+application commands', async ({ assert }) => {
     await assert.rejects(() => readFile('installer.env.defaults'))
     const config = await readFile('adonisrc.ts', 'utf8')
     assert.include(config, "pattern: 'installer/installer.env.required.json'")

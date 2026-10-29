@@ -1,4 +1,5 @@
-import { decodePayeeReport, type PayeeCentsReportRow, decodeNetworthReport, type NetworthCentsReport } from '../monetary';
+import { decodePayeeReport, type PayeeCentsReportRow, decodeNetworthReport,
+  type NetworthCentsReport } from '../monetary';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 

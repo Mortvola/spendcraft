@@ -2,14 +2,17 @@ import { validateTransactionSplits } from '../../app/validation/transactionSplit
 import { test } from '@japa/runner'
 import { BaseModel } from '@adonisjs/lucid/orm'
 import { monetaryAmountCents, checkedCentSum, encodeCategoryAllocations, decodeCategoryAllocations,
-  encodeMonetaryAmount, validateCategoryConservation, categoryNonzeroAllocationSql } from '../../app/services/categoryAmountCodec.ts'
+  encodeMonetaryAmount, validateCategoryConservation, categoryNonzeroAllocationSql } from
+    '../../app/services/categoryAmountCodec.ts'
 import { bindResolvedCategoryStorage, prepareCategoryStorage, stageCategoryStorage,
-  finishCategoryStorageSave, requestCategoryStorage } from '../../app/services/categoryStorageBinding.ts'
+  finishCategoryStorageSave, requestCategoryStorage } from
+    '../../app/services/categoryStorageBinding.ts'
 
 const split = (amount, categoryId = 1) => ({ categoryId, amount })
 class Sample extends BaseModel {}
 Sample.boot()
-Sample.$addColumn('categories', { prepare: (value, _key, model) => prepareCategoryStorage(value, model) })
+Sample.$addColumn('categories', { prepare: (value, _key, model) => prepareCategoryStorage(value,
+  model) })
 Sample.$addColumn('comment', {})
 function hydrated(categories) {
   const model = new Sample()
@@ -26,7 +29,8 @@ test.group('Category decimal-string production boundary without DB', () => {
     [-0, '0.00'], [0.005, '0.01'], [-0.005, '0.00'], [-12.345, '-12.34'],
   ]).run(({ assert }, [value, expected]) => { assert.equal(encodeMonetaryAmount(value), expected) })
   test('rejects invalid values rather than zero coercion').with([
-    null, undefined, NaN, Infinity, -Infinity, {}, [], true, '', '1.2', '1.005', ' 1.00', '1e2', '-0.00', '01.00', 'bad', Number.MAX_VALUE,
+    null, undefined, NaN, Infinity, -Infinity, {}, [], true, '', '1.2', '1.005', ' 1.00', '1e2',
+      '-0.00', '01.00', 'bad', Number.MAX_VALUE,
   ]).run(({ assert }, value) => { assert.throws(() => encodeMonetaryAmount(value)) })
   test('safe integer and formatting overflow are checked', ({ assert }) => {
     assert.throws(() => encodeMonetaryAmount(Number.MAX_SAFE_INTEGER))
@@ -34,17 +38,21 @@ test.group('Category decimal-string production boundary without DB', () => {
     assert.throws(() => monetaryAmountCents('90071992547409.92'))
     assert.throws(() => checkedCentSum([Number.MAX_SAFE_INTEGER, 1, -1]))
   })
-  test('canonical reads preserve numeric runtime values, metadata, order and duplicates', ({ assert }) => {
-    const original = [split('0.30'), { ...split('1.23'), comment: 'keep', baseAmount: 1.005, extra: { value: 4 } }, split('-2.00')]
+  test('canonical reads preserve numeric runtime values, metadata, order and duplicates', ({
+    assert }) => {
+    const original = [split('0.30'), { ...split('1.23'), comment: 'keep', baseAmount: 1.005,
+      extra: { value: 4 } }, split('-2.00')]
     const before = globalThis.structuredClone(original)
     const decoded = decodeCategoryAllocations(original)
     assert.deepEqual(decoded.map((row) => row.amount), [0.3, 1.23, -2])
     assert.deepEqual(original, before)
-    assert.deepEqual(encodeCategoryAllocations(decoded), [split('0.30'), { ...original[1] }, split('-2.00')])
+    assert.deepEqual(encodeCategoryAllocations(decoded), [split('0.30'), { ...original[1] }, split(
+      '-2.00')])
     assert.deepEqual(encodeCategoryAllocations([]), [])
     assert.throws(() => encodeCategoryAllocations([{ categoryId: 1 }]))
   })
-  test('ordinary and opening use signed individually rounded cents').with([0, 4, 5]).run(({ assert }, type) => {
+  test('ordinary and opening use signed individually rounded cents').with([0, 4, 5]).run(({
+    assert }, type) => {
     validateCategoryConservation(type, [split(-0.1), split(-0.2)], -0.3)
     validateCategoryConservation(type, [split(-1.005)], -1)
     assert.throws(() => validateCategoryConservation(type, [split(0.005), split(0.005)], 0.01))
@@ -54,11 +62,13 @@ test.group('Category decimal-string production boundary without DB', () => {
   test('funding requires the scoped Pool and opposite-signed net total', ({ assert }) => {
     validateCategoryConservation(2, [split(1), split(2), split(-3, 99)], undefined, 99)
     assert.throws(() => validateCategoryConservation(2, [split(1), split(-1, 2)], undefined, 99))
-    assert.throws(() => validateCategoryConservation(2, [split(1), split(-0.99, 99)], undefined, 99))
+    assert.throws(() => validateCategoryConservation(2, [split(1), split(-0.99, 99)], undefined,
+      99))
     validateCategoryConservation(3, [split(1), split(2), split(-3)])
     assert.throws(() => validateCategoryConservation(3, [split(0.01)]))
   })
-  test('real Lucid dirty tracking stays clean on canonical read and metadata-only save', ({ assert }) => {
+  test('real Lucid dirty tracking stays clean on canonical read and metadata-only save', ({
+    assert }) => {
     const model = hydrated([split('1.00'), split('0.30')])
     assert.deepEqual(model.categories.map((row) => row.amount), [1, 0.3])
     assert.isFalse(model.$isDirty)
@@ -68,7 +78,8 @@ test.group('Category decimal-string production boundary without DB', () => {
     finishCategoryStorageSave(model)
     assert.equal(model.categories[1].amount, 0.3)
   })
-  test('real Lucid nested writes encode strings and leave numeric API/clean original', ({ assert }) => {
+  test('real Lucid nested writes encode strings and leave numeric API/clean original', ({
+    assert }) => {
     const model = hydrated([split('1.00')])
     model.categories[0].amount = 12.345
     stageCategoryStorage(model)
@@ -84,30 +95,39 @@ test.group('Category decimal-string production boundary without DB', () => {
       bindResolvedCategoryStorage(dirty)
     }, 'Bind Category storage before allocation mutation')
   })
-  test('unbound deprecated model preparation is unchanged; deleted mismatches are not globally validated', ({ assert }) => {
+  test(
+    'unbound deprecated model preparation is unchanged; deleted mismatches are not globally \
+validated', ({ assert }) => {
     const model = new Sample().merge({ categories: [split(1.005)] })
     requestCategoryStorage(model, false)
-    assert.deepEqual(JSON.parse(model.prepareForAdapter(model.$attributes).categories), [split(1.005)])
+    assert.deepEqual(JSON.parse(model.prepareForAdapter(model.$attributes).categories), [split(
+      1.005)])
     const empty = hydrated([])
     empty.comment = 'metadata on deleted history'
     stageCategoryStorage(empty)
     assert.notProperty(empty.prepareForAdapter(empty.$dirty), 'categories')
   })
-  test('membership SQL casts both JSON representations without row fan-out or zero fallback', ({ assert }) => {
+  test('membership SQL casts both JSON representations without row fan-out or zero fallback', ({
+    assert }) => {
     assert.include(categoryNonzeroAllocationSql, 'EXISTS')
-    assert.include(categoryNonzeroAllocationSql, "COALESCE(allocation.value->>'amount', 'invalid')::numeric <> 0")
+    assert.include(categoryNonzeroAllocationSql,
+      "COALESCE(allocation.value->>'amount', 'invalid')::numeric <> 0")
     assert.notInclude(categoryNonzeroAllocationSql, 'transaction_categories')
   })
 })
 
-// Hooks' scope resolution is exercised with inert SQL collaborators, not another scope implementation.
-test('actual scope resolver batches active rows and leaves Loan/unsupported ownership untouched', async ({ assert }) => {
+// Hooks' scope resolution is exercised with inert SQL collaborators, not another scope
+// implementation.
+test('actual scope resolver batches active rows and leaves Loan/unsupported ownership untouched',
+  async ({ assert }) => {
   const { readFile } = await import('node:fs/promises')
   const { runInNewContext } = await import('node:vm')
   const { default: ts } = await import('typescript')
   const { bound, requested } = await import('../../app/services/categoryStorageBinding.ts')
-  const source = ts.createSourceFile('scope.ts', await readFile('app/services/transactionCategoryStorage.ts', 'utf8'), ts.ScriptTarget.Latest, true)
-  const member = source.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === 'bindCategoryStorage')
+  const source = ts.createSourceFile('scope.ts', await readFile(
+    'app/services/transactionCategoryStorage.ts', 'utf8'), ts.ScriptTarget.Latest, true)
+  const member = source.statements.find((node) => ts.isFunctionDeclaration(node) && node.name
+    ?.text === 'bindCategoryStorage')
   const owner = {}
   const queries = []
   function row(id, type) {
@@ -117,10 +137,12 @@ test('actual scope resolver batches active rows and leaves Loan/unsupported owne
       get categories() { return attributes.categories } }
   }
   const rows = [row(1, 0), row(2, 2), row(3, 4), row(4, 5), row(5, 0), row(6, 3)]
-  const resolver = runInNewContext(ts.transpileModule(`(${member.getText(source).replace(/^export\s+/, '')})`, {
+  const resolver = runInNewContext(ts.transpileModule(`(${member.getText(source).replace(
+    /^export\s+/, '')})`, {
     compilerOptions: { target: ts.ScriptTarget.ES2022 },
   }).outputText, {
-    bound, requested, excludeCategoryStorage: () => undefined, supported: [0, 2, 3, 4, 5], bindResolvedCategoryStorage,
+    bound, requested, excludeCategoryStorage: () => undefined, supported: [0, 2, 3, 4, 5],
+      bindResolvedCategoryStorage,
     db: { from(table) {
       queries.push(table)
       return { if(value, callback) { if (value) callback(this); return this },
@@ -136,7 +158,8 @@ test('actual scope resolver batches active rows and leaves Loan/unsupported owne
     } },
   })
   await resolver(rows)
-  assert.deepEqual(rows.map((entry) => entry.categories[0].amount), [1, 1, 1, '1.00', '1.00', '1.00'])
+  assert.deepEqual(rows.map((entry) => entry.categories[0].amount), [1, 1, 1, '1.00', '1.00',
+    '1.00'])
   assert.deepEqual(queries, ['account_transactions as at', 'categories'])
   await resolver(rows.slice(0, 3))
   assert.lengthOf(queries, 2)
@@ -147,7 +170,8 @@ test('actual scope resolver batches active rows and leaves Loan/unsupported owne
   assert.equal(newOpening.categories[0].amount, 1)
 })
 
-test('active validation and canonical numeric posting preserve the approved negative half tie', async ({ assert }) => {
+test('active validation and canonical numeric posting preserve the approved negative half tie',
+  async ({ assert }) => {
   const { canonicalCategoryAllocations } = await import('../../app/services/categoryAmountCodec.ts')
   const input = [split(-1.125)]
   validateTransactionSplits(-1.12, input, undefined, true)
@@ -157,14 +181,18 @@ test('active validation and canonical numeric posting preserve the approved nega
   assert.throws(() => validateTransactionSplits(-1.12, input))
 })
 
-test('actual active-new save guard rejects a missing owning transaction before scope queries', async ({ assert }) => {
+test('actual active-new save guard rejects a missing owning transaction before scope queries',
+  async ({ assert }) => {
   const { readFile } = await import('node:fs/promises')
   const { runInNewContext } = await import('node:vm')
   const { default: ts } = await import('typescript')
   const { requested } = await import('../../app/services/categoryStorageBinding.ts')
-  const source = ts.createSourceFile('guard.ts', await readFile('app/services/transactionCategoryStorage.ts', 'utf8'), ts.ScriptTarget.Latest, true)
-  const member = source.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === 'prepareNewCategoryStorage')
-  const run = runInNewContext(ts.transpileModule(`(${member.getText(source).replace(/^export\s+/, '')})`, {
+  const source = ts.createSourceFile('guard.ts', await readFile(
+    'app/services/transactionCategoryStorage.ts', 'utf8'), ts.ScriptTarget.Latest, true)
+  const member = source.statements.find((node) => ts.isFunctionDeclaration(node) && node.name
+    ?.text === 'prepareNewCategoryStorage')
+  const run = runInNewContext(ts.transpileModule(`(${member.getText(source).replace(/^export\s+/,
+    '')})`, {
     compilerOptions: { target: ts.ScriptTarget.ES2022 },
   }).outputText, { requested })
   const target = requestCategoryStorage(new Sample().merge({ categories: [split(1)] }))

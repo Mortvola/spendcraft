@@ -37,7 +37,8 @@ class EnqueueQueue extends BullMQ {
 
 async function financialState() {
   const result: Record<string, unknown[]> = {}
-  for (const table of ['transactions', 'account_transactions', 'accounts', 'categories', 'statements', 'transaction_logs', 'institutions']) {
+  for (const table of ['transactions', 'account_transactions', 'accounts', 'categories',
+    'statements', 'transaction_logs', 'institutions']) {
     result[table] = await db.from(table).orderBy('id')
   }
   return result
@@ -50,11 +51,14 @@ test.group('Webhook durable enqueue acknowledgment', (group) => {
   let syncCalls: number
   let errors: ReturnType<typeof mock.method<typeof logger, 'error'>>
   let warnings: ReturnType<typeof mock.method<typeof logger, 'warn'>>
-  const syncBody = { webhook_type: 'TRANSACTIONS', webhook_code: 'SYNC_UPDATES_AVAILABLE', item_id: 'fake-item', environment: 'sandbox', initial_update_complete: true, historical_update_complete: true }
+  const syncBody = { webhook_type: 'TRANSACTIONS', webhook_code: 'SYNC_UPDATES_AVAILABLE', item_id:
+    'fake-item', environment: 'sandbox', initial_update_complete: true,
+    historical_update_complete: true }
 
   group.each.setup(async () => {
     const connection = app.config.get<ConnectionOptions>('bullmq')
-    if (!('host' in connection) || !connection.host || !['localhost', '127.0.0.1'].includes(connection.host)) throw new Error('Enqueue tests require local Redis')
+    if (!('host' in connection) || !connection.host || !['localhost', '127.0.0.1'].includes(
+      connection.host)) throw new Error('Enqueue tests require local Redis')
     bull = new EnqueueQueue(connection)
     keys = await generateKeyPair('RS256', { modulusLength: 2048 })
     kid = randomUUID()
@@ -62,7 +66,9 @@ test.group('Webhook durable enqueue acknowledgment', (group) => {
     syncCalls = 0
     class PlaidFake extends PlaidWrapper {
       async getWebhookVerificationKey(): Promise<WebhookVerificationKeyGetResponse> {
-        return { key: { ...jwk, alg: 'RS256', crv: '', kid, kty: jwk.kty ?? '', use: 'sig', x: '', y: '', created_at: Math.floor(Date.now() / 1000), expired_at: null }, request_id: 'fake-key' }
+        return { key: { ...jwk, alg: 'RS256', crv: '', kid, kty: jwk.kty ?? '', use: 'sig', x: '',
+          y: '', created_at: Math.floor(Date.now() / 1000), expired_at: null }, request_id:
+          'fake-key' }
       }
       async syncTransactions(): Promise<never> {
         syncCalls++
@@ -112,9 +118,11 @@ test.group('Webhook durable enqueue acknowledgment', (group) => {
     }
   }
 
-  test('valid sync webhook acknowledges a durable waiting job without inline financial work', async ({ client, assert }) => {
+  test('valid sync webhook acknowledges a durable waiting job without inline financial work',
+    async ({ client, assert }) => {
     const before = await financialState()
-    const response = await client.post('/wh').json(syncBody).header('Plaid-Verification', await token(syncBody))
+    const response = await client.post('/wh').json(syncBody).header('Plaid-Verification',
+      await token(syncBody))
     response.assertStatus(204)
     assert.equal(bull.calls, 1)
     assert.deepEqual(await jobs(), [{ name: 'sync', data: { itemId: syncBody.item_id } }])
@@ -123,32 +131,39 @@ test.group('Webhook durable enqueue acknowledgment', (group) => {
     assert.isEmpty(errors.mock.calls)
   })
 
-  test('enqueue failure is logged and returns 500 without a job or inline fallback').with(['reject', 'throw'] as const).run(async ({ client, assert }, failure) => {
+  test('enqueue failure is logged and returns 500 without a job or inline fallback').with(['reject',
+    'throw'] as const).run(async ({ client, assert }, failure) => {
     bull.failure = failure
     const before = await financialState()
-    const response = await client.post('/wh').json(syncBody).header('Plaid-Verification', await token(syncBody))
+    const response = await client.post('/wh').json(syncBody).header('Plaid-Verification',
+      await token(syncBody))
     assert.equal(bull.calls, 1)
     assert.isEmpty(await jobs())
     assert.equal(syncCalls, 0)
     assert.deepEqual(await financialState(), before)
     assert.isTrue(errors.mock.calls.some(({ arguments: args }) => {
       const payload: unknown = args[0]
-      return typeof args[1] === 'string' && args[1].startsWith('Posting sync to queue failed') && typeof payload === 'object' && payload !== null && 'err' in payload && payload.err === bull.error
+      return typeof args[1] === 'string' && args[1].startsWith('Posting sync to queue failed') &&
+        typeof payload === 'object' && payload !== null && 'err' in payload && payload.err === bull
+        .error
     }))
     response.assertStatus(500)
   })
 
   test('expired JWT rejects before enqueue', async ({ client, assert }) => {
-    const response = await client.post('/wh').json(syncBody).header('Plaid-Verification', await token(syncBody, 600))
+    const response = await client.post('/wh').json(syncBody).header('Plaid-Verification',
+      await token(syncBody, 600))
     response.assertStatus(400)
     assert.equal(bull.calls, 0)
     assert.isEmpty(await jobs())
     assert.equal(syncCalls, 0)
-    assert.isTrue(errors.mock.calls.some(({ arguments: args }) => typeof args[0] === 'string' && args[0].startsWith('token verification failed:')))
+    assert.isTrue(errors.mock.calls.some(({ arguments: args }) => typeof args[0] === 'string' &&
+      args[0].startsWith('token verification failed:')))
   })
 
   test('invalid body hash rejects before enqueue', async ({ client, assert }) => {
-    const response = await client.post('/wh').json(syncBody).header('Plaid-Verification', await token({ ...syncBody, item_id: 'different-item' }))
+    const response = await client.post('/wh').json(syncBody).header('Plaid-Verification',
+      await token({ ...syncBody, item_id: 'different-item' }))
     response.assertStatus(400)
     assert.equal(bull.calls, 0)
     assert.isEmpty(await jobs())
@@ -157,32 +172,39 @@ test.group('Webhook durable enqueue acknowledgment', (group) => {
 
   test('irrelevant valid webhook is acknowledged without enqueue', async ({ client, assert }) => {
     const body = { webhook_type: 'TEST' }
-    const response = await client.post('/wh').json(body).header('Plaid-Verification', await token(body))
+    const response = await client.post('/wh').json(body).header('Plaid-Verification', await token(
+      body))
     response.assertStatus(204)
     assert.equal(bull.calls, 0)
     assert.isEmpty(await jobs())
     assert.equal(syncCalls, 0)
-    assert.isTrue(warnings.mock.calls.some(({ arguments: args }) => args[0] === 'Unhandled webhook type: TEST'))
+    assert.isTrue(warnings.mock.calls.some(({ arguments: args }) => args[0] ===
+      'Unhandled webhook type: TEST'))
   })
 
-  test('log persistence failure before enqueue returns 500 without a job', async ({ client, assert, cleanup }) => {
-    const save = mock.method(WebhookLog.prototype, 'save', () => Promise.reject(new Error('Webhook log write failed')))
+  test('log persistence failure before enqueue returns 500 without a job', async ({ client, assert,
+    cleanup }) => {
+    const save = mock.method(WebhookLog.prototype, 'save', () => Promise.reject(new Error(
+      'Webhook log write failed')))
     cleanup(() => save.mock.restore())
-    const response = await client.post('/wh').json(syncBody).header('Plaid-Verification', await token(syncBody))
+    const response = await client.post('/wh').json(syncBody).header('Plaid-Verification',
+      await token(syncBody))
     response.assertStatus(500)
     assert.equal(bull.calls, 0)
     assert.isEmpty(await jobs())
     assert.equal(syncCalls, 0)
   })
 
-  test('log cleanup failure after enqueue returns 500 but preserves the queued job', async ({ client, assert, cleanup }) => {
+  test('log cleanup failure after enqueue returns 500 but preserves the queued job', async ({
+    client, assert, cleanup }) => {
     const original = WebhookLog.query.bind(WebhookLog)
     const query = mock.method(WebhookLog, 'query', (...args: Parameters<typeof original>) => {
       if (bull.calls > 0) throw new Error('Webhook log cleanup failed')
       return original(...args)
     })
     cleanup(() => query.mock.restore())
-    const response = await client.post('/wh').json(syncBody).header('Plaid-Verification', await token(syncBody))
+    const response = await client.post('/wh').json(syncBody).header('Plaid-Verification',
+      await token(syncBody))
     response.assertStatus(500)
     assert.equal(bull.calls, 1)
     assert.deepEqual(await jobs(), [{ name: 'sync', data: { itemId: syncBody.item_id } }])

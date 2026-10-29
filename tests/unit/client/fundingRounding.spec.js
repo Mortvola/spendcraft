@@ -11,11 +11,13 @@ import { log } from 'node:console'
 async function productionExpressions() {
   const source = (await Promise.all(['calculateFunding.ts', 'FundingDialog.tsx'].map((file) =>
     readFile(new URL(`../../../client-src/Funding/${file}`, import.meta.url), 'utf8')))).join('\n')
-  const ast = ts.createSourceFile('FundingDialog.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const ast = ts.createSourceFile('FundingDialog.tsx', source, ts.ScriptTarget.Latest, true, ts
+    .ScriptKind.TSX)
   if (ast.parseDiagnostics.length) throw new Error('Invalid production AST source')
   const expressions = new Map()
   function visit(node) {
-    if (ts.isVariableDeclaration(node) && node.initializer && ['computeSpread', 'calculateFunding', 'handleSubmit'].includes(node.name.getText(ast))) {
+    if (ts.isVariableDeclaration(node) && node.initializer && ['computeSpread', 'calculateFunding',
+      'handleSubmit'].includes(node.name.getText(ast))) {
       expressions.set(node.name.getText(ast), node.initializer.getText(ast))
     }
     ts.forEachChild(node, visit)
@@ -48,43 +50,61 @@ test.group('Funding residual correction regression', () => {
     .run(async ({ assert }, scenario) => {
       const expressions = await productionExpressions()
       let order
-      const observed = expressions.get('computeSpread').replace('const funders = new Map<number, MoneyCents>();',
-        'observeOrder(sortedCategories.map((entry) => entry.categoryId)); const funders = new Map<number, MoneyCents>();')
-      const spread = evaluate(`const computeSpread = ${observed}; computeSpread;`, { observeOrder: (ids) => { order = [...ids] } })
+      const observed = expressions.get('computeSpread').replace(
+        'const funders = new Map<number, MoneyCents>();',
+        'observeOrder(sortedCategories.map((entry) => entry.categoryId)); const funders = new \
+Map<number, MoneyCents>();')
+      const spread = evaluate(`const computeSpread = ${observed}; computeSpread;`, { observeOrder: (
+        ids) => { order = [...ids] } })
       const result = spread(inputMoneyCents(String(scenario.amount)), [
         { categoryId: 1, amount: 33.33, percentage: true },
         { categoryId: 2, amount: 33.33, percentage: true },
         { categoryId: 3, amount: 33.34, percentage: true },
       ])
-      // Tiny-amount residual assertions follow actual processing order, without defining tie priority.
+      // Tiny-amount residual assertions follow actual processing order, without defining tie
+      // priority.
       const ids = Math.abs(scenario.amount) === 100 ? [1, 2, 3] : order
       const allocations = ids.map((id) => result.get(id) ?? 0)
       assert.deepEqual(allocations, scenario.expected)
-      assert.equal(allocations.reduce((sum, cents) => sum + cents, 0), scenario.expected.reduce((sum, cents) => sum + cents, 0))
-      assert.equal([...result.values()].reduce((sum, cents) => sum + cents, 0), Math.round(scenario.amount * 100))
+      assert.equal(allocations.reduce((sum, cents) => sum + cents, 0), scenario.expected.reduce((
+        sum, cents) => sum + cents, 0))
+      assert.equal([...result.values()].reduce((sum, cents) => sum + cents, 0), Math.round(scenario
+        .amount * 100))
     })
 
-  test('actual submit handler passes balanced spread values to the funding request boundary', async ({ assert }) => {
+  test('actual submit handler passes balanced spread values to the funding request boundary',
+    async ({ assert }) => {
     const expressions = await productionExpressions()
     let submitted
     let shown = true
     let order
-    const observed = expressions.get('computeSpread').replace('const funders = new Map<number, MoneyCents>();',
-      'observeOrder(sortedCategories.map((entry) => entry.categoryId)); const funders = new Map<number, MoneyCents>();')
-    const submit = evaluate(`const computeSpread = ${observed}; const calculateFunding = ${expressions.get('calculateFunding')}; const handleSubmit = ${expressions.get('handleSubmit')}; handleSubmit;`, {
+    const observed = expressions.get('computeSpread').replace(
+      'const funders = new Map<number, MoneyCents>();',
+      'observeOrder(sortedCategories.map((entry) => entry.categoryId)); const funders = new \
+Map<number, MoneyCents>();')
+    const submit = evaluate(
+      `const computeSpread = ${observed}; const calculateFunding = ${expressions.get(
+      'calculateFunding')}; const handleSubmit = ${expressions.get('handleSubmit')}; handleSubmit;`,
+      {
       fundingCalculationInputs, observeOrder: (ids) => { order = [...ids] },
-      fundingPoolCat: { id: 99 }, transaction: undefined, TransactionType: { FUNDING_TRANSACTION: 2 },
-      register: { addCategoryTransfer: async (request, type) => { submitted = { request, type }; return null } },
+      fundingPoolCat: { id: 99 }, transaction: undefined, TransactionType: {
+        FUNDING_TRANSACTION: 2 },
+      register: { addCategoryTransfer: async (request, type) => { submitted = { request, type };
+        return null } },
       setShow: (value) => { shown = value },
     })
-    await submit({ date: '2025-03-01', categories: { 10: { baseAmount: '0.01', includeFundingTransfers: false,
+    await submit({ date: '2025-03-01', categories: { 10: { baseAmount: '0.01',
+      includeFundingTransfers: false,
       fundingCategories: [{ categoryId: 1, amount: 33.33, percentage: true },
-        { categoryId: 2, amount: 33.33, percentage: true }, { categoryId: 3, amount: 33.34, percentage: true }] } } })
+        { categoryId: 2, amount: 33.33, percentage: true }, { categoryId: 3, amount: 33.34,
+          percentage: true }] } } })
     assert.equal(submitted.type, 2)
     assert.isFalse(shown)
-    assert.deepEqual(submitted.request.categories.map(({ categoryId, amount }) => ({ categoryId, amount })),
+    assert.deepEqual(submitted.request.categories.map(({ categoryId, amount }) => ({ categoryId,
+      amount })),
       [{ categoryId: 10, amount: '0.01' }, { categoryId: order.at(-1), amount: '-0.01' }])
-    assert.equal(submitted.request.categories.reduce((sum, row) => sum + money.parseMoneyCents(row.amount), 0), 0)
+    assert.equal(submitted.request.categories.reduce((sum, row) => sum + money.parseMoneyCents(row
+      .amount), 0), 0)
   })
 })
 
@@ -92,11 +112,14 @@ test.group('Funding allocation rounding characterization', () => {
   test('actual dialog allocation records percentage residual conservation')
     .with([0.01, 0.02, -0.01])
     .run(async ({ assert }, amount) => {
-      const source = await readFile(new URL('../../../client-src/Funding/calculateFunding.ts', import.meta.url), 'utf8')
-      const ast = ts.createSourceFile('FundingDialog.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+      const source = await readFile(new URL('../../../client-src/Funding/calculateFunding.ts',
+        import.meta.url), 'utf8')
+      const ast = ts.createSourceFile('FundingDialog.tsx', source, ts.ScriptTarget.Latest, true, ts
+        .ScriptKind.TSX)
       const matches = []
       function visit(node) {
-        if (ts.isVariableDeclaration(node) && node.name.getText(ast) === 'computeSpread' && node.initializer) {
+        if (ts.isVariableDeclaration(node) && node.name.getText(ast) === 'computeSpread' && node
+          .initializer) {
           matches.push(node.initializer.getText(ast))
         }
         ts.forEachChild(node, visit)
@@ -104,15 +127,20 @@ test.group('Funding allocation rounding characterization', () => {
       visit(ast)
       assert.lengthOf(matches, 1)
       // Execute the actual closure-free allocation function, rather than copying its algorithm.
-      const correction = 'fundingAmount = addMoneyCents(fundingAmount, subtractMoneyCents(categoryAmount, percentSum));'
+      const correction =
+        'fundingAmount = addMoneyCents(fundingAmount, subtractMoneyCents(categoryAmount,' +
+        '\n          percentSum));'
       assert.include(matches[0], correction)
       const observedSource = matches[0].replace(correction,
-        `trace.push({ categoryAmount, percentSum, before: fundingAmount }); ${correction} trace.push({ after: fundingAmount });`)
-      const compiled = ts.transpileModule(`const computeSpread = ${observedSource}; computeSpread;`, {
+        `trace.push({ categoryAmount, percentSum, before: fundingAmount }); ${correction} \
+trace.push({ after: fundingAmount });`)
+      const compiled = ts.transpileModule(`const computeSpread = ${observedSource}; computeSpread;`,
+        {
         compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None },
       }).outputText
       const trace = []
-      const computeSpread = runInNewContext(compiled, { ...money, zero: money.parseMoneyCents('0.00'), trace })
+      const computeSpread = runInNewContext(compiled, { ...money, zero: money.parseMoneyCents(
+        '0.00'), trace })
       const allocations = [...computeSpread(inputMoneyCents(String(amount)), [
         { categoryId: 1, amount: 33.33, percentage: true },
         { categoryId: 2, amount: 33.33, percentage: true },
@@ -120,6 +148,7 @@ test.group('Funding allocation rounding characterization', () => {
       ])]
       const actualCents = allocations.reduce((sum, [, cents]) => sum + cents, 0)
       assert.equal(actualCents, Math.round(amount * 100))
-      log(JSON.stringify({ amount, expectedCents: Math.round(amount * 100), actualCents, allocations, trace }))
+      log(JSON.stringify({ amount, expectedCents: Math.round(amount * 100), actualCents,
+        allocations, trace }))
     })
 })

@@ -65,7 +65,8 @@ class Institution extends BaseModel {
     return response.institution;
   }
 
-  private static async updateAccountBalances(budget: Budget, accounts: Account[], plaidAccounts: Plaid.AccountBase[]) {
+  private static async updateAccountBalances(budget: Budget, accounts: Account[],
+    plaidAccounts: Plaid.AccountBase[]) {
     // Opening helpers share the Funding Pool; serialize their reads and saves.
     for (const acct of accounts) {
       if (acct.tracking === TrackingType.Balances) continue;
@@ -75,7 +76,8 @@ class Institution extends BaseModel {
         // Only operate on the account if there is a corresponding plaid account.
         if (plaidAccount) {
           acct.plaidBalance = plaidAccount.balances.current;
-          if (acct.plaidBalance && (acct.type === AccountType.Credit|| acct.type === AccountType.Loan)) {
+          if (acct.plaidBalance && (acct.type === AccountType.Credit|| acct.type === AccountType
+            .Loan)) {
             acct.plaidBalance = -acct.plaidBalance;
           }
 
@@ -241,7 +243,8 @@ class Institution extends BaseModel {
           // Collect the Plaid accounts from the response so we can process them later.
            
           for (const plaidAccount of response.accounts) {
-            const index = plaidAccounts.findIndex((pa) => pa.account_id === plaidAccount.account_id);
+            const index = plaidAccounts.findIndex((pa) => pa.account_id === plaidAccount
+              .account_id);
 
             if (index !== -1) {
               // If the account was found in the array then replace it with the
@@ -265,7 +268,8 @@ class Institution extends BaseModel {
           ];
 
           // Process added/modified transactions
-          unassignedSum += await this.addOrUpdateTransactions(budget, transactions, accounts, plaidAccounts);
+          unassignedSum += await this.addOrUpdateTransactions(budget, transactions, accounts,
+            plaidAccounts);
 
           // Process removed transactions
           await this.removeTransactions(response.removed, accounts);

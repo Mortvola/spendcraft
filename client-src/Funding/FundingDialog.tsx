@@ -1,4 +1,5 @@
-import { formatMoneyCents, addMoneyCents, parseMoneyCents, subtractMoneyCents } from '../../common/moneyCents';
+import { formatMoneyCents, addMoneyCents, parseMoneyCents, subtractMoneyCents } from
+  '../../common/moneyCents';
 import { decodeCentFundingRules, inputMoneyCents, type TransferCategoryInput } from '../monetary';
 import { validateFundingPercentages } from '../../common/fundingPercentages'
 import React from 'react';
@@ -25,7 +26,8 @@ import {
 } from './Types'
 import styles from './Funding.module.scss'
 import { CategoryInterface, TransactionInterface } from '../State/Types';
-import { calculateFunding, fundingCalculationInputs, fundingCategoryEffectCents } from './calculateFunding';
+import { calculateFunding, fundingCalculationInputs, fundingCategoryEffectCents } from
+  './calculateFunding';
 
 interface PropsType {
   transaction?: TransactionInterface;
@@ -43,18 +45,21 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
   }
 
   const zero = parseMoneyCents('0.00');
-  const previousPoolEffect = transaction ? addMoneyCents(...transaction.categories.flatMap((category, index) => (
+  const previousPoolEffect = transaction ? addMoneyCents(...transaction.categories.flatMap((
+    category, index) => (
     category.categoryId === fundingPoolCat.id ? [transaction.getCategoryAmountCents(index)] : []
   ))) : zero;
   const poolEffectCents = (categories: CategoriesValueType) => (
-    fundingCategoryEffectCents(calculateFunding(fundingCalculationInputs(categories), fundingPoolCat.id), fundingPoolCat.id)
+    fundingCategoryEffectCents(calculateFunding(fundingCalculationInputs(categories), fundingPoolCat
+      .id), fundingPoolCat.id)
   );
 
   const poolPreview = (categories: CategoriesValueType) => {
     try {
       const effect = poolEffectCents(categories);
       return {
-        available: addMoneyCents(fundingPoolCat.balanceCents, effect, subtractMoneyCents(zero, previousPoolEffect)),
+        available: addMoneyCents(fundingPoolCat.balanceCents, effect, subtractMoneyCents(zero,
+          previousPoolEffect)),
         total: subtractMoneyCents(zero, effect),
         additional: subtractMoneyCents(previousPoolEffect, effect),
       };
@@ -70,8 +75,10 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
       categories: TransferCategoryInput[],
     }
 
-    const categories = calculateFunding(fundingCalculationInputs(values.categories), fundingPoolCat.id)
-      .map(({ amountCents, ...category }) => ({ ...category, amount: formatMoneyCents(amountCents) }));
+    const categories = calculateFunding(fundingCalculationInputs(values.categories), fundingPoolCat
+      .id)
+      .map(({ amountCents, ...category }) => ({ ...category, amount: formatMoneyCents(
+        amountCents) }));
 
     const request: Request = {
       date: transaction ? transaction.date.toISODate() ?? values.date : values.date,
@@ -102,7 +109,8 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
       try { fundingCalculationInputs({ [id]: category }); }
       catch {
         errors.categories ??= {};
-        errors.categories[id] = { baseAmount: 'Enter valid, safe funding amounts and percentages.' };
+        errors.categories[id] = { baseAmount:
+          'Enter valid, safe funding amounts and percentages.' };
       }
       const issue = validateFundingPercentages(category.fundingCategories)
       if (issue) {
@@ -223,7 +231,8 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
     return undefined;
   }
 
-  const [categories, setCategories] = React.useState<CategoriesValueType | undefined>(initialFunding())
+  const [categories, setCategories] = React.useState<CategoriesValueType | undefined>(
+    initialFunding())
 
   const handleCheckChange = () => {
     setDiffOnly((prev) => (!prev));
@@ -243,7 +252,8 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
         data.forEach((cat) => {
           const category = categoryTree.getCategory(cat.categoryId)
 
-          if (category && ![CategoryType.AccountTransfer, CategoryType.Unassigned].includes(category.type)) {
+          if (category && ![CategoryType.AccountTransfer, CategoryType.Unassigned].includes(category
+            .type)) {
             obj[cat.categoryId] = {
               baseAmount: formatMoneyCents(parseMoneyCents(cat.amount)),
               fundingCategories: [],
@@ -269,7 +279,8 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
             for (const fundingCat of fundingCats) {
               obj[cat.categoryId].fundingCategories.push(fundingCat.percentage
                 ? { categoryId: fundingCat.categoryId, amount: fundingCat.amount, percentage: true }
-                : { categoryId: fundingCat.categoryId, amount: fundingCat.amount, percentage: false });
+                : { categoryId: fundingCat.categoryId, amount: fundingCat.amount,
+                  percentage: false });
             }
           }
         })
@@ -334,7 +345,8 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
                           if (obj) {
                              
                             for (const [categoryId, value] of Object.entries(obj)) {
-                              form.setFieldValue(`categories.${categoryId}.baseAmount`, value.baseAmount)
+                              form.setFieldValue(`categories.${categoryId}.baseAmount`, value
+                                .baseAmount)
                             }
                           }
                         })()
@@ -353,14 +365,16 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
               {
                 ({ form: { values } }: FieldProps<unknown, ValueType>) => {
                   const preview = poolPreview(values.categories);
-                  return preview ? <MoneyCentsAmount className="form-control" amount={preview.available} /> : <div>Invalid amount</div>;
+                  return preview ? <MoneyCentsAmount className="form-control" amount={preview
+                    .available} /> : <div>Invalid amount</div>;
                 }
               }
             </Field>
           </label>
         </div>
         <label>
-          <input type="checkbox" checked={diffOnly} onChange={handleCheckChange} className={styles.checkbox} />
+          <input type="checkbox" checked={diffOnly} onChange={handleCheckChange} className={styles
+            .checkbox} />
           Show only differences in funding
         </label>
         <div className="cat-fund-table">
@@ -386,7 +400,8 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
               {
                 ({ form: { values } }: FieldProps<unknown, ValueType>) => {
                   const preview = poolPreview(values.categories);
-                  return preview ? <MoneyCentsAmount style={{ minWidth: '6rem' }} amount={preview.total} /> : <div>Invalid amount</div>;
+                  return preview ? <MoneyCentsAmount style={{ minWidth: '6rem' }} amount={preview
+                    .total} /> : <div>Invalid amount</div>;
                 }
               }
             </Field>
@@ -397,7 +412,8 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
               <Field>
                 {({ form: { values } }: FieldProps<unknown, ValueType>) => {
                   const preview = poolPreview(values.categories);
-                  return preview ? <MoneyCentsAmount amount={preview.additional} /> : <div>Invalid amount</div>;
+                  return preview ? <MoneyCentsAmount amount={preview.additional} /
+                    > : <div>Invalid amount</div>;
                 }}
               </Field>
             </label>

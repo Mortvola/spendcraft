@@ -8,14 +8,16 @@ import Account from '#app/Models/Account';
 import Category from '#app/Models/Category';
 import Transaction from '#app/Models/Transaction';
 import {
-  TransactionsResponse, CategoryBalanceProps, TransactionProps, TransactionType, AccountBalanceProps, TrackingType,
+  TransactionsResponse, CategoryBalanceProps, TransactionProps, TransactionType,
+    AccountBalanceProps, TrackingType,
   ApiResponse,
   AddStatementResponse,
   StatementProps,
   AccountType, CategoryType,
 } from '#common/ResponseTypes';
 import Statement from '#app/Models/Statement';
-import { validateSubmittedStatementIncome, encodeStatementIncome } from '#services/statementIncomeCodec';
+import { validateSubmittedStatementIncome, encodeStatementIncome } from
+  '#services/statementIncomeCodec';
 import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
 import { replaceStatementIncome } from '#services/statementIncomeStorage';
 import AccountTransaction from '#app/Models/AccountTransaction';
@@ -91,14 +93,16 @@ export default class AccountsController {
       .limit(request.qs().limit)
       .offset(request.qs().offset);
 
-    result.transactions = transactions.map((t) => t.serialize(transactionFields) as TransactionProps);
+    result.transactions = transactions.map((t) => t.serialize(
+      transactionFields) as TransactionProps);
 
     return {
       data: result,
     };
   }
 
-  public async balances({ request, auth: { user } }: HttpContext): Promise<{ date: string, balance: string }[]> {
+  public async balances({ request, auth: { user } }: HttpContext): Promise<{ date: string,
+    balance: string }[]> {
     if (!user) {
       throw new Error('user not defined');
     }
@@ -131,9 +135,13 @@ export default class AccountsController {
     const query = `
       select
         to_char(date, 'YYYY-MM-DD') as date,
-        balance - COALESCE(sum(trans_sum) over (partition by id order by id, date desc rows between unbounded preceding and 1 preceding), 0) as balance
+        balance - COALESCE(sum(trans_sum)
+          over (partition by id order by id, date desc rows
+          between unbounded preceding and 1 preceding), 0) as balance
       from (
-        select a.id, a.name, cast(date_trunc('day', date) as date) as date, sum(at.amount) as trans_sum, a.balance
+        select
+          a.id, a.name, cast(date_trunc('day', date) as date) as date,
+          sum(at.amount) as trans_sum, a.balance
         from account_transactions at
         join transactions t on t.id = at.transaction_id
         join accounts a on a.id = at.account_id
@@ -178,12 +186,14 @@ export default class AccountsController {
 
       const unassignedCat = await budget.getUnassignedCategory({ client: trx });
 
-      const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', acctId).firstOrFail();
+      const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', acctId)
+        .firstOrFail();
       if (account.tracking === TrackingType.Balances) {
         throw new Exception('Balance-tracked accounts cannot have transactions', { status: 422 });
       }
 
-      const transaction = requestCategoryStorage(new Transaction(), account.type !== AccountType.Loan).useTransaction(trx);
+      const transaction = requestCategoryStorage(new Transaction(), account.type !== AccountType
+        .Loan).useTransaction(trx);
 
       let { categories } = requestData
 
@@ -234,7 +244,8 @@ export default class AccountsController {
 
       await validateStoredCategoryConservation(transaction);
 
-      const state = { date: transaction.date, deleted: transaction.deleted, pending: acctTransaction.pending };
+      const state = { date: transaction.date, deleted: transaction.deleted, pending: acctTransaction
+        .pending };
       if (account.type === AccountType.Loan) {
         account.balance += acctTransaction.principle ?? 0;
       }
@@ -264,7 +275,8 @@ export default class AccountsController {
           balance.balance = encodeMonetaryAmount(category.balance);
         }
         else {
-          categoryBalances.push({ id: split.categoryId, balance: encodeMonetaryAmount(category.balance) });
+          categoryBalances.push({ id: split.categoryId, balance: encodeMonetaryAmount(category
+            .balance) });
         }
       }
 
@@ -314,11 +326,14 @@ export default class AccountsController {
       budget.useTransaction(trx);
       user.useTransaction(trx);
       await user.related('budget').query().forUpdate().firstOrFail();
-      const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', request.params().acctId).firstOrFail();
+      const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', request
+        .params().acctId).firstOrFail();
       if (requestData.tracking === TrackingType.Balances
         && (account.tracking === TrackingType.Transactions
-          || (account.tracking !== TrackingType.Balances && await account.related('accountTransactions').query().first()))) {
-        throw new Exception('Transaction tracking cannot be changed to balance tracking', { status: 422 });
+          || (account.tracking !== TrackingType.Balances && await account.related(
+            'accountTransactions').query().first()))) {
+        throw new Exception('Transaction tracking cannot be changed to balance tracking', {
+          status: 422 });
       }
 
       if (requestData.name !== undefined) {
@@ -341,8 +356,10 @@ export default class AccountsController {
             .if(account.type === AccountType.Loan, (query) => query.where('pending', false))
             .whereHas('transaction', (query) => {
               query.where('deleted', false);
-              if (account.type === AccountType.Loan) query.whereNot('type', TransactionType.STARTING_BALANCE);
-              else query.whereIn('type', [TransactionType.REGULAR_TRANSACTION, TransactionType.MANUAL_TRANSACTION]);
+              if (account.type === AccountType.Loan) query.whereNot('type', TransactionType
+                .STARTING_BALANCE);
+              else query.whereIn('type', [TransactionType.REGULAR_TRANSACTION, TransactionType
+                .MANUAL_TRANSACTION]);
               query
                 .where('date', '>=', later ? previousDate : nextDate)
                 .where('date', '<', later ? nextDate : previousDate);
@@ -424,7 +441,8 @@ export default class AccountsController {
         .forUpdate()
         .firstOrFail();
 
-      const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', acctId).firstOrFail();
+      const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', acctId)
+        .firstOrFail();
 
       const body = request.raw();
 
@@ -510,7 +528,8 @@ export default class AccountsController {
         .forUpdate()
         .firstOrFail();
 
-      const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', acctId).firstOrFail();
+      const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', acctId)
+        .firstOrFail();
 
       const statement = await account.related('statements').create({
         startDate: requestData.startDate,
@@ -617,7 +636,8 @@ export default class AccountsController {
         .forUpdate()
         .firstOrFail();
 
-      const statement = await budgetStatements(user.budgetId, { client: trx }).where('id', statementId).firstOrFail()
+      const statement = await budgetStatements(user.budgetId, { client: trx }).where('id',
+        statementId).firstOrFail()
 
       if (requestData.startDate !== undefined) statement.startDate = requestData.startDate
       if (requestData.endDate !== undefined) statement.endDate = requestData.endDate
@@ -659,14 +679,17 @@ export default class AccountsController {
         }
       }
 
-      if (requestData.startingBalance !== undefined) statement.startingBalance = requestData.startingBalance
-      if (requestData.endingBalance !== undefined) statement.endingBalance = requestData.endingBalance
+      if (requestData.startingBalance !== undefined) statement.startingBalance = requestData
+        .startingBalance
+      if (requestData.endingBalance !== undefined) statement.endingBalance = requestData
+        .endingBalance
       if (requestData.data !== undefined) replaceStatementIncome(statement, requestData.data)
 
       await statement.save()
 
       // Recompute from the resulting statement order in the mutation transaction.
-      const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', statement.accountId).firstOrFail()
+      const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', statement
+        .accountId).firstOrFail()
 
       if (account.tracking === TrackingType.Balances) {
         const latestStatement = await Statement.query({ client: trx })
@@ -744,10 +767,13 @@ export default class AccountsController {
     await db.transaction(async (trx) => {
       user.useTransaction(trx)
       await user.related('budget').query().forUpdate().firstOrFail()
-      const statement = await budgetStatements(user.budgetId, { client: trx }).where('id', statementId).firstOrFail()
-      const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', statement.accountId).firstOrFail()
+      const statement = await budgetStatements(user.budgetId, { client: trx }).where('id',
+        statementId).firstOrFail()
+      const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', statement
+        .accountId).firstOrFail()
 
-      const accountTransactions = await AccountTransaction.query({ client: trx }).where('statementId', statement.id)
+      const accountTransactions = await AccountTransaction.query({ client: trx }).where(
+        'statementId', statement.id)
       for (const accountTransaction of accountTransactions) {
         accountTransaction.statementId = null
         await accountTransaction.save()

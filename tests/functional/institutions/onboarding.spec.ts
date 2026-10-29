@@ -28,13 +28,18 @@ import InstitutionSync from '../../../commands/InstitutionSync.js'
 import QueueListener from '../../../commands/QueueListener.js'
 import WebhookController from '#controllers/WebhookController'
 
-function providerTransaction(accountId: string, id: string, overrides: Partial<Plaid.Transaction> = {}): Plaid.Transaction {
+function providerTransaction(accountId: string, id: string, overrides: Partial<Plaid.Transaction> =
+  {}): Plaid.Transaction {
   return {
-    account_id: accountId, transaction_id: id, amount: 10, date: '2025-02-10', name: 'Provider purchase', merchant_name: null,
-    iso_currency_code: 'USD', unofficial_currency_code: null, location: { address: null, city: null, region: null, postal_code: null, country: null, lat: null, lon: null, store_number: null },
-    payment_meta: { reference_number: null, ppd_id: null, payee: null, by_order_of: null, payer: null, payment_method: null, payment_processor: null, reason: null },
+    account_id: accountId, transaction_id: id, amount: 10, date: '2025-02-10', name:
+      'Provider purchase', merchant_name: null,
+    iso_currency_code: 'USD', unofficial_currency_code: null, location: { address: null, city: null,
+      region: null, postal_code: null, country: null, lat: null, lon: null, store_number: null },
+    payment_meta: { reference_number: null, ppd_id: null, payee: null, by_order_of: null,
+      payer: null, payment_method: null, payment_processor: null, reason: null },
     pending: false, pending_transaction_id: null, account_owner: null, authorized_date: null,
-    authorized_datetime: null, datetime: null, payment_channel: Plaid.TransactionPaymentChannelEnum.Online,
+    authorized_datetime: null, datetime: null, payment_channel: Plaid.TransactionPaymentChannelEnum
+      .Online,
     transaction_code: null, ...overrides,
   }
 }
@@ -43,19 +48,23 @@ function providerAccount(id: string): Plaid.AccountBase {
   return {
     account_id: id, name: 'Provider checking', official_name: null, mask: '1234',
     type: Plaid.AccountType.Depository, subtype: Plaid.AccountSubtype.Checking,
-    balances: { available: 100, current: 100, limit: null, iso_currency_code: 'USD', unofficial_currency_code: null },
+    balances: { available: 100, current: 100, limit: null, iso_currency_code: 'USD',
+      unofficial_currency_code: null },
   }
 }
 
-function page(accounts: Plaid.AccountBase[], cursor: string, overrides: Partial<Plaid.TransactionsSyncResponse> = {}): Plaid.TransactionsSyncResponse {
+function page(accounts: Plaid.AccountBase[], cursor: string, overrides: Partial<Plaid
+  .TransactionsSyncResponse> = {}): Plaid.TransactionsSyncResponse {
   return {
     accounts, added: [], modified: [], removed: [], next_cursor: cursor, has_more: false,
-    transactions_update_status: Plaid.TransactionsUpdateStatus.HistoricalUpdateComplete, request_id: 'fake-sync', ...overrides,
+    transactions_update_status: Plaid.TransactionsUpdateStatus.HistoricalUpdateComplete,
+      request_id: 'fake-sync', ...overrides,
   }
 }
 
 const token = 'TEST_PLAID_ACCESS_TOKEN_DO_NOT_LOG'
-const tables = ['institutions', 'accounts', 'transactions', 'account_transactions', 'categories', 'groups', 'statements', 'balance_histories', 'transaction_logs']
+const tables = ['institutions', 'accounts', 'transactions', 'account_transactions', 'categories',
+  'groups', 'statements', 'balance_histories', 'transaction_logs']
 async function snapshot() {
   const result: Record<string, unknown[]> = {}
   for (const table of tables) result[table] = await db.from(table).orderBy('id')
@@ -67,9 +76,12 @@ class OnboardingBull extends BullMQ {
   name = `spendcraft-onboarding-${randomUUID()}`
   processNext: (() => Promise<boolean>) | undefined
   closeWorker: (() => Promise<void>) | undefined
-  worker<T, R, N extends string = string>(name: string, callback: string | Processor<T, R, N>, options?: WorkerOptions) {
-    if (name !== QueueNamesEnum.PlaidWebHook || typeof callback !== 'function') throw new Error('Unexpected worker')
-    const worker = super.worker(this.name, callback, { ...options, connection: this.connection, autorun: false })
+  worker<T, R, N extends string = string>(name: string, callback: string | Processor<T, R, N>,
+    options?: WorkerOptions) {
+    if (name !== QueueNamesEnum.PlaidWebHook || typeof callback !== 'function') throw new Error(
+      'Unexpected worker')
+    const worker = super.worker(this.name, callback, { ...options, connection: this.connection,
+      autorun: false })
     this.closeWorker = () => worker.close()
     this.processNext = async () => {
       await worker.waitUntilReady()
@@ -104,7 +116,9 @@ test.group('Plaid staged onboarding characterization', (group) => {
   let removalObservation: { active: boolean, institutions: number, accounts: number } | undefined
   let failedSyncState: { cursor: string | null, syncDate: string | null } | undefined
 
-  const success = () => page([providerAccount(accountId)], 'c2', { added: [providerTransaction(accountId, 'purchase', { date: DateTime.now().startOf('month').plus({ days: 1 }).toISODate() ?? '' })] })
+  const success = () => page([providerAccount(accountId)], 'c2', { added: [providerTransaction(
+    accountId, 'purchase', { date: DateTime.now().startOf('month').plus({ days: 1 }).toISODate() ??
+    '' })] })
 
   group.each.setup(async () => {
     budget = await db.transaction(async (trx) => {
@@ -114,28 +128,40 @@ test.group('Plaid staged onboarding characterization', (group) => {
     })
     id = randomUUID()
     accountId = `account-${id}`
-    user = await budget.related('users').create({ username: id, email: `${id}@example.com`, password: 'testPassw0rd' })
+    user = await budget.related('users').create({ username: id, email: `${id}@example.com`,
+      password: 'testPassw0rd' })
     auditStart = (await PlaidLog.query().orderBy('id', 'desc').first())?.id ?? 0
     wrapper = new PlaidWrapper(app.config.get('plaid'))
     app.container.swap(PlaidWrapper, () => wrapper)
-    responses = []; cursors = []; logs = []; removed = []; restores = []; committed = undefined; failure = undefined; failedSyncState = undefined; failedSetupTrx = undefined; removalFailure = undefined; acceptedBeforeFailure = false; externalRemoved = false; removalObservation = undefined
-    const auditResponse = (data: unknown, path: string) => ({ data, status: 200, request: { path } })
+    responses = []; cursors = []; logs = []; removed = []; restores = []; committed = undefined;
+      failure = undefined; failedSyncState = undefined; failedSetupTrx = undefined; removalFailure =
+      undefined; acceptedBeforeFailure = false; externalRemoved = false; removalObservation =
+      undefined
+    const auditResponse = (data: unknown, path: string) => ({ data, status: 200, request: {
+      path } })
     const exchanged = new Set<string>()
-    const exchange = mock.method(wrapper.plaid, 'itemPublicTokenExchange', async (body: Plaid.ItemPublicTokenExchangeRequest) => {
+    const exchange = mock.method(wrapper.plaid, 'itemPublicTokenExchange', async (body: Plaid
+      .ItemPublicTokenExchangeRequest) => {
       if (failure === 'exchange') throw new Error('Synthetic exchange failure')
-      if (exchanged.has(body.public_token)) throw new Error('Synthetic already-exchanged public token')
+      if (exchanged.has(body.public_token)) throw new Error(
+        'Synthetic already-exchanged public token')
       exchanged.add(body.public_token)
-      return auditResponse({ access_token: token, item_id: id, request_id: 'exchange' }, '/item/public_token/exchange')
+      return auditResponse({ access_token: token, item_id: id, request_id: 'exchange' },
+        '/item/public_token/exchange')
     })
     const institution = mock.method(wrapper.plaid, 'institutionsGetById', async () => {
-      if (failure === 'provider institution') throw new Error('Synthetic institution retrieval failure')
-      return auditResponse({ institution: { institution_id: 'test-bank', name: 'Onboarding bank' }, request_id: 'institution' }, '/institutions/get_by_id')
+      if (failure === 'provider institution') throw new Error(
+        'Synthetic institution retrieval failure')
+      return auditResponse({ institution: { institution_id: 'test-bank', name: 'Onboarding bank' },
+        request_id: 'institution' }, '/institutions/get_by_id')
     })
     const accounts = mock.method(wrapper.plaid, 'accountsGet', async () => {
       if (failure === 'provider accounts') throw new Error('Synthetic account retrieval failure')
-      return auditResponse({ accounts: [providerAccount(accountId)], request_id: 'accounts' }, '/accounts/get')
+      return auditResponse({ accounts: [providerAccount(accountId)], request_id: 'accounts' },
+        '/accounts/get')
     })
-    const sync = mock.method(wrapper.plaid, 'transactionsSync', async (body: Plaid.TransactionsSyncRequest) => {
+    const sync = mock.method(wrapper.plaid, 'transactionsSync', async (body: Plaid
+      .TransactionsSyncRequest) => {
       if (!committed) committed = await snapshot()
       cursors.push(body.cursor ?? null)
       const response = responses.shift()
@@ -143,7 +169,8 @@ test.group('Plaid staged onboarding characterization', (group) => {
       if (response instanceof Error) throw response
       return auditResponse(response, '/transactions/sync')
     })
-    const remove = mock.method(wrapper.plaid, 'itemRemove', async (body: Plaid.ItemRemoveRequest) => {
+    const remove = mock.method(wrapper.plaid, 'itemRemove', async (body: Plaid.ItemRemoveRequest) =>
+      {
       removed.push(body.access_token)
       if (failedSetupTrx) {
         removalObservation = {
@@ -159,8 +186,10 @@ test.group('Plaid staged onboarding characterization', (group) => {
       externalRemoved = true
       return auditResponse({ request_id: 'remove' }, '/item/remove')
     })
-    const logging = mock.method(logger, 'error', (...args: unknown[]) => { logs.push(JSON.stringify(args)) })
-    restores.push(...[exchange, institution, accounts, sync, remove, logging].map((entry) => () => entry.mock.restore()))
+    const logging = mock.method(logger, 'error', (...args: unknown[]) => { logs.push(JSON.stringify(
+      args)) })
+    restores.push(...[exchange, institution, accounts, sync, remove, logging].map((entry) => () =>
+      entry.mock.restore()))
     return async () => {
       // Separate audit commits survive rollback; clean only records made by this test.
       await PlaidLog.query().where('id', '>', auditStart).delete()
@@ -177,7 +206,8 @@ test.group('Plaid staged onboarding characterization', (group) => {
           failedSyncState = { cursor: this.cursor, syncDate: this.syncDate?.toISO() ?? null }
           throw new Error('Synthetic cursor persistence failure')
         }
-        if (stage === 'local institution' && !this.$isPersisted) throw new Error('Synthetic institution persistence failure')
+        if (stage === 'local institution' && !this.$isPersisted) throw new Error(
+          'Synthetic institution persistence failure')
         return save.call(this)
       })
       restores.push(() => patched.mock.restore())
@@ -188,16 +218,20 @@ test.group('Plaid staged onboarding characterization', (group) => {
       })
       restores.push(() => patched.mock.restore())
     } else if (stage === 'financial') {
-      const patched = mock.method(AccountTransaction.prototype, 'save', function () { throw new Error('Synthetic financial persistence failure') })
+      const patched = mock.method(AccountTransaction.prototype, 'save', function () {
+        throw new Error('Synthetic financial persistence failure') })
       restores.push(() => patched.mock.restore())
     }
   }
 
-  test('setup failures roll back all local financial state and remove exchanged Items').with(['exchange', 'provider institution', 'provider accounts', 'local institution', 'local account']).run(async ({ client, assert }, stage) => {
+  test('setup failures roll back all local financial state and remove exchanged Items').with([
+    'exchange', 'provider institution', 'provider accounts', 'local institution', 'local account'])
+    .run(async ({ client, assert }, stage) => {
     failure = stage
     persistenceFailure(stage)
     const before = await snapshot()
-    const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken: 'fake-public', institutionId: 'test-bank' })
+    const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken:
+      'fake-public', institutionId: 'test-bank' })
     response.assertStatus(500)
     assert.deepEqual(await snapshot(), before)
     assert.lengthOf(removed, stage === 'exchange' ? 0 : 1)
@@ -207,12 +241,15 @@ test.group('Plaid staged onboarding characterization', (group) => {
     assert.notInclude(JSON.stringify(await PlaidLog.query()), token)
   })
 
-  test('initial sync failure keeps committed setup, rolls back sync, and returns success').with(['first page', 'later page', 'financial', 'cursor']).run(async ({ client, assert }, stage) => {
+  test('initial sync failure keeps committed setup, rolls back sync, and returns success').with([
+    'first page', 'later page', 'financial', 'cursor']).run(async ({ client, assert }, stage) => {
     persistenceFailure(stage)
     responses = stage === 'first page' ? [new Error('Synthetic first-page failure')]
-      : stage === 'later page' ? [{ ...success(), next_cursor: 'c1', has_more: true }, new Error('Synthetic later-page failure')]
+      : stage === 'later page' ? [{ ...success(), next_cursor: 'c1', has_more: true }, new Error(
+        'Synthetic later-page failure')]
         : [success()]
-    const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken: 'fake-public', institutionId: 'test-bank' })
+    const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken:
+      'fake-public', institutionId: 'test-bank' })
     response.assertStatus(200)
     if (!committed) throw new Error('Sync did not see durable setup')
     assert.deepEqual(await snapshot(), committed)
@@ -235,12 +272,14 @@ test.group('Plaid staged onboarding characterization', (group) => {
       const account = await Account.findOrFail(returned.id)
       assert.equal(account.institutionId, inst.id)
       assert.strictEqual(returned.balance, account.balance.toFixed(2))
-      assert.strictEqual(returned.plaidBalance, account.plaidBalance === null ? null : account.plaidBalance.toFixed(2))
+      assert.strictEqual(returned.plaidBalance, account.plaidBalance === null ? null : account
+        .plaidBalance.toFixed(2))
       assert.equal(returned.plaidId, account.plaidAccountId)
       assert.equal(returned.startDate, account.startDate.toISODate())
     }
     const categories = [await budget.getFundingPoolCategory(), await budget.getUnassignedCategory()]
-    for (const category of categories) assert.deepInclude(response.body().data.categories, { id: category.id, balance: category.balance.toFixed(2) })
+    for (const category of categories) assert.deepInclude(response.body().data.categories, {
+      id: category.id, balance: category.balance.toFixed(2) })
     for (const returned of response.body().data.categories) {
       const category = await Category.findOrFail(returned.id)
       assert.strictEqual(returned.balance, category.balance.toFixed(2))
@@ -261,14 +300,19 @@ test.group('Plaid staged onboarding characterization', (group) => {
     assert.notInclude(JSON.stringify(await PlaidLog.query()), token)
   })
 
-  test('staged connection recovers through existing sync mechanisms without duplicate financial effects').with(['manual', 'sync all', 'command', 'webhook']).run(async ({ client, assert, cleanup }, mechanism) => {
+  test(
+    'staged connection recovers through existing sync mechanisms without duplicate financial \
+effects').with(['manual', 'sync all', 'command', 'webhook']).run(async ({ client, assert, cleanup },
+  mechanism) => {
     responses = [new Error('Synthetic initial sync failure')]
-    ;(await client.post('/api/v1/institution').loginAs(user).json({ publicToken: 'fake-public', institutionId: 'test-bank' })).assertStatus(200)
+    ;(await client.post('/api/v1/institution').loginAs(user).json({ publicToken: 'fake-public',
+      institutionId: 'test-bank' })).assertStatus(200)
     const inst = await Institution.query().where('budgetId', budget.id).firstOrFail()
     const account = await inst.related('accounts').query().firstOrFail()
     responses = [success()]
     if (mechanism === 'manual') {
-      ;(await client.post(`/api/v1/institution/${inst.id}/accounts/${account.id}/transactions/sync`).loginAs(user)).assertStatus(200)
+      ;(await client.post(`/api/v1/institution/${inst.id}/accounts/${account.id}/transactions/sync`)
+        .loginAs(user)).assertStatus(200)
     } else if (mechanism === 'sync all') {
       ;(await client.post('/api/v1/institutions/sync').loginAs(user)).assertStatus(200)
     } else if (mechanism === 'command') {
@@ -276,12 +320,14 @@ test.group('Plaid staged onboarding characterization', (group) => {
       await command.run()
     } else {
       const connection = app.config.get<ConnectionOptions>('bullmq')
-      if (!('host' in connection) || !['localhost', '127.0.0.1'].includes(connection.host ?? '')) throw new Error('Requires local Redis')
+      if (!('host' in connection) || !['localhost', '127.0.0.1'].includes(connection.host ??
+        '')) throw new Error('Requires local Redis')
       const bull = new OnboardingBull(connection)
       const queue = bull.queue<PlaidWebHookProps, PlaidWebHookProps>(bull.name)
       const producer = mock.method(bull, 'queue', () => queue)
       app.container.swap(BullMQ, () => bull)
-      const push = mock.method(ApplePushNotifications.prototype, 'sendPushNotifications', async () => { /* No external push in characterization. */ })
+      const push = mock.method(ApplePushNotifications.prototype, 'sendPushNotifications', async (
+        ) => { /* No external push in characterization. */ })
       cleanup(async () => {
         await bull.closeWorker?.()
         await queue.obliterate({ force: true })
@@ -297,7 +343,9 @@ test.group('Plaid staged onboarding characterization', (group) => {
       })
       const command = await ace.create(QueueListener, [])
       await command.run()
-      await WebhookController.syncUpdate({ environment: Plaid.WebhookEnvironmentValues.Sandbox, webhook_type: 'TRANSACTIONS', webhook_code: 'SYNC_UPDATES_AVAILABLE', item_id: id, initial_update_complete: true, historical_update_complete: true })
+      await WebhookController.syncUpdate({ environment: Plaid.WebhookEnvironmentValues.Sandbox,
+        webhook_type: 'TRANSACTIONS', webhook_code: 'SYNC_UPDATES_AVAILABLE', item_id: id,
+        initial_update_complete: true, historical_update_complete: true })
       if (!bull.processNext) throw new Error('Worker not registered')
       assert.isTrue(await bull.processNext())
       assert.equal(push.mock.callCount(), 1)
@@ -306,16 +354,19 @@ test.group('Plaid staged onboarding characterization', (group) => {
     assert.equal(inst.cursor, 'c2')
     assert.deepEqual(cursors, [null, null])
     assert.equal((await inst.related('accounts').query().firstOrFail()).id, account.id)
-    const purchase = await AccountTransaction.query().where('accountId', account.id).where('providerTransactionId', 'purchase').firstOrFail()
+    const purchase = await AccountTransaction.query().where('accountId', account.id).where(
+      'providerTransactionId', 'purchase').firstOrFail()
     assert.equal(purchase.amount, -10)
     assert.equal((await Account.findOrFail(account.id)).balance, 100)
     assert.equal((await budget.getUnassignedCategory()).balance, -10)
     assert.equal((await budget.getFundingPoolCategory()).balance, 110)
     const recovered = await snapshot()
     responses = [success()]
-    ;(await client.post(`/api/v1/institution/${inst.id}/accounts/${account.id}/transactions/sync`).loginAs(user)).assertStatus(200)
+    ;(await client.post(`/api/v1/institution/${inst.id}/accounts/${account.id}/transactions/sync`)
+      .loginAs(user)).assertStatus(200)
     assert.deepEqual(await snapshot(), recovered)
-    assert.lengthOf(await AccountTransaction.query().where('accountId', account.id).where('providerTransactionId', 'purchase'), 1)
+    assert.lengthOf(await AccountTransaction.query().where('accountId', account.id).where(
+      'providerTransactionId', 'purchase'), 1)
     assert.lengthOf(await Institution.query().where('budgetId', budget.id), 1)
     assert.lengthOf(await inst.related('accounts').query(), 1)
     assert.equal((await Account.findOrFail(account.id)).balance, 100)
@@ -323,21 +374,29 @@ test.group('Plaid staged onboarding characterization', (group) => {
     assert.notInclude(logs.join(''), token)
   })
 
-  test('successful onboarding returns committed category and account balances').with(['unassigned', 'automatic', 'before start', 'pending']).run(async ({ client, assert }, allocation) => {
-    const group = await budget.related('groups').create({ name: 'Response allocations', type: 'Regular' })
-    const assigned = await group.related('categories').create({ name: 'Assigned', type: CategoryType.Regular, balance: 0, fundingCategories: [] })
-    const untouched = await group.related('categories').create({ name: 'Untouched', type: CategoryType.Regular, balance: 0, fundingCategories: [] })
+  test('successful onboarding returns committed category and account balances').with(['unassigned',
+    'automatic', 'before start', 'pending']).run(async ({ client, assert }, allocation) => {
+    const group = await budget.related('groups').create({ name: 'Response allocations', type:
+      'Regular' })
+    const assigned = await group.related('categories').create({ name: 'Assigned', type: CategoryType
+      .Regular, balance: 0, fundingCategories: [] })
+    const untouched = await group.related('categories').create({ name: 'Untouched',
+      type: CategoryType.Regular, balance: 0, fundingCategories: [] })
     if (allocation === 'automatic') {
-      const rule = await budget.related('autoAssignment').create({ name: 'Response rule', searchStrings: ['Provider purchase'] })
-      await rule.related('categories').create({ categoryId: assigned.id, amount: 100, percentage: true })
+      const rule = await budget.related('autoAssignment').create({ name: 'Response rule',
+        searchStrings: ['Provider purchase'] })
+      await rule.related('categories').create({ categoryId: assigned.id, amount: 100,
+        percentage: true })
     }
     const provider = providerAccount(accountId)
     provider.balances.current = 175
     const date = allocation === 'before start'
       ? DateTime.now().startOf('month').minus({ days: 1 }).toISODate()
       : DateTime.now().startOf('month').plus({ days: 1 }).toISODate()
-    responses = [page([provider], 'c2', { added: [providerTransaction(accountId, 'purchase', { amount: 37, date: date ?? '', pending: allocation === 'pending' })] })]
-    const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken: 'fake-public', institutionId: 'test-bank' })
+    responses = [page([provider], 'c2', { added: [providerTransaction(accountId, 'purchase', {
+      amount: 37, date: date ?? '', pending: allocation === 'pending' })] })]
+    const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken:
+      'fake-public', institutionId: 'test-bank' })
     response.assertStatus(200)
     const inst = await Institution.query().where('budgetId', budget.id).firstOrFail()
     const account = await inst.related('accounts').query().firstOrFail()
@@ -351,61 +410,78 @@ test.group('Plaid staged onboarding characterization', (group) => {
     const funding = await budget.getFundingPoolCategory()
     await assigned.refresh()
     await untouched.refresh()
-    assert.equal(unassigned.balance, allocation === 'unassigned' || allocation === 'pending' ? -37 : 0)
+    assert.equal(unassigned.balance, allocation === 'unassigned' || allocation === 'pending' ? -
+      37 : 0)
     assert.equal(assigned.balance, allocation === 'automatic' ? -37 : 0)
     assert.equal(untouched.balance, 0)
-    assert.equal(funding.balance, allocation === 'before start' || allocation === 'pending' ? 175 : 212)
+    assert.equal(funding.balance, allocation === 'before start' || allocation ===
+      'pending' ? 175 : 212)
     for (const category of [unassigned, funding, assigned, untouched]) {
-      assert.deepInclude(response.body().data.categories, { id: category.id, balance: category.balance.toFixed(2) })
+      assert.deepInclude(response.body().data.categories, { id: category.id, balance: category
+        .balance.toFixed(2) })
     }
     assert.strictEqual(response.body().data.accounts[0].balance, account.balance.toFixed(2))
-    assert.strictEqual(response.body().data.accounts[0].plaidBalance, account.plaidBalance === null ? null : account.plaidBalance.toFixed(2))
-    assert.strictEqual(response.body().data.accounts[0].pendingBalance, allocation === 'pending' ? '-37.00' : '0.00')
+    assert.strictEqual(response.body().data.accounts[0].plaidBalance, account
+      .plaidBalance === null ? null : account.plaidBalance.toFixed(2))
+    assert.strictEqual(response.body().data.accounts[0].pendingBalance, allocation === 'pending' ?
+      '-37.00' : '0.00')
     assert.lengthOf(await account.related('accountTransactions').query(), 2)
   })
 
-  test('initial sync can invalidate copied account financial fields').with(['posted', 'pending']).run(async ({ client, assert }, state) => {
+  test('initial sync can invalidate copied account financial fields').with(['posted', 'pending'])
+    .run(async ({ client, assert }, state) => {
     const provider = providerAccount(accountId)
     provider.balances.current = state === 'posted' ? 175 : 100
     responses = [page([provider], 'c2', { added: [providerTransaction(accountId, 'purchase', {
       amount: 37, pending: state === 'pending',
       date: DateTime.now().startOf('month').plus({ days: 1 }).toISODate() ?? '',
     })] })]
-    const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken: 'fake-public', institutionId: 'test-bank' })
+    const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken:
+      'fake-public', institutionId: 'test-bank' })
     response.assertStatus(200)
     const institution = await Institution.query().where('budgetId', budget.id).firstOrFail()
     const account = await institution.related('accounts').query().firstOrFail()
     assert.equal(account.balance, state === 'posted' ? 175 : 100)
     assert.equal(account.plaidBalance, state === 'posted' ? 175 : 100)
     assert.strictEqual(response.body().data.accounts[0].balance, account.balance.toFixed(2))
-    assert.strictEqual(response.body().data.accounts[0].plaidBalance, account.plaidBalance === null ? null : account.plaidBalance.toFixed(2))
-    assert.strictEqual(response.body().data.accounts[0].pendingBalance, state === 'pending' ? '-37.00' : '0.00')
+    assert.strictEqual(response.body().data.accounts[0].plaidBalance, account
+      .plaidBalance === null ? null : account.plaidBalance.toFixed(2))
+    assert.strictEqual(response.body().data.accounts[0].pendingBalance, state === 'pending' ?
+      '-37.00' : '0.00')
   })
 
-  test('creation retry with an existing provider account rejects and rolls back new setup', async ({ client, assert }) => {
+  test('creation retry with an existing provider account rejects and rolls back new setup', async ({
+    client, assert }) => {
     responses = [new Error('Synthetic initial sync failure')]
-    ;(await client.post('/api/v1/institution').loginAs(user).json({ publicToken: 'fake-public', institutionId: 'test-bank' })).assertStatus(200)
+    ;(await client.post('/api/v1/institution').loginAs(user).json({ publicToken: 'fake-public',
+      institutionId: 'test-bank' })).assertStatus(200)
     const before = await snapshot()
     id = randomUUID()
-    const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken: 'fake-new-public', institutionId: 'test-bank' })
+    const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken:
+      'fake-new-public', institutionId: 'test-bank' })
     response.assertStatus(409)
     assert.deepEqual(await snapshot(), before)
     assert.lengthOf(removed, 1)
   })
 
-  test('provider-accepted reconnect with a different account ID creates another institution', async ({ client, assert }) => {
+  test('provider-accepted reconnect with a different account ID creates another institution',
+    async ({ client, assert }) => {
     responses = [new Error('Synthetic initial sync failure')]
-    ;(await client.post('/api/v1/institution').loginAs(user).json({ publicToken: 'fake-public', institutionId: 'test-bank' })).assertStatus(200)
+    ;(await client.post('/api/v1/institution').loginAs(user).json({ publicToken: 'fake-public',
+      institutionId: 'test-bank' })).assertStatus(200)
     accountId = `different-${id}`
     id = randomUUID()
     responses = [new Error('Synthetic initial sync failure')]
-    ;(await client.post('/api/v1/institution').loginAs(user).json({ publicToken: 'fake-new-public', institutionId: 'test-bank' })).assertStatus(200)
+    ;(await client.post('/api/v1/institution').loginAs(user).json({ publicToken: 'fake-new-public',
+      institutionId: 'test-bank' })).assertStatus(200)
     assert.lengthOf(await Institution.query().where('budgetId', budget.id), 2)
     const institutions = await budget.related('institutions').query().preload('accounts')
     assert.deepEqual(institutions.map((institution) => institution.accounts.length), [1, 1])
   })
 
-  test('exact request retry with a consumed public token fails exchange without removing the existing connection', async ({ client, assert }) => {
+  test(
+    'exact request retry with a consumed public token fails exchange without removing the existing \
+connection', async ({ client, assert }) => {
     responses = [new Error('Synthetic initial sync failure')]
     const payload = { publicToken: 'fake-public', institutionId: 'test-bank' }
     ;(await client.post('/api/v1/institution').loginAs(user).json(payload)).assertStatus(200)
@@ -415,43 +491,54 @@ test.group('Plaid staged onboarding characterization', (group) => {
     assert.isEmpty(removed)
   })
 
-  test('compensation outcomes preserve rollback and characterize orphan recovery information').with(['success', 'network', 'provider transient', 'provider permanent', 'lost response']).run(async ({ client, assert, cleanup }, outcome) => {
+  test('compensation outcomes preserve rollback and characterize orphan recovery information').with(
+    ['success', 'network', 'provider transient', 'provider permanent', 'lost response']).run(async (
+    { client, assert, cleanup }, outcome) => {
     persistenceFailure('local account')
     acceptedBeforeFailure = outcome === 'lost response'
     if (outcome === 'network' || outcome === 'lost response') {
-      removalFailure = Object.assign(new Error('Synthetic removal connection failure'), { code: 'ECONNRESET', config: { headers: { Authorization: token } } })
+      removalFailure = Object.assign(new Error('Synthetic removal connection failure'), { code:
+        'ECONNRESET', config: { headers: { Authorization: token } } })
     } else if (outcome.startsWith('provider')) {
       removalFailure = Object.assign(new Error('Synthetic structured removal failure'), {
-        response: { status: outcome === 'provider transient' ? 500 : 400, request: { path: '/item/remove' }, data: {
+        response: { status: outcome === 'provider transient' ? 500 : 400, request: { path:
+          '/item/remove' }, data: {
           error_type: outcome === 'provider transient' ? 'API_ERROR' : 'INVALID_INPUT',
-          error_code: outcome === 'provider transient' ? 'INTERNAL_SERVER_ERROR' : 'INVALID_ACCESS_TOKEN',
-          error_message: 'Synthetic structured removal failure', request_id: 'safe-removal-request', access_token: token,
+          error_code: outcome === 'provider transient' ? 'INTERNAL_SERVER_ERROR' :
+            'INVALID_ACCESS_TOKEN',
+          error_message: 'Synthetic structured removal failure', request_id: 'safe-removal-request',
+            access_token: token,
         } },
       })
     }
     let observedError: unknown
     const originalRemove = wrapper.removeItem
-    const removal = mock.method(wrapper, 'removeItem', async (...args: Parameters<PlaidWrapper['removeItem']>) => {
+    const removal = mock.method(wrapper, 'removeItem', async (...args: Parameters<PlaidWrapper[
+      'removeItem']>) => {
       try { return await originalRemove.apply(wrapper, args) }
       catch (error) { observedError = error; throw error }
     })
     cleanup(() => removal.mock.restore())
     // Capture real Pino serialization for context loggers as well as provider errors.
     const serialized: string[] = []
-    const capture = new Logger({ enabled: true, level: 'error', destination: { write: (line: string) => { serialized.push(line) } } })
+    const capture = new Logger({ enabled: true, level: 'error', destination: { write: (
+      line: string) => { serialized.push(line) } } })
     const originalLog = Logger.prototype.error
-    const logging = mock.method(Logger.prototype, 'error', function (...args: Parameters<Logger['error']>) {
+    const logging = mock.method(Logger.prototype, 'error', function (...args: Parameters<Logger[
+      'error']>) {
       originalLog.apply(capture, args)
     })
     cleanup(() => logging.mock.restore())
     const before = await snapshot()
-    const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken: 'fake-public', institutionId: 'test-bank' })
+    const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken:
+      'fake-public', institutionId: 'test-bank' })
     response.assertStatus(500)
     assert.deepEqual(await snapshot(), before)
     assert.deepEqual(removalObservation, { active: false, institutions: 0, accounts: 0 })
     assert.isTrue(failedSetupTrx?.isCompleted)
     assert.lengthOf(removed, 1)
-    assert.isEmpty(await Institution.query().where('budgetId', budget.id).where('accessToken', token))
+    assert.isEmpty(await Institution.query().where('budgetId', budget.id).where('accessToken',
+      token))
     assert.isEmpty(await Institution.query().where('plaidItemId', id))
     const audits = await PlaidLog.query().where('id', '>', auditStart).orderBy('id')
     assert.lengthOf(audits, outcome === 'success' || outcome.startsWith('provider') ? 4 : 3)
@@ -463,7 +550,8 @@ test.group('Plaid staged onboarding characterization', (group) => {
     assert.notInclude(logs.join('') + serialized.join(''), token)
     assert.include(serialized.join(''), 'Synthetic account persistence failure')
     const recovery = await PlaidItemCleanup.findByOrFail('itemId', id)
-    assert.equal(recovery.status, outcome === 'success' ? 'completed' : outcome === 'provider permanent' ? 'review_required' : 'pending')
+    assert.equal(recovery.status, outcome === 'success' ? 'completed' : outcome ===
+      'provider permanent' ? 'review_required' : 'pending')
     assert.equal(recovery.attemptCount, 1)
     assert.notProperty(recovery.serialize(), 'encryptedAccessToken')
     if (outcome === 'success') assert.isNull(recovery.encryptedAccessToken)
@@ -474,7 +562,8 @@ test.group('Plaid staged onboarding characterization', (group) => {
     assert.equal(externalRemoved, outcome === 'success' || outcome === 'lost response')
     if (outcome !== 'success') {
       assert.instanceOf(observedError, Error)
-      if (!(observedError instanceof Error)) throw new Error('Expected preserved compensation error')
+      if (!(observedError instanceof Error)) throw new Error(
+        'Expected preserved compensation error')
       assert.strictEqual(observedError.cause, removalFailure)
       capture.error({ err: observedError }, 'Synthetic compensation failure')
       assert.notInclude(serialized.join(''), token)
@@ -489,8 +578,11 @@ test.group('Plaid staged onboarding characterization', (group) => {
     if (outcome === 'lost response') {
       // A test-double model of the documented already-removed Item error, not a guarantee
       // of the exact response code of a second real item/remove call.
-      removalFailure = { response: { status: 400, data: { error_type: 'ITEM_ERROR', error_code: 'ITEM_NOT_FOUND', error_message: 'Synthetic already-removed Item', request_id: 'safe-second-request' } } }
-      try { await wrapper.removeItem(token, 'test-bank'); throw new Error('Expected already-removed rejection') }
+      removalFailure = { response: { status: 400, data: { error_type: 'ITEM_ERROR', error_code:
+        'ITEM_NOT_FOUND', error_message: 'Synthetic already-removed Item', request_id:
+        'safe-second-request' } } }
+      try { await wrapper.removeItem(token, 'test-bank'); throw new Error(
+        'Expected already-removed rejection') }
       catch (error) {
         assert.instanceOf(error, PlaidException)
         if (!(error instanceof PlaidException)) throw error
@@ -499,11 +591,14 @@ test.group('Plaid staged onboarding characterization', (group) => {
       assert.deepEqual(await snapshot(), before)
     }
   })
-  test('post-commit response failure cannot remove a successfully connected Item', async ({ client, assert, cleanup }) => {
+  test('post-commit response failure cannot remove a successfully connected Item', async ({ client,
+    assert, cleanup }) => {
     responses = [success()]
-    const brokenResponse = mock.method(Budget.prototype, 'getConnectedAccounts', async () => { throw new Error('Synthetic response failure') })
+    const brokenResponse = mock.method(Budget.prototype, 'getConnectedAccounts', async () => {
+      throw new Error('Synthetic response failure') })
     cleanup(() => brokenResponse.mock.restore())
-    const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken: 'fake-public', institutionId: 'test-bank' })
+    const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken:
+      'fake-public', institutionId: 'test-bank' })
     response.assertStatus(500)
     assert.isEmpty(removed)
     const institution = await Institution.findByOrFail('plaidItemId', id)
@@ -513,12 +608,14 @@ test.group('Plaid staged onboarding characterization', (group) => {
     assert.isNull(recovery.encryptedAccessToken)
   })
 
-  test('encryption readiness failure happens before public token exchange', async ({ client, assert, cleanup }) => {
+  test('encryption readiness failure happens before public token exchange', async ({ client, assert,
+    cleanup }) => {
     const original = { ...app.config.get<{ activeKey: string, keys: string }>('plaidCleanup') }
     app.config.set('plaidCleanup.keys', '{}')
     cleanup(() => app.config.set('plaidCleanup', original))
     const before = await snapshot()
-    const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken: 'fake-public', institutionId: 'test-bank' })
+    const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken:
+      'fake-public', institutionId: 'test-bank' })
     response.assertStatus(500)
     assert.deepEqual(await snapshot(), before)
     assert.isEmpty(removed)
@@ -526,10 +623,12 @@ test.group('Plaid staged onboarding characterization', (group) => {
     assert.isNull(await PlaidItemCleanup.findBy('itemId', id))
   })
 
-  test('lost setup commit acknowledgement cannot compensate the committed Item', async ({ client, assert, cleanup }) => {
+  test('lost setup commit acknowledgement cannot compensate the committed Item', async ({ client,
+    assert, cleanup }) => {
     responses = [success()]
     const originalCancel = PlaidItemCleanupService.prototype.cancelSetup
-    const cancellation = mock.method(PlaidItemCleanupService.prototype, 'cancelSetup', async function (this: PlaidItemCleanupService, row: PlaidItemCleanup) {
+    const cancellation = mock.method(PlaidItemCleanupService.prototype, 'cancelSetup',
+      async function (this: PlaidItemCleanupService, row: PlaidItemCleanup) {
       await originalCancel.call(this, row)
       const trx = row.$trx
       if (!trx) throw new Error('Expected setup transaction')
@@ -541,7 +640,8 @@ test.group('Plaid staged onboarding characterization', (group) => {
       cleanup(() => commit.mock.restore())
     })
     cleanup(() => cancellation.mock.restore())
-    const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken: 'fake-public', institutionId: 'test-bank' })
+    const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken:
+      'fake-public', institutionId: 'test-bank' })
     response.assertStatus(500)
     assert.isEmpty(removed)
     assert.isNotNull(await Institution.findBy('plaidItemId', id))
@@ -550,11 +650,14 @@ test.group('Plaid staged onboarding characterization', (group) => {
     assert.isNull(recovery.encryptedAccessToken)
   })
 
-  test('failed durable protection attempts safe in-memory compensation', async ({ client, assert, cleanup }) => {
-    const unavailable = mock.method(PlaidItemCleanupService.prototype, 'protect', async () => { throw new Error('Synthetic storage failure') })
+  test('failed durable protection attempts safe in-memory compensation', async ({ client, assert,
+    cleanup }) => {
+    const unavailable = mock.method(PlaidItemCleanupService.prototype, 'protect', async () => {
+      throw new Error('Synthetic storage failure') })
     cleanup(() => unavailable.mock.restore())
     const before = await snapshot()
-    const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken: 'fake-public', institutionId: 'test-bank' })
+    const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken:
+      'fake-public', institutionId: 'test-bank' })
     response.assertStatus(500)
     assert.lengthOf(removed, 1)
     assert.deepEqual(await snapshot(), before)
@@ -562,7 +665,8 @@ test.group('Plaid staged onboarding characterization', (group) => {
     assert.notInclude(JSON.stringify(response.body()), token)
   })
 
-  test('encrypted recovery is durable before the next setup provider request', async ({ client, assert, cleanup }) => {
+  test('encrypted recovery is durable before the next setup provider request', async ({ client,
+    assert, cleanup }) => {
     const observed = mock.method(wrapper, 'getInstitutionById', async () => {
       const row = await PlaidItemCleanup.findByOrFail('itemId', id)
       assert.equal(row.status, 'protected')
@@ -571,7 +675,8 @@ test.group('Plaid staged onboarding characterization', (group) => {
       throw new Error('Synthetic setup interruption after protection')
     })
     cleanup(() => observed.mock.restore())
-    const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken: 'fake-public', institutionId: 'test-bank' })
+    const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken:
+      'fake-public', institutionId: 'test-bank' })
     response.assertStatus(500)
     assert.lengthOf(removed, 1)
     assert.equal((await PlaidItemCleanup.findByOrFail('itemId', id)).status, 'completed')

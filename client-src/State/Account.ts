@@ -1,4 +1,5 @@
-import { formatMoneyCents, parseMoneyCents, addMoneyCents, type MoneyCents } from '../../common/moneyCents';
+import { formatMoneyCents, parseMoneyCents, addMoneyCents, type MoneyCents } from
+  '../../common/moneyCents';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import { DateTime } from 'luxon';
@@ -8,7 +9,8 @@ import {
   isErrorResponse, ApiResponse, CategoryProps,
 } from '../../common/ResponseTypes';
 import {
-  AccountInterface, InstitutionInterface, NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
+  AccountInterface, InstitutionInterface, NewTransactionCategoryInterface, StoreInterface,
+    TransactionCategoryInterface,
   AddTransactionRequest,
   AccountSettings,
 } from './Types';
@@ -83,7 +85,8 @@ class Account implements AccountInterface {
 
     const balanceCents = parseMoneyCents(props.balance);
     const pendingBalanceCents = parseMoneyCents(props.pendingBalance);
-    const plaidBalanceCents = props.plaidBalance === null ? null : parseMoneyCents(props.plaidBalance);
+    const plaidBalanceCents = props.plaidBalance === null ? null : parseMoneyCents(props
+      .plaidBalance);
     this.id = props.id;
     this.plaidId = props.plaidId;
     this.name = props.name;
@@ -106,7 +109,8 @@ class Account implements AccountInterface {
   update(props: AccountProps): void {
     const balanceCents = parseMoneyCents(props.balance);
     const pendingBalanceCents = parseMoneyCents(props.pendingBalance);
-    const plaidBalanceCents = props.plaidBalance === null ? null : parseMoneyCents(props.plaidBalance);
+    const plaidBalanceCents = props.plaidBalance === null ? null : parseMoneyCents(props
+      .plaidBalance);
     this.id = props.id;
     this.plaidId = props.plaidId;
     this.name = props.name;
@@ -125,7 +129,8 @@ class Account implements AccountInterface {
   }
 
   async uploadOfx(file: File): Promise<void> {
-    if (this.tracking !== TrackingType.Transactions) throw new Error('Account is not tracking transactions');
+    if (this.tracking !== TrackingType.Transactions) throw new Error(
+      'Account is not tracking transactions');
     const response = await Http.fetch(`/api/v1/account/${this.id}/ofx`, new Headers({
       Accept: 'application/json',
       'Content-Type': 'text/plain',
@@ -135,7 +140,8 @@ class Account implements AccountInterface {
 
     // Refresh both independent balances from the server; no history is owned by OFX.
     await this.store.accounts.load();
-    const categories = await Http.get<ApiResponse<{ categories: CategoryProps[] }>>('/api/v1/groups');
+    const categories = await Http.get<ApiResponse<{ categories: CategoryProps[] }>>(
+      '/api/v1/groups');
     if (!categories.ok) throw new Error('Unable to refresh category balances after OFX upload');
     const { data } = await categories.body();
     if (!Array.isArray(data?.categories) || !data.categories.every((category) =>
@@ -147,7 +153,8 @@ class Account implements AccountInterface {
     await this.pendingTransactions.getData(0);
     for (const props of data.categories) {
       const category = this.store.categoryTree.getCategory(props.id);
-      if (category && category.transactions.transactions.length > 0) await category.transactions.getData(0);
+      if (category && category.transactions.transactions.length > 0) await category.transactions
+        .getData(0);
     }
   }
 
@@ -170,17 +177,20 @@ class Account implements AccountInterface {
       });
       if (settings.startDate !== undefined && this.tracking === TrackingType.Transactions) {
         await this.store.accounts.load();
-        const categories = await Http.get<ApiResponse<{ categories: CategoryProps[] }>>('/api/v1/groups');
+        const categories = await Http.get<ApiResponse<{ categories: CategoryProps[] }>>(
+          '/api/v1/groups');
         if (!categories.ok) throw new Error('Unable to refresh category balances');
         const { data } = await categories.body();
         if (!Array.isArray(data?.categories) || !data.categories.every((category) =>
-          category !== null && Number.isFinite(category.id) && typeof category.balance === 'string')) {
+          category !== null && Number.isFinite(category.id) && typeof category.balance ===
+            'string')) {
           throw new Error('Invalid category balances response');
         }
         this.store.categoryTree.updateBalances(data.categories);
         for (const props of data.categories) {
           const category = this.store.categoryTree.getCategory(props.id);
-          if (category && category.transactions.transactions.length > 0) await category.transactions.getData(0);
+          if (category && category.transactions.transactions.length > 0) await category.transactions
+            .getData(0);
         }
       }
     } else {
@@ -198,11 +208,13 @@ class Account implements AccountInterface {
     },
   ): Promise<ErrorProps[] | null> {
     const { amountCents, principleCents, categories, ...metadata } = values;
-    const response = await Http.post<AddTransactionRequest, AddTransactionResponse>(`/api/v1/account/${this.id}/transactions`, {
+    const response = await Http.post<AddTransactionRequest, AddTransactionResponse>(
+      `/api/v1/account/${this.id}/transactions`, {
       ...metadata,
       amount: amountCents === undefined ? undefined : formatMoneyCents(amountCents),
       principle: principleCents === undefined ? undefined : formatMoneyCents(principleCents),
-      categories: categories.map(({ amountCents: amount, ...category }) => ({ ...category, amount: formatMoneyCents(amount) })),
+      categories: categories.map(({ amountCents: amount, ...category }) => ({ ...category,
+        amount: formatMoneyCents(amount) })),
     });
 
     if (response.ok) {

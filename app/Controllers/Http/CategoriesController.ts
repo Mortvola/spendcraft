@@ -24,17 +24,20 @@ import {
 import Group from '#app/Models/Group';
 import { DateTime } from 'luxon';
 import transactionFields from './transactionFields.js';
-import { addCategory, addGroup, updateCategory, updateGroup } from '#app/validation/Validators/category';
+import { addCategory, addGroup, updateCategory, updateGroup } from
+  '#app/validation/Validators/category';
 import { LucidRow, ModelAdapterOptions, ModelAttributes } from '@adonisjs/lucid/types/model';
 
 function budgetGroups(budgetId: number, options?: ModelAdapterOptions) {
   return Group.query(options).where('budgetId', budgetId);
 }
 
-function hasReplacementAllocations(value: unknown): value is { categoryId: number, amount: number }[] {
+function hasReplacementAllocations(value: unknown): value is { categoryId: number, amount: number }[
+  ] {
   return Array.isArray(value) && value.length > 0 && value.every((split: unknown) => (
     typeof split === 'object' && split !== null
-    && 'categoryId' in split && typeof split.categoryId === 'number' && Number.isInteger(split.categoryId)
+    && 'categoryId' in split && typeof split.categoryId === 'number' && Number.isInteger(split
+      .categoryId)
     && 'amount' in split && typeof split.amount === 'number' && Number.isFinite(split.amount)
   ));
 }
@@ -66,7 +69,8 @@ class CategoriesController {
   public async get({
     request,
     auth: { user },
-  }: HttpContext): Promise<ApiResponse<{ groups: Group[], categories: Category[] } | FundingInfoProps[]>> {
+  }: HttpContext): Promise<ApiResponse<{ groups: Group[], categories: Category[
+    ] } | FundingInfoProps[]>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -104,27 +108,32 @@ class CategoriesController {
           (
             select transCats."categoryId", sum(transCats.amount) as sum
             from transactions t
-            cross join lateral jsonb_to_recordset(t.categories) as transCats("categoryId" int, amount decimal)
+            cross join lateral
+              jsonb_to_recordset(t.categories) as transCats("categoryId" int,
+              amount decimal)
             where t.date >= ?
             and t.deleted = false
             and t.application_id = ?
             group by transCats."categoryId"
           ) AS T1 on T1."categoryId" = categories.id
         `, [firstDayOfMonth.toISODate() ?? '', budget.id])
-        // Get the sum of the transactions (minus funding and category transfers) from the prrevious month
+        // Get the sum of the transactions (minus funding and category transfers) from the prrevious
+        // month
         // .withAggregate('transactionCategory', (query) => {
         //   query.sum('amount').as('previousSum')
         //     .whereHas('transaction', (transQuery) => {
         //       transQuery.where('date', '<', firstDayOfMonth.toISODate() ?? '')
         //         .andWhere('date', '>=', firstDayOfPreviousMonth.toISODate() ?? '')
-        //         .andWhereNotIn('type', [TransactionType.FUNDING_TRANSACTION, TransactionType.REBALANCE_TRANSACTION])
+        // .andWhereNotIn('type', [TransactionType.FUNDING_TRANSACTION,
+        // TransactionType.REBALANCE_TRANSACTION])
         //     })
         // })
         .joinRaw(`left outer join
           (
             select transCats."categoryId", sum(transCats.amount) as "previousSum"
             from transactions t
-            cross join lateral jsonb_to_recordset(t.categories) as transCats("categoryId" int, amount decimal)
+            cross join lateral
+              jsonb_to_recordset(t.categories) as transCats("categoryId" int, amount decimal)
             where t.date < ?
             and t.date >= ?
             and t.deleted = false
@@ -155,7 +164,9 @@ class CategoriesController {
               sum(transCats.amount) as "previousFunding",
               sum(coalesce(transCats."baseAmount", 0)) as "previousBaseAmount"
             from transactions t
-            cross join lateral jsonb_to_recordset(t.categories) as transCats("categoryId" int, amount decimal, "baseAmount" decimal)
+            cross join lateral
+              jsonb_to_recordset(t.categories)
+              as transCats("categoryId" int, amount decimal, "baseAmount" decimal)
             where t.date < ?
             and t.date >= ?
             and t.deleted = false
@@ -182,7 +193,8 @@ class CategoriesController {
           (
             select transCats."categoryId", sum(transCats.amount) as "previousCatTransfers"
             from transactions t
-            cross join lateral jsonb_to_recordset(t.categories) as transCats("categoryId" int, amount decimal)
+            cross join lateral
+              jsonb_to_recordset(t.categories) as transCats("categoryId" int, amount decimal)
             where t.date < ?
             and t.date >= ?
             and t.deleted = false
@@ -205,7 +217,8 @@ class CategoriesController {
           previousSum: encodeMonetaryAmount(parseFloat(c.$extras.previousSum ?? 0)),
           previousFunding: encodeMonetaryAmount(parseFloat(c.$extras.previousFunding ?? 0)),
           previousBaseAmount: encodeMonetaryAmount(parseFloat(c.$extras.previousBaseAmount ?? 0)),
-          previousCatTransfers: encodeMonetaryAmount(parseFloat(c.$extras.previousCatTransfers ?? 0)),
+          previousCatTransfers: encodeMonetaryAmount(parseFloat(c.$extras.previousCatTransfers ??
+            0)),
         })),
       }
     }
@@ -245,7 +258,8 @@ class CategoriesController {
       user.useTransaction(trx);
       await user.related('budget').query().forUpdate().firstOrFail();
 
-      const noGroup = await budgetGroups(user.budgetId, { client: trx }).where('type', GroupType.NoGroup).firstOrFail()
+      const noGroup = await budgetGroups(user.budgetId, { client: trx }).where('type', GroupType
+        .NoGroup).firstOrFail()
 
       const requestData = await request.validateUsing(
         addGroup,
@@ -259,7 +273,8 @@ class CategoriesController {
       );
 
       if (requestData.parentGroupId !== undefined && requestData.parentGroupId !== null) {
-        await budgetGroups(user.budgetId, { client: trx }).where('id', requestData.parentGroupId).firstOrFail();
+        await budgetGroups(user.budgetId, { client: trx }).where('id', requestData.parentGroupId)
+          .firstOrFail();
       }
 
       const group = await new Group()
@@ -295,9 +310,11 @@ class CategoriesController {
 
       const { groupId } = request.params();
 
-      const group = await budgetGroups(user.budgetId, { client: trx }).where('id', groupId).firstOrFail();
+      const group = await budgetGroups(user.budgetId, { client: trx }).where('id', groupId)
+        .firstOrFail();
 
-      const noGroup = await budgetGroups(user.budgetId, { client: trx }).where('type', GroupType.NoGroup).firstOrFail()
+      const noGroup = await budgetGroups(user.budgetId, { client: trx }).where('type', GroupType
+        .NoGroup).firstOrFail()
 
       const requestData = await request.validateUsing(
         updateGroup,
@@ -312,7 +329,8 @@ class CategoriesController {
       );
 
       if (requestData.parentGroupId !== undefined && requestData.parentGroupId !== null) {
-        await budgetGroups(user.budgetId, { client: trx }).where('id', requestData.parentGroupId).firstOrFail();
+        await budgetGroups(user.budgetId, { client: trx }).where('id', requestData.parentGroupId)
+          .firstOrFail();
       }
 
       group.merge(removeUndefined({
@@ -330,7 +348,8 @@ class CategoriesController {
   }
 
    
-  public async deleteGroup({ request, response, auth: { user } }: HttpContext): Promise<ApiResponse<void> | void> {
+  public async deleteGroup({ request, response, auth: {
+    user } }: HttpContext): Promise<ApiResponse<void> | void> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -341,7 +360,8 @@ class CategoriesController {
 
       const { groupId } = request.params();
 
-      const group = await budgetGroups(user.budgetId, { client: trx }).where('id', groupId).firstOrFail();
+      const group = await budgetGroups(user.budgetId, { client: trx }).where('id', groupId)
+        .firstOrFail();
 
       const categories = await group.related('categories').query().useTransaction(trx)
 
@@ -388,7 +408,8 @@ class CategoriesController {
         }
       );
 
-      await authorizeCategories(user.budgetId, requestData.fundingCategories.map((category) => category.categoryId), { client: trx });
+      await authorizeCategories(user.budgetId, requestData.fundingCategories.map((category) =>
+        category.categoryId), { client: trx });
 
       const category = new Category().useTransaction(trx);
       requestFundingStorage(category);
@@ -400,7 +421,8 @@ class CategoriesController {
           name: requestData.name,
           balance: 0,
           fundingAmount: requestData.fundingAmount ?? 0,
-          includeFundingTransfers: requestData.type === CategoryType.Bill ? false : requestData.includeFundingTransfers,
+          includeFundingTransfers: requestData.type === CategoryType.Bill ? false : requestData
+            .includeFundingTransfers,
           goalDate: requestData.goalDate,
           recurrence: requestData.recurrence,
           useGoal: requestData.useGoal,
@@ -446,7 +468,8 @@ class CategoriesController {
         }
       );
 
-      await authorizeCategories(user.budgetId, (requestData.fundingCategories ?? []).map((category) => category.categoryId), { client: trx });
+      await authorizeCategories(user.budgetId, (requestData.fundingCategories ?? []).map((
+        category) => category.categoryId), { client: trx });
       if (requestData.fundingCategories !== undefined) requestFundingStorage(category);
 
       category.merge(removeUndefined({
@@ -472,7 +495,8 @@ class CategoriesController {
   }
 
    
-  public async deleteCategory({ request, response, logger, auth: { user } }: HttpContext): Promise<ApiResponse<void> | void> {
+  public async deleteCategory({ request, response, logger, auth: {
+    user } }: HttpContext): Promise<ApiResponse<void> | void> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -608,10 +632,13 @@ class CategoriesController {
       } = { balances: [], transaction: {} };
 
       const { categories, date, type } = requestData;
-      if (tfrId === undefined && ![TransactionType.FUNDING_TRANSACTION, TransactionType.REBALANCE_TRANSACTION].includes(type)) {
-        throw new Exception('Category transfers can create only funding or rebalance transactions.', { status: 422 });
+      if (tfrId === undefined && ![TransactionType.FUNDING_TRANSACTION, TransactionType
+        .REBALANCE_TRANSACTION].includes(type)) {
+        throw new Exception('Category transfers can create only funding or rebalance transactions.',
+          { status: 422 });
       }
-      const existingTransaction = tfrId === undefined ? undefined : await budget.related('transactions').query()
+      const existingTransaction = tfrId === undefined ? undefined : await budget.related(
+        'transactions').query()
         .where('id', tfrId)
         .where('deleted', false)
         .firstOrFail();
@@ -622,7 +649,9 @@ class CategoriesController {
           && existingTransaction.type === TransactionType.REBALANCE_TRANSACTION;
         if ((!fundingTarget && !rebalanceTarget)
           || !hasReplacementAllocations(existingTransaction.categories)) {
-          throw new Exception('This transaction is not a supported funding or rebalance replacement target.', { status: 422 });
+          throw new Exception(
+            'This transaction is not a supported funding or rebalance replacement target.', {
+            status: 422 });
         }
 
         // Do not rely on the hasOne relation: even one of several links disqualifies the target.
@@ -632,12 +661,16 @@ class CategoriesController {
           .join('transaction_categories as tc', 'tc.id', 'lt.transaction_category_id')
           .where('tc.transaction_id', existingTransaction.id).select('lt.id').first();
         if (accountLink || loanLink) {
-          throw new Exception('Account-linked or Loan-related transactions cannot be replaced as funding or rebalance.', { status: 422 });
+          throw new Exception(
+            'Account-linked or Loan-related transactions ' +
+            'cannot be replaced as funding or rebalance.',
+            { status: 422 });
         }
       }
       if (existingTransaction?.type === TransactionType.FUNDING_TRANSACTION
         && existingTransaction.date.toISODate() !== DateTime.fromISO(date).toISODate()) {
-        throw new Exception('The date of a funding transaction cannot be changed.', { status: 422 });
+        throw new Exception('The date of a funding transaction cannot be changed.', {
+          status: 422 });
       }
       const referencedCategories = [...categories, ...(existingTransaction?.categories ?? [])];
       await authorizeCategories(budget.id, referencedCategories.flatMap((category) => [
@@ -677,7 +710,8 @@ class CategoriesController {
         result.transaction = {
           id: transaction.id,
           date,
-          name: type === TransactionType.FUNDING_TRANSACTION ? 'Category Funding' : 'Category Rebalance',
+          name: type === TransactionType.FUNDING_TRANSACTION ? 'Category Funding' :
+            'Category Rebalance',
           pending: false,
           sortOrder: 2147483647,
           type,
@@ -726,7 +760,8 @@ class CategoriesController {
        
       for (const [categoryId, delta] of categeoryDeltas) {
          
-        const category = await budgetCategories(budget.id, { client: trx }).where('id', categoryId).firstOrFail();
+        const category = await budgetCategories(budget.id, { client: trx }).where('id', categoryId)
+          .firstOrFail();
 
         category.balance += delta;
 
@@ -770,7 +805,8 @@ class CategoriesController {
       await budget.related('transactions').query().where('id', parseInt(id, 10)).firstOrFail();
     }
 
-    const balances = await Category.balances(budget, date, id !== undefined ? parseInt(id, 10) : id);
+    const balances = await Category.balances(budget, date, id !== undefined ? parseInt(id,
+      10) : id);
     return balances.map((row) => ({ ...row, balance: encodeMonetaryAmount(row.balance) }));
   }
 
@@ -817,7 +853,9 @@ class CategoriesController {
       const debits = await budget
         .related('transactions').query()
          
-        .joinRaw('cross join lateral jsonb_to_recordset(transactions.categories) as "transCats"("categoryId" int, amount decimal)')
+        .joinRaw(
+          'cross join lateral jsonb_to_recordset(transactions.categories) ' +
+          'as "transCats"("categoryId" int, amount decimal)')
         .where('transCats.categoryId', bill.id)
         .where('deleted', false)
         .where('date', '>=', firstDayOfMonth.toISODate())
@@ -829,7 +867,8 @@ class CategoriesController {
 
     return bills.map<BillProps>((bill) => ({
       id: bill.id,
-      debits: bill.$extras.debits !== null ? encodeMonetaryAmount(parseFloat(bill.$extras.debits ?? '0.00')) : null,
+      debits: bill.$extras.debits !== null ? encodeMonetaryAmount(parseFloat(bill.$extras.debits ??
+        '0.00')) : null,
     }));
   }
 }

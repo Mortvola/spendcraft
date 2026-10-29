@@ -88,7 +88,8 @@ const OfflineAccountDialog: React.FC<PropsType & ModalProps> = ({
 
     if (institution) {
       if (account) {
-        await account.updateOfflineAccount(values.account, values.type as AccountType, values.subtype);
+        await account.updateOfflineAccount(values.account, values.type as AccountType, values
+          .subtype);
       }
       else {
         errors = await institution.addOfflineAccount(
@@ -158,7 +159,8 @@ const OfflineAccountDialog: React.FC<PropsType & ModalProps> = ({
       >
         {
           !account
-            ? <FormTextField name="institute" label="Institution Name:" readOnly={institution !== undefined} />
+            ? <FormTextField name="institute" label="Institution Name:" readOnly={
+              institution !== undefined} />
             : null
         }
         <FormTextField name="account" label="Account Name:" />

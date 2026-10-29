@@ -19,7 +19,8 @@ export default class PlaidException extends Exception {
   plaidError: unknown;
 
   constructor(plaidError: PlaidError) {
-    super(plaidError.response.data.error_message, { code: 'PLAID_ERROR', status: plaidError.status_code, cause: plaidError });
+    super(plaidError.response.data.error_message, { code: 'PLAID_ERROR', status: plaidError
+      .status_code, cause: plaidError });
 
     this.plaidError = redactDiagnostics(plaidError.response.data);
   }
@@ -29,9 +30,11 @@ export default class PlaidException extends Exception {
 
     // SDK errors can carry credentials in config/request. Keep those on the cause,
     // rather than enumerable fields copied into existing error logs.
-    const preserved = new Error(error instanceof Error ? error.message : 'Unexpected Plaid provider failure', { cause: error });
+    const preserved = new Error(error instanceof Error ? error.message :
+      'Unexpected Plaid provider failure', { cause: error });
     if (error instanceof Error) preserved.name = error.name;
-    if (typeof error === 'object' && error !== null && 'code' in error && typeof error.code === 'string') {
+    if (typeof error === 'object' && error !== null && 'code' in error && typeof error.code ===
+      'string') {
       return Object.assign(preserved, { code: error.code });
     }
     return preserved;

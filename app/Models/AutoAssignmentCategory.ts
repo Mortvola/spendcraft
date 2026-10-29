@@ -27,7 +27,8 @@ export default class AutoAssignmentCategory extends BaseModel {
   @column({
     consume: (value: string) => parseFloat(value),
     prepare: (value: number) => roundAutoAssignmentAmount(value).toFixed(2),
-    serialize: (value: number, _attribute, model) => model.$attributes.percentage === true ? value : encodeMonetaryAmount(value),
+    serialize: (value: number, _attribute, model) => model.$attributes
+      .percentage === true ? value : encodeMonetaryAmount(value),
   })
   public amount: number
 

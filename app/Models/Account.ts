@@ -194,7 +194,8 @@ class Account extends BaseModel {
 
   //   this.balance = accountsResponse.accounts[0].balances.current;
   //   this.plaidBalance = accountsResponse.accounts[0].balances.current;
-  //   if (this.plaidBalance && (this.type === AccountType.Credit || this.type === AccountType.Loan)) {
+  // if (this.plaidBalance && (this.type === AccountType.Credit || this.type === AccountType.Loan))
+  // {
   //     this.plaidBalance = -this.plaidBalance;
   //   }
 
@@ -236,10 +237,12 @@ class Account extends BaseModel {
   //     this.plaidAccountId = transactionsResponse.accounts[0].account_id;
   //   }
 
-  //   const sum = await this.applyTransactions(budget, transactionsResponse.transactions, pendingTransactions);
+  // const sum = await this.applyTransactions(budget, transactionsResponse.transactions,
+  // pendingTransactions);
 
   //   this.plaidBalance = transactionsResponse.accounts[0].balances.current;
-  //   if (this.plaidBalance && (this.type === AccountType.Credit || this.type === AccountType.Loan)) {
+  // if (this.plaidBalance && (this.type === AccountType.Credit || this.type === AccountType.Loan))
+  // {
   //     this.plaidBalance = -this.plaidBalance;
   //   }
 
@@ -275,7 +278,8 @@ class Account extends BaseModel {
           .from((sub) => {
             sub
               .from('auto_assignments')
-              .select('id', db.raw('json_array_elements(search_strings) #>> \'{}\' as search_string'))
+              .select('id', db.raw(
+                'json_array_elements(search_strings) #>> \'{}\' as search_string'))
               .as('search_strings')
           })
           .select('id')
@@ -350,7 +354,8 @@ class Account extends BaseModel {
       await transaction.related('transactionLog')
         .create({
           budgetId: transaction.budgetId,
-          message: `SpendCraft assigned a transaction for "${accountTransaction.name}" to ${assignedCategories.join(', ')}.`,
+          message: `SpendCraft assigned a transaction for "${accountTransaction
+            .name}" to ${assignedCategories.join(', ')}.`,
         })
 
       return true;
@@ -420,7 +425,8 @@ class Account extends BaseModel {
         amount: newAmount,
         pending: plaidTransaction.pending ?? false,
         paymentChannel: plaidTransaction.payment_channel,
-        ...(plaidTransaction.merchant_name !== undefined ? { merchantName: plaidTransaction.merchant_name } : {}),
+        ...(plaidTransaction.merchant_name !== undefined ? { merchantName: plaidTransaction
+          .merchant_name } : {}),
         accountOwner: plaidTransaction.account_owner,
         location: Account.getLocation(plaidTransaction.location),
       }
@@ -484,7 +490,8 @@ class Account extends BaseModel {
             unassignedAmount += effect;
           }
           else {
-            const category = await Category.findOrFail(allocation.categoryId, { client: this.$trx });
+            const category = await Category.findOrFail(allocation.categoryId, { client: this
+              .$trx });
             category.balance += effect;
             await category.save();
           }
@@ -495,12 +502,14 @@ class Account extends BaseModel {
       if (accountTransactionChanged || transaction.$isDirty) {
         transaction.version += 1;
         await transaction.save();
-        if (allocationsChanged || amountChanged) await validateStoredCategoryConservation(transaction);
+        if (allocationsChanged || amountChanged) await validateStoredCategoryConservation(
+          transaction);
 
         await transaction.related('transactionLog')
           .create({
             budgetId: transaction.budgetId,
-            message: `SpendCraft modified a transaction for "${acctTrans.name}" from "${this.name}".`,
+            message: `SpendCraft modified a transaction for "${acctTrans.name}" from "${this
+              .name}".`,
             changes,
           });
       }
@@ -520,7 +529,8 @@ class Account extends BaseModel {
 
     let unassignedAmount = 0;
 
-    const transaction = await requestCategoryStorage(new Transaction(), this.type !== AccountType.Loan)
+    const transaction = await requestCategoryStorage(new Transaction(), this.type !== AccountType
+      .Loan)
       .useTransaction(this.$trx)
       .fill({
         type: TransactionType.REGULAR_TRANSACTION,
@@ -596,7 +606,8 @@ class Account extends BaseModel {
 
     if (acctTrans) {
       // The account transaction exists. Update it.
-      [transactionAmount, unassignedAmount] = await this.updateTransaction(budget, acctTrans, plaidTransaction);
+      [transactionAmount, unassignedAmount] = await this.updateTransaction(budget, acctTrans,
+        plaidTransaction);
     }
     else {
       // Tthe acdount transaction was not found. Create it.
@@ -666,7 +677,7 @@ class Account extends BaseModel {
   //   // let pendingSum = 0;
 
   //   await Promise.all(plaidTransactions.map(async (plaidTransaction) => {
-  //     const balanceChange = await this.addTransaction(plaidTransaction, budget, pendingTransactions);
+  // const balanceChange = await this.addTransaction(plaidTransaction, budget, pendingTransactions);
 
   //     sum += balanceChange
   //   }));
@@ -737,7 +748,8 @@ class Account extends BaseModel {
 
       // Preflight the complete upload before mutating financial state. Preserve
       // the parser's existing identifier and numeric normalization.
-      const incoming: { date: DateTime, name: string, amount: number, transactionId: string }[] = [];
+      const incoming: { date: DateTime, name: string, amount: number, transactionId: string }[] = [
+        ];
       for (const message of messages) {
         if (!/CREDITCARDMSGSRSV.*/.test(message)) continue;
         const statement = parsed.OFX[message].CCSTMTTRNRS.CCSTMTRS;
@@ -776,7 +788,8 @@ class Account extends BaseModel {
       ) => {
         if (this.tracking !== TrackingType.Transactions) return;
         const deltas = new Map<number, number>();
-        for (const [allocations, direction] of [[oldActive ? oldAllocations : [], -1], [newActive ? newAllocations : [], 1]] as const) {
+        for (const [allocations, direction] of [[oldActive ? oldAllocations : [], -1], [
+          newActive ? newAllocations : [], 1]] as const) {
           for (const allocation of allocations) {
             deltas.set(allocation.categoryId, (deltas.get(allocation.categoryId) ?? 0)
               + direction * Math.round(allocation.amount * 100));
@@ -784,8 +797,10 @@ class Account extends BaseModel {
         }
         for (const [categoryId, cents] of deltas) {
           if (cents === 0) continue;
-          const category = categoryId === unassigned.id ? unassigned : await Category.query({ client: this.$trx })
-            .where('id', categoryId).whereHas('group', (group) => group.where('budgetId', budget.id)).firstOrFail();
+          const category = categoryId === unassigned.id ? unassigned : await Category.query({
+            client: this.$trx })
+            .where('id', categoryId).whereHas('group', (group) => group.where('budgetId', budget
+              .id)).firstOrFail();
           category.balance = (Math.round(category.balance * 100) + cents) / 100;
           await category.save();
         }
@@ -805,16 +820,22 @@ class Account extends BaseModel {
           const oldAllocations = transaction.categories.map((allocation) => ({ ...allocation }));
           const oldActive = !transaction.deleted && transaction.date >= this.startDate;
           const newAmount = -transactionData.amount;
-          const explicit = oldAllocations.filter((allocation) => allocation.categoryId !== unassigned.id);
+          const explicit = oldAllocations.filter((allocation) => allocation
+            .categoryId !== unassigned.id);
           const remainder = (Math.round(newAmount * 100)
-            - explicit.reduce((total, allocation) => total + Math.round(allocation.amount * 100), 0)) / 100;
+            - explicit.reduce((total, allocation) => total + Math.round(allocation.amount * 100),
+              0)) / 100;
           const allocations = [...explicit, { categoryId: unassigned.id, amount: remainder }];
-          validateTransactionSplits(newAmount, allocations, undefined, hasCategoryStorage(transaction));
-          await applyAllocations(oldAllocations, oldActive, allocations, transactionData.date >= this.startDate);
+          validateTransactionSplits(newAmount, allocations, undefined, hasCategoryStorage(
+            transaction));
+          await applyAllocations(oldAllocations, oldActive, allocations, transactionData
+            .date >= this.startDate);
 
-          const oldEffect = !transaction.deleted && !acctTrans.pending && transaction.date >= this.startDate
+          const oldEffect = !transaction.deleted && !acctTrans.pending && transaction.date >= this
+            .startDate
             ? acctTrans.amount : 0;
-          const newEffect = !acctTrans.pending && transactionData.date >= this.startDate ? newAmount : 0;
+          const newEffect = !acctTrans.pending && transactionData.date >= this
+            .startDate ? newAmount : 0;
           const amount = newEffect - oldEffect;
 
           await transaction
@@ -845,7 +866,8 @@ class Account extends BaseModel {
           }
 
 
-          const transaction = await requestCategoryStorage(new Transaction(), this.type !== AccountType.Loan)
+          const transaction = await requestCategoryStorage(new Transaction(), this
+            .type !== AccountType.Loan)
             .useTransaction(this.$trx)
             .fill({
               type: TransactionType.REGULAR_TRANSACTION,
@@ -866,9 +888,11 @@ class Account extends BaseModel {
               amount: -transactionData.amount,
             });
 
-          validateTransactionSplits(acctTrans.amount, transaction.categories, undefined, hasCategoryStorage(transaction));
+          validateTransactionSplits(acctTrans.amount, transaction.categories, undefined,
+            hasCategoryStorage(transaction));
           await validateStoredCategoryConservation(transaction);
-          await applyAllocations([], false, transaction.categories, transaction.date >= this.startDate);
+          await applyAllocations([], false, transaction.categories, transaction.date >= this
+            .startDate);
 
           if (!acctTrans.pending && transaction.date >= this.startDate) sum += acctTrans.amount;
 
@@ -876,7 +900,8 @@ class Account extends BaseModel {
           await transaction.related('transactionLog')
             .create({
               budgetId: transaction.budgetId,
-              message: `${user.username} added a transaction for "${acctTrans.name}" from "${this.name}".`,
+              message: `${user.username} added a transaction for "${acctTrans.name}" from "${this
+                .name}".`,
             });
         }
       }
@@ -898,7 +923,8 @@ class Account extends BaseModel {
     fundingPool: Category,
   ): Promise<void> {
     if (this.tracking === TrackingType.Balances) {
-      throw new Exception('Initial Funding is not supported for balance-tracked accounts', { status: 422 });
+      throw new Exception('Initial Funding is not supported for balance-tracked accounts', {
+        status: 422 });
     }
 
     if (!this.$trx) {
@@ -961,7 +987,8 @@ class Account extends BaseModel {
       fundingPool.balance += delta;
     }
     else {
-      const transaction = await requestCategoryStorage(new Transaction(), this.type !== AccountType.Loan)
+      const transaction = await requestCategoryStorage(new Transaction(), this.type !== AccountType
+        .Loan)
         .useTransaction(this.$trx)
         .fill({
           date: this.startDate,

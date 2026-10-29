@@ -4,8 +4,10 @@ import { formatMoneyCents, type MoneyCents } from '../../common/moneyCents';
 import { inputMoneyCents } from '../monetary';
 
 // Retain editable text without turning cent state back into floating-point dollars.
-const TaxAmountInput: React.FC<{ value: MoneyCents; onChange: (value: MoneyCents) => void }> = ({ value, onChange }) => {
-  const [draft, setDraft] = useState<{ value: MoneyCents; text: string }>({ value, text: formatMoneyCents(value) });
+const TaxAmountInput: React.FC<{ value: MoneyCents; onChange: (value: MoneyCents) => void }> = ({
+  value, onChange }) => {
+  const [draft, setDraft] = useState<{ value: MoneyCents; text: string }>({ value,
+    text: formatMoneyCents(value) });
   const container = useRef<HTMLDivElement>(null);
   useEffect(() => {
     container.current?.querySelector('input')?.setCustomValidity('');
@@ -22,7 +24,8 @@ const TaxAmountInput: React.FC<{ value: MoneyCents; onChange: (value: MoneyCents
     }
     catch {
       setDraft({ value, text });
-      container.current?.querySelector('input')?.setCustomValidity('Enter a valid, safe monetary amount.');
+      container.current?.querySelector('input')?.setCustomValidity(
+        'Enter a valid, safe monetary amount.');
       return;
     }
     container.current?.querySelector('input')?.setCustomValidity('');
@@ -31,7 +34,8 @@ const TaxAmountInput: React.FC<{ value: MoneyCents; onChange: (value: MoneyCents
   };
 
   return <div ref={container} style={{ display: 'contents' }}>
-    <AmountInput exactCents value={draft.text} onValueChange={handleChange} onChange={() => undefined} />
+    <AmountInput exactCents value={draft.text} onValueChange={handleChange} onChange={() =>
+      undefined} />
   </div>;
 };
 

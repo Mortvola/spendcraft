@@ -37,7 +37,8 @@ const DetailView: React.FC<PropsType> = ({
         <div className={styles.titleLayout}>
           <div className={`${styles.mainTrayTitle} ellipsis`}>{title}</div>
           {
-            (selectedCategory !== null && ![CategoryType.Unassigned, CategoryType.FundingPool, CategoryType.AccountTransfer].includes(selectedCategory.type))
+            (selectedCategory !== null && ![CategoryType.Unassigned, CategoryType.FundingPool,
+              CategoryType.AccountTransfer].includes(selectedCategory.type))
             || selectedGroup !== null
               ? (
                 <LucideButton onClick={showDialog}>

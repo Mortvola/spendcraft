@@ -54,7 +54,8 @@ export default class PlaidGetItem extends BaseCommand {
               .first();
 
             if (institution && institution.plaidItemId !== response.item.item_id) {
-              this.logger.info(`Changing item id from ${institution.plaidItemId} to ${response.item.item_id}`);
+              this.logger.info(`Changing item id from ${institution.plaidItemId} to ${response.item
+                .item_id}`);
 
               institution.plaidItemId = response.item.item_id;
 

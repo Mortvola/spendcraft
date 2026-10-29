@@ -31,7 +31,8 @@ test.group('Installer automatic seeding (no database)', () => {
     assert.equal(result.status, 7)
     assert.notInclude(result.stdout, 'CONTINUED')
   })
-  test('seeding occurs after migration command and before release switch/restarts', async ({ assert }) => {
+  test('seeding occurs after migration command and before release switch/restarts', async ({
+    assert }) => {
     const source = await readFile('installer/install.sh0', 'utf8')
     const call = source.indexOf('\nseed_database\n')
     assert.isAbove(call, source.indexOf('\nnode ace migration:run\n'))

@@ -35,7 +35,8 @@ export default class CheckWebhooks extends BaseCommand {
 
             if (item.webhook !== hook) {
               const response = await plaidClient.updateItemWebhook(institution, hook);
-              this.logger.info(`updated webhook for ${institution.plaidItemId}: old: ${item.webhook}, new: ${response.item.webhook}`);
+              this.logger.info(`updated webhook for ${institution.plaidItemId}: old: ${item
+                .webhook}, new: ${response.item.webhook}`);
             }
           }
           catch (error) {
@@ -43,7 +44,8 @@ export default class CheckWebhooks extends BaseCommand {
           }
         }
         else {
-          this.logger.info(`skipping ${institution.plaidItemId} because it is not in the current environment`);
+          this.logger.info(`skipping ${institution
+            .plaidItemId} because it is not in the current environment`);
         }
       }
     }

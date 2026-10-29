@@ -9,7 +9,8 @@ import styles from './AutoAssignmentDetails.module.scss';
 const AutoAssignmentDetails = observer(() => {
   const { autoAssignments } = useStores();
   const [AutoAssignmentDialog, showDialog] = useAutoAssignmentDialog();
-  const [editAutoAssignment, setEditedAutoAssignment] = React.useState<AutoAssignmentInterface | undefined>();
+  const [editAutoAssignment, setEditedAutoAssignment] = React
+    .useState<AutoAssignmentInterface | undefined>();
 
   const handleClick = (autoAssginment: AutoAssignmentInterface) => {
     setEditedAutoAssignment(autoAssginment)

@@ -60,7 +60,8 @@ class PlaidWrapper {
         throw new Error('institutionId is null')
       }
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution.institutionId)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status,
+        institution.institutionId)
 
       return response.data;
     }
@@ -79,7 +80,8 @@ class PlaidWrapper {
         access_token: accessToken,
       }, timeout === undefined ? undefined : { timeout });
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institutionId)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status,
+        institutionId)
 
       return response.data;
     }
@@ -103,7 +105,8 @@ class PlaidWrapper {
         options,
       });
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution.institutionId)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status,
+        institution.institutionId)
 
       return response.data;
     }
@@ -125,7 +128,8 @@ class PlaidWrapper {
     }
   }
 
-  async createLinkToken(options: Plaid.LinkTokenCreateRequest): Promise<Plaid.LinkTokenCreateResponse> {
+  async createLinkToken(options: Plaid.LinkTokenCreateRequest): Promise<Plaid
+    .LinkTokenCreateResponse> {
     try {
       const response = await this.plaid.linkTokenCreate(options);
 
@@ -165,7 +169,8 @@ class PlaidWrapper {
         options,
       });
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution.institutionId)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status,
+        institution.institutionId)
 
       return response.data;
     }
@@ -190,7 +195,8 @@ class PlaidWrapper {
 
       const response = await this.plaid.transactionsSync(param);
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution.institutionId)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status,
+        institution.institutionId)
 
       return response.data
     }
@@ -217,7 +223,8 @@ class PlaidWrapper {
         options,
       });
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution.institutionId)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status,
+        institution.institutionId)
 
       return response.data;
     }
@@ -240,7 +247,8 @@ class PlaidWrapper {
 
       const response = await this.plaid.transactionsRefresh(param);
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution.institutionId)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status,
+        institution.institutionId)
 
       return response.data
     }
@@ -303,7 +311,8 @@ class PlaidWrapper {
         webhook,
       });
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution.institutionId)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status,
+        institution.institutionId)
 
       return response.data;
     }
@@ -324,7 +333,8 @@ class PlaidWrapper {
         access_token: institution.accessToken,
       });
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution.institutionId)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status,
+        institution.institutionId)
 
       return response.data;
     }
@@ -347,7 +357,8 @@ class PlaidWrapper {
         webhook_code: code,
       });
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution.institutionId)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status,
+        institution.institutionId)
 
       return response.data;
     }
@@ -377,14 +388,16 @@ class PlaidWrapper {
         && typeof error.response === 'object' && error.response !== null
         && 'status' in error.response && typeof error.response.status === 'number') {
         const request = 'request' in error.response ? error.response.request : undefined;
-        const path = typeof request === 'object' && request !== null && 'path' in request && typeof request.path === 'string' ? request.path : '';
+        const path = typeof request === 'object' && request !== null && 'path' in request &&
+          typeof request.path === 'string' ? request.path : '';
         await PlaidWrapper.log(path, failure.plaidError, error.response.status, institutionId);
       }
     }
     throw failure;
   }
 
-  static async log(request: string, response: unknown, status: number, institutionId?: string | null) {
+  static async log(request: string, response: unknown, status: number,
+    institutionId?: string | null) {
     const { default: PlaidLog } = await import('#models/PlaidLog')
 
     await new PlaidLog()

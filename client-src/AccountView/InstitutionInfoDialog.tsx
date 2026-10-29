@@ -40,7 +40,8 @@ const InstitutionInfoDialog: React.FC<PropsType & ModalProps> = ({
   institution,
   setShow,
 }) => {
-  type InstitutionInfo = Plaid.Institution; // InstitutionWithInstitutionData & InstitutionWithStatus;
+  type InstitutionInfo = Plaid.Institution;
+    // InstitutionWithInstitutionData & InstitutionWithStatus;
 
   const [infoInitialized, setInfoInitialized] = useState(false);
   const [info, setInfo] = useState<InstitutionInfo | null>(null);
@@ -49,7 +50,8 @@ const InstitutionInfoDialog: React.FC<PropsType & ModalProps> = ({
     setInfoInitialized(true);
 
     (async () => {
-      const response = await Http.get<InstitutionInfo>(`/api/v1/institution/${institution.id}/info`);
+      const response = await Http.get<InstitutionInfo>(`/api/v1/institution/${institution
+        .id}/info`);
 
       if (response.ok) {
         const institutionInfo = await response.body();
@@ -105,15 +107,18 @@ const InstitutionInfoDialog: React.FC<PropsType & ModalProps> = ({
             healthIncidents.map((incident) => (
               <div className={styles.incident}>
                 <div>{incident.title}</div>
-                <div>Start: {DateTime.fromISO(incident.start_date).toLocaleString(DateTime.DATETIME_MED)}</div>
-                <div>End: {incident.end_date ? DateTime.fromISO(incident.end_date).toLocaleString(DateTime.DATETIME_MED) : ''}</div>
+                <div>Start: {DateTime.fromISO(incident.start_date).toLocaleString(DateTime
+                  .DATETIME_MED)}</div>
+                <div>End: {incident.end_date ? DateTime.fromISO(incident.end_date).toLocaleString(
+                  DateTime.DATETIME_MED) : ''}</div>
                 <div>
                   {
                     incident.incident_updates.map((update) => (
                       <div className={styles.update}>
                         <div>{update.description}</div>
                         <div>Status: {update.status}</div>
-                        <div>Updated at: {update.updated_date ? DateTime.fromISO(update.updated_date).toLocaleString(DateTime.DATETIME_MED) : ''}</div>
+                        <div>Updated at: {update.updated_date ? DateTime.fromISO(update
+                          .updated_date).toLocaleString(DateTime.DATETIME_MED) : ''}</div>
                       </div>
                     ))
                   }
@@ -173,4 +178,5 @@ const InstitutionInfoDialog: React.FC<PropsType & ModalProps> = ({
   );
 };
 
-export const useInstitutionInfoDialog = makeUseModal<PropsType>(InstitutionInfoDialog, { size: 'lg' });
+export const useInstitutionInfoDialog = makeUseModal<PropsType>(InstitutionInfoDialog, { size:
+  'lg' });

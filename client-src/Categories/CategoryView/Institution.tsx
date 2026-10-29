@@ -45,7 +45,8 @@ const Institution: React.FC<PropsType> = observer(({
           </div>
           {
             !(uiState.accountState.get(institution.id) ?? true)
-              ? <MoneyCentsAmount amount={accts.reduce((prev, acct) => addMoneyCents(prev, acct.totalBalanceCents), parseMoneyCents('0.00'))} />
+              ? <MoneyCentsAmount amount={accts.reduce((prev, acct) => addMoneyCents(prev, acct
+                .totalBalanceCents), parseMoneyCents('0.00'))} />
               : null
           }
         </div>

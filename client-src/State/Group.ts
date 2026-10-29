@@ -1,4 +1,5 @@
-import { formatMoneyCents, parseMoneyCents, addMoneyCents, type MoneyCents } from '../../common/moneyCents';
+import { formatMoneyCents, parseMoneyCents, addMoneyCents, type MoneyCents } from
+  '../../common/moneyCents';
 import { encodeCentFundingRules } from '../monetary';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
@@ -106,9 +107,11 @@ class Group implements GroupInterface {
       group, fundingCategories, goalDate, fundingAmountCents, ...p
     } = params;
 
-    const response = await Http.post<CategoryCreateRequest, ApiResponse<CategoryProps>>(`/api/v1/groups/${this.id}/categories`, {
+    const response = await Http.post<CategoryCreateRequest, ApiResponse<CategoryProps>>(
+      `/api/v1/groups/${this.id}/categories`, {
       ...p,
-      fundingAmount: fundingAmountCents === undefined ? undefined : formatMoneyCents(fundingAmountCents),
+      fundingAmount: fundingAmountCents === undefined ? undefined : formatMoneyCents(
+        fundingAmountCents),
       fundingCategories:
       p.type === CategoryType.Bill
         ? encodeCentFundingRules(fundingCategories)
@@ -160,8 +163,10 @@ class Group implements GroupInterface {
     child.group = this;
   }
 
-  async update(value: { name: string, parentGroupId: number | null }): Promise<null | ErrorProps[]> {
-    const response = await Http.patch<unknown, ApiResponse<GroupProps>>(`/api/v1/groups/${this.id}`, { ...value, hidden: false });
+  async update(value: { name: string, parentGroupId: number | null }): Promise<null | ErrorProps[
+    ]> {
+    const response = await Http.patch<unknown, ApiResponse<GroupProps>>(`/api/v1/groups/${this.id}`,
+      { ...value, hidden: false });
 
     const body = await response.body();
 

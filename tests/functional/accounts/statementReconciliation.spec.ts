@@ -23,15 +23,18 @@ async function createFixture() {
     const budget = await Budget.create({}, { client: trx })
     await budget.initialize()
     const user = await budget.related('users').create({
-      username: `period-${++sequence}`, email: `period-${sequence}@example.com`, password: 'testPassw0rd',
+      username: `period-${++sequence}`, email: `period-${sequence}@example.com`, password:
+        'testPassw0rd',
     })
     const institution = await budget.related('institutions').create({ name: 'Period bank' })
     const account = await institution.related('accounts').create({
       name: 'Period account', balance: 300, type: AccountType.Investment, subtype: 'IRA',
-      tracking: TrackingType.Balances, startDate: DateTime.fromISO('2025-01-01'), rate: 0, closed: false,
+      tracking: TrackingType.Balances, startDate: DateTime.fromISO('2025-01-01'), rate: 0,
+        closed: false,
     })
     const statement = await account.related('statements').create({
-      startDate: DateTime.fromISO(date(oldPeriod.start)), endDate: DateTime.fromISO(date(oldPeriod.end)),
+      startDate: DateTime.fromISO(date(oldPeriod.start)), endDate: DateTime.fromISO(date(oldPeriod
+        .end)),
       startingBalance: 100, endingBalance: 200, data: null,
     })
     const neighbor = await account.related('statements').create({
@@ -45,8 +48,10 @@ async function createFixture() {
         version: 0, deleted: false, sortOrder: 0, categories: [], taxes: [],
       })
       const row = await account.related('accountTransactions').create({
-        transactionId: transaction.id, name: `Period day ${day}`, amount: day % 2 === 0 ? day : -day,
-        provider: 'NONE', pending: false, statementId: day === 10 ? statement.id : day === 16 ? neighbor.id : null,
+        transactionId: transaction.id, name: `Period day ${day}`, amount: day % 2 === 0 ? day : -
+          day,
+        provider: 'NONE', pending: false, statementId: day === 10 ? statement
+          .id : day === 16 ? neighbor.id : null,
       })
       rows.push({ day, row })
     }
@@ -65,22 +70,26 @@ test.group('Statement reconciliation period characterization', (group) => {
       db.from('transactions').where('application_id', fixture.budget.id).orderBy('id'),
       db.from('account_transactions').where('account_id', fixture.account.id).orderBy('id'),
       db.from('transaction_logs').where('application_id', fixture.budget.id).orderBy('id'),
-      db.from('categories').select('categories.*').join('groups', 'groups.id', 'categories.group_id')
+      db.from('categories').select('categories.*').join('groups', 'groups.id',
+        'categories.group_id')
         .where('groups.application_id', fixture.budget.id).orderBy('categories.id'),
     ])
   }
 
   for (const workflow of ['combined', 'sequential', 'dates-only', 'clear'] as const) {
-    test(`${workflow} date/reconciliation PATCH: {name}`).with(periods).run(async ({ client, assert }, period) => {
+    test(`${workflow} date/reconciliation PATCH: {name}`).with(periods).run(async ({ client,
+      assert }, period) => {
       const before = await state()
       const dates = { startDate: date(period.start), endDate: date(period.end) }
       const url = `/api/v1/statements/${fixture.statement.id}`
       const body = workflow === 'combined' ? { ...dates, reconcile: 'All' }
         : workflow === 'clear' ? { ...dates, reconcile: 'None' } : dates
-      const first = await client.patch(url).json(statementRequest(body)).accept('json').loginAs(fixture.user)
+      const first = await client.patch(url).json(statementRequest(body)).accept('json').loginAs(
+        fixture.user)
       first.assertStatus(200)
       const response = workflow === 'sequential'
-        ? await client.patch(url).json(statementRequest({ reconcile: 'All' })).accept('json').loginAs(fixture.user) : first
+        ? await client.patch(url).json(statementRequest({ reconcile: 'All' })).accept('json')
+          .loginAs(fixture.user) : first
       response.assertStatus(200)
       const persisted = await Statement.findOrFail(fixture.statement.id)
       assert.equal(persisted.startDate.toISODate(), dates.startDate)
@@ -89,13 +98,15 @@ test.group('Statement reconciliation period characterization', (group) => {
       assert.equal(persisted.endingBalance, 200)
       assert.isNull(persisted.data)
       const selectedPeriod = period
-      const actualAssignments = await Promise.all(fixture.rows.map(async ({ day, row }) => ({ day, statementId: (await AccountTransaction.findOrFail(row.id)).statementId })))
+      const actualAssignments = await Promise.all(fixture.rows.map(async ({ day, row }) => ({ day,
+        statementId: (await AccountTransaction.findOrFail(row.id)).statementId })))
       const expectedAssignments: { day: number, statementId: number | null }[] = []
       let credits = 0
       let debits = 0
       for (const { day, row } of fixture.rows) {
         const selected = workflow !== 'clear' && (day === 10 ||
-          ((workflow === 'combined' || workflow === 'sequential') && day >= selectedPeriod.start && day <= selectedPeriod.end))
+          ((workflow === 'combined' || workflow === 'sequential') && day >= selectedPeriod.start &&
+            day <= selectedPeriod.end))
         const expected = day === 16 ? fixture.neighbor.id : selected ? fixture.statement.id : null
         expectedAssignments.push({ day, statementId: expected })
         if (expected === fixture.statement.id) {
@@ -107,15 +118,19 @@ test.group('Statement reconciliation period characterization', (group) => {
       assert.equal(response.body().endDate, dates.endDate)
       assert.equal((await Account.findOrFail(fixture.account.id)).balance, 300)
       const after = await state()
-      assert.deepEqual([after[0], after[2], after[4], after[5]], [before[0], before[2], before[4], before[5]])
-      assert.deepEqual(after[1].filter((row) => row.id === fixture.neighbor.id), before[1].filter((row) => row.id === fixture.neighbor.id))
-      assert.deepEqual(actualAssignments, expectedAssignments, `${workflow}/${period.name}: exact persisted assignments`)
+      assert.deepEqual([after[0], after[2], after[4], after[5]], [before[0], before[2], before[4],
+        before[5]])
+      assert.deepEqual(after[1].filter((row) => row.id === fixture.neighbor.id), before[1].filter((
+        row) => row.id === fixture.neighbor.id))
+      assert.deepEqual(actualAssignments, expectedAssignments, `${workflow}/${period
+        .name}: exact persisted assignments`)
       assert.equal(response.body().credits, credits.toFixed(2))
       assert.equal(response.body().debits, debits.toFixed(2))
     })
   }
 
-  test('account failure rolls back changed dates and reconciliation without late writes', async ({ client, assert }) => {
+  test('account failure rolls back changed dates and reconciliation without late writes', async ({
+    client, assert }) => {
     const transaction = await fixture.budget.related('transactions').create({
       date: DateTime.fromISO('2025-03-10'), type: TransactionType.MANUAL_TRANSACTION,
       version: 0, deleted: false, sortOrder: 0, categories: [], taxes: [],
@@ -125,7 +140,8 @@ test.group('Statement reconciliation period characterization', (group) => {
       provider: 'NONE', pending: false, statementId: null,
     })
     const before = await state()
-    await db.rawQuery('ALTER TABLE accounts ADD CONSTRAINT period_test_failure CHECK (balance <> 777) NOT VALID')
+    await db.rawQuery(
+      'ALTER TABLE accounts ADD CONSTRAINT period_test_failure CHECK (balance <> 777) NOT VALID')
     const connection = db.connection().getWriteClient()
     const pendingWrites = new Set<string>()
     const lateWrites: string[] = []
@@ -138,10 +154,12 @@ test.group('Statement reconciliation period characterization', (group) => {
         if (requestCompleted) lateWrites.push(query.sql)
       }
     }
-    const completed = (_result: unknown, query: { sql: string }) => { pendingWrites.delete(query.sql) }
+    const completed = (_result: unknown, query: { sql: string }) => { pendingWrites.delete(query
+      .sql) }
     const succeeded = (result: unknown, query: { sql: string, bindings: unknown[] }) => {
       completed(result, query)
-      if (query.sql.startsWith('update "account_transactions"') && query.bindings.at(-1) === march.id) reconciledNewPeriod = true
+      if (query.sql.startsWith('update "account_transactions"') && query.bindings.at(-1) === march
+        .id) reconciledNewPeriod = true
     }
     const rejected = (reason: unknown) => { unhandledErrors.push(reason) }
     connection.on('query', started)
@@ -150,7 +168,8 @@ test.group('Statement reconciliation period characterization', (group) => {
     process.on('unhandledRejection', rejected)
     try {
       const response = await client.patch(`/api/v1/statements/${fixture.statement.id}`)
-        .json(statementRequest({ startDate: '2025-03-01', endDate: '2025-03-20', endingBalance: 777, reconcile: 'All' }))
+        .json(statementRequest({ startDate: '2025-03-01', endDate: '2025-03-20', endingBalance: 777,
+          reconcile: 'All' }))
         .accept('json').loginAs(fixture.user)
       requestCompleted = true
       response.assertStatus(500)
@@ -161,7 +180,8 @@ test.group('Statement reconciliation period characterization', (group) => {
       assert.deepEqual(await state(), before)
       assert.deepEqual(lateWrites, [])
       assert.deepEqual(unhandledErrors, [])
-      assert.isTrue(reconciledNewPeriod, 'new-period reconciliation must complete before the account failure')
+      assert.isTrue(reconciledNewPeriod,
+        'new-period reconciliation must complete before the account failure')
     } finally {
       connection.off('query', started)
       connection.off('query-response', succeeded)

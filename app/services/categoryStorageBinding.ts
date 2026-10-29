@@ -1,8 +1,10 @@
 import type Transaction from '#models/Transaction'
 import type { LucidRow } from '@adonisjs/lucid/types/model'
-import { decodeCategoryAllocations, runtimeCategoryAllocations, encodeCategoryAllocations } from './categoryAmountCodec.ts'
+import { decodeCategoryAllocations, runtimeCategoryAllocations, encodeCategoryAllocations } from
+  './categoryAmountCodec.ts'
 import { runtimeFundingMetadata } from './fundingAmountCodec.ts'
-import { consumeFundingStorage, prepareFundingStorage, finishFundingStorage } from './fundingStorage.ts'
+import { consumeFundingStorage, prepareFundingStorage, finishFundingStorage } from
+  './fundingStorage.ts'
 
 export const bound = new WeakSet<object>()
 const pendingWrites = new WeakMap<object, ReturnType<typeof encodeCategoryAllocations>>()
@@ -17,7 +19,8 @@ export function requestCategoryStorage(transaction: Transaction, active = true):
 }
 
 export function prepareCategoryStorage(value: unknown, transaction: LucidRow): string {
-  return JSON.stringify(bound.has(transaction) ? encodeCategoryAllocations(prepareFundingStorage(value, transaction, true)) : value)
+  return JSON.stringify(bound.has(transaction) ? encodeCategoryAllocations(prepareFundingStorage(
+    value, transaction, true)) : value)
 }
 
 export function finishCategoryStorageSave(transaction: Transaction): void {
@@ -25,14 +28,16 @@ export function finishCategoryStorageSave(transaction: Transaction): void {
   if (!encoded) { finishFundingStorage(transaction, 'categories'); return }
   finishFundingStorage(transaction, 'categories', encoded)
   // The funding lifecycle changes metadata only; outer allocation decoding remains authoritative.
-  transaction.$attributes.categories = runtimeCategoryAllocations(transaction.$attributes.categories)
+  transaction.$attributes.categories = runtimeCategoryAllocations(transaction.$attributes
+    .categories)
   transaction.$original.categories = structuredClone(transaction.$attributes.categories)
   pendingWrites.delete(transaction)
 }
 
 export function bindResolvedCategoryStorage(row: Transaction): void {
   if (bound.has(row)) return
-  if (row.$isPersisted && Object.hasOwn(row.$dirty, 'categories')) throw new Error('Bind Category storage before allocation mutation')
+  if (row.$isPersisted && Object.hasOwn(row.$dirty, 'categories')) throw new Error(
+    'Bind Category storage before allocation mutation')
   const decoded = row.$isPersisted
     ? decodeCategoryAllocations(consumeFundingStorage(row.categories, row, true))
     : runtimeCategoryAllocations(runtimeFundingMetadata(row.categories))
@@ -44,7 +49,8 @@ export function bindResolvedCategoryStorage(row: Transaction): void {
 export function stageCategoryStorage(transaction: Transaction): void {
   pendingWrites.delete(transaction)
   if (bound.has(transaction) && Object.hasOwn(transaction.$dirty, 'categories')) {
-    pendingWrites.set(transaction, encodeCategoryAllocations(prepareFundingStorage(transaction.categories, transaction, true)))
+    pendingWrites.set(transaction, encodeCategoryAllocations(prepareFundingStorage(transaction
+      .categories, transaction, true)))
   }
 }
 

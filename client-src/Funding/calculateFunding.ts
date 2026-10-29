@@ -1,4 +1,5 @@
-import { addMoneyCents, subtractMoneyCents, parseMoneyCents, moneyCentsFromInteger, type MoneyCents } from '../../common/moneyCents.js';
+import { addMoneyCents, subtractMoneyCents, parseMoneyCents, moneyCentsFromInteger,
+  type MoneyCents } from '../../common/moneyCents.js';
 import { inputMoneyCents, CentFundingRule } from '../monetary.js';
 import { CategorySpreadInput } from './Types.js';
 
@@ -28,7 +29,8 @@ export function fundingCalculationInputs(inputs: Readonly<Record<string, {
     if (typeof value === 'string' && value.trim() === '') throw new Error('Missing funding amount');
     return inputMoneyCents(value);
   };
-  return Object.fromEntries(Object.entries(inputs).map(([id, { baseAmount, fundingCategories, ...input }]) => [id, {
+  return Object.fromEntries(Object.entries(inputs).map(([id, { baseAmount, fundingCategories,
+    ...input }]) => [id, {
     ...input,
     baseAmountCents: cents(baseAmount),
     fundingCategories: fundingCategories.map((rule): CentFundingRule => {
@@ -44,11 +46,13 @@ export function fundingCalculationInputs(inputs: Readonly<Record<string, {
 }
 
 // Preserve the existing comparator, percentage rounding and last-rule residual recipient.
-export const computeSpread = (amount: MoneyCents, fundingCategories: readonly CentFundingRule[]): Map<number, MoneyCents> => {
+export const computeSpread = (amount: MoneyCents, fundingCategories: readonly CentFundingRule[
+  ]): Map<number, MoneyCents> => {
   let categoryAmount = addMoneyCents(amount);
   let percentSum = zero;
 
-  // Sort the funding categories by percentage so that fixed amounts are applied before percentage amounts.
+  // Sort the funding categories by percentage so that fixed amounts are applied before percentage
+  // amounts.
   const sortedCategories = (fundingCategories ?? []).slice().sort((a) => (a.percentage ? 1 : -1))
 
   const funders = new Map<number, MoneyCents>();
@@ -60,13 +64,15 @@ export const computeSpread = (amount: MoneyCents, fundingCategories: readonly Ce
 
     if (fundingCategory.percentage) {
       if (!Number.isFinite(fundingCategory.amount)) throw new Error('Invalid funding percentage');
-      fundingAmount = moneyCentsFromInteger(Math.round((fundingCategory.amount / 100.0) * categoryAmount));
+      fundingAmount = moneyCentsFromInteger(Math.round((fundingCategory.amount / 100.0) *
+        categoryAmount));
       percentSum = addMoneyCents(percentSum, fundingAmount);
 
       // If we are on the last item and there is a remaing amount (due to rounding error)
       // then add it to the last funding amount.
       if (i === sortedCategories.length - 1 && percentSum !== categoryAmount) {
-        fundingAmount = addMoneyCents(fundingAmount, subtractMoneyCents(categoryAmount, percentSum));
+        fundingAmount = addMoneyCents(fundingAmount, subtractMoneyCents(categoryAmount,
+          percentSum));
       }
     }
     else {
@@ -88,7 +94,8 @@ export const computeSpread = (amount: MoneyCents, fundingCategories: readonly Ce
   return funders;
 };
 
-export const calculateFunding = (inputs: FundingInputs, fundingPoolId: number): FundingAllocation[] => {
+export const calculateFunding = (inputs: FundingInputs, fundingPoolId: number): FundingAllocation[
+  ] => {
   const categories: FundingAllocation[] = Object.keys(inputs)
     .filter((k) => parseInt(k, 10) !== fundingPoolId)
     .map((k) => {
@@ -161,6 +168,7 @@ export const calculateFunding = (inputs: FundingInputs, fundingPoolId: number): 
 };
 
 // Sum posted destination and funder rows without converting to dollars.
-export const fundingCategoryEffectCents = (rows: readonly Pick<FundingAllocation, 'categoryId' | 'amountCents'>[], categoryId: number): MoneyCents => (
+export const fundingCategoryEffectCents = (rows: readonly Pick<FundingAllocation, 'categoryId' |
+  'amountCents'>[], categoryId: number): MoneyCents => (
   addMoneyCents(...rows.filter(row => row.categoryId === categoryId).map(row => row.amountCents))
 );

@@ -57,7 +57,8 @@ const Intro: React.FC = observer(() => {
             take control of your expenditures and spend your money
             on the things that are important to you.
           </div>
-          <div className={`${styles.linkButton} ${styles.signupFreeButton}`} onClick={handleSignupClick}>
+          <div className={`${styles.linkButton} ${styles.signupFreeButton}`} onClick={
+            handleSignupClick}>
             Sign up for free
           </div>
         </div>

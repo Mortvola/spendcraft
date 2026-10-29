@@ -11,7 +11,8 @@ import { AccountInterface, StatementInterface } from '../State/Types';
 import { AccountType, ApiError, RequestErrorCode } from '../../common/ResponseTypes';
 import styles from './StatementDialog.module.scss';
 import AmountField from '../AmountField';
-import { formatMoneyCents, parseMoneyCents, subtractMoneyCents, type MoneyCents } from '../../common/moneyCents';
+import { formatMoneyCents, parseMoneyCents, subtractMoneyCents, type MoneyCents } from
+  '../../common/moneyCents';
 import { inputMoneyCents } from '../monetary';
 
 interface PropsType {
@@ -39,7 +40,8 @@ const StatementDialog: React.FC<PropsType & ModalProps> = ({
 
   const handleValidate = (values: ValueType) => {
     const errors: FormikErrors<ValueType> = {};
-    for (const field of ['startingBalance', 'endingBalance', 'shortTermGains', 'longTermGains', 'dividends', 'taxableInterest'] as const) {
+    for (const field of ['startingBalance', 'endingBalance', 'shortTermGains', 'longTermGains',
+      'dividends', 'taxableInterest'] as const) {
       try {
         if (values[field].trim() === '') throw new Error('Missing amount');
         inputMoneyCents(values[field]);
@@ -123,7 +125,8 @@ const StatementDialog: React.FC<PropsType & ModalProps> = ({
         shortTermGains: formatMoneyCents(statement?.shortTermGainsCents ?? parseMoneyCents('0.00')),
         longTermGains: formatMoneyCents(statement?.longTermGainsCents ?? parseMoneyCents('0.00')),
         dividends: formatMoneyCents(statement?.dividendsCents ?? parseMoneyCents('0.00')),
-        taxableInterest: formatMoneyCents(statement?.taxableInterestCents ?? parseMoneyCents('0.00')),
+        taxableInterest: formatMoneyCents(statement?.taxableInterestCents ?? parseMoneyCents(
+          '0.00')),
       }}
       setShow={setShow}
       title={statement ? 'Edit Statement' : 'Add Statement'}

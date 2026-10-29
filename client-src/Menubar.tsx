@@ -73,7 +73,8 @@ const Menubar: React.FC = observer(() => {
     switch (eventKey) {
       case EventKeys.HOME:
         if (uiState.selectedCategory !== undefined && uiState.selectedCategory !== null) {
-          if (params.categoryId === undefined || parseInt(params.categoryId, 10) !== uiState.selectedCategory.id) {
+          if (params.categoryId === undefined || parseInt(params.categoryId, 10) !== uiState
+            .selectedCategory.id) {
             navigate(`/home/${uiState.selectedCategory.id}`)
           }
           else {
@@ -87,7 +88,8 @@ const Menubar: React.FC = observer(() => {
 
       case EventKeys.ACCOUNTS:
         if (uiState.selectedAccount !== undefined && uiState.selectedAccount !== null) {
-          if (params.accountId === undefined || parseInt(params.accountId, 10) !== uiState.selectedAccount.id) {
+          if (params.accountId === undefined || parseInt(params.accountId, 10) !== uiState
+            .selectedAccount.id) {
             navigate(`/accounts/${uiState.selectedAccount.id}`)
           }
           else {
@@ -141,7 +143,8 @@ const Menubar: React.FC = observer(() => {
             <Nav.Link as={Link} to="/reports" eventKey={EventKeys.REPORTS}>Reports</Nav.Link>
           </Nav.Item>
           <Nav.Item>
-            <Nav.Link as={Link} to="/auto-assignments" eventKey={EventKeys.AUTO_ASSIGN}>Auto Assign</Nav.Link>
+            <Nav.Link as={Link} to="/auto-assignments" eventKey={EventKeys
+              .AUTO_ASSIGN}>Auto Assign</Nav.Link>
           </Nav.Item>
           <Nav.Item>
             <Nav.Link as={Link} to="/taxes" eventKey={EventKeys.TAXES}>Taxes</Nav.Link>
@@ -155,8 +158,10 @@ const Menubar: React.FC = observer(() => {
                 <NavDropdown
                   title="Admin"
                 >
-                  <NavDropdown.Item as={Link} to="/plaid-logs" eventKey={EventKeys.PLAID_LOGS}>Plaid Logs</NavDropdown.Item>
-                  <NavDropdown.Item as={Link} to="/users" eventKey={EventKeys.USERS}>Users</NavDropdown.Item>
+                  <NavDropdown.Item as={Link} to="/plaid-logs" eventKey={EventKeys
+                    .PLAID_LOGS}>Plaid Logs</NavDropdown.Item>
+                  <NavDropdown.Item as={Link} to="/users" eventKey={EventKeys.USERS}>Users</
+                    NavDropdown.Item>
                 </NavDropdown>
               )
               : null
@@ -169,7 +174,8 @@ const Menubar: React.FC = observer(() => {
             id="menubar-dropdown"
             align="end"
           >
-            <NavDropdown.Item as={Link} to="/user" eventKey="USER_ACCOUNT">Account</NavDropdown.Item>
+            <NavDropdown.Item as={Link} to="/user" eventKey="USER_ACCOUNT">Account</NavDropdown
+              .Item>
             <NavDropdown.Item eventKey={EventKeys.LOGOUT}>Sign Out</NavDropdown.Item>
           </NavDropdown>
         </Nav>

@@ -4,7 +4,9 @@ import Budget from '#models/Budget'
 
 
 test.group('Installed rollback completion behavior', () => {
-  test('rollback after commit and repeated rollback record installed behavior without undoing commit', async ({ assert }) => {
+  test(
+    'rollback after commit and repeated rollback record installed behavior without undoing commit',
+    async ({ assert }) => {
     const trx = await db.transaction()
     try {
       const budget = await Budget.create({}, { client: trx })

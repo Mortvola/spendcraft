@@ -7,7 +7,9 @@ import { tmpdir } from 'node:os'
 import { spawnSync } from 'node:child_process'
 
 const script = resolve('installer/backup.sh')
-const valid = 'PG_HOST=localhost\nPG_PORT=5432\nPG_USER=staging_user\nPG_PASSWORD="private-test-password"\nPG_DB_NAME=spendcraft_staging\n'
+const valid =
+  'PG_HOST=localhost\nPG_PORT=5432\nPG_USER=staging_user\nPG_PASSWORD="private-test-password"\nPG_D\
+B_NAME=spendcraft_staging\n'
 
 test.group('Packaged installer backup (mock pg_dump only)', (group) => {
   let root
@@ -21,17 +23,24 @@ test.group('Packaged installer backup (mock pg_dump only)', (group) => {
     const capture = join(root, 'invocation.json')
     await writeFile(join(bin, 'pg_dump'), `#!${process.execPath}
 const fs = require('node:fs');
-fs.writeFileSync(${JSON.stringify(capture)}, JSON.stringify({args:process.argv.slice(2),password:process.env.PGPASSWORD,inheritedDatabase:process.env.PGDATABASE}));
+fs.writeFileSync(${JSON.stringify(
+  capture)}, \
+JSON.stringify({args:process.argv.slice(2),password:process.env.PGPASSWORD,inheritedDatabase:proces\
+s.env.PGDATABASE}));
 process.stdout.write(${JSON.stringify(behavior === 'empty' ? '' : '-- synthetic dump\n')});
 process.stderr.write(${JSON.stringify('private diagnostic\n')});
-${behavior === 'failure' ? 'process.exitCode=7;' : behavior === 'signal' ? "process.kill(process.pid,'SIGTERM');" : ''}
+${behavior === 'failure' ? 'process.exitCode=7;' : behavior === 'signal' ?
+  "process.kill(process.pid,'SIGTERM');" : ''}
 `, { mode: 0o700 })
     await writeFile(join(root, 'settings.env'), config)
-    return spawnSync('bash', [script, ...(args ?? ['--env-file', join(root, 'settings.env'), '--output-parent', join(root, 'backups')])], {
-      cwd: root, env: { PATH: `${bin}:${process.env.PATH}`, PGDATABASE: 'must_not_be_used' }, encoding: 'utf8',
+    return spawnSync('bash', [script, ...(args ?? ['--env-file', join(root, 'settings.env'),
+      '--output-parent', join(root, 'backups')])], {
+      cwd: root, env: { PATH: `${bin}:${process.env.PATH}`, PGDATABASE: 'must_not_be_used' },
+        encoding: 'utf8',
     })
   }
-  test('uses .env target, publishes private dump and summary, and preserves earlier backups', async ({ assert }) => {
+  test('uses .env target, publishes private dump and summary, and preserves earlier backups',
+    async ({ assert }) => {
     await mkdir(join(root, 'backups'))
     await writeFile(join(root, 'backups', 'backup.sql'), 'old backup')
     const first = await run()
@@ -40,17 +49,21 @@ ${behavior === 'failure' ? 'process.exitCode=7;' : behavior === 'signal' ? "proc
     assert.isTrue(output.startsWith(join(root, 'backups', 'database-backup-')))
     const summary = JSON.parse(await readFile(join(output, 'summary.json'), 'utf8'))
     assert.equal(summary.status, 'complete')
-    assert.deepEqual(summary.target, { host: 'localhost', port: 5432, user: 'staging_user', database: 'spendcraft_staging' })
+    assert.deepEqual(summary.target, { host: 'localhost', port: 5432, user: 'staging_user',
+      database: 'spendcraft_staging' })
     assert.equal(summary.bytes, Buffer.byteLength('-- synthetic dump\n'))
     assert.match(summary.sha256, /^[a-f0-9]{64}$/)
     assert.equal((await stat(output)).mode & 0o777, 0o700)
-    for (const file of ['backup.sql', 'summary.json', 'pg_dump.stderr.log']) assert.equal((await stat(join(output, file))).mode & 0o777, 0o600)
+    for (const file of ['backup.sql', 'summary.json', 'pg_dump.stderr.log']) assert.equal((
+      await stat(join(output, file))).mode & 0o777, 0o600)
     assert.notInclude(await readdir(output), 'backup.sql.partial')
     const invoked = JSON.parse(await readFile(join(root, 'invocation.json'), 'utf8'))
-    assert.deepEqual(invoked.args, ['--format=plain', '--no-password', '--host', 'localhost', '--port', '5432', '--username', 'staging_user', '--dbname', 'spendcraft_staging'])
+    assert.deepEqual(invoked.args, ['--format=plain', '--no-password', '--host', 'localhost',
+      '--port', '5432', '--username', 'staging_user', '--dbname', 'spendcraft_staging'])
     assert.equal(invoked.password, 'private-test-password')
     assert.notProperty(invoked, 'inheritedDatabase')
-    assert.notInclude(first.stdout + first.stderr + JSON.stringify(summary), 'private-test-password')
+    assert.notInclude(first.stdout + first.stderr + JSON.stringify(summary),
+      'private-test-password')
     assert.notInclude(first.stdout + first.stderr, 'private diagnostic')
     const second = await run()
     assert.equal(second.status, 0)
@@ -86,10 +99,14 @@ ${behavior === 'failure' ? 'process.exitCode=7;' : behavior === 'signal' ? "proc
     assert.notInclude(await readdir(root), 'invocation.json')
   })
   test('configuration diagnostics identify fields without disclosing their values').with([
-    [valid.replace('PG_PASSWORD="private-test-password"\n', ''), 'Missing required environment setting(s): PG_PASSWORD'],
-    [valid.replace('PG_PORT=5432\n', '').replace('PG_USER=staging_user\n', ''), 'Missing required environment setting(s): PG_PORT, PG_USER'],
-    [valid.replace('PG_PORT=5432', 'PG_PORT=private-invalid-value'), 'PG_PORT (integer from 1 to 65535 required)'],
-    [valid.replace('PG_DB_NAME=spendcraft_staging', 'PG_DB_NAME=private-invalid-value'), 'PG_DB_NAME (letters, digits and underscores only)'],
+    [valid.replace('PG_PASSWORD="private-test-password"\n', ''),
+      'Missing required environment setting(s): PG_PASSWORD'],
+    [valid.replace('PG_PORT=5432\n', '').replace('PG_USER=staging_user\n', ''),
+      'Missing required environment setting(s): PG_PORT, PG_USER'],
+    [valid.replace('PG_PORT=5432', 'PG_PORT=private-invalid-value'),
+      'PG_PORT (integer from 1 to 65535 required)'],
+    [valid.replace('PG_DB_NAME=spendcraft_staging', 'PG_DB_NAME=private-invalid-value'),
+      'PG_DB_NAME (letters, digits and underscores only)'],
     [valid.replace('PG_HOST=localhost', 'PG_HOST='), 'PG_HOST (hostname or IP address required)'],
   ]).run(async ({ assert }, [config, expected]) => {
     const result = await run(config)
@@ -99,13 +116,18 @@ ${behavior === 'failure' ? 'process.exitCode=7;' : behavior === 'signal' ? "proc
     assert.notInclude(result.stdout + result.stderr, 'private-invalid-value')
     assert.notInclude(await readdir(root), 'invocation.json')
   })
-  test('missing environment file reports ENOENT and suggests checking its path', async ({ assert }) => {
-    const result = await run(valid, 'success', ['--env-file', join(root, 'absent.env'), '--output-parent', join(root, 'backups')])
+  test('missing environment file reports ENOENT and suggests checking its path', async ({
+    assert }) => {
+    const result = await run(valid, 'success', ['--env-file', join(root, 'absent.env'),
+      '--output-parent', join(root, 'backups')])
     assert.equal(result.status, 1)
-    assert.include(result.stderr, 'Cannot read environment file (ENOENT); check --env-file and file permissions')
+    assert.include(result.stderr,
+      'Cannot read environment file (ENOENT); check --env-file and file permissions')
     assert.notInclude(await readdir(root), 'invocation.json')
   })
-  test('payload includes the script; installer invokes it before migrations with explicit external paths', async ({ assert }) => {
+  test(
+    'payload includes the script; installer invokes it before migrations with explicit external \
+paths', async ({ assert }) => {
     const config = await readFile('adonisrc.ts', 'utf8')
     assert.include(config, "pattern: 'installer/backup.sh'")
     assert.notInclude(config, "pattern: 'backup.sh'")
@@ -114,7 +136,8 @@ ${behavior === 'failure' ? 'process.exitCode=7;' : behavior === 'signal' ? "proc
     assert.include(installer, 'bash "$SPENDCRAFT_ROOT/$APP_NEW/installer/backup.sh"')
     assert.include(installer, '--env-file "$SPENDCRAFT_ROOT/$APP-env"')
     assert.include(installer, '--output-parent "$SPENDCRAFT_ROOT/backups"')
-    assert.isBelow(installer.indexOf('bash "$SPENDCRAFT_ROOT/$APP_NEW/installer/backup.sh"'), installer.indexOf('\nnode ace migration:status'))
+    assert.isBelow(installer.indexOf('bash "$SPENDCRAFT_ROOT/$APP_NEW/installer/backup.sh"'),
+      installer.indexOf('\nnode ace migration:status'))
     assert.notInclude(installer, '\n./backup.sh\n')
   })
 })

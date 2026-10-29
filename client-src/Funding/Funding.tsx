@@ -26,7 +26,8 @@ const Funding: React.FC<PropsType> = ({
     // const newDate = date.startOf('month');
 
     (async () => {
-      const response = await Http.get<ApiResponse<FundingInfoProps[]>>(`/api/v1/categories?date=${date}`);
+      const response = await Http.get<ApiResponse<FundingInfoProps[]>>(
+        `/api/v1/categories?date=${date}`);
 
       if (response.ok) {
         const { data } = await response.body();
@@ -61,7 +62,8 @@ const Funding: React.FC<PropsType> = ({
     );
   }
 
-  const populateCategories = (groupName: string | null, nodes: (GroupInterface | CategoryInterface)[]) => (
+  const populateCategories = (groupName: string | null, nodes: (GroupInterface | CategoryInterface)[
+    ]) => (
     nodes
       .flatMap((node): React.JSX.Element | React.JSX.Element[] | null => {
         if (isCategory(node)) {

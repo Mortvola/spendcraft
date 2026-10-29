@@ -22,7 +22,8 @@ class LoanTransaction {
     this.id = props.id;
     this.date = props.transactionCategory.transaction.date;
     this.name = props.transactionCategory.transaction.accountTransaction.name;
-    this.paymentCents = subtractMoneyCents(parseMoneyCents('0.00'), parseMoneyCents(props.transactionCategory.amount));
+    this.paymentCents = subtractMoneyCents(parseMoneyCents('0.00'), parseMoneyCents(props
+      .transactionCategory.amount));
     this.principleCents = parseMoneyCents(props.principle);
     this.interestCents = subtractMoneyCents(this.paymentCents, this.principleCents);
     this.transactionCategoryId = props.transactionCategory.id;

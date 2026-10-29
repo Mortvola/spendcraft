@@ -7,12 +7,15 @@ import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { configuration } from './auditTransactionCategoryCents.mjs'
 import { inspectAmount } from './auditTransactionTaxPrecision.mjs'
-import { discoverTarget, verifyDatabase, verifyConnectionConfiguration } from './lib/historicalCategoryConversion.mjs'
+import { discoverTarget, verifyDatabase, verifyConnectionConfiguration } from
+  './lib/historicalCategoryConversion.mjs'
 
-export const FIELDS = ['shortTermCapitalGains', 'longTermCapitalGains', 'dividends', 'taxableInterest']
+export const FIELDS = ['shortTermCapitalGains', 'longTermCapitalGains', 'dividends',
+  'taxableInterest']
 export const PAGE_SQL = `SELECT s.id, s.account_id, s.start_date::text, s.end_date::text,
   s.data::text AS data_text, i.application_id AS budget_id,
-  jsonb_build_object(${FIELDS.map(f => `'${f}', (s.data->'${f}')::text`).join(', ')})::text AS tokens
+  jsonb_build_object(${FIELDS.map(f => `'${f}', (s.data->'${f}')::text`).join(
+    ', ')})::text AS tokens
   FROM public.statements s LEFT JOIN public.accounts a ON a.id=s.account_id
   LEFT JOIN public.institutions i ON i.id=a.institution_id
   WHERE s.id>$1 ORDER BY s.id LIMIT $2`
@@ -45,13 +48,15 @@ export function inspectStatement(row) {
   else if (row.data_text === undefined) finding.shape = 'missing'
   else {
     try { data = JSON.parse(row.data_text) } catch { finding.shape = 'invalid_json' }
-    finding.shape ??= data === null ? 'json_null' : typeof data === 'object' && !Array.isArray(data) ? 'object' : 'non_object'
+    finding.shape ??= data === null ? 'json_null' : typeof data === 'object' && !Array.isArray(
+      data) ? 'object' : 'non_object'
   }
   const tokens = JSON.parse(row.tokens ?? '{}')
   const proposed = finding.shape === 'object' ? { ...data } : null
   for (const field of FIELDS) {
     const present = finding.shape === 'object' && Object.hasOwn(data, field)
-    const entry = present ? inspectAmount(data[field], tokens[field]) : { kind: 'missing', status: 'missing' }
+    const entry = present ? inspectAmount(data[field], tokens[field]) : { kind: 'missing', status:
+      'missing' }
     finding.fields[field] = { present, ...entry }
     // Strings are characterized, not coerced or hypothetically converted.
     if (entry.kind === 'number' && entry.status === 'valid') proposed[field] = entry.proposedAmount
@@ -62,16 +67,19 @@ export function inspectStatement(row) {
 }
 
 export function newSummary() {
-  return { statementsExamined: 0, mixedStatements: 0, shapes: {}, fields: Object.fromEntries(FIELDS.map(f => [f, {
+  return { statementsExamined: 0, mixedStatements: 0, shapes: {}, fields: Object.fromEntries(FIELDS
+    .map(f => [f, {
     present: 0, numeric: 0, strings: 0, canonicalStrings: 0, missing: 0, null: 0,
     malformed: 0, fractionalCents: 0, hypotheticalNumericChanges: 0, sourceToNumberChanges: 0,
   }])) }
 }
 
-export async function runAudit(client, config, writeFinding, { verify = discoverTarget, reverify = verifyDatabase } = {}) {
+export async function runAudit(client, config, writeFinding, { verify = discoverTarget, reverify =
+  verifyDatabase } = {}) {
   await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY')
   try {
-    if ((await client.query("SELECT current_setting('transaction_read_only') AS read_only")).rows[0]?.read_only !== 'on') throw new Error('read_only_required')
+    if ((await client.query("SELECT current_setting('transaction_read_only') AS read_only")).rows[0]
+      ?.read_only !== 'on') throw new Error('read_only_required')
     const target = await verify(client, config)
     const summary = newSummary(), proposals = []
     let after = 0, reportSafe = true
@@ -79,7 +87,8 @@ export async function runAudit(client, config, writeFinding, { verify = discover
       const { rows } = await client.query(PAGE_SQL, [after, 100])
       if (!rows.length) break
       for (const row of rows) {
-        if (!Number.isSafeInteger(row.id) || row.id <= after) throw new Error('invalid_page_progress')
+        if (!Number.isSafeInteger(row.id) || row.id <= after) throw new Error(
+          'invalid_page_progress')
         after = row.id
         const { finding, proposal } = inspectStatement(row)
         summary.statementsExamined++
@@ -104,8 +113,10 @@ export async function runAudit(client, config, writeFinding, { verify = discover
         await writeFinding(finding)
       }
     }
-    const reports = reportSafe ? (await client.query(REPORT_SQL, [JSON.stringify(proposals)])).rows : null
-    const differences = reports?.filter(row => FIELDS.some(f => row[f] !== row[`hypothetical_${f}`])) ?? null
+    const reports = reportSafe ? (await client.query(REPORT_SQL, [JSON.stringify(proposals)]))
+      .rows : null
+    const differences = reports?.filter(row => FIELDS.some(f => row[f] !== row[
+      `hypothetical_${f}`])) ?? null
     await reverify(client, config, target)
     await client.query('COMMIT')
     return { target: target.database, ...summary, reports, reportDifferences: differences,
@@ -122,7 +133,8 @@ export function argumentsFor(args) {
     env: { type: 'string', default: '.env' }, database: { type: 'string' },
     'output-parent': { type: 'string' }, 'print-sql': { type: 'boolean' },
   } })
-  if (!values['print-sql'] && !/^[a-zA-Z0-9_]+$/.test(values.database ?? '')) throw new Error('explicit_database_required')
+  if (!values['print-sql'] && !/^[a-zA-Z0-9_]+$/.test(values.database ?? '')) throw new Error(
+    'explicit_database_required')
   return values
 }
 
@@ -141,7 +153,9 @@ export async function main(args = process.argv.slice(2)) {
     client = new pg.Client({ host: config.host, port: config.port, database: config.database,
       user: config.user, password: config.password, ssl: false, connectionTimeoutMillis: 10000,
       application_name: 'spendcraft_statement_income_audit',
-      options: '-c default_transaction_read_only=on -c statement_timeout=30000 -c lock_timeout=3000 -c idle_in_transaction_session_timeout=60000 -c search_path=pg_catalog,public' })
+      options:
+        '-c default_transaction_read_only=on -c statement_timeout=30000 -c lock_timeout=3000 -c \
+idle_in_transaction_session_timeout=60000 -c search_path=pg_catalog,public' })
     client.on('error', () => undefined)
     timer = globalThis.setTimeout(() => { client.end().catch(() => undefined) }, 300000)
     await client.connect()
@@ -149,11 +163,16 @@ export async function main(args = process.argv.slice(2)) {
     const result = await runAudit(client, config, f => details.writeFile(JSON.stringify(f) + '\n'))
     await details.sync()
     const summary = await open(join(output, 'summary.json'), 'wx', 0o600)
-    try { await summary.writeFile(JSON.stringify({ status: 'complete', readOnly: true, ...result }, null, 2) + '\n'); await summary.sync() } finally { await summary.close() }
-    console.log(JSON.stringify({ statementsExamined: result.statementsExamined, fields: result.fields,
-      reportComparison: result.reportComparison, changedReportGroups: result.reportDifferences?.length ?? null }))
+    try { await summary.writeFile(JSON.stringify({ status: 'complete', readOnly: true, ...result },
+      null, 2) + '\n'); await summary.sync() } finally { await summary.close() }
+    console.log(JSON.stringify({ statementsExamined: result.statementsExamined, fields: result
+      .fields,
+      reportComparison: result.reportComparison, changedReportGroups: result.reportDifferences
+        ?.length ?? null }))
   } catch {
-    console.error('INCOMPLETE statement income audit; retain private evidence. No database changes were authorized or attempted.')
+    console.error(
+      'INCOMPLETE statement income audit; retain private evidence. No database changes were \
+authorized or attempted.')
     process.exitCode = 1
   } finally {
     globalThis.clearTimeout(timer)
@@ -161,4 +180,5 @@ export async function main(args = process.argv.slice(2)) {
     try { await client?.end() } catch { /* Read-only connection. */ }
   }
 }
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) await main()
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) await main(
+  )

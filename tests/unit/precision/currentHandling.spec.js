@@ -14,7 +14,8 @@ import { encodeCategoryAllocations } from '../../../app/services/categoryAmountC
 // Execute current component expressions without application/DB bootstrap or a DOM.
 async function component(name, context) {
   const source = await readFile(`client-src/${name}.tsx`, 'utf8')
-  const ast = ts.createSourceFile(`${name}.tsx`, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const ast = ts.createSourceFile(`${name}.tsx`, source, ts.ScriptTarget.Latest, true, ts.ScriptKind
+    .TSX)
   const statement = ast.statements.find((s) => ts.isVariableStatement(s)
     && s.declarationList.declarations.some((d) => d.name.getText(ast) === name))
   const expression = statement.declarationList.declarations[0].initializer.getText(ast)
@@ -25,8 +26,10 @@ async function component(name, context) {
 const React = { createElement: (type, props, ...children) => ({ type, props, children }) }
 async function input(props) {
   const state = []; let cursor = 0
-  const render = await component('AmountInput', { React, styles: {}, Console: { log: () => undefined },
-    parseEquation, Overlay: 'overlay', Popover: 'popover', PopoverHeader: 'header', PopoverBody: 'body',
+  const render = await component('AmountInput', { React, styles: {}, Console: { log: () =>
+    undefined },
+    parseEquation, Overlay: 'overlay', Popover: 'popover', PopoverHeader: 'header', PopoverBody:
+      'body',
     useRef: () => ({ current: null }), useState: (initial) => {
       const index = cursor++
       if (!(index in state)) state[index] = initial
@@ -36,14 +39,17 @@ async function input(props) {
 }
 
 test.group('Current monetary handling without database', () => {
-  test('Amount formats but does not normalize its input, including negative zero', async ({ assert }) => {
+  test('Amount formats but does not normalize its input, including negative zero', async ({
+    assert }) => {
     const render = await component('Amount', { React })
-    for (const [value, expected] of [[0.1 + 0.2, '0.30'], [1.005, '1.00'], [-0.001, '0.00'], [-0, '0.00'], [-1234.567, '-1,234.57'], ['12abc', '12.00']]) {
+    for (const [value, expected] of [[0.1 + 0.2, '0.30'], [1.005, '1.00'], [-0.001, '0.00'], [-0,
+      '0.00'], [-1234.567, '-1,234.57'], ['12abc', '12.00']]) {
       assert.equal(render({ amount: value }).children[0], expected)
     }
     assert.equal(0.1 + 0.2, 0.30000000000000004)
   })
-  test('controlled AmountInput forwards raw change/blur even when its display rounds', async ({ assert }) => {
+  test('controlled AmountInput forwards raw change/blur even when its display rounds', async ({
+    assert }) => {
     let changed, blurred
     const f = await input({ value: '1.239', onChange: (event) => { changed = event.target.value },
       onBlur: (event) => { blurred = event.target.value } })
@@ -61,7 +67,8 @@ test.group('Current monetary handling without database', () => {
     assert.strictEqual(f.state[0], '0.30')
     assert.strictEqual(blurred, '0.30')
   })
-  test('invalid blur silently becomes local zero; Infinity is not rejected locally', async ({ assert }) => {
+  test('invalid blur silently becomes local zero; Infinity is not rejected locally', async ({
+    assert }) => {
     const f = await input({ value: 1 })
     f.render().onBlur({ target: { value: '-' } }); assert.equal(f.state[0], '0.00')
     f.render().onBlur({ target: { value: 'Infinity' } }); assert.equal(f.state[0], 'Infinity')
@@ -73,13 +80,17 @@ test.group('Current monetary handling without database', () => {
     assert.isTrue(Object.is(Math.round(-0.005 * 100) / 100, -0))
     assert.equal(Math.round(1.005 * 100) / 100, 1)
   })
-  test('Transaction requests require canonical strings and decode without intermediate rounding', async ({ assert }) => {
+  test('Transaction requests require canonical strings and decode without intermediate rounding',
+    async ({ assert }) => {
     for (const amount of ['1.00', '-0.12', '0.30', '0.00']) {
-      const value = await addTransaction.validate({ date: '2025-01-01', name: 'Precision', amount, categories: [] })
+      const value = await addTransaction.validate({ date: '2025-01-01', name: 'Precision', amount,
+        categories: [] })
       assert.equal(value.amount, Number(amount))
     }
-    for (const amount of ['1.005', '1e-2', 0.1 + 0.2, '', ' ', false, true, '0x10', '12abc', null, Infinity, NaN]) {
-      await assert.rejects(() => addTransaction.validate({ date: '2025-01-01', name: 'Precision', amount, categories: [] }))
+    for (const amount of ['1.005', '1e-2', 0.1 + 0.2, '', ' ', false, true, '0x10', '12abc', null,
+      Infinity, NaN]) {
+      await assert.rejects(() => addTransaction.validate({ date: '2025-01-01', name: 'Precision',
+        amount, categories: [] }))
     }
   })
   test('rounded conservation accepts subcent rows without modifying them', ({ assert }) => {
@@ -95,8 +106,10 @@ test.group('Current monetary handling without database', () => {
     assert.isNaN(parseEquation('0/0'))
     assert.throws(() => parseEquation('1.2.3'))
   })
-  test('funding calculations retain exact cents through request and persistence encoding', ({ assert }) => {
-    const row = (baseAmount, from, includeFundingTransfers = false) => ({ baseAmountCents: parseMoneyCents(baseAmount), includeFundingTransfers,
+  test('funding calculations retain exact cents through request and persistence encoding', ({
+    assert }) => {
+    const row = (baseAmount, from, includeFundingTransfers = false) => ({
+      baseAmountCents: parseMoneyCents(baseAmount), includeFundingTransfers,
       fundingCategories: [{ categoryId: from, amount: 100, percentage: true }] })
     const inputs = { 10: row('0.10', 99, true), 20: row('0.20', 10) }
     const before = globalThis.structuredClone(inputs)
@@ -105,7 +118,8 @@ test.group('Current monetary handling without database', () => {
     assert.strictEqual(rows[0].baseAmountCents, 10)
     assert.strictEqual(addMoneyCents(...rows.map(row => row.amountCents)), 0)
     assert.deepEqual(inputs, before)
-    const transmitted = JSON.parse(JSON.stringify(encodeTransferCategories(rows.map(({ amountCents, ...row }) => ({
+    const transmitted = JSON.parse(JSON.stringify(encodeTransferCategories(rows.map(({ amountCents,
+      ...row }) => ({
       ...row, amount: formatMoneyCents(amountCents),
     })))))
     assert.strictEqual(transmitted[0].amount, '0.30')
@@ -118,7 +132,8 @@ test.group('Current monetary handling without database', () => {
     assert.strictEqual(rows[0].amountCents, 30)
   })
 
-  test('percentage funding rounds to cents and assigns the residual to the last rule', ({ assert }) => {
+  test('percentage funding rounds to cents and assigns the residual to the last rule', ({
+    assert }) => {
     const amountCents = parseMoneyCents('0.05')
     const rules = [{ categoryId: 10, amount: 50, percentage: true },
       { categoryId: 20, amount: 50, percentage: true }]

@@ -20,7 +20,8 @@ import type { HasMany } from "@adonisjs/lucid/types/relations";
 import { ModelAdapterOptions } from "@adonisjs/lucid/types/model";
 import Tax from './Tax.ts';
 
-type ProposedFundingCategory = Omit<ProposedFundingCategoryProps, 'amount' | 'fundingCategories'> & {
+type ProposedFundingCategory = Omit<ProposedFundingCategoryProps, 'amount' |
+  'fundingCategories'> & {
   amount: number;
   fundingCategories: { categoryId: number, amount: number, percentage: boolean }[];
 };
@@ -511,7 +512,8 @@ export default class Budget extends BaseModel {
         (
           select transCats."categoryId", sum(transCats.amount) as sum
           from transactions t
-          cross join lateral jsonb_to_recordset(t.categories) as transCats("categoryId" int, amount decimal)
+          cross join lateral jsonb_to_recordset(t.categories) as transCats("categoryId" int, \
+amount decimal)
           where t.date >= ?
           and t.deleted = false
           and t.application_id = ?
@@ -563,7 +565,10 @@ export default class Budget extends BaseModel {
 
           if (monthlyAmount !== plannedAmount) {
             proposedCat.adjusted = true;
-            proposedCat.adjustedReason = `The funding amount was adjusted from a planned amount of ${plannedAmount.toFixed(2)} to ${monthlyAmount.toFixed(2)} for the goal of ${cat.fundingAmount} due ${goalMonth.month}-${goalMonth.year}.`;
+            proposedCat.adjustedReason =
+              `The funding amount was adjusted from a planned amount of ${plannedAmount.toFixed(
+              2)} to ${monthlyAmount.toFixed(2)} for the goal of ${cat
+              .fundingAmount} due ${goalMonth.month}-${goalMonth.year}.`;
           }
         }
       }
@@ -579,7 +584,8 @@ export default class Budget extends BaseModel {
 
         //   proposedCat.adjusted = true;
          
-        //   proposedCat.adjustedReason = `The funding amount was adjusted from a planned amount of ${plannedAmount} to ${monthlyAmount}.`
+        // proposedCat.adjustedReason = `The funding amount was adjusted from a planned amount of
+        // ${plannedAmount} to ${monthlyAmount}.`
         // }
 
         // proposedCat.amount = monthlyAmount;

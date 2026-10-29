@@ -62,7 +62,8 @@ export default class Taxes extends BaseCommand {
     }
   }
 
-  static computeTax(income: number, filingStatus: FilingStatus, taxMap: Map<number, { tax: number, amount: number}>): number {
+  static computeTax(income: number, filingStatus: FilingStatus, taxMap: Map<number, { tax: number,
+    amount: number}>): number {
     let taxes = 0;
 
     const taxBrackets = Taxes.getTaxBrackets(filingStatus);
@@ -146,7 +147,10 @@ export default class Taxes extends BaseCommand {
       }
     }
 
-    console.log(`total amount: ${totalTaxedAmount}, total taxes: ${totalTaxes}, marginal tax rate: ${marginalTaxRate}, effective tax rate: ${totalTaxes / totalTaxedAmount * 100.0}`)
+    console.log(
+      `total amount: ${totalTaxedAmount}, total taxes: ${totalTaxes}, \
+marginal tax rate: ${marginalTaxRate}, effective tax rate: ${
+        totalTaxes / totalTaxedAmount * 100.0}`)
   }
 
   async run() {
@@ -164,7 +168,8 @@ export default class Taxes extends BaseCommand {
     const longTermCapitalGains = 145209
 
     const totalIncome = taxableInterest + ordinaryDividends + taxableIraDistributions
-      + taxablePensionAndAnnuities + taxableSocialSecurityBenefits + capitalGains + additionalTaxableIncome;
+      + taxablePensionAndAnnuities + taxableSocialSecurityBenefits + capitalGains +
+        additionalTaxableIncome;
 
     const adjustmentsToIncome = 0;
 

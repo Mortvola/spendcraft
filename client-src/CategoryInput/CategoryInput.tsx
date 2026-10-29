@@ -44,7 +44,8 @@ const CategoryInput: React.FC<PropsType> = ({
     }
 
     return (
-      categoryId === null || (categoryTree.unassignedCat && categoryId === categoryTree.unassignedCat.id)
+      categoryId === null || (categoryTree.unassignedCat && categoryId === categoryTree
+        .unassignedCat.id)
         ? ''
         : (categoryTree.getCategoryName(categoryId) ?? '')
     )
@@ -100,7 +101,8 @@ const CategoryInput: React.FC<PropsType> = ({
     }
   };
 
-  // const filtered = (groupIndex: number, categoryIndex: number, filterParts: string[]): boolean => {
+  // const filtered = (groupIndex: number, categoryIndex: number, filterParts: string[]): boolean =>
+  // {
   //   const node = budget.children[groupIndex];
   //   return (isGroup(node) && (
   //     node.children.length === 0
@@ -176,7 +178,8 @@ const CategoryInput: React.FC<PropsType> = ({
   // }
 
   const setFirstBestSelection = (_filterParts: string[]) => {
-    // const selection = traverseList({ groupIndex: null, categoryIndex: null }, moveDownOne, filterParts);
+    // const selection = traverseList({ groupIndex: null, categoryIndex: null }, moveDownOne,
+    // filterParts);
     // if (selection === null) {
     //   setSelected({ groupIndex: null, categoryIndex: null })
     // }

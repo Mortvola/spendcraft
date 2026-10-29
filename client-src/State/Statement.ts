@@ -1,10 +1,12 @@
 import Http from '@mortvola/http';
 import { DateTime } from 'luxon';
 import { observable, runInAction } from 'mobx';
-import { ApiError, StatementProps, UpdateStatementProps, TrackingType } from '../../common/ResponseTypes';
+import { ApiError, StatementProps, UpdateStatementProps, TrackingType } from
+  '../../common/ResponseTypes';
 import { StatementInterface, StatementsInterface, StatementUpdateValues } from './Types';
 
-import { parseMoneyCents, addMoneyCents, subtractMoneyCents, formatMoneyCents, type MoneyCents } from '../../common/moneyCents';
+import { parseMoneyCents, addMoneyCents, subtractMoneyCents, formatMoneyCents,
+  type MoneyCents } from '../../common/moneyCents';
 
 function decodeStatementTotals(props: Pick<StatementProps, 'credits' | 'debits'>) {
   return {
@@ -15,17 +17,22 @@ function decodeStatementTotals(props: Pick<StatementProps, 'credits' | 'debits'>
 
 function decodeStatementAmounts(props: StatementProps) {
   const income = props.data;
-  if (income !== null && income !== undefined && (typeof income !== 'object' || Array.isArray(income))) {
+  if (income !== null && income !== undefined && (typeof income !== 'object' || Array.isArray(
+    income))) {
     throw new Error('Invalid statement income response');
   }
   return {
     ...decodeStatementTotals(props),
     startingBalanceCents: parseMoneyCents(props.startingBalance),
     endingBalanceCents: parseMoneyCents(props.endingBalance),
-    shortTermGainsCents: income?.shortTermCapitalGains == null ? parseMoneyCents('0.00') : parseMoneyCents(income.shortTermCapitalGains),
-    longTermGainsCents: income?.longTermCapitalGains == null ? parseMoneyCents('0.00') : parseMoneyCents(income.longTermCapitalGains),
-    dividendsCents: income?.dividends == null ? parseMoneyCents('0.00') : parseMoneyCents(income.dividends),
-    taxableInterestCents: income?.taxableInterest == null ? parseMoneyCents('0.00') : parseMoneyCents(income.taxableInterest),
+    shortTermGainsCents: income?.shortTermCapitalGains == null ? parseMoneyCents(
+      '0.00') : parseMoneyCents(income.shortTermCapitalGains),
+    longTermGainsCents: income?.longTermCapitalGains == null ? parseMoneyCents(
+      '0.00') : parseMoneyCents(income.longTermCapitalGains),
+    dividendsCents: income?.dividends == null ? parseMoneyCents('0.00') : parseMoneyCents(income
+      .dividends),
+    taxableInterestCents: income?.taxableInterest == null ? parseMoneyCents(
+      '0.00') : parseMoneyCents(income.taxableInterest),
   };
 }
 
@@ -127,11 +134,14 @@ class Statement implements StatementInterface {
   }
 
   async update(update: StatementUpdateValues): Promise<ApiError[] | null> {
-    const { startingBalanceCents, endingBalanceCents, creditsCents, debitsCents, ...values } = update;
+    const { startingBalanceCents, endingBalanceCents, creditsCents, debitsCents, ...values } =
+      update;
     const payload: UpdateStatementProps = {
       ...values,
-      startingBalance: startingBalanceCents === undefined ? undefined : formatMoneyCents(startingBalanceCents),
-      endingBalance: endingBalanceCents === undefined ? undefined : formatMoneyCents(endingBalanceCents),
+      startingBalance: startingBalanceCents === undefined ? undefined : formatMoneyCents(
+        startingBalanceCents),
+      endingBalance: endingBalanceCents === undefined ? undefined : formatMoneyCents(
+        endingBalanceCents),
       credits: creditsCents === undefined ? undefined : formatMoneyCents(creditsCents),
       debits: debitsCents === undefined ? undefined : formatMoneyCents(debitsCents),
       data: update.data === undefined ? undefined : {
@@ -141,7 +151,8 @@ class Statement implements StatementInterface {
         taxableInterest: formatMoneyCents(update.data.taxableInterestCents),
       },
     };
-    const response = await Http.patch<UpdateStatementProps, StatementProps>(`/api/v1/statements/${this.id}`, payload)
+    const response = await Http.patch<UpdateStatementProps, StatementProps>(
+      `/api/v1/statements/${this.id}`, payload)
 
     if (response.ok) {
       const props = await response.body()

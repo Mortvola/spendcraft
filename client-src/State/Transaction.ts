@@ -1,8 +1,10 @@
-import { formatMoneyCents, parseMoneyCents, addMoneyCents, type MoneyCents } from '../../common/moneyCents';
+import { formatMoneyCents, parseMoneyCents, addMoneyCents, type MoneyCents } from
+  '../../common/moneyCents';
 import { DateTime } from 'luxon';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
-import { decodeCentFundingRules, encodeCentFundingRules, encodeTransferCategories, type TransferCategoryInput } from '../monetary';
+import { decodeCentFundingRules, encodeCentFundingRules, encodeTransferCategories,
+  type TransferCategoryInput } from '../monetary';
 import {
   ErrorProps,
   TransactionType,
@@ -26,14 +28,16 @@ import {
 
 const hasBalances = (value: unknown): value is CategoryBalanceProps[] => (
   Array.isArray(value) && value.every((row: unknown) => {
-    if (typeof row !== 'object' || row === null || !('id' in row) || !Number.isFinite(row.id) || !('balance' in row)) return false;
+    if (typeof row !== 'object' || row === null || !('id' in row) || !Number.isFinite(row.id) || !(
+      'balance' in row)) return false;
     try { parseMoneyCents(row.balance); return true; } catch { return false; }
   })
 );
 
 const hasAccountBalances = (value: unknown): value is AccountBalanceProps[] => (
   Array.isArray(value) && value.every((row: unknown) => {
-    if (typeof row !== 'object' || row === null || !('id' in row) || !Number.isFinite(row.id) || !('balance' in row)) return false;
+    if (typeof row !== 'object' || row === null || !('id' in row) || !Number.isFinite(row.id) || !(
+      'balance' in row)) return false;
     try { parseMoneyCents(row.balance); return true; } catch { return false; }
   })
 );
@@ -132,7 +136,8 @@ class Transaction implements TransactionInterface {
     if (props.accountTransaction) {
       this.name = props.accountTransaction.name;
       this.amountCents = parseMoneyCents(props.accountTransaction.amount);
-      this.principleCents = props.accountTransaction.principle === null ? null : parseMoneyCents(props.accountTransaction.principle);
+      this.principleCents = props.accountTransaction.principle === null ? null : parseMoneyCents(
+        props.accountTransaction.principle);
       this.instituteName = props.accountTransaction.account.institution.name;
       this.accountName = props.accountTransaction.account.name;
       this.accountId = props.accountTransaction.account.id;
@@ -167,7 +172,8 @@ class Transaction implements TransactionInterface {
         amountCents: parseMoneyCents(c.amount),
         comment: c.comment,
         funder: c.funder,
-        fundingCategories: c.fundingCategories == null ? c.fundingCategories : decodeCentFundingRules(c.fundingCategories),
+        fundingCategories: c.fundingCategories == null ? c
+          .fundingCategories : decodeCentFundingRules(c.fundingCategories),
         includeFundingTransfers: c.includeFundingTransfers,
         baseAmountCents: c.baseAmount == null ? c.baseAmount : parseMoneyCents(c.baseAmount),
       }));
@@ -185,8 +191,10 @@ class Transaction implements TransactionInterface {
     // Construct before touching the cached object so malformed nested data cannot partially apply.
     const updated = new Transaction(this.store, props);
     if (props.id !== this.id || !updated.date.isValid || !Number.isFinite(updated.version)
-      || !updated.categories.every((category) => Number.isFinite(category.categoryId) && Number.isFinite(category.amountCents))
-      || !Number.isSafeInteger(updated.amountCents)) throw new Error('Invalid transaction response');
+      || !updated.categories.every((category) => Number.isFinite(category.categoryId) && Number
+        .isFinite(category.amountCents))
+      || !Number.isSafeInteger(updated.amountCents)) throw new Error(
+        'Invalid transaction response');
     runInAction(() => {
       this.date = updated.date;
       this.type = updated.type;
@@ -226,20 +234,26 @@ class Transaction implements TransactionInterface {
     }
 
     const { amountCents, principleCents, categories, taxCategories, ...metadata } = values;
-    const response = await Http.patch<UpdateTransactionRequest, ApiResponse<UpdateTransactionResponse>>(
+    const response = await Http.patch<UpdateTransactionRequest,
+      ApiResponse<UpdateTransactionResponse>>(
       `/api/v1/transaction/${this.id}`,
       {
         version: this.version,
         ...metadata,
         amount: amountCents === undefined ? undefined : formatMoneyCents(amountCents),
         principle: principleCents === undefined ? undefined : formatMoneyCents(principleCents),
-        categories: categories?.map(({ amountCents: amount, baseAmountCents, fundingCategories, ...category }: TransactionCategoryInterface) => ({
+        categories: categories?.map(({ amountCents: amount, baseAmountCents, fundingCategories,
+          ...category }: TransactionCategoryInterface) => ({
           ...category,
           amount: formatMoneyCents(amount),
-          ...(baseAmountCents === undefined ? {} : { baseAmount: baseAmountCents === null ? null : formatMoneyCents(baseAmountCents) }),
-          ...(fundingCategories === undefined ? {} : { fundingCategories: fundingCategories === null ? null : encodeCentFundingRules(fundingCategories) }),
+          ...(baseAmountCents === undefined ? {} : {
+            baseAmount: baseAmountCents === null ? null : formatMoneyCents(baseAmountCents) }),
+          ...(fundingCategories === undefined ? {} : {
+            fundingCategories: fundingCategories === null ? null : encodeCentFundingRules(
+            fundingCategories) }),
         })),
-        taxCategories: taxCategories?.map(({ amountCents: amount, ...tax }) => ({ ...tax, amount: formatMoneyCents(amount) })),
+        taxCategories: taxCategories?.map(({ amountCents: amount, ...tax }) => ({ ...tax,
+          amount: formatMoneyCents(amount) })),
       },
     );
 
@@ -253,7 +267,8 @@ class Transaction implements TransactionInterface {
       const transactionUpdate = data;
 
       if (transactionUpdate) {
-        if (!hasBalances(transactionUpdate.categories) || !hasAccountBalances(transactionUpdate.acctBalances)) {
+        if (!hasBalances(transactionUpdate.categories) || !hasAccountBalances(transactionUpdate
+          .acctBalances)) {
           throw new Error('Invalid transaction balances response');
         }
         const previousStatementId = this.statementId;
@@ -262,12 +277,16 @@ class Transaction implements TransactionInterface {
           this.store.register.updateTransaction(transactionUpdate.transaction);
           this.store.categoryTree.updateBalances(transactionUpdate.categories);
           this.store.accounts.updateBalances(transactionUpdate.acctBalances);
-          const account = this.accountId === null ? null : this.store.accounts.findAccount(this.accountId);
-          if (transactionUpdate.statement && account) account.statements.updateStatement(transactionUpdate.statement);
+          const account = this.accountId === null ? null : this.store.accounts.findAccount(this
+            .accountId);
+          if (transactionUpdate.statement && account) account.statements.updateStatement(
+            transactionUpdate.statement);
         });
-        const account = this.accountId === null ? null : this.store.accounts.findAccount(this.accountId);
+        const account = this.accountId === null ? null : this.store.accounts.findAccount(this
+          .accountId);
         if (account && previousStatementId !== null
-          && (!transactionUpdate.statement || previousStatementId !== transactionUpdate.statement.id)) {
+          && (!transactionUpdate.statement || previousStatementId !== transactionUpdate.statement
+            .id)) {
           await account.statements.load();
         }
 
@@ -294,7 +313,9 @@ class Transaction implements TransactionInterface {
       throw new Error('transaction has a null id');
     }
 
-    const response = await Http.patch<CategoryTransferRequest, ApiResponse<unknown>>(`/api/v1/category-transfer/${this.id}`, { ...values, type: this.type, categories: encodeTransferCategories(values.categories) });
+    const response = await Http.patch<CategoryTransferRequest, ApiResponse<unknown>>(
+      `/api/v1/category-transfer/${this.id}`, { ...values, type: this.type,
+      categories: encodeTransferCategories(values.categories) });
 
     if (response.ok) {
       const { data } = await response.body();
@@ -328,7 +349,8 @@ class Transaction implements TransactionInterface {
     if (response.ok) {
       const { data } = await response.body();
 
-      if (isDeleteTransactionResponse(data) && hasBalances(data.categories) && hasAccountBalances(data.acctBalances)) {
+      if (isDeleteTransactionResponse(data) && hasBalances(data.categories) && hasAccountBalances(
+        data.acctBalances)) {
         runInAction(() => {
           if (this.id === null) {
             throw new Error('transaction has a null id');
@@ -339,7 +361,8 @@ class Transaction implements TransactionInterface {
           this.store.register.removeTransaction(this.id);
         });
 
-        const account = this.accountId === null ? null : this.store.accounts.findAccount(this.accountId);
+        const account = this.accountId === null ? null : this.store.accounts.findAccount(this
+          .accountId);
         if (this.statementId !== null && account) await account.statements.load();
         return null;
       }

@@ -30,7 +30,8 @@ const RebalanceDialog: React.FC<PropsType & ModalProps> = ({
 }) => {
   const { register } = useStores();
   const [balances, setBalances] = useState<CategoryBalanceInterface[]>([])
-  const [date, setDate] = useState(transaction ? transaction.date.toISODate() : DateTime.now().toISODate());
+  const [date, setDate] = useState(transaction ? transaction.date.toISODate() : DateTime.now()
+    .toISODate());
 
   interface ValueType {
     categories: CategorySplitInput[]
@@ -54,7 +55,8 @@ const RebalanceDialog: React.FC<PropsType & ModalProps> = ({
           const body = await response.body();
 
           if (isCategoryTreeBalanceResponse(body)) {
-            setBalances(body.map((row) => ({ id: row.id, balanceCents: parseMoneyCents(row.balance) })));
+            setBalances(body.map((row) => ({ id: row.id, balanceCents: parseMoneyCents(row
+              .balance) })));
           }
         }
       })();
@@ -106,7 +108,8 @@ const RebalanceDialog: React.FC<PropsType & ModalProps> = ({
       }
     }
     else {
-      const errors = await register.addCategoryTransfer(request, TransactionType.REBALANCE_TRANSACTION);
+      const errors = await register.addCategoryTransfer(request, TransactionType
+        .REBALANCE_TRANSACTION);
 
       if (!errors) {
         setShow(false);
@@ -177,7 +180,8 @@ const RebalanceDialog: React.FC<PropsType & ModalProps> = ({
             <Field name="categories">
               {({ field: { value } }: FieldProps<CategorySplitInput[]>) => {
                 try {
-                  return <MoneyCentsAmount className="form-control" amount={subtractMoneyCents(parseMoneyCents('0.00'), sumSplitCents(value))} />;
+                  return <MoneyCentsAmount className="form-control" amount={subtractMoneyCents(
+                    parseMoneyCents('0.00'), sumSplitCents(value))} />;
                 }
                 catch { return <div>Invalid amount</div>; }
               }}

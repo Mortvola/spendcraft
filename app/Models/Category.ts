@@ -1,6 +1,7 @@
 import { serializeFundingRules } from '#services/fundingAmountCodec';
 import { encodeMonetaryAmount, categoryNonzeroAllocationSql } from '#services/categoryAmountCodec';
-import { consumeFundingStorage, prepareFundingStorage, finishFundingStorage, stageFundingStorage } from '#services/fundingStorage';
+import { consumeFundingStorage, prepareFundingStorage, finishFundingStorage,
+  stageFundingStorage } from '#services/fundingStorage';
 import {
   BaseModel, belongsTo, column, beforeSave, afterSave,
 } from '@adonisjs/lucid/orm';
@@ -74,8 +75,10 @@ export default class Category extends BaseModel {
   public recurrence: number;
 
   @column({
-    consume: (value, _attribute, model) => model.$attributes.type === CategoryType.Loan ? value : consumeFundingStorage(value, model),
-    prepare: (value, _attribute, model) => JSON.stringify(model.$attributes.type === CategoryType.Loan ? value : prepareFundingStorage(value, model)),
+    consume: (value, _attribute, model) => model.$attributes.type === CategoryType
+      .Loan ? value : consumeFundingStorage(value, model),
+    prepare: (value, _attribute, model) => JSON.stringify(model.$attributes.type === CategoryType
+      .Loan ? value : prepareFundingStorage(value, model)),
     serialize: (value) => serializeFundingRules(value),
   })
   public fundingCategories: FundingCategory[];
@@ -96,7 +99,9 @@ export default class Category extends BaseModel {
       .select(db.raw('sum("transCats".amount) as amount'))
       .from('transactions')
        
-      .joinRaw('cross join lateral jsonb_to_recordset(transactions.categories) as "transCats"("categoryId" int, amount decimal)')
+      .joinRaw(
+        'cross join lateral jsonb_to_recordset(transactions.categories) as \
+"transCats"("categoryId" int, amount decimal)')
       .where('transactions.application_id', budget.id)
       .where((query) => {
         query.where((datedTransactions) => {

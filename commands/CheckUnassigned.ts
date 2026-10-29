@@ -37,7 +37,8 @@ export default class CheckUnassigned extends BaseCommand {
             .preload('accountTransaction');
 
           await Promise.all(transactions.map(async (transaction) => {
-            transaction.categories = [{ categoryId: unassignedCat.id, amount: transaction.accountTransaction.amount }];
+            transaction.categories = [{ categoryId: unassignedCat.id, amount: transaction
+              .accountTransaction.amount }];
             await transaction.save();
             if (!transaction.deleted) await validateStoredCategoryConservation(transaction);
             return transaction;

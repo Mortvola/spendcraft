@@ -25,7 +25,8 @@ export default class GenerateWebPushKeys extends BaseCommand {
       return
     }
     if (hasPublicKey || hasPrivateKey) {
-      this.logger.error('Only one VAPID key is configured. Restore the matching pair; no keys were changed.')
+      this.logger.error(
+        'Only one VAPID key is configured. Restore the matching pair; no keys were changed.')
       this.exitCode = 1
       return
     }

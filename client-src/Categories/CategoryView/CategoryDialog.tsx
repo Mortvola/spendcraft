@@ -44,7 +44,8 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
 
   interface OptionType { value: number, label: string, level: number }
 
-  const [categoryType, setCategoryType] = React.useState<CategoryType>((category?.type ?? type) ?? CategoryType.Regular)
+  const [categoryType, setCategoryType] = React.useState<CategoryType>((category?.type ?? type) ??
+    CategoryType.Regular)
   
   interface FormValues {
     type: CategoryType,
@@ -70,7 +71,8 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
       throw new Error(`group is not a group: ${selectedGroup}`);
     }
 
-    const fundingCategories: CentFundingRule[] = values.type === CategoryType.Bill ? values.fundingCategories.map(rule => {
+    const fundingCategories: CentFundingRule[] = values.type === CategoryType.Bill ? values
+      .fundingCategories.map(rule => {
       if (rule.percentage) return rule;
       const { amount, ...metadata } = rule;
       return { ...metadata, amountCents: inputMoneyCents(amount) };
@@ -171,7 +173,8 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
 
     options.push({ value: root.id, label: root.name, level: 0 })
 
-    let stack: { group: (GroupInterface | CategoryInterface), level: number }[] = root.children.map((child) => ({
+    let stack: { group: (GroupInterface | CategoryInterface), level: number }[] = root.children.map(
+      (child) => ({
       group: child,
       level: 1,
     }))
@@ -201,7 +204,8 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
     return populateGroupsSubtree(categoryTree.budget)
   }
 
-  const [options, setOptions] = React.useState<OptionType[]>(populateGroups((category?.type ?? type) ?? CategoryType.Regular))
+  const [options, setOptions] = React.useState<OptionType[]>(populateGroups((category?.type ??
+    type) ?? CategoryType.Regular))
 
   const handleCategoryTypeChange = (newType: CategoryType) => {
     setCategoryType(newType)
@@ -239,7 +243,8 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
 
     return categories.map(c => c.percentage
       ? { id: c.id, categoryId: c.categoryId, amount: c.amount, percentage: true }
-      : { id: c.id, categoryId: c.categoryId, amount: formatMoneyCents(c.amountCents), percentage: false })
+      : { id: c.id, categoryId: c.categoryId, amount: formatMoneyCents(c.amountCents),
+        percentage: false })
 
   }
 
@@ -307,7 +312,8 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
                     ({ field, form }: FieldProps<number>) => {
                       const Option = (props: OptionProps<OptionType>) => (
                         <components.Option {...props}>
-                          <div style={{ color: 'black', paddingLeft: props.data.level * 14, textWrap: 'nowrap' }}>{props.data.label}</div>
+                          <div style={{ color: 'black', paddingLeft: props.data.level * 14,
+                            textWrap: 'nowrap' }}>{props.data.label}</div>
                         </components.Option>
                       )
 
@@ -349,7 +355,8 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
                     className="form-control"
                     name="fundingAmount"
                   >
-                    {({ field }: FieldProps<string>) => <AmountInput exactCents {...field} className="form-control" />}
+                    {({ field }: FieldProps<string>) => <AmountInput exactCents {
+                      ...field} className="form-control" />}
                   </Field>
                   <FormError name="fundingAmount" />
                 </label>

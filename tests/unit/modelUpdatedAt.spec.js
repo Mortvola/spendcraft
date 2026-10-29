@@ -10,12 +10,14 @@ const models = ['Transaction', 'Account', 'AccountTransaction', 'Category', 'Gro
 // Compile each real model's timestamp declaration without bootstrapping its
 // application/provider dependencies. Saves use Lucid and an inert adapter.
 async function timestampModel(name) {
-  const source = ts.createSourceFile(`${name}.ts`, await readFile(`app/Models/${name}.ts`, 'utf8'), ts.ScriptTarget.Latest, true)
+  const source = ts.createSourceFile(`${name}.ts`, await readFile(`app/Models/${name}.ts`, 'utf8'),
+    ts.ScriptTarget.Latest, true)
   const model = source.statements.find((node) => ts.isClassDeclaration(node))
   const timestamp = model.members.find((node) => node.name?.getText(source) === 'updatedAt')
   if (!timestamp) throw new Error(`${name} has no updatedAt declaration`)
   const context = { BaseModel, column, DateTime }
-  runInNewContext(ts.transpileModule(`class TimestampModel extends BaseModel { ${timestamp.getText(source)} }
+  runInNewContext(ts.transpileModule(`class TimestampModel extends BaseModel { ${timestamp.getText(
+    source)} }
 globalThis.TimestampModel = TimestampModel`, {
     compilerOptions: { target: ts.ScriptTarget.ES2022, experimentalDecorators: true },
   }).outputText, context)
@@ -32,10 +34,12 @@ globalThis.TimestampModel = TimestampModel`, {
 }
 
 test.group('Active model update timestamps (no database)', () => {
-  test('dirty saves refresh updated_at and keep it private').with(models).run(async ({ assert }, name) => {
+  test('dirty saves refresh updated_at and keep it private').with(models).run(async ({ assert },
+    name) => {
     const { Sample, writes } = await timestampModel(name)
     const old = DateTime.fromISO('2020-01-01T00:00:00Z')
-    const model = Sample.$createFromAdapterResult({ id: 1, comment: 'old', updated_at: old.toSQL() })
+    const model = Sample.$createFromAdapterResult({ id: 1, comment: 'old', updated_at: old.toSQL(
+      ) })
     model.comment = 'changed'
     await model.save()
     assert.lengthOf(writes, 1)
@@ -51,9 +55,11 @@ test.group('Active model update timestamps (no database)', () => {
     assert.equal(model.updatedAt.toMillis(), saved)
   })
 
-  test('quiet saves also refresh timestamps; inserts initialize missing timestamps').with(models).run(async ({ assert }, name) => {
+  test('quiet saves also refresh timestamps; inserts initialize missing timestamps').with(models)
+    .run(async ({ assert }, name) => {
     const { Sample, writes } = await timestampModel(name)
-    const model = Sample.$createFromAdapterResult({ id: 1, comment: 'old', updated_at: '2020-01-01 00:00:00+00' })
+    const model = Sample.$createFromAdapterResult({ id: 1, comment: 'old', updated_at:
+      '2020-01-01 00:00:00+00' })
     model.comment = 'changed'
     await model.saveQuietly()
     assert.lengthOf(writes, 1)

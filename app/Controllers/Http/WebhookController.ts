@@ -34,9 +34,11 @@ class TransactionEvent extends WebhookEvent {
   new_transactions: number;
 }
 
-const itemWebhookCodes = ['ERROR', 'PENDING_EXPIRATION', 'USER_PERMISSION_REVOKED', 'WEBHOOK_UPDATE_ACKNOWLEDGED'];
+const itemWebhookCodes = ['ERROR', 'PENDING_EXPIRATION', 'USER_PERMISSION_REVOKED',
+  'WEBHOOK_UPDATE_ACKNOWLEDGED'];
 const transactionWebhookCodes = [
-  'INITIAL_UPDATE', 'HISTORICAL_UPDATE', 'DEFAULT_UPDATE', 'TRANSACTIONS_REMOVED', 'SYNC_UPDATES_AVAILABLE',
+  'INITIAL_UPDATE', 'HISTORICAL_UPDATE', 'DEFAULT_UPDATE', 'TRANSACTIONS_REMOVED',
+    'SYNC_UPDATES_AVAILABLE',
 ];
 
 const isWebhookEvent = (r: unknown): r is WebhookEvent => (
@@ -164,7 +166,8 @@ class WebhookController {
   //   const trx = await Database.transaction();
 
   //   try {
-  //     const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
+  // const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx
+  // });
 
   //     const accounts = await institution.related('accounts').query().where('closed', false);
   //     const budget = await Budget.findOrFail(institution.budgetId);
@@ -196,7 +199,8 @@ class WebhookController {
   //   const trx = await Database.transaction();
 
   //   try {
-  //     const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
+  // const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx
+  // });
 
   //     const accounts = await institution.related('accounts').query().where('closed', false);
   //     const budget = await Budget.findOrFail(institution.budgetId);
@@ -228,14 +232,15 @@ class WebhookController {
   //   const trx = await Database.transaction();
 
   //   try {
-  //     const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
+  // const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx
+  // });
 
   //     await institution.removeTransactions(event.removed_transactions);
 
   //     await trx.commit();
   //   }
   //   catch (error) {
-  //     Logger.error(`transactions removed failed: ${error.message}, event: ${JSON.stringify(event)}`);
+  // Logger.error(`transactions removed failed: ${error.message}, event: ${JSON.stringify(event)}`);
   //     await trx.rollback();
   //   }
   // }
@@ -256,7 +261,8 @@ class WebhookController {
         break;
 
       default:
-        logger.warn(`Unknown webhook transaction event: ${JSON.stringify(redactDiagnostics(event))}`);
+        logger.warn(`Unknown webhook transaction event: ${JSON.stringify(redactDiagnostics(
+          event))}`);
         break;
     }
   }

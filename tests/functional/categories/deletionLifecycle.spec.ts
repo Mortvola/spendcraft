@@ -15,13 +15,19 @@ test.group('Category deletion transaction lifecycle', (group) => {
     return db.transaction(async (trx) => {
       const budget = await Budget.create({}, { client: trx })
       await budget.initialize()
-      const user = await budget.related('users').create({ username: `category-lifecycle-${++sequence}`,
+      const user = await budget.related('users').create({
+        username: `category-lifecycle-${++sequence}`,
         email: `category-lifecycle-${sequence}@example.com`, password: 'testPassw0rd' })
-      const categoryGroup = await budget.related('groups').create({ name: 'Lifecycle', type: 'Regular' })
-      const blocked = await categoryGroup.related('categories').create({ name: 'Referenced', type: CategoryType.Regular, balance: 10, fundingCategories: [] })
-      const empty = await categoryGroup.related('categories').create({ name: 'Empty', type: CategoryType.Regular, balance: 0, fundingCategories: [] })
-      await budget.related('transactions').create({ date: DateTime.fromISO('2025-02-10'), type: TransactionType.MANUAL_TRANSACTION,
-        categories: [{ categoryId: blocked.id, amount: 10 }], taxes: [], version: 0, deleted: false, sortOrder: 0 })
+      const categoryGroup = await budget.related('groups').create({ name: 'Lifecycle', type:
+        'Regular' })
+      const blocked = await categoryGroup.related('categories').create({ name: 'Referenced',
+        type: CategoryType.Regular, balance: 10, fundingCategories: [] })
+      const empty = await categoryGroup.related('categories').create({ name: 'Empty',
+        type: CategoryType.Regular, balance: 0, fundingCategories: [] })
+      await budget.related('transactions').create({ date: DateTime.fromISO('2025-02-10'),
+        type: TransactionType.MANUAL_TRANSACTION,
+        categories: [{ categoryId: blocked.id, amount: 10 }], taxes: [], version: 0, deleted: false,
+          sortOrder: 0 })
       return { user, categoryGroup, blocked, empty }
     })
   }
@@ -41,7 +47,8 @@ test.group('Category deletion transaction lifecycle', (group) => {
   })
 
   async function remove(client: ApiClient, id: number) {
-    return client.delete(`/api/v1/groups/${f.categoryGroup.id}/categories/${id}`).accept('json').loginAs(f.user)
+    return client.delete(`/api/v1/groups/${f.categoryGroup.id}/categories/${id}`).accept('json')
+      .loginAs(f.user)
   }
 
   test('successful deletion commits its transaction', async ({ client, assert }) => {
@@ -51,7 +58,8 @@ test.group('Category deletion transaction lifecycle', (group) => {
     assert.isNull(await Category.find(f.empty.id))
   })
 
-  test('blocked deletion completes its transaction without changing the category', async ({ client, assert }) => {
+  test('blocked deletion completes its transaction without changing the category', async ({ client,
+    assert }) => {
     ;(await remove(client, f.blocked.id)).assertStatus(409)
     assert.lengthOf(captured, 1)
     assert.isTrue(captured[0].isCompleted)
@@ -65,13 +73,15 @@ test.group('Category deletion transaction lifecycle', (group) => {
     assert.isTrue(captured.every((trx) => trx.isCompleted))
   })
 
-  test('a database query succeeds after rejected deletion completes', async ({ client, assert }) => {
+  test('a database query succeeds after rejected deletion completes', async ({ client, assert }) =>
+    {
     ;(await remove(client, f.blocked.id)).assertStatus(409)
     assert.equal((await Category.findOrFail(f.empty.id)).name, 'Empty')
     assert.isTrue(captured[0].isCompleted)
   })
 
-  test('normal deletion after repeated rejection leaves all transactions completed', async ({ client, assert }) => {
+  test('normal deletion after repeated rejection leaves all transactions completed', async ({
+    client, assert }) => {
     for (let i = 0; i < 2; i++) (await remove(client, f.blocked.id)).assertStatus(409)
     ;(await remove(client, f.empty.id)).assertStatus(204)
     assert.lengthOf(captured, 3)
@@ -80,7 +90,8 @@ test.group('Category deletion transaction lifecycle', (group) => {
     assert.isTrue(captured[2].isCompleted)
   })
 
-  test('a failure after category deletion rolls back and restores the category', async ({ client, assert, cleanup }) => {
+  test('a failure after category deletion rolls back and restores the category', async ({ client,
+    assert, cleanup }) => {
     const original = Category.prototype.delete
     const interception = mock.method(Category.prototype, 'delete', async function (this: Category) {
       await original.call(this)

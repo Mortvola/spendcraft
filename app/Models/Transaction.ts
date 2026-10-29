@@ -3,8 +3,10 @@ import { encodeTaxAttributions } from '#services/taxAmountCodec';
 import { encodeCategoryAllocations } from '#services/categoryAmountCodec';
 import { bindTaxStorage, prepareTaxStorageSave } from '#services/transactionTaxStorage';
 import { prepareTaxStorage, finishTaxStorageSave } from '#services/taxStorageBinding';
-import { prepareCategoryStorage, finishCategoryStorageSave } from '#services/categoryStorageBinding';
-import { bindCategoryStorage, prepareNewCategoryStorage } from '#services/transactionCategoryStorage';
+import { prepareCategoryStorage, finishCategoryStorageSave } from
+  '#services/categoryStorageBinding';
+import { bindCategoryStorage, prepareNewCategoryStorage } from
+  '#services/transactionCategoryStorage';
 import {
   BaseModel, hasMany, column, afterFind, afterFetch, beforeSave, afterSave,
   belongsTo, hasOne,
@@ -90,13 +92,15 @@ class Transaction extends BaseModel {
 
   @column({
     prepare: (value: TransCategory[], _attribute, model) => prepareCategoryStorage(value, model),
-    serialize: (value) => value === null ? null : serializeFundingMetadata(encodeCategoryAllocations(value)),
+    serialize: (value) => value === null ? null : serializeFundingMetadata(
+      encodeCategoryAllocations(value)),
   })
   public categories: TransCategory[];
 
   @column({
     prepare: (value: TransTaxCategory[], _attribute, model) => prepareTaxStorage(value, model),
-    serialize: (value) => value === null || value === undefined ? value : encodeTaxAttributions(value),
+    serialize: (value) => value === null || value === undefined ? value : encodeTaxAttributions(
+      value),
   })
   public taxes: TransTaxCategory[];
 

@@ -47,7 +47,8 @@ const AccountView: React.FC<PropsType> = observer(({
         uiState.selectAccount(null);
       }
     }
-  }, [accounts, accounts.initialized, accounts.institutions, navigate, opened, params, params.accountId, uiState]);
+  }, [accounts, accounts.initialized, accounts.institutions, navigate, opened, params, params
+    .accountId, uiState]);
 
   const handleAccountStateChange = (account: AccountInterface) => {
     if (uiState.selectedAccount === account) {
@@ -59,7 +60,8 @@ const AccountView: React.FC<PropsType> = observer(({
     <div className={styles.accounts}>
       {
         accounts.institutions
-          .filter((institution) => (opened ? institution.hasOpenAccounts() : institution.hasClosedAccounts()))
+          .filter((institution) => (opened ? institution.hasOpenAccounts() : institution
+            .hasClosedAccounts()))
           .map((institution) => (
             <Institution
               key={institution.id}

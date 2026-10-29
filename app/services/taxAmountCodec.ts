@@ -11,12 +11,14 @@ function attributions(value: unknown): Record<string, unknown>[] {
   if (!Array.isArray(value)) invalid('Tax attributions must be an array')
   return value.map((entry: unknown) => {
     if (typeof entry !== 'object' || entry === null || Array.isArray(entry)
-      || !('type' in entry) || typeof entry.type !== 'string') invalid('Invalid tax attribution entry')
+      || !('type' in entry) || typeof entry.type !== 'string') invalid(
+        'Invalid tax attribution entry')
     return { ...entry }
   })
 }
 export function encodeTaxAttributions(value: unknown) {
-  return attributions(value).map(entry => ({ ...entry, amount: encodeMonetaryAmount(entry.amount) }))
+  return attributions(value).map(entry => ({ ...entry, amount: encodeMonetaryAmount(entry
+    .amount) }))
 }
 export function decodeTaxAttributions(value: unknown): TaxAttribution[] {
   return attributions(value).map(entry => {

@@ -11,7 +11,8 @@ async function component(file, name, context) {
   const ast = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
   let expression
   function visit(node) {
-    if (ts.isVariableDeclaration(node) && node.name.getText(ast) === name) expression = node.initializer.getText(ast)
+    if (ts.isVariableDeclaration(node) && node.name.getText(ast) === name) expression = node
+      .initializer.getText(ast)
     ts.forEachChild(node, visit)
   }
   visit(ast)
@@ -22,24 +23,31 @@ async function component(file, name, context) {
 }
 
 const createElement = (type, props, ...children) => ({ type, props: { ...props, children } })
-const find = (node, type) => Array.isArray(node) ? node.flatMap(child => find(child, type)) : !node || typeof node !== 'object' ? []
-  : [...(node.type === type ? [node] : []), ...(node.props?.children ?? []).flatMap(child => find(child, type))]
+const find = (node, type) => Array.isArray(node) ? node.flatMap(child => find(child,
+  type)) : !node || typeof node !== 'object' ? []
+  : [...(node.type === type ? [node] : []), ...(node.props?.children ?? []).flatMap(child => find(
+    child, type))]
 
 test('Tax monetary controls receive cents and update cents without dollar decoding').with([
   ['Income', 'Income', 7], ['CapitalGains', 'CapitalGains', 2],
   ['TaxAndCredits', 'TaxAndCredits', 1], ['Worksheet2-1', 'Worksheet2_1', 3],
 ]).run(async ({ assert }, [file, name, count]) => {
-  const actual = { taxableInterestCents: 0, oridinaryDividendsCents: 0, taxableSocialSecurityBenefitsCents: 0,
+  const actual = { taxableInterestCents: 0, oridinaryDividendsCents: 0,
+    taxableSocialSecurityBenefitsCents: 0,
     shortTermCapitalGainsCents: 0, longTermCapitalGainsCents: 0 }
   const taxes = { income: { actuals: [actual], taxableInterestCents: 0, qualifiedDividendsCents: 0,
     ordinaryDividendsCents: 0, taxableIraDistributionsCents: 0, taxablePensionAndAnnuitiesCents: 0,
     taxableSocialSecurityBenefitsCents: 0, additionalTaxableIncomeCents: 0,
     shortTermCapitalGainsCents: 0, longTermCapitalGainsCents: 0,
-    getTotalIncomeCents: () => 0, getCapitalGainsCents: () => 0, getAdjustedGrossIncomeCents: () => 0 },
-  standardDeductionCents: 0, qualifiedBusinessIncomeDeductionCents: 0, getTaxableIncomeCents: () => 0,
-  worksheet2_1: { expectedAgiCents: 0, priorYearAgiCents: 0, priorYearTotalTaxCents: 0, result: null } }
+    getTotalIncomeCents: () => 0, getCapitalGainsCents: () => 0, getAdjustedGrossIncomeCents: () =>
+      0 },
+  standardDeductionCents: 0, qualifiedBusinessIncomeDeductionCents: 0, getTaxableIncomeCents: () =>
+    0,
+  worksheet2_1: { expectedAgiCents: 0, priorYearAgiCents: 0, priorYearTotalTaxCents: 0,
+    result: null } }
   const Component = await component(file, name, { React: { createElement }, observer: c => c,
-    runInAction: callback => callback(), TaxAmountInput: 'input', TaxResultAmount: 'tax-money', MoneyCentsAmount: 'money', Amount: 'amount',
+    runInAction: callback => callback(), TaxAmountInput: 'input', TaxResultAmount: 'tax-money',
+      MoneyCentsAmount: 'money', Amount: 'amount',
     getCurrentPeriod: () => 0, style: {} })
   const inputs = find(Component({ taxes }), 'input')
   assert.lengthOf(inputs, count)
@@ -60,7 +68,8 @@ test('Tax amount editing retains decimal text and applies approved rounding').wi
   let validity
   const Input = await component('TaxAmountInput', 'TaxAmountInput', { React: { createElement },
     useState: () => [draft, next => { draft = next }],
-    useRef: () => ({ current: { querySelector: () => ({ setCustomValidity: value => { validity = value } }) } }),
+    useRef: () => ({ current: { querySelector: () => ({ setCustomValidity: value => { validity =
+      value } }) } }),
     useEffect: callback => callback(), AmountInput: 'input' })
   const [input] = find(Input({ value: 0, onChange: cents => { emitted = cents } }), 'input')
   assert.isTrue(input.props.exactCents)
@@ -78,9 +87,11 @@ test('Invalid tax draft text cannot replace monetary state').with([
   let draft
   const Input = await component('TaxAmountInput', 'TaxAmountInput', { React: { createElement },
     useState: () => [{ value: 30, text: '0.30' }, next => { draft = next }],
-    useRef: () => ({ current: { querySelector: () => ({ setCustomValidity: value => { validity = value } }) } }),
+    useRef: () => ({ current: { querySelector: () => ({ setCustomValidity: value => { validity =
+      value } }) } }),
     useEffect: callback => callback(), AmountInput: 'input' })
-  const [input] = find(Input({ value: 30, onChange: () => assert.fail('Invalid draft changed monetary state') }), 'input')
+  const [input] = find(Input({ value: 30, onChange: () => assert.fail(
+    'Invalid draft changed monetary state') }), 'input')
   input.props.onValueChange(text)
   assert.strictEqual(draft.text, text)
   assert.strictEqual(draft.value, 30)
@@ -110,26 +121,32 @@ test('Tax result display passes cents to the exact formatter', async ({ assert }
 })
 
 test('Tax summary keeps rates numeric and displays monetary result cents', async ({ assert }) => {
-  const Display = await component('TaxComputation', 'TaxComputation', { React: { createElement }, Fragment: 'fragment',
+  const Display = await component('TaxComputation', 'TaxComputation', { React: { createElement },
+    Fragment: 'fragment',
     observer: c => c, MoneyCentsAmount: 'money', Amount: 'amount', style: {} })
   const tree = Display({ taxes: { run: { brackets: [[10, { amountCents: 123, taxCents: 12 }]],
-    totalTaxedAmountCents: 123, totalTaxesCents: 12, marginalTaxRate: 10, effectiveTaxRate: 9.756 } } })
+    totalTaxedAmountCents: 123, totalTaxesCents: 12, marginalTaxRate: 10,
+      effectiveTaxRate: 9.756 } } })
   assert.deepEqual(find(tree, 'money').map(node => node.props.amount), [123, 12, 123, 12])
   assert.deepEqual(find(tree, 'amount').map(node => node.props.amount), [10, 9.756])
 })
 
 test('Worksheet monetary displays retain raw intermediates and numeric factors').with([
-  ['Worksheet2-1', 'Worksheet2_1'], ['Worksheet2-9', 'Worksheet2_9'], ['Worksheet2-10', 'Worksheet2_10'],
+  ['Worksheet2-1', 'Worksheet2_1'], ['Worksheet2-9', 'Worksheet2_9'], ['Worksheet2-10',
+    'Worksheet2_10'],
 ]).run(async ({ assert }, [file, name]) => {
   const lines = Object.fromEntries(Array.from({ length: 40 }, (_, i) => [String(i + 1), 0.005]))
   lines['2a'] = 0.005
   lines['2b'] = 0.005
   const raw = { lines, worksheet2_10: { lines } }
-  const taxes = { worksheet2_1: { result: raw, expectedAgiCents: 0, priorYearAgiCents: 0, priorYearTotalTaxCents: 0 },
+  const taxes = { worksheet2_1: { result: raw, expectedAgiCents: 0, priorYearAgiCents: 0,
+    priorYearTotalTaxCents: 0 },
     worksheet2_9: { result: [raw] } }
   const before = globalThis.structuredClone(raw)
-  const Display = await component(file, name, { React: { createElement }, observer: c => c, style: {},
-    TaxResultAmount: 'tax-money', TaxAmountInput: 'input', Amount: 'amount', runInAction: callback => callback() })
+  const Display = await component(file, name, { React: { createElement }, observer: c => c, style: {
+    },
+    TaxResultAmount: 'tax-money', TaxAmountInput: 'input', Amount: 'amount',
+      runInAction: callback => callback() })
   const tree = Display({ taxes })
   assert.isAbove(find(tree, 'tax-money').length, 0)
   if (file === 'Worksheet2-9') {

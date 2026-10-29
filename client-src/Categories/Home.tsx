@@ -31,7 +31,8 @@ const Home: React.FC = observer(() => {
   const [FundingDialog, showFundingDialog] = useFundingDialog();
 
   React.useEffect(() => {
-    const matched = matchPath({ path: '/home/:category', caseSensitive: false, end: true }, location.pathname);
+    const matched = matchPath({ path: '/home/:category', caseSensitive: false, end: true }, location
+      .pathname);
 
     if (matched) {
       setOpen(true);

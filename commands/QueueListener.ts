@@ -28,13 +28,15 @@ export default class QueueListener extends BaseCommand {
 
     const bullmq = await app.container.make('bullmq')
 
-    bullmq.worker<PlaidWebHookProps, PlaidWebHookProps>(QueueNamesEnum.PlaidWebHook, async (job) => {
+    bullmq.worker<PlaidWebHookProps, PlaidWebHookProps>(QueueNamesEnum.PlaidWebHook, async (job) =>
+      {
       logger.info(`Syncing item ${job.data.itemId}`)
 
       const trx = await db.transaction();
 
       try {
-        const institution = await Institution.findByOrFail('plaidItemId', job.data.itemId, { client: trx });
+        const institution = await Institution.findByOrFail('plaidItemId', job.data.itemId, {
+          client: trx });
 
         await institution.syncUpdate()
 

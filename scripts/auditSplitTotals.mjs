@@ -24,7 +24,8 @@ export const QUERIES = {
     LEFT JOIN links l ON l.transaction_id = t.id
     CROSS JOIN LATERAL (
       SELECT count(*) AS split_count,
-        count(*) FILTER (WHERE jsonb_typeof(entry->'amount') IS DISTINCT FROM 'number') AS invalid_amounts,
+        count(*) FILTER (WHERE jsonb_typeof(entry->'amount') IS DISTINCT FROM 'number') AS \
+invalid_amounts,
         count(*) FILTER (WHERE CASE WHEN jsonb_typeof(entry->'amount') = 'number'
           THEN (entry->>'amount')::numeric * 100 <> trunc((entry->>'amount')::numeric * 100)
           ELSE false END) AS subcent_splits,
@@ -47,12 +48,17 @@ export const QUERIES = {
     count(*)::text AS ordinary_transactions,
     count(*) FILTER (WHERE comparable)::text AS comparable_transactions,
     count(*) FILTER (WHERE comparable AND split_count = 0)::text AS empty_split_transactions,
-    count(*) FILTER (WHERE comparable AND subcent_splits > 0)::text AS transactions_with_subcent_splits,
-    count(*) FILTER (WHERE comparable AND exact_total <> movement)::text AS exact_decimal_mismatches,
-    count(*) FILTER (WHERE comparable AND half_away_cents <> round(movement * 100))::text AS rounded_half_away_mismatches,
-    count(*) FILTER (WHERE comparable AND half_positive_cents <> floor(movement * 100 + 0.5))::text AS rounded_half_positive_mismatches,
+    count(*) FILTER (WHERE comparable AND subcent_splits > 0)::text AS \
+transactions_with_subcent_splits,
+    count(*) FILTER (WHERE comparable AND exact_total <> movement)::text AS \
+exact_decimal_mismatches,
+    count(*) FILTER (WHERE comparable AND half_away_cents <> round(movement * 100))::text AS \
+rounded_half_away_mismatches,
+    count(*) FILTER (WHERE comparable AND half_positive_cents <> floor(movement * 100 + \
+0.5))::text AS rounded_half_positive_mismatches,
     count(*) FILTER (WHERE link_count <> 1)::text AS unavailable_link_count,
-    count(*) FILTER (WHERE valid_root IS NOT TRUE OR invalid_amounts > 0)::text AS malformed_split_transactions
+    count(*) FILTER (WHERE valid_root IS NOT TRUE OR invalid_amounts > 0)::text AS \
+malformed_split_transactions
   FROM classified GROUP BY deleted, pending ORDER BY deleted, pending`,
 }
 
@@ -63,7 +69,9 @@ async function main() {
     return
   }
   if (args.length !== 3 || args[0] !== '--database' || !args[1] || args[2] !== '--execute') {
-    console.error('Use --print-sql offline, or --database NAME --execute on the explicitly authorized production host.')
+    console.error(
+      'Use --print-sql offline, or --database NAME --execute on the explicitly authorized \
+production host.')
     process.exitCode = 2
     return
   }

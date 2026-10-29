@@ -1,7 +1,8 @@
 import { test } from '@japa/runner'
 import { readFile } from 'node:fs/promises'
 import { URL } from 'node:url'
-import { compareBaseline, cyclicComponents, resolvedGraph } from '../../../scripts/checkCircular.mjs'
+import { compareBaseline, cyclicComponents, resolvedGraph } from
+  '../../../scripts/checkCircular.mjs'
 
 const baseline = { members: ['a', 'b', 'c'], edges: [['a', 'b'], ['b', 'c'], ['c', 'a']] }
 const graph = { a: ['b'], b: ['c'], c: ['a'] }
@@ -52,17 +53,20 @@ test.group('Circular dependency regression', () => {
   })
   test('rejects a missing or split accepted component', ({ assert }) => {
     assert.isTrue(compareBaseline({ a: [], b: [], c: [] }, baseline).acceptedComponentMissing)
-    assert.isTrue(compareBaseline({ a: ['a'], b: ['b'], c: ['c'] }, baseline).acceptedComponentMissing)
+    assert.isTrue(compareBaseline({ a: ['a'], b: ['b'], c: ['c'] }, baseline)
+      .acceptedComponentMissing)
   })
   test('accepts the actual reviewed baseline without repository analysis', async ({ assert }) => {
-    const accepted = JSON.parse(await readFile(new URL('../../../scripts/circular-baseline.json', import.meta.url), 'utf8'))
+    const accepted = JSON.parse(await readFile(new URL('../../../scripts/circular-baseline.json',
+      import.meta.url), 'utf8'))
     const reviewedGraph = Object.fromEntries(accepted.members.map((member) => [member, []]))
     for (const [issuer, target] of accepted.edges) reviewedGraph[issuer].push(target)
     assert.lengthOf(accepted.members, 11)
     assert.lengthOf(accepted.edges, 26)
     assert.isTrue(compareBaseline(reviewedGraph, accepted).ok)
   })
-  test('normalizes paths and classifies built-ins without hiding missing/skipped files', ({ assert }) => {
+  test('normalizes paths and classifies built-ins without hiding missing/skipped files', ({
+    assert }) => {
     const result = resolvedGraph({
       '/repo/a.ts': [
         { request: './b', id: './b.ts' },

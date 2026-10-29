@@ -26,7 +26,8 @@ const AccountItem: React.FC<PropsType> = ({
   return (
     <label style={{ marginTop: '0.5rem' }}>
       {label}
-      <select className="form-control" name={name} value={option} onChange={handleChange} style={{ height: '2.5rem' }}>
+      <select className="form-control" name={name} value={option} onChange={handleChange} style={{
+        height: '2.5rem' }}>
         <option value="Transactions">Categorized</option>
         <option value="Uncategorized Transactions">Uncategorized</option>
         {/* <option value="Balances">Balances</option> */}

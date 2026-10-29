@@ -16,27 +16,31 @@ const bindingPrefix = 'binding-v2:'
 
 export default class PlaidItemCleanupService {
   private validateId(id: string) {
-    if (typeof id !== 'string' || !/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(id)) {
+    if (typeof id !== 'string' || !/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i
+      .test(id)) {
       throw new Error('Invalid Plaid cleanup ID')
     }
   }
 
   private async provider(context: string) {
     const provider = await app.container.make('plaid')
-    if (provider.providerContext !== context) throw new Error('Plaid cleanup provider context mismatch')
+    if (provider.providerContext !== context) throw new Error(
+      'Plaid cleanup provider context mismatch')
     return provider
   }
 
   private context() {
     const config = app.config.get<{ environment: string, clientId: string }>('plaid')
-    if (!config.environment || !config.clientId) throw new Error('Plaid cleanup provider context unavailable')
+    if (!config.environment || !config.clientId) throw new Error(
+      'Plaid cleanup provider context unavailable')
     return `${config.environment}:${config.clientId}`
   }
 
   private driver(version: string) {
     try {
       const keys: unknown = JSON.parse(app.config.get<string>('plaidCleanup.keys', '{}'))
-      if (!version || typeof keys !== 'object' || keys === null || !(version in keys)) throw new Error()
+      if (!version || typeof keys !== 'object' || keys === null || !(
+        version in keys)) throw new Error()
       const key: unknown = Reflect.get(keys, version)
       if (typeof key !== 'string' || key.length < 32) throw new Error()
       return new AES256GCM({ id: `plaid-cleanup-${version}`, key })
@@ -58,9 +62,11 @@ export default class PlaidItemCleanupService {
     const providerContext = this.context()
     await this.provider(providerContext)
     const now = DateTime.utc()
-    const ciphertext = bindingPrefix + this.driver(keyVersion).encrypt(token, undefined, JSON.stringify([id, providerContext, itemId]))
+    const ciphertext = bindingPrefix + this.driver(keyVersion).encrypt(token, undefined, JSON
+      .stringify([id, providerContext, itemId]))
     return db.transaction(async (trx) => {
-      await trx.rawQuery('SELECT pg_advisory_xact_lock(hashtextextended(?, 0))', [`${providerContext}:${itemId}`])
+      await trx.rawQuery('SELECT pg_advisory_xact_lock(hashtextextended(?, 0))', [
+        `${providerContext}:${itemId}`])
       return Cleanup.create({ id, itemId, providerContext, keyVersion,
         encryptedAccessToken: ciphertext, status: 'protected', attemptCount: 0,
         createdAt: now, nextAttemptAt: now.plus({ minutes: 5 }),
@@ -73,8 +79,10 @@ export default class PlaidItemCleanupService {
     let existingId: string | undefined
     await db.transaction(async (trx) => {
       // Serializes the narrow exchange/storage fallback against protection creation.
-      await trx.rawQuery('SELECT pg_advisory_xact_lock(hashtextextended(?, 0))', [`${context}:${itemId}`])
-      const existing = await Cleanup.query({ client: trx }).where('providerContext', context).where('itemId', itemId).forUpdate().first()
+      await trx.rawQuery('SELECT pg_advisory_xact_lock(hashtextextended(?, 0))', [
+        `${context}:${itemId}`])
+      const existing = await Cleanup.query({ client: trx }).where('providerContext', context).where(
+        'itemId', itemId).forUpdate().first()
       if (existing) { existingId = existing.id; return }
       if (await Institution.query({ client: trx }).where('plaidItemId', itemId).first()) return
       const plaid = await this.provider(context)
@@ -86,7 +94,8 @@ export default class PlaidItemCleanupService {
   async lockSetup(id: string, trx: TransactionClientContract) {
     this.validateId(id)
     const row = await Cleanup.query({ client: trx }).where('id', id).forUpdate().firstOrFail()
-    if (row.status !== 'protected' || row.providerContext !== this.context()) throw new Error('Plaid setup recovery state unavailable')
+    if (row.status !== 'protected' || row.providerContext !== this.context()) throw new Error(
+      'Plaid setup recovery state unavailable')
     return row
   }
 
@@ -111,18 +120,24 @@ export default class PlaidItemCleanupService {
     row.lastErrorClass = classification
     row.lastErrorCode = code
     row.credentialExpiresAt ??= DateTime.utc().plus({ days: 30 })
-    logger.error({ cleanupId: row.id, classification, code }, 'Plaid cleanup requires administrative review')
+    logger.error({ cleanupId: row.id, classification, code },
+      'Plaid cleanup requires administrative review')
   }
 
   // Never persist/log provider bodies, messages or arbitrary codes.
   private classify(error: unknown) {
-    if (error instanceof PlaidException && typeof error.plaidError === 'object' && error.plaidError !== null) {
+    if (error instanceof PlaidException && typeof error.plaidError === 'object' && error
+      .plaidError !== null) {
       const type: unknown = Reflect.get(error.plaidError, 'error_type')
       const code: unknown = Reflect.get(error.plaidError, 'error_code')
-      if (type === 'API_ERROR' && code === 'INTERNAL_SERVER_ERROR') return { retry: true, classification: 'provider_transient', code }
-      if (type === 'RATE_LIMIT_EXCEEDED') return { retry: true, classification: 'rate_limit', code: null }
-      // Conservative: already-absent responses also require review; no guessing about configuration.
-      if (code === 'ITEM_NOT_FOUND' || code === 'INVALID_ACCESS_TOKEN') return { retry: false, classification: 'provider_review', code }
+      if (type === 'API_ERROR' && code === 'INTERNAL_SERVER_ERROR') return { retry: true,
+        classification: 'provider_transient', code }
+      if (type === 'RATE_LIMIT_EXCEEDED') return { retry: true, classification: 'rate_limit',
+        code: null }
+      // Conservative: already-absent responses also require review; no guessing about
+      // configuration.
+      if (code === 'ITEM_NOT_FOUND' || code === 'INVALID_ACCESS_TOKEN') return { retry: false,
+        classification: 'provider_review', code }
       return { retry: false, classification: 'provider_unknown', code: null }
     }
     return { retry: true, classification: 'transport_unknown', code: null }
@@ -134,7 +149,8 @@ export default class PlaidItemCleanupService {
     // ledger below, and is released automatically on process/connection failure.
     const guard = await db.transaction()
     try {
-      const lock = await guard.rawQuery('SELECT pg_try_advisory_xact_lock(hashtextextended(?, 0)) AS locked', [id])
+      const lock = await guard.rawQuery(
+        'SELECT pg_try_advisory_xact_lock(hashtextextended(?, 0)) AS locked', [id])
       if (!lock.rows[0]?.locked) return
       let token: string | undefined
       let provider: PlaidWrapper | undefined
@@ -150,7 +166,8 @@ export default class PlaidItemCleanupService {
           this.review(row, 'credential_expired'); await row.save(); return
         }
         if (expiryOnly) return
-        if (row.status === 'review_required' || (!immediate && (!row.nextAttemptAt || row.nextAttemptAt > now))) return
+        if (row.status === 'review_required' || (!immediate && (!row.nextAttemptAt || row
+          .nextAttemptAt > now))) return
         let context: string
         try { context = this.context() }
         catch { this.review(row, 'context_unavailable'); await row.save(); return }
@@ -163,13 +180,15 @@ export default class PlaidItemCleanupService {
         catch { this.review(row, 'provider_context_unavailable'); await row.save(); return }
         try {
           if (!row.encryptedAccessToken?.startsWith(bindingPrefix)) throw new Error()
-          const decrypted = this.driver(row.keyVersion).decrypt<unknown>(row.encryptedAccessToken.slice(bindingPrefix.length), JSON.stringify([row.id, row.providerContext, row.itemId]))
+          const decrypted = this.driver(row.keyVersion).decrypt<unknown>(row.encryptedAccessToken
+            .slice(bindingPrefix.length), JSON.stringify([row.id, row.providerContext, row.itemId]))
           if (typeof decrypted !== 'string' || !decrypted) throw new Error()
           token = decrypted
         } catch {
           this.review(row, 'decryption_failed'); await row.save(); return
         }
-        if (row.attemptCount >= 7) { this.review(row, 'exhausted'); await row.save(); token = undefined; return }
+        if (row.attemptCount >= 7) { this.review(row, 'exhausted'); await row.save(); token =
+          undefined; return }
         row.status = 'pending'
         row.attemptCount++
         row.lastAttemptAt = now
@@ -186,7 +205,8 @@ export default class PlaidItemCleanupService {
       await db.transaction(async (trx) => {
         const row = await Cleanup.query({ client: trx }).where('id', id).forUpdate().firstOrFail()
         if (!outcome) this.finish(row, 'completed')
-        else if (!outcome.retry || row.attemptCount >= 7) this.review(row, outcome.classification, outcome.code)
+        else if (!outcome.retry || row.attemptCount >= 7) this.review(row, outcome.classification,
+          outcome.code)
         else { row.lastErrorClass = outcome.classification; row.lastErrorCode = outcome.code }
         await row.save()
       })
@@ -197,9 +217,11 @@ export default class PlaidItemCleanupService {
     const now = DateTime.utc().toSQL()
     // Retention is PostgreSQL work, independent of Redis delivery. Recheck under
     // the attempt lock so an extension or active removal cannot race destruction.
-    const expired = await Cleanup.query().whereNotNull('encryptedAccessToken').where('credentialExpiresAt', '<=', now).limit(100)
+    const expired = await Cleanup.query().whereNotNull('encryptedAccessToken').where(
+      'credentialExpiresAt', '<=', now).limit(100)
     for (const row of expired) await this.attempt(row.id, false, true)
-    const rows = await Cleanup.query().whereIn('status', ['protected', 'pending']).where('nextAttemptAt', '<=', now).limit(100)
+    const rows = await Cleanup.query().whereIn('status', ['protected', 'pending']).where(
+      'nextAttemptAt', '<=', now).limit(100)
     if (!rows.length) return
     const bull = await app.container.make('bullmq')
     const queue = bull.queue<{ cleanupId: string }, null>(QueueNamesEnum.PlaidItemCleanup)
@@ -207,7 +229,8 @@ export default class PlaidItemCleanupService {
     let timer: ReturnType<typeof setTimeout> | undefined
     try {
       const enqueue = async () => {
-        for (const row of rows) await queue.add('cleanup', { cleanupId: row.id }, { removeOnComplete: true, removeOnFail: 100 })
+        for (const row of rows) await queue.add('cleanup', { cleanupId: row.id }, {
+          removeOnComplete: true, removeOnFail: 100 })
       }
       await Promise.race([
         enqueue(),
@@ -224,17 +247,21 @@ export default class PlaidItemCleanupService {
 
   async administer(id: string, action: 'retry' | 'extend', days = 30) {
     this.validateId(id)
-    if (!Number.isInteger(days) || days < 1 || days > 365) throw new Error('Retention extension must be 1–365 days')
+    if (!Number.isInteger(days) || days < 1 || days > 365) throw new Error(
+      'Retention extension must be 1–365 days')
     await db.transaction(async (trx) => {
       const row = await Cleanup.query({ client: trx }).where('id', id).forUpdate().firstOrFail()
-      if (!row.encryptedAccessToken || row.status !== 'review_required') throw new Error('Cleanup is not eligible for administrative recovery')
+      if (!row.encryptedAccessToken || row.status !== 'review_required') throw new Error(
+        'Cleanup is not eligible for administrative recovery')
       if (action === 'extend') row.credentialExpiresAt = DateTime.utc().plus({ days })
       else {
-        if (row.credentialExpiresAt && row.credentialExpiresAt <= DateTime.utc()) throw new Error('Cleanup credential retention expired')
+        if (row.credentialExpiresAt && row.credentialExpiresAt <= DateTime.utc()) throw new Error(
+          'Cleanup credential retention expired')
         row.status = 'pending'; row.attemptCount = 0; row.nextAttemptAt = DateTime.utc()
       }
       await row.save()
-      logger.info({ cleanupId: row.id, action, days: action === 'extend' ? days : undefined }, 'Plaid cleanup administrative action')
+      logger.info({ cleanupId: row.id, action, days: action === 'extend' ? days : undefined },
+        'Plaid cleanup administrative action')
     })
   }
 }

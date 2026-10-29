@@ -41,7 +41,8 @@ const DropDown: React.FC<DropDownPropsType> = ({ initialValue, onSelect }) => {
     event.stopPropagation();
   }
 
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov',
+    'Dec'];
 
   const handleDecrementClick = () => {
     setValue((prev) => ({
@@ -104,7 +105,8 @@ const MonthSelector: React.FC<PropsType> = ({
   const handleSelect = (v: string) => {
     const input = inputRef.current;
     if (input) {
-      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,
+        'value')?.set;
       nativeInputValueSetter?.call(input, v);
       input.dispatchEvent(new Event('input', { bubbles: true }))
     }
@@ -125,7 +127,8 @@ const MonthSelector: React.FC<PropsType> = ({
           month = 12;
         }
 
-        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,
+          'value')?.set;
         nativeInputValueSetter?.call(input, `${month}-${year}`);
         input.dispatchEvent(new Event('input', { bubbles: true }))
       }
@@ -147,7 +150,8 @@ const MonthSelector: React.FC<PropsType> = ({
           month = 1;
         }
 
-        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,
+          'value')?.set;
         nativeInputValueSetter?.call(input, `${month}-${year}`);
         input.dispatchEvent(new Event('input', { bubbles: true }))
       }

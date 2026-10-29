@@ -31,9 +31,12 @@ async function fixture() {
     await budget.initialize()
     const user = await budget.related('users').create({ username: `writer-gate-${++sequence}`,
       email: `writer-gate-${sequence}@example.com`, password: 'testPassw0rd' })
-    const institution = await budget.related('institutions').create({ name: `Gate bank ${sequence}` })
-    const account = await institution.related('accounts').create({ name: `Gate Account ${sequence}`, balance: 100,
-      type: AccountType.Credit, subtype: 'credit card', tracking: TrackingType.Transactions, startDate: DateTime.fromISO('2025-01-01'),
+    const institution = await budget.related('institutions').create({
+      name: `Gate bank ${sequence}` })
+    const account = await institution.related('accounts').create({ name: `Gate Account ${sequence}`,
+      balance: 100,
+      type: AccountType.Credit, subtype: 'credit card', tracking: TrackingType.Transactions,
+        startDate: DateTime.fromISO('2025-01-01'),
       initialized: true, enabled: true, closed: false, rate: 0 })
     const pool = await budget.getFundingPoolCategory({ client: trx })
     await account.updateStartingBalance(budget, pool)
@@ -48,17 +51,21 @@ function ofx(amount: number, ledger: number, id: string) {
   return 'OFXHEADER:100\nDATA:OFXSGML\nVERSION:102\n\n'
     + '<OFX><SIGNONMSGSRSV1><SONRS><FI><FID>123</FI></SONRS></SIGNONMSGSRSV1>'
     + '<CREDITCARDMSGSRSV1><CCSTMTTRNRS><CCSTMTRS><CCACCTFROM><ACCTID>gate-account</CCACCTFROM>'
-    + `<BANKTRANLIST><STMTTRN><DTPOSTED>20250210120000[0:GMT]<TRNAMT>${amount}<FITID>${id}<NAME>Gate OFX</STMTTRN></BANKTRANLIST>`
+    +
+      `<BANKTRANLIST><STMTTRN><DTPOSTED>20250210120000[0:GMT]<TRNAMT>${amount}<FITID>${id}<NAME>Gat\
+e OFX</STMTTRN></BANKTRANLIST>`
     + `<LEDGERBAL><BALAMT>${ledger}</LEDGERBAL></CCSTMTRS></CCSTMTTRNRS></CREDITCARDMSGSRSV1></OFX>`
 }
 async function create(client: ApiClient, f: Fixture, amount: number) {
-  const response = await client.post(`/api/v1/account/${f.account.id}/transactions`).json(transactionRequest({
+  const response = await client.post(`/api/v1/account/${f.account.id}/transactions`).json(
+    transactionRequest({
     name: `Manual ${amount}`, date: '2025-02-10', amount, categories: [],
   })).loginAs(f.user)
   response.assertStatus(200)
 }
 async function execute(client: ApiClient, f: Fixture, operation: Operation, target?: Transaction) {
-  if (operation === 'create10' || operation === 'create5') return create(client, f, operation === 'create10' ? 10 : 5)
+  if (operation === 'create10' || operation === 'create5') return create(client, f, operation ===
+    'create10' ? 10 : 5)
   if (operation === 'ofx110' || operation === 'ofx120') {
     const ledger = operation === 'ofx110' ? 110 : 120
     const response = await client.post(`/api/v1/account/${f.account.id}/ofx`)
@@ -69,7 +76,8 @@ async function execute(client: ApiClient, f: Fixture, operation: Operation, targ
   if (!target) throw new Error('Missing seed Transaction')
   const response = operation === 'delete'
     ? await client.delete(`/api/v1/transaction/${target.id}`).loginAs(f.user)
-    : await client.patch(`/api/v1/transaction/${target.id}`).json(transactionRequest({ version: target.version, amount: 6,
+    : await client.patch(`/api/v1/transaction/${target.id}`).json(transactionRequest({
+      version: target.version, amount: 6,
       categories: [{ categoryId: f.unassigned.id, amount: 6 }] })).loginAs(f.user)
   response.assertStatus(200)
 }
@@ -84,7 +92,8 @@ async function waitForBudgetWaiter(ownerPid: number) {
   while (Date.now() < deadline) {
     const result = await db.rawQuery(`SELECT query FROM pg_stat_activity
       WHERE ? = ANY(pg_blocking_pids(pid)) AND wait_event_type = 'Lock'`, [ownerPid])
-    if (result.rows.some((row: { query: string }) => row.query.includes('applications') && /for update/i.test(row.query))) return
+    if (result.rows.some((row: { query: string }) => row.query.includes('applications') &&
+      /for update/i.test(row.query))) return
   }
   throw new Error('Writer did not wait for the owning Budget gate')
 }
@@ -92,25 +101,37 @@ async function state(f: Fixture) {
   const account = await Account.findOrFail(f.account.id)
   const unassigned = await f.budget.getUnassignedCategory()
   const pool = await f.budget.getFundingPoolCategory()
-  const rows = await AccountTransaction.query().where('accountId', account.id).preload('transaction').orderBy('id')
+  const rows = await AccountTransaction.query().where('accountId', account.id).preload(
+    'transaction').orderBy('id')
   const logs = await db.from('transaction_logs').where('application_id', f.budget.id).orderBy('id')
-  return { balance: account.balance, plaidBalance: account.plaidBalance, unassigned: unassigned.balance, pool: pool.balance,
+  return { balance: account.balance, plaidBalance: account.plaidBalance, unassigned: unassigned
+    .balance, pool: pool.balance,
     rows: rows.map((row) => ({ amount: row.amount, pending: row.pending, type: row.transaction.type,
-      deleted: row.transaction.deleted, version: row.transaction.version, categories: row.transaction.categories })), logs }
+      deleted: row.transaction.deleted, version: row.transaction.version, categories: row
+        .transaction.categories })), logs }
 }
 
 test.group('Bounded Account writer PostgreSQL serialization (prepared)', () => {
   test('participating writers wait and commit the current serial financial result').with([
-    { first: 'ofx110', second: 'create5', seeded: false, balance: 115, category: 15, pool: 100, active: 2 },
-    { first: 'create10', second: 'create5', seeded: false, balance: 115, category: 15, pool: 100, active: 2 },
-    { first: 'create10', second: 'delete', seeded: true, balance: 110, category: 10, pool: 100, active: 1 },
+    { first: 'ofx110', second: 'create5', seeded: false, balance: 115, category: 15, pool: 100,
+      active: 2 },
+    { first: 'create10', second: 'create5', seeded: false, balance: 115, category: 15, pool: 100,
+      active: 2 },
+    { first: 'create10', second: 'delete', seeded: true, balance: 110, category: 10, pool: 100,
+      active: 1 },
     // OFX posts Transaction deltas; its independent provider ledger cannot change opening/Pool.
-    { first: 'create10', second: 'ofx110', seeded: false, balance: 120, category: 20, pool: 100, active: 2 },
-    { first: 'ofx110', second: 'delete', seeded: true, balance: 110, category: 10, pool: 100, active: 1 },
-    { first: 'delete', second: 'ofx110', seeded: true, balance: 110, category: 10, pool: 100, active: 1 },
-    { first: 'patch', second: 'ofx110', seeded: true, balance: 116, category: 16, pool: 100, active: 2 },
-    { first: 'ofx110', second: 'patch', seeded: true, balance: 116, category: 16, pool: 100, active: 2 },
-    { first: 'ofx110', second: 'ofx120', seeded: false, balance: 120, category: 20, pool: 100, active: 2 },
+    { first: 'create10', second: 'ofx110', seeded: false, balance: 120, category: 20, pool: 100,
+      active: 2 },
+    { first: 'ofx110', second: 'delete', seeded: true, balance: 110, category: 10, pool: 100,
+      active: 1 },
+    { first: 'delete', second: 'ofx110', seeded: true, balance: 110, category: 10, pool: 100,
+      active: 1 },
+    { first: 'patch', second: 'ofx110', seeded: true, balance: 116, category: 16, pool: 100,
+      active: 2 },
+    { first: 'ofx110', second: 'patch', seeded: true, balance: 116, category: 16, pool: 100,
+      active: 2 },
+    { first: 'ofx110', second: 'ofx120', seeded: false, balance: 120, category: 20, pool: 100,
+      active: 2 },
   ] as const).run(async ({ client, assert }, scenario) => {
     const f = await fixture()
     const target = scenario.seeded ? await seed(client, f) : undefined
@@ -130,7 +151,8 @@ test.group('Bounded Account writer PostgreSQL serialization (prepared)', () => {
       }
       return save.call(this)
     })
-    const first = execute(client, f, scenario.first, target).catch((error) => { entered.resolve(); throw error })
+    const first = execute(client, f, scenario.first, target).catch((error) => { entered.resolve();
+      throw error })
     let second: Promise<void> | undefined
     try {
       await entered.promise
@@ -146,22 +168,27 @@ test.group('Bounded Account writer PostgreSQL serialization (prepared)', () => {
     await second
     const after = await state(f)
     assert.equal(after.balance, scenario.balance)
-    const lastOfx = [scenario.first, scenario.second].filter((operation) => operation.startsWith('ofx')).at(-1)
+    const lastOfx = [scenario.first, scenario.second].filter((operation) => operation.startsWith(
+      'ofx')).at(-1)
     assert.equal(after.plaidBalance, lastOfx === 'ofx120' ? 120 : lastOfx ? 110 : null)
     assert.equal(after.unassigned, scenario.category)
     assert.equal(after.pool, scenario.pool)
     const ordinary = after.rows.filter((row) => row.type !== 4)
     assert.lengthOf(ordinary.filter((row) => !row.deleted), scenario.active)
-    assert.equal(ordinary.filter((row) => !row.deleted).reduce((sum, row) => sum + row.amount, 0), scenario.category)
+    assert.equal(ordinary.filter((row) => !row.deleted).reduce((sum, row) => sum + row.amount, 0),
+      scenario.category)
     assert.isTrue(ordinary.every((row) => !row.pending))
-    assert.equal(ordinary.filter((row) => row.version === 1).length, scenario.first === 'patch' || scenario.second === 'patch' ? 1 : 0)
+    assert.equal(ordinary.filter((row) => row.version === 1).length, scenario.first === 'patch' ||
+      scenario.second === 'patch' ? 1 : 0)
     const opening = after.rows.find((row) => row.type === 4)
     assert.equal(opening?.amount, scenario.pool)
-    const expectedLogs = [scenario.first, scenario.second].filter((operation) => operation.startsWith('ofx') || operation === 'patch').length
+    const expectedLogs = [scenario.first, scenario.second].filter((operation) => operation
+      .startsWith('ofx') || operation === 'patch').length
     assert.lengthOf(after.logs, expectedLogs)
   })
 
-  test('late CREATE failure rolls back and releases gate for a fresh waiting CREATE', async ({ client, assert }) => {
+  test('late CREATE failure rolls back and releases gate for a fresh waiting CREATE', async ({
+    client, assert }) => {
     const f = await fixture()
     const entered = signal()
     const release = signal()
@@ -181,7 +208,8 @@ test.group('Bounded Account writer PostgreSQL serialization (prepared)', () => {
       }
       return saved
     })
-    const first = client.post(`/api/v1/account/${f.account.id}/transactions`).json(transactionRequest({
+    const first = client.post(`/api/v1/account/${f.account.id}/transactions`).json(
+      transactionRequest({
       name: 'Rolled back CREATE', date: '2025-02-10', amount: 10, categories: [],
     })).loginAs(f.user).then((response) => { response.assertStatus(500) })
     let waiter: Promise<void> | undefined
@@ -251,7 +279,8 @@ test.group('Bounded Account writer PostgreSQL serialization (prepared)', () => {
       assert.lengthOf(after.logs, next === 'create5' ? 0 : 1)
     })
 
-  test('different Budgets commit independently while another gate is held', async ({ client, assert }) => {
+  test('different Budgets commit independently while another gate is held', async ({ client,
+    assert }) => {
     const f = await fixture()
     const other = await fixture()
     const owner = await db.transaction()
@@ -266,15 +295,19 @@ test.group('Bounded Account writer PostgreSQL serialization (prepared)', () => {
       assert.lengthOf(await AccountTransaction.query().where('accountId', other.account.id), 2)
     } finally { await owner.rollback() }
   })
-  test('OFX command waits for HTTP OFX and reloads the scoped selection despite foreign same-name Account', async ({ client, assert }) => {
+  test(
+    'OFX command waits for HTTP OFX and reloads the scoped selection despite foreign same-name \
+Account', async ({ client, assert }) => {
     const foreign = await fixture()
     const f = await fixture()
     foreign.account.name = f.account.name
     await foreign.account.save()
     const command = await ace.create(OfxUpload, ['prepared.ofx'])
     const ask = mock.method(command.prompt, 'ask', async () => f.user.username)
-    const choice = mock.method(command.prompt, 'choice', async (title: string) => title === 'Select the institution' ? f.institution.name : f.account.name)
-    const file = mock.method(drive.use('fs'), 'get', async () => Buffer.from(ofx(10, 120, 'command120')))
+    const choice = mock.method(command.prompt, 'choice', async (title: string) => title ===
+      'Select the institution' ? f.institution.name : f.account.name)
+    const file = mock.method(drive.use('fs'), 'get', async () => Buffer.from(ofx(10, 120,
+      'command120')))
     const entered = signal()
     const release = signal()
     let ownerPid = 0
@@ -314,12 +347,15 @@ test.group('Bounded Account writer PostgreSQL serialization (prepared)', () => {
     assert.lengthOf(await AccountTransaction.query().where('accountId', foreign.account.id), 1)
   })
 
-  test('same-Budget different-Account CREATE and startDate overlap serialize').with(['different Account', 'startDate']).run(async ({ client, assert }, kind) => {
+  test('same-Budget different-Account CREATE and startDate overlap serialize').with([
+    'different Account', 'startDate']).run(async ({ client, assert }, kind) => {
     const f = await fixture()
     const other = kind === 'different Account' ? await db.transaction(async (trx) => {
-      const account = await Account.create({ institutionId: f.institution.id, name: 'Other gate Account', balance: 100,
+      const account = await Account.create({ institutionId: f.institution.id, name:
+        'Other gate Account', balance: 100,
         type: AccountType.Credit, subtype: 'credit card', tracking: TrackingType.Transactions,
-        startDate: DateTime.fromISO('2025-01-01'), initialized: true, enabled: true, closed: false, rate: 0 }, { client: trx })
+        startDate: DateTime.fromISO('2025-01-01'), initialized: true, enabled: true, closed: false,
+          rate: 0 }, { client: trx })
       const pool = await f.budget.getFundingPoolCategory({ client: trx })
       await account.updateStartingBalance(f.budget, pool)
       await pool.save()
@@ -346,7 +382,8 @@ test.group('Bounded Account writer PostgreSQL serialization (prepared)', () => {
     try {
       await entered.promise
       second = other ? create(client, { ...f, account: other }, 5)
-        : client.patch(`/api/v1/account/${f.account.id}`).json({ startDate: '2025-03-01' }).loginAs(f.user)
+        : client.patch(`/api/v1/account/${f.account.id}`).json({ startDate: '2025-03-01' }).loginAs(
+          f.user)
           .then((result) => { result.assertStatus(200) })
       await waitForBudgetWaiter(pid)
     } finally {
@@ -367,24 +404,28 @@ test.group('Bounded Account writer PostgreSQL serialization (prepared)', () => {
     } else {
       assert.equal((await Account.findOrFail(f.account.id)).startDate.toISODate(), '2025-03-01')
       const opening = await AccountTransaction.query().where('accountId', f.account.id)
-        .whereHas('transaction', (query) => query.where('type', 4)).preload('transaction').firstOrFail()
+        .whereHas('transaction', (query) => query.where('type', 4)).preload('transaction')
+          .firstOrFail()
       assert.equal(opening.transaction.date.toISODate(), '2025-03-01')
       assert.equal(opening.amount, 110)
     }
   })
 
   test('protected financial model writes use one owning transaction')
-    .with(['create', 'delete', 'patch', 'ofx', 'startDate']).run(async ({ client, assert }, kind) => {
+    .with(['create', 'delete', 'patch', 'ofx', 'startDate']).run(async ({ client, assert }, kind) =>
+      {
       const f = await fixture()
       const target = kind === 'delete' || kind === 'patch' ? await seed(client, f) : undefined
       const clients = new Set<TransactionClientContract>()
       const models = new Set<string>()
-      const prototypes: LucidRow[] = [Account.prototype, AccountTransaction.prototype, Transaction.prototype,
+      const prototypes: LucidRow[] = [Account.prototype, AccountTransaction.prototype, Transaction
+        .prototype,
         Category.prototype, TransactionLog.prototype]
       const audits = prototypes.map((prototype) => {
         const save = prototype.save
         return mock.method(prototype, 'save', async function (this: LucidRow) {
-          if (!this.$trx) throw new Error(`Protected ${this.constructor.name} write escaped transaction`)
+          if (!this.$trx) throw new Error(`Protected ${this.constructor
+            .name} write escaped transaction`)
           clients.add(this.$trx)
           models.add(this.constructor.name)
           return save.call(this)
@@ -392,9 +433,11 @@ test.group('Bounded Account writer PostgreSQL serialization (prepared)', () => {
       })
       try {
         if (kind === 'startDate') {
-          const response = await client.patch(`/api/v1/account/${f.account.id}`).json({ startDate: '2025-02-01' }).loginAs(f.user)
+          const response = await client.patch(`/api/v1/account/${f.account.id}`).json({ startDate:
+            '2025-02-01' }).loginAs(f.user)
           response.assertStatus(200)
-        } else await execute(client, f, kind === 'create' ? 'create5' : kind === 'ofx' ? 'ofx110' : kind === 'delete' ? 'delete' : 'patch', target)
+        } else await execute(client, f, kind === 'create' ? 'create5' : kind === 'ofx' ?
+          'ofx110' : kind === 'delete' ? 'delete' : 'patch', target)
       } finally { audits.forEach((audit) => audit.mock.restore()) }
       assert.equal(clients.size, 1)
       assert.isTrue(models.has('Account'))
@@ -428,7 +471,8 @@ test.group('Eligibility boundary waiting-writer reload (prepared)', () => {
         }
         return save.call(this)
       })
-      const first = client.patch(`/api/v1/account/${f.account.id}`).json({ startDate: '2025-03-01' }).loginAs(f.user)
+      const first = client.patch(`/api/v1/account/${f.account.id}`).json({ startDate:
+        '2025-03-01' }).loginAs(f.user)
         .then((response) => { response.assertStatus(200) })
       let second: Promise<void> | undefined
       try {
@@ -460,7 +504,8 @@ test.group('Eligibility boundary waiting-writer reload (prepared)', () => {
 })
 
 test.group('startDate rollback eligibility reload', () => {
-  test('waiting CREATE uses the old boundary after a late startDate rollback', async ({ client, assert }) => {
+  test('waiting CREATE uses the old boundary after a late startDate rollback', async ({ client,
+    assert }) => {
     const f = await fixture()
     const entered = signal()
     const release = signal()
@@ -480,7 +525,8 @@ test.group('startDate rollback eligibility reload', () => {
       }
       return saved
     })
-    const first = client.patch(`/api/v1/account/${f.account.id}`).json({ startDate: '2025-03-01' }).loginAs(f.user)
+    const first = client.patch(`/api/v1/account/${f.account.id}`).json({ startDate: '2025-03-01' })
+      .loginAs(f.user)
       .then((response) => { response.assertStatus(500) })
     let waiter: Promise<void> | undefined
     try {
@@ -500,7 +546,8 @@ test.group('startDate rollback eligibility reload', () => {
     assert.equal(after.pool, 100)
     assert.equal((await Account.findOrFail(f.account.id)).startDate.toISODate(), '2025-01-01')
     const opening = await AccountTransaction.query().where('accountId', f.account.id)
-      .whereHas('transaction', (query) => query.where('type', 4)).preload('transaction').firstOrFail()
+      .whereHas('transaction', (query) => query.where('type', 4)).preload('transaction')
+        .firstOrFail()
     assert.equal(opening.transaction.date.toISODate(), '2025-01-01')
     assert.equal(opening.amount, 100)
     assert.lengthOf(after.rows.filter((row) => row.type === 5), 1)

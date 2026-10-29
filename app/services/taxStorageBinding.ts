@@ -13,7 +13,8 @@ export function excludeTaxStorage(row: object): void {
 }
 export function bindResolvedTaxStorage(row: Transaction): void {
   if (bound.has(row) || excluded.has(row)) return
-  if (row.$isPersisted && Object.hasOwn(row.$dirty, 'taxes')) throw new Error('Bind tax storage before attribution mutation')
+  if (row.$isPersisted && Object.hasOwn(row.$dirty, 'taxes')) throw new Error(
+    'Bind tax storage before attribution mutation')
   // Null/missing is not an implicit empty-array replacement or write-on-read.
   if (row.taxes !== null && row.taxes !== undefined) {
     row.$attributes.taxes = row.$isPersisted ? decodeTaxAttributions(row.taxes) : row.taxes
@@ -22,14 +23,16 @@ export function bindResolvedTaxStorage(row: Transaction): void {
   bound.add(row)
 }
 export function prepareTaxStorage(value: unknown, row: LucidRow): string {
-  return JSON.stringify(bound.has(row) && value !== null && value !== undefined ? encodeTaxAttributions(value) : value)
+  return JSON.stringify(bound.has(row) && value !== null &&
+    value !== undefined ? encodeTaxAttributions(value) : value)
 }
 export function enableTaxStorageWrite(row: Transaction): void {
   if (!excluded.has(row)) bound.add(row)
 }
 export function stageTaxStorage(row: Transaction): void {
   pending.delete(row)
-  if (bound.has(row) && Object.hasOwn(row.$dirty, 'taxes') && row.taxes !== null && row.taxes !== undefined) {
+  if (bound.has(row) && Object.hasOwn(row.$dirty, 'taxes') && row.taxes !== null && row
+    .taxes !== undefined) {
     pending.set(row, encodeTaxAttributions(row.taxes))
   }
 }

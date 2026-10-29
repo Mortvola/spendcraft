@@ -53,7 +53,8 @@ class Accounts implements AccountsInterface {
     const { data } = await response.body();
 
     if (!Array.isArray(data) || !isInstitutionsResponse(data)
-      || !data.every((institution) => Number.isFinite(institution.id) && Array.isArray(institution.accounts)
+      || !data.every((institution) => Number.isFinite(institution.id) && Array.isArray(institution
+        .accounts)
         && institution.accounts.every((account) => Number.isFinite(account.id)))) {
       throw new Error('invalid response');
     }
@@ -157,7 +158,8 @@ class Accounts implements AccountsInterface {
       throw new Error('metadata institution is null')
     }
 
-    const response = await Http.post<AddInstitutionProps, ApiResponse<AddInstitutionResponse>>('/api/v1/institution', {
+    const response = await Http.post<AddInstitutionProps, ApiResponse<AddInstitutionResponse>>(
+      '/api/v1/institution', {
       publicToken,
       institutionId: metadata.institution.institution_id,
     });
@@ -198,7 +200,8 @@ class Accounts implements AccountsInterface {
     tracking: TrackingType,
     rate: number,
   ): Promise<ErrorProps[] | null> {
-    const response = await Http.post<AddOfflineInstitutionRequest, ApiResponse<AddInstitutionResponse>>('/api/v1/institution', {
+    const response = await Http.post<AddOfflineInstitutionRequest,
+      ApiResponse<AddInstitutionResponse>>('/api/v1/institution', {
       institution: {
         name: instituteName,
       },

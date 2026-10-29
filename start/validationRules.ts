@@ -90,7 +90,8 @@ async function notExists(
   }
 
   const result = await db.query()
-    .select(db.raw('EXISTS (SELECT 1 FROM ?? WHERE ?? = ?) AS exists', [options.table, options.column, value]))
+    .select(db.raw('EXISTS (SELECT 1 FROM ?? WHERE ?? = ?) AS exists', [options.table, options
+      .column, value]))
     .first();
 
   if (result.exists) {
@@ -110,7 +111,8 @@ declare module '@vinejs/vine' {
   }
 }
 
-VineNumber.macro('notExists', function (this: VineNumber, options: { table: string, column: string }) {
+VineNumber.macro('notExists', function (this: VineNumber, options: { table: string,
+  column: string }) {
   return this.use(notExistsRule(options))
 })
 
@@ -132,7 +134,9 @@ async function transactionsExist(
     .select(1)
     .from('transactions')
     .where('deleted', false)
-    .whereRaw('categories::jsonb @\\? (\'$[*] \\? (@.categoryId == \' || ? || \' && @.amount != 0)\')::jsonpath', [value])
+    .whereRaw(
+      'categories::jsonb @\\? (\'$[*] \\? (@.categoryId == \' || ? || \' && @.amount != \
+0)\')::jsonpath', [value])
     .first();
 
   if (result) {
@@ -177,6 +181,7 @@ VineNumber.macro('transactionsExist', function (this: VineNumber) {
 //   });
 
 //   if (sum !== 0) {
-//     errorReporter.report(pointer, 'nonZeroSum', `Rows do not sum to zero: ${sum}`, arrayExpressionPointer)
+// errorReporter.report(pointer, 'nonZeroSum', `Rows do not sum to zero: ${sum}`,
+// arrayExpressionPointer)
 //   }
 // }

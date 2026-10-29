@@ -1,4 +1,5 @@
-import { addMoneyCents, formatMoneyCents, parseMoneyCents, type MoneyCents } from "../../../common/moneyCents";
+import { addMoneyCents, formatMoneyCents, parseMoneyCents, type MoneyCents } from
+  "../../../common/moneyCents";
 import { observable } from "mobx";
 import { FilingStatus } from "../../../common/ResponseTypes";
 import { TaxesInterface } from "./Types";
@@ -49,7 +50,8 @@ class Income {
     if (getCurrentPeriod() === period) {
       gains = addMoneyCents(gains, this.shortTermCapitalGainsCents, this.longTermCapitalGainsCents);
     }
-    const limit = parseMoneyCents(this.taxes.filingStatus === FilingStatus.MarriedFilingSeparate ? "-1500.00" : "-3000.00");
+    const limit = parseMoneyCents(this.taxes.filingStatus === FilingStatus.MarriedFilingSeparate ?
+      "-1500.00" : "-3000.00");
     return gains < limit ? limit : gains;
   }
 
@@ -69,9 +71,11 @@ class Income {
   }
 
   // Dollar adapters keep the existing tax worksheets and their intermediate precision unchanged.
-  getCapitalGains(period: number) { return Number(formatMoneyCents(this.getCapitalGainsCents(period))); }
+  getCapitalGains(period: number) { return Number(formatMoneyCents(this.getCapitalGainsCents(
+    period))); }
 
-  getAdjustedGrossIncome(period: number) { return Number(formatMoneyCents(this.getAdjustedGrossIncomeCents(period))); }
+  getAdjustedGrossIncome(period: number) { return Number(formatMoneyCents(this
+    .getAdjustedGrossIncomeCents(period))); }
 }
 
 export default Income;

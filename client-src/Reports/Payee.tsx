@@ -14,7 +14,8 @@ import { TrackingType, type PayeeReportRow } from '../../common/ResponseTypes';
 
 const Payee: React.FC = () => {
   const { accounts } = useStores();
-  const { setData, SortableTable } = useSortableTable<PayeeCentsReportRow>(['name', 'paymentChannel', 'sumCents', 'count']);
+  const { setData, SortableTable } = useSortableTable<PayeeCentsReportRow>(['name',
+    'paymentChannel', 'sumCents', 'count']);
 
   interface FormValues {
     startDate: string,
@@ -126,7 +127,8 @@ const Payee: React.FC = () => {
                           .map((a) => {
                             index += 1;
                             return (
-                              <FormCheckbox key={a.id} name={`account[${index}].value`} label={`${i.name}:${a.name}`} />
+                              <FormCheckbox key={a.id} name={`account[${index}].value`} label={`${i
+                                .name}:${a.name}`} />
                             )
                           })))
                       }

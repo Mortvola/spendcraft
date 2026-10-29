@@ -12,7 +12,8 @@ const execute = promisify(execFile)
 
 export default class GenerateJwtKeys extends BaseCommand {
   public static commandName = 'generate:jwt-keys'
-  public static description = 'Save an ssh-keygen RSA JWT key pair to .env only when neither key is configured'
+  public static description =
+    'Save an ssh-keygen RSA JWT key pair to .env only when neither key is configured'
 
   static options: CommandOptions = {
     startApp: false,
@@ -29,7 +30,8 @@ export default class GenerateJwtKeys extends BaseCommand {
       return
     }
     if (env.JWT_PRIVATE_KEY || env.JWT_PUBLIC_KEY) {
-      this.logger.error('Only one JWT key is configured. Restore the matching pair; no keys were changed.')
+      this.logger.error(
+        'Only one JWT key is configured. Restore the matching pair; no keys were changed.')
       this.exitCode = 1
       return
     }
@@ -37,14 +39,16 @@ export default class GenerateJwtKeys extends BaseCommand {
     const directory = await mkdtemp(join(tmpdir(), 'spendcraft-jwt-'))
     try {
       const path = join(directory, 'jwt')
-      await execute('ssh-keygen', ['-q', '-t', 'rsa', '-b', '3072', '-m', 'PEM', '-N', '', '-f', path])
+      await execute('ssh-keygen', ['-q', '-t', 'rsa', '-b', '3072', '-m', 'PEM', '-N', '', '-f',
+        path])
       const { stdout } = await execute('ssh-keygen', ['-e', '-m', 'PKCS8', '-f', `${path}.pub`])
       const privatePem = (await readFile(path, 'utf8')).trim()
       const publicPem = stdout.trim()
       const privateKey = createPrivateKey(privatePem)
       const publicKey = createPublicKey(publicPem)
       if (privateKey.asymmetricKeyType !== 'rsa'
-        || !createPublicKey(privateKey).export({ type: 'spki', format: 'der' }).equals(publicKey.export({ type: 'spki', format: 'der' }))) {
+        || !createPublicKey(privateKey).export({ type: 'spki', format: 'der' }).equals(publicKey
+          .export({ type: 'spki', format: 'der' }))) {
         throw new Error('Generated JWT keys do not form an RSA pair')
       }
       // Quoted multiline PEM is parsed as real newlines by Node and Adonis.
@@ -54,7 +58,9 @@ export default class GenerateJwtKeys extends BaseCommand {
       await editor.save()
       this.logger.info('JWT keys saved to .env.')
     } catch {
-      this.logger.error('Cannot generate or save JWT keys. Check ssh-keygen availability, temporary storage and .env permissions; installation must stop.')
+      this.logger.error(
+        'Cannot generate or save JWT keys. Check ssh-keygen availability, temporary storage and \
+.env permissions; installation must stop.')
       this.exitCode = 1
     } finally {
       await rm(directory, { recursive: true, force: true })

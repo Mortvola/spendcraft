@@ -13,13 +13,18 @@ async function createDomain(label: string) {
   return db.transaction(async (trx) => {
     const budget = await Budget.create({}, { client: trx })
     await budget.initialize()
-    const user = await budget.related('users').create({ username: 'loan-isolation-' + label + '-' + ++sequence,
+    const user = await budget.related('users').create({ username: 'loan-isolation-' + label + '-' +
+      ++sequence,
       email: 'loan-isolation-' + sequence + '@example.com', password: 'testPassw0rd' })
     const group = await budget.related('groups').create({ name: label + ' group', type: 'Regular' })
-    const category = await group.related('categories').create({ name: label + ' category', type: CategoryType.Regular,
-      balance: 100, fundingAmount: label === 'own' ? 10 : 99, useGoal: false, recurrence: 1, fundingCategories: [] })
-    const transaction = await budget.related('transactions').create({ date: DateTime.fromISO('2025-02-01'),
-      type: TransactionType.MANUAL_TRANSACTION, categories: [{ categoryId: category.id, amount: 10 }], taxes: [], deleted: false })
+    const category = await group.related('categories').create({ name: label + ' category',
+      type: CategoryType.Regular,
+      balance: 100, fundingAmount: label === 'own' ? 10 : 99, useGoal: false, recurrence: 1,
+        fundingCategories: [] })
+    const transaction = await budget.related('transactions').create({ date: DateTime.fromISO(
+      '2025-02-01'),
+      type: TransactionType.MANUAL_TRANSACTION, categories: [{ categoryId: category.id,
+        amount: 10 }], taxes: [], deleted: false })
     return { budget, user, category, transaction }
   })
 }
@@ -28,7 +33,8 @@ async function createFixture() {
   const own = await createDomain('own')
   const foreign = await createDomain('foreign')
   const shared = await User.create({ username: 'loan-isolation-shared-' + ++sequence,
-    email: 'loan-isolation-' + sequence + '@example.com', password: 'testPassw0rd', budgetId: own.budget.id })
+    email: 'loan-isolation-' + sequence + '@example.com', password: 'testPassw0rd', budgetId: own
+      .budget.id })
   return { own, foreign, shared }
 }
 
@@ -49,21 +55,26 @@ test.group('Loan isolation', (group) => {
   }
 
   test('foreign and missing loans reject reads and updates without mutation').with([
-    { method: 'get', suffix: '', target: 'foreign' }, { method: 'patch', suffix: '', target: 'foreign' },
+    { method: 'get', suffix: '', target: 'foreign' }, { method: 'patch', suffix: '', target:
+      'foreign' },
     { method: 'get', suffix: '/transactions', target: 'foreign' },
-    { method: 'get', suffix: '', target: 'missing' }, { method: 'patch', suffix: '', target: 'missing' },
+    { method: 'get', suffix: '', target: 'missing' }, { method: 'patch', suffix: '', target:
+      'missing' },
     { method: 'get', suffix: '/transactions', target: 'missing' },
   ]).run(async ({ client, assert }, scenario) => {
     const id = scenario.target === 'foreign' ? fixture.foreign.category.id : missingId
     const before = await state()
     const response = scenario.method === 'patch'
-      ? await client.patch(`/api/v1/loans/${id}`).json({ name: 'Changed loan', rate: 8, startDate: '2025-02-01', startingBalance: '200.00' }).accept('json').loginAs(fixture.own.user)
-      : await client.get(`/api/v1/loans/${id}${scenario.suffix}`).accept('json').loginAs(fixture.own.user)
+      ? await client.patch(`/api/v1/loans/${id}`).json({ name: 'Changed loan', rate: 8, startDate:
+        '2025-02-01', startingBalance: '200.00' }).accept('json').loginAs(fixture.own.user)
+      : await client.get(`/api/v1/loans/${id}${scenario.suffix}`).accept('json').loginAs(fixture.own
+        .user)
     assert.deepEqual(await state(), before)
     response.assertStatus(404)
   })
 
-  test('owner and shared-budget users retain the current loan behavior').with(['owner', 'shared']).run(async ({ client, assert }, actor) => {
+  test('owner and shared-budget users retain the current loan behavior').with(['owner', 'shared'])
+    .run(async ({ client, assert }, actor) => {
     const user = actor === 'owner' ? fixture.own.user : fixture.shared
     const prefix = `/api/v1/loans/${fixture.own.category.id}`
     const loan = await client.get(prefix).accept('json').loginAs(user)
@@ -72,16 +83,20 @@ test.group('Loan isolation', (group) => {
     const transactions = await client.get(`${prefix}/transactions`).accept('json').loginAs(user)
     transactions.assertStatus(200)
     assert.deepEqual(transactions.body(), { balance: '0.00', transactions: [] })
-    const foreignBefore = await db.from('loans').where('category_id', fixture.foreign.category.id).firstOrFail()
-    const updated = await client.patch(prefix).json({ name: 'Renamed loan', rate: 8, startDate: '2025-02-01', startingBalance: '200.00' }).accept('json').loginAs(user)
+    const foreignBefore = await db.from('loans').where('category_id', fixture.foreign.category.id)
+      .firstOrFail()
+    const updated = await client.patch(prefix).json({ name: 'Renamed loan', rate: 8, startDate:
+      '2025-02-01', startingBalance: '200.00' }).accept('json').loginAs(user)
     updated.assertStatus(200)
     assert.equal((await Category.findOrFail(fixture.own.category.id)).name, 'Renamed loan')
     // Settings now persist; financial recomputation remains inert.
-    const persisted = await db.from('loans').where('category_id', fixture.own.category.id).firstOrFail()
+    const persisted = await db.from('loans').where('category_id', fixture.own.category.id)
+      .firstOrFail()
     assert.equal(Number(persisted.rate), 8)
     assert.equal(Number(persisted.starting_balance), 200)
     assert.equal(Number(persisted.balance), -100)
-    assert.deepEqual(await db.from('loans').where('category_id', fixture.foreign.category.id).firstOrFail(), foreignBefore)
+    assert.deepEqual(await db.from('loans').where('category_id', fixture.foreign.category.id)
+      .firstOrFail(), foreignBefore)
     assert.equal((await Category.findOrFail(fixture.foreign.category.id)).name, 'foreign category')
   })
 })

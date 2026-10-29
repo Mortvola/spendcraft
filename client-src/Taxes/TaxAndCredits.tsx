@@ -38,7 +38,8 @@ const TaxAndCredits: React.FC<PropsType> = observer(({
       <label>
         Qualified Business Income Deduction:
       </label>
-      <TaxAmountInput value={taxes.qualifiedBusinessIncomeDeductionCents} onChange={handleQualifiedBusinessIncomeDeduction} />
+      <TaxAmountInput value={taxes.qualifiedBusinessIncomeDeductionCents} onChange={
+        handleQualifiedBusinessIncomeDeduction} />
       <div />
 
       <label>

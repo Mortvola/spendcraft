@@ -131,7 +131,8 @@ const CategoryTransferDialog: React.FC<PropsType & ModalProps> = ({
 
   const handleSubmit = async (values: ValueType) => {
     const { date, fromCategories, toCategories } = values;
-    const encodeSide = (splits: CategorySplitInput[], sign: number) => encodeTransferCategories(splits.map((split) => {
+    const encodeSide = (splits: CategorySplitInput[], sign: number) => encodeTransferCategories(
+      splits.map((split) => {
       if (split.categoryId === undefined) throw new Error('missing category');
       if (split.id === undefined) throw new Error('missing id');
       const { id, ...category } = split;
@@ -139,7 +140,8 @@ const CategoryTransferDialog: React.FC<PropsType & ModalProps> = ({
         ...category,
         ...(id < 0 ? {} : { id }),
         amount: formatMoneyCents(sign === -1
-          ? subtractMoneyCents(parseMoneyCents('0.00'), inputMoneyCents(split.amount)) : inputMoneyCents(split.amount)),
+          ? subtractMoneyCents(parseMoneyCents('0.00'), inputMoneyCents(split
+            .amount)) : inputMoneyCents(split.amount)),
       };
     }));
     const cats = [...encodeSide(fromCategories, -1), ...encodeSide(toCategories, 1)];
@@ -166,7 +168,8 @@ const CategoryTransferDialog: React.FC<PropsType & ModalProps> = ({
     const errors: FormikErrors<ValueType> = {};
     try {
       if (totals(values).difference !== 0) {
-        errors.fromCategories = 'The sum of the From categories does not match the sum of the To categories.';
+        errors.fromCategories =
+          'The sum of the From categories does not match the sum of the To categories.';
       }
     }
     catch {
@@ -239,7 +242,8 @@ const CategoryTransferDialog: React.FC<PropsType & ModalProps> = ({
                   <label>
                     Transfer Total
                     {amounts === null ? <div>Invalid amount</div>
-                      : <MoneyCentsAmount className="transfer-total splits-total" amount={amounts.from} />}
+                      : <MoneyCentsAmount className="transfer-total splits-total" amount={amounts
+                        .from} />}
                   </label>
                 </div>
               </div>
@@ -279,7 +283,8 @@ const CategoryTransferDialog: React.FC<PropsType & ModalProps> = ({
                 <label>
                   Unassigned
                   {amounts === null ? <div>Invalid amount</div>
-                    : <MoneyCentsAmount className="available-funds splits-total" amount={amounts.difference} />}
+                    : <MoneyCentsAmount className="available-funds splits-total" amount={amounts
+                      .difference} />}
                 </label>
               </div>
               <ErrorMessage name="fromCategories" />

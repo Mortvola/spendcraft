@@ -44,7 +44,8 @@ const AccountsToolbar: React.FC<PropsType> = observer(({
   )
 
   const showDialog = () => {
-    if (uiState.selectedAccount?.tracking === TrackingType.Balances || uiState.selectedAccount?.type === AccountType.Investment) {
+    if (uiState.selectedAccount?.tracking === TrackingType.Balances || uiState.selectedAccount
+      ?.type === AccountType.Investment) {
       showStatementDialog();
     }
     else {

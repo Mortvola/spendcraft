@@ -17,23 +17,30 @@ async function createFixture() {
     const budget = await Budget.create({}, { client: trx })
     await budget.initialize()
     const user = await budget.related('users').create({
-      username: `lifecycle-${++sequence}`, email: `lifecycle-${sequence}@example.com`, password: 'testPassw0rd',
+      username: `lifecycle-${++sequence}`, email: `lifecycle-${sequence}@example.com`, password:
+        'testPassw0rd',
     })
     const institution = await budget.related('institutions').create({ name: 'Lifecycle bank' })
     const account = await institution.related('accounts').create({
       name: 'Lifecycle account', balance: 110, type: AccountType.Depository, subtype: 'checking',
-      tracking: TrackingType.Transactions, startDate: DateTime.fromISO('2025-01-01'), rate: 0, closed: false,
+      tracking: TrackingType.Transactions, startDate: DateTime.fromISO('2025-01-01'), rate: 0,
+        closed: false,
     })
-    const group = await budget.related('groups').create({ name: 'Lifecycle group', type: 'Regular' })
-    const first = await group.related('categories').create({ name: 'First', type: CategoryType.Regular, balance: 10, fundingCategories: [] })
-    const second = await group.related('categories').create({ name: 'Second', type: CategoryType.Regular, balance: 0, fundingCategories: [] })
+    const group = await budget.related('groups').create({ name: 'Lifecycle group', type:
+      'Regular' })
+    const first = await group.related('categories').create({ name: 'First', type: CategoryType
+      .Regular, balance: 10, fundingCategories: [] })
+    const second = await group.related('categories').create({ name: 'Second', type: CategoryType
+      .Regular, balance: 0, fundingCategories: [] })
     const transaction = await budget.related('transactions').create({
       date: DateTime.fromISO('2025-02-01'), type: TransactionType.MANUAL_TRANSACTION,
-      version: 0, deleted: false, sortOrder: 0, categories: [{ categoryId: first.id, amount: 10 }], taxes: [],
+      version: 0, deleted: false, sortOrder: 0, categories: [{ categoryId: first.id, amount: 10 }],
+        taxes: [],
     })
     await writeCanonicalTransactionFixture(transaction)
     const accountTransaction = await account.related('accountTransactions').create({
-      transactionId: transaction.id, name: 'Original purchase', amount: 10, pending: false, provider: 'NONE', statementId: null,
+      transactionId: transaction.id, name: 'Original purchase', amount: 10, pending: false,
+        provider: 'NONE', statementId: null,
     })
     return { budget, user, account, first, second, transaction, accountTransaction }
   })
@@ -48,14 +55,16 @@ test.group('Ordinary transaction lifecycle', (group) => {
       db.from('transactions').where('application_id', fixture.budget.id).orderBy('id'),
       db.from('account_transactions').where('account_id', fixture.account.id).orderBy('id'),
       db.from('accounts').where('id', fixture.account.id),
-      db.from('categories').select('categories.*').join('groups', 'groups.id', 'categories.group_id')
+      db.from('categories').select('categories.*').join('groups', 'groups.id',
+        'categories.group_id')
         .where('groups.application_id', fixture.budget.id).orderBy('categories.id'),
       db.from('statements').where('account_id', fixture.account.id).orderBy('id'),
       db.from('transaction_logs').where('application_id', fixture.budget.id).orderBy('id'),
     ])
   }
 
-  test('Loan CREATE and PATCH decode canonical principal and preserve numeric models', async ({ client, assert }) => {
+  test('Loan CREATE and PATCH decode canonical principal and preserve numeric models', async ({
+    client, assert }) => {
     await fixture.account.merge({ type: AccountType.Loan }).save()
     const created = await client.post(`/api/v1/account/${fixture.account.id}/transactions`).json({
       date: '2025-03-01', name: 'Loan payment', amount: '12.35', principle: '10.25', categories: [],
@@ -84,13 +93,16 @@ test.group('Ordinary transaction lifecycle', (group) => {
   ]).run(async ({ client, assert }, amount) => {
     const before = await snapshot()
     for (const operation of ['create', 'patch']) {
-      for (const field of ['amount', 'principle', 'categories', ...(operation === 'patch' ? ['taxCategories'] : [])]) {
+      for (const field of ['amount', 'principle', 'categories', ...(operation === 'patch' ? [
+        'taxCategories'] : [])]) {
         const payload: Record<string, unknown> = operation === 'create'
-          ? { date: '2025-03-01', name: 'Invalid request', amount: '1.00', categories: [{ categoryId: fixture.first.id, amount: '1.00' }] }
+          ? { date: '2025-03-01', name: 'Invalid request', amount: '1.00', categories: [{
+            categoryId: fixture.first.id, amount: '1.00' }] }
           : { version: 0 }
         payload[field] = field === 'categories' ? [{ categoryId: fixture.first.id, amount }]
           : field === 'taxCategories' ? [{ type: 'estimated_tax_payments', amount }] : amount
-        const request = operation === 'create' ? client.post(`/api/v1/account/${fixture.account.id}/transactions`)
+        const request = operation === 'create' ? client.post(`/api/v1/account/${fixture.account
+          .id}/transactions`)
           : client.patch(`/api/v1/transaction/${fixture.transaction.id}`)
         const response = await request.json(payload).accept('json').loginAs(fixture.user)
         response.assertStatus(422)
@@ -99,28 +111,35 @@ test.group('Ordinary transaction lifecycle', (group) => {
     }
   })
 
-  test('creation applies signed one-category/multi-split amounts').with(['single', 'multiple', 'negative', 'zero']).run(async ({ client, assert }, scenario) => {
+  test('creation applies signed one-category/multi-split amounts').with(['single', 'multiple',
+    'negative', 'zero']).run(async ({ client, assert }, scenario) => {
     const amount = scenario === 'negative' ? -20 : scenario === 'zero' ? 0 : 20
     const categories = scenario === 'multiple'
       ? [{ categoryId: fixture.first.id, amount: 7 }, { categoryId: fixture.second.id, amount: 13 }]
       : [{ categoryId: fixture.first.id, amount }]
     const response = await client.post(`/api/v1/account/${fixture.account.id}/transactions`)
-      .json(transactionRequest({ date: '2025-03-01', name: 'Created purchase', amount, categories })).accept('json').loginAs(fixture.user)
+      .json(transactionRequest({ date: '2025-03-01', name: 'Created purchase', amount,
+        categories })).accept('json').loginAs(fixture.user)
     response.assertStatus(200)
     const transaction = await Transaction.findOrFail(response.body().transaction.id)
-    const accountTransaction = await AccountTransaction.findByOrFail('transactionId', transaction.id)
+    const accountTransaction = await AccountTransaction.findByOrFail('transactionId', transaction
+      .id)
     assert.deepEqual(transaction.categories, categories)
     assert.equal(accountTransaction.amount, amount)
     assert.equal(accountTransaction.accountId, fixture.account.id)
     assert.equal(transaction.budgetId, fixture.budget.id)
     assert.equal((await Account.findOrFail(fixture.account.id)).balance, 110 + amount)
     assert.equal((await Category.findOrFail(fixture.first.id)).balance, 10 + categories[0].amount)
-    assert.equal((await Category.findOrFail(fixture.second.id)).balance, scenario === 'multiple' ? 13 : 0)
+    assert.equal((await Category.findOrFail(fixture.second.id)).balance, scenario ===
+      'multiple' ? 13 : 0)
   })
 
-  test('updates reverse old splits and apply replacement state').with(['amount', 'category', 'single-to-multiple', 'multiple-to-single', 'metadata', 'date']).run(async ({ client, assert }, scenario) => {
+  test('updates reverse old splits and apply replacement state').with(['amount', 'category',
+    'single-to-multiple', 'multiple-to-single', 'metadata', 'date']).run(async ({ client, assert },
+    scenario) => {
     if (scenario === 'multiple-to-single') {
-      await writeHistoricalTransactionFixture(fixture.transaction, { categories: [{ categoryId: fixture.first.id, amount: 4 }, { categoryId: fixture.second.id, amount: 6 }] })
+      await writeHistoricalTransactionFixture(fixture.transaction, { categories: [{
+        categoryId: fixture.first.id, amount: 4 }, { categoryId: fixture.second.id, amount: 6 }] })
       await writeCanonicalTransactionFixture(fixture.transaction)
       await fixture.first.merge({ balance: 4 }).save()
       await fixture.second.merge({ balance: 6 }).save()
@@ -129,7 +148,8 @@ test.group('Ordinary transaction lifecycle', (group) => {
     const categories = scenario === 'category' || scenario === 'multiple-to-single'
       ? [{ categoryId: fixture.second.id, amount }]
       : scenario === 'single-to-multiple'
-        ? [{ categoryId: fixture.first.id, amount: 4 }, { categoryId: fixture.second.id, amount: 6 }]
+        ? [{ categoryId: fixture.first.id, amount: 4 }, { categoryId: fixture.second.id,
+          amount: 6 }]
         : [{ categoryId: fixture.first.id, amount }]
     const payload = scenario === 'metadata' ? { name: 'New payee', comment: 'New description' }
       : scenario === 'date' ? { date: '2025-03-01' } : { amount, categories }
@@ -142,8 +162,10 @@ test.group('Ordinary transaction lifecycle', (group) => {
     assert.deepEqual(transaction.categories, categories)
     assert.equal(accountTransaction.amount, amount)
     assert.equal((await Account.findOrFail(fixture.account.id)).balance, 100 + amount)
-    assert.equal((await Category.findOrFail(fixture.first.id)).balance, categories.filter((c) => c.categoryId === fixture.first.id).reduce((sum, c) => sum + c.amount, 0))
-    assert.equal((await Category.findOrFail(fixture.second.id)).balance, categories.filter((c) => c.categoryId === fixture.second.id).reduce((sum, c) => sum + c.amount, 0))
+    assert.equal((await Category.findOrFail(fixture.first.id)).balance, categories.filter((c) => c
+      .categoryId === fixture.first.id).reduce((sum, c) => sum + c.amount, 0))
+    assert.equal((await Category.findOrFail(fixture.second.id)).balance, categories.filter((c) => c
+      .categoryId === fixture.second.id).reduce((sum, c) => sum + c.amount, 0))
     if (scenario === 'date') assert.equal(transaction.date.toISODate(), '2025-03-01')
     if (scenario === 'metadata') {
       assert.equal(accountTransaction.name, 'New payee')
@@ -152,23 +174,28 @@ test.group('Ordinary transaction lifecycle', (group) => {
     assert.lengthOf(await db.from('transaction_logs').where('transaction_id', transaction.id), 1)
   })
 
-  test('create rejects inconsistent signed split totals without side effects').with(['single', 'multiple', 'negative', 'wrong-sign']).run(async ({ client, assert }, scenario) => {
+  test('create rejects inconsistent signed split totals without side effects').with(['single',
+    'multiple', 'negative', 'wrong-sign']).run(async ({ client, assert }, scenario) => {
     const before = await snapshot()
     const amount = scenario === 'negative' ? -20 : 20
     const categories = scenario === 'multiple'
       ? [{ categoryId: fixture.first.id, amount: 7 }, { categoryId: fixture.second.id, amount: 12 }]
-      : [{ categoryId: fixture.first.id, amount: scenario === 'negative' ? -19 : scenario === 'wrong-sign' ? -20 : 19 }]
+      : [{ categoryId: fixture.first.id, amount: scenario === 'negative' ? -19 : scenario ===
+        'wrong-sign' ? -20 : 19 }]
     const response = await client.post(`/api/v1/account/${fixture.account.id}/transactions`)
-      .json(transactionRequest({ date: '2025-03-01', name: 'Inconsistent purchase', amount, categories })).accept('json').loginAs(fixture.user)
+      .json(transactionRequest({ date: '2025-03-01', name: 'Inconsistent purchase', amount,
+        categories })).accept('json').loginAs(fixture.user)
     assert.deepEqual(await snapshot(), before)
     response.assertStatus(422)
   })
 
-  test('PATCH validates resulting amount and splits atomically').with(['amount-only', 'splits-only', 'both', 'negative']).run(async ({ client, assert }, scenario) => {
+  test('PATCH validates resulting amount and splits atomically').with(['amount-only', 'splits-only',
+    'both', 'negative']).run(async ({ client, assert }, scenario) => {
     const before = await snapshot()
     const payload = scenario === 'amount-only' ? { amount: 20 }
       : scenario === 'splits-only' ? { categories: [{ categoryId: fixture.second.id, amount: 20 }] }
-        : scenario === 'negative' ? { amount: -20, categories: [{ categoryId: fixture.second.id, amount: -19 }] }
+        : scenario === 'negative' ? { amount: -20, categories: [{ categoryId: fixture.second.id,
+          amount: -19 }] }
           : { amount: 20, categories: [{ categoryId: fixture.second.id, amount: 19 }] }
     const response = await client.patch(`/api/v1/transaction/${fixture.transaction.id}`)
       .json(transactionRequest({ version: 0, ...payload })).accept('json').loginAs(fixture.user)
@@ -176,23 +203,29 @@ test.group('Ordinary transaction lifecycle', (group) => {
     response.assertStatus(422)
   })
 
-  test('conserving decimal and zero amounts remain valid').with(['decimal', 'negative-decimal', 'zero', 'empty']).run(async ({ client, assert }, scenario) => {
+  test('conserving decimal and zero amounts remain valid').with(['decimal', 'negative-decimal',
+    'zero', 'empty']).run(async ({ client, assert }, scenario) => {
     const sign = scenario === 'negative-decimal' ? -1 : 1
     const amount = scenario === 'zero' || scenario === 'empty' ? 0 : sign * 0.3
     const categories = scenario === 'empty' ? [] : scenario === 'zero'
       ? [{ categoryId: fixture.first.id, amount: 0 }]
-      : [{ categoryId: fixture.first.id, amount: sign * 0.1 }, { categoryId: fixture.second.id, amount: sign * 0.2 }]
+      : [{ categoryId: fixture.first.id, amount: sign * 0.1 }, { categoryId: fixture.second.id,
+        amount: sign * 0.2 }]
     const response = await client.post(`/api/v1/account/${fixture.account.id}/transactions`)
-      .json(transactionRequest({ date: '2025-03-01', name: 'Conserving purchase', amount, categories })).accept('json').loginAs(fixture.user)
+      .json(transactionRequest({ date: '2025-03-01', name: 'Conserving purchase', amount,
+        categories })).accept('json').loginAs(fixture.user)
     response.assertStatus(200)
     const transaction = await Transaction.findOrFail(response.body().transaction.id)
-    const accountTransaction = await AccountTransaction.findByOrFail('transactionId', transaction.id)
+    const accountTransaction = await AccountTransaction.findByOrFail('transactionId', transaction
+      .id)
     assert.equal(accountTransaction.amount, amount)
     assert.equal((await Account.findOrFail(fixture.account.id)).balance, 110 + amount)
-    assert.equal(transaction.categories.reduce((sum, split) => sum + Math.round(split.amount * 100), 0), Math.round(amount * 100))
+    assert.equal(transaction.categories.reduce((sum, split) => sum + Math.round(split.amount * 100),
+      0), Math.round(amount * 100))
   })
 
-  test('conserving partial PATCH does not require unchanged fields').with(['amount-only', 'splits-only', 'empty']).run(async ({ client, assert }, scenario) => {
+  test('conserving partial PATCH does not require unchanged fields').with(['amount-only',
+    'splits-only', 'empty']).run(async ({ client, assert }, scenario) => {
     const payload = scenario === 'amount-only' ? { amount: 10 }
       : scenario === 'splits-only' ? { categories: [{ categoryId: fixture.second.id, amount: 10 }] }
         : { amount: 15, categories: [] }
@@ -201,20 +234,26 @@ test.group('Ordinary transaction lifecycle', (group) => {
     response.assertStatus(200)
     const transaction = await Transaction.findOrFail(fixture.transaction.id)
     const accountTransaction = await AccountTransaction.findOrFail(fixture.accountTransaction.id)
-    assert.equal(transaction.categories.reduce((sum, split) => sum + split.amount, 0), accountTransaction.amount)
-    assert.equal((await Account.findOrFail(fixture.account.id)).balance, 100 + accountTransaction.amount)
+    assert.equal(transaction.categories.reduce((sum, split) => sum + split.amount, 0),
+      accountTransaction.amount)
+    assert.equal((await Account.findOrFail(fixture.account.id)).balance, 100 + accountTransaction
+      .amount)
   })
 
-  test('deletion reverses ordinary financial effects without destroying linkage', async ({ client, assert }) => {
-    const response = await client.delete(`/api/v1/transaction/${fixture.transaction.id}`).accept('json').loginAs(fixture.user)
+  test('deletion reverses ordinary financial effects without destroying linkage', async ({ client,
+    assert }) => {
+    const response = await client.delete(`/api/v1/transaction/${fixture.transaction.id}`).accept(
+      'json').loginAs(fixture.user)
     response.assertStatus(200)
     assert.isTrue((await Transaction.findOrFail(fixture.transaction.id)).deleted)
     assert.equal((await Account.findOrFail(fixture.account.id)).balance, 100)
     assert.equal((await Category.findOrFail(fixture.first.id)).balance, 0)
-    assert.equal((await AccountTransaction.findOrFail(fixture.accountTransaction.id)).transactionId, fixture.transaction.id)
+    assert.equal((await AccountTransaction.findOrFail(fixture.accountTransaction.id)).transactionId,
+      fixture.transaction.id)
   })
 
-  test('deleted transactions cannot apply financial effects again').with(['delete', 'update']).run(async ({ client, assert }, operation) => {
+  test('deleted transactions cannot apply financial effects again').with(['delete', 'update']).run(
+    async ({ client, assert }, operation) => {
     const url = `/api/v1/transaction/${fixture.transaction.id}`
     const deleted = await client.delete(url).accept('json').loginAs(fixture.user)
     deleted.assertStatus(200)
@@ -222,12 +261,14 @@ test.group('Ordinary transaction lifecycle', (group) => {
     const response = operation === 'delete'
       ? await client.delete(url).accept('json').loginAs(fixture.user)
       : await client.patch(url).json(transactionRequest({ version: 0, amount: 25,
-        categories: [{ categoryId: fixture.second.id, amount: 25 }] })).accept('json').loginAs(fixture.user)
+        categories: [{ categoryId: fixture.second.id, amount: 25 }] })).accept('json').loginAs(
+          fixture.user)
     assert.deepEqual(await snapshot(), before)
     response.assertStatus(404)
   })
 
-  test('late persistence failure rolls back the entire mutation').with(['create', 'update', 'delete']).run(async ({ client, assert }, operation) => {
+  test('late persistence failure rolls back the entire mutation').with(['create', 'update',
+    'delete']).run(async ({ client, assert }, operation) => {
     const before = await snapshot()
     const constraint = operation === 'create'
       ? "CHECK (balance <> 30) NOT VALID" : operation === 'update'
@@ -240,7 +281,8 @@ test.group('Ordinary transaction lifecycle', (group) => {
     const unhandledErrors: unknown[] = []
     let requestCompleted = false
     const connection = db.connection().getWriteClient()
-    const isFinancialWrite = (sql: string) => /^update "(categories|accounts|transactions)"/.test(sql)
+    const isFinancialWrite = (sql: string) => /^update "(categories|accounts|transactions)"/.test(
+      sql)
     const started = (query: { sql: string }) => {
       if (isFinancialWrite(query.sql)) {
         startedWrites.push(query.sql)
@@ -248,7 +290,8 @@ test.group('Ordinary transaction lifecycle', (group) => {
         if (requestCompleted) lateWrites.push(query.sql)
       }
     }
-    const completed = (_result: unknown, query: { sql: string }) => { pendingWrites.delete(query.sql) }
+    const completed = (_result: unknown, query: { sql: string }) => { pendingWrites.delete(query
+      .sql) }
     const rejected = (reason: unknown) => { unhandledErrors.push(reason) }
     connection.on('query', started)
     connection.on('query-response', completed)
@@ -258,11 +301,14 @@ test.group('Ordinary transaction lifecycle', (group) => {
       const response = operation === 'create'
         ? await client.post(`/api/v1/account/${fixture.account.id}/transactions`)
           .json(transactionRequest({ date: '2025-03-01', name: 'Rejected purchase', amount: 20,
-            categories: [{ categoryId: fixture.first.id, amount: 20 }] })).accept('json').loginAs(fixture.user)
+            categories: [{ categoryId: fixture.first.id, amount: 20 }] })).accept('json').loginAs(
+              fixture.user)
         : operation === 'update'
           ? await client.patch(`/api/v1/transaction/${fixture.transaction.id}`)
-            .json(transactionRequest({ version: 0, amount: 25, categories: [{ categoryId: fixture.second.id, amount: 25 }] })).accept('json').loginAs(fixture.user)
-          : await client.delete(`/api/v1/transaction/${fixture.transaction.id}`).accept('json').loginAs(fixture.user)
+            .json(transactionRequest({ version: 0, amount: 25, categories: [{ categoryId: fixture
+              .second.id, amount: 25 }] })).accept('json').loginAs(fixture.user)
+          : await client.delete(`/api/v1/transaction/${fixture.transaction.id}`).accept('json')
+            .loginAs(fixture.user)
       requestCompleted = true
       response.assertStatus(500)
       assert.equal(pendingWrites.size, 0, 'financial writes must finish before the response')

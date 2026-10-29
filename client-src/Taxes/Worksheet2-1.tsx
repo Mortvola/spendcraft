@@ -42,7 +42,8 @@ const Worksheet2_1: React.FC<PropsType> = observer(({
       <label>
         Prior Year Total Tax:
       </label>
-      <TaxAmountInput value={taxes.worksheet2_1.priorYearTotalTaxCents} onChange={handlePriorYearTotalTax} />
+      <TaxAmountInput value={taxes.worksheet2_1.priorYearTotalTaxCents} onChange={
+        handlePriorYearTotalTax} />
 
       <label>
         1. Expected Adjusted Gross Income:

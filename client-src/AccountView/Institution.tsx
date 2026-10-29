@@ -49,7 +49,8 @@ const Institution: React.FC<PropsType> = observer(({
           Are you sure you want to delete this institution?
         </div>
         <div style={{ marginTop: '1rem' }}>
-          All accounts within the instution and their transactions will be deleted. This cannot be undone.
+          All accounts within the instution and their transactions will be deleted. This
+          cannot be undone.
         </div>
       </>
     ),
@@ -66,7 +67,8 @@ const Institution: React.FC<PropsType> = observer(({
           Are you sure you want to unlink this institution?
         </div>
         <div style={{ marginTop: '1rem' }}>
-          This institution and its accounts will no longer recieve online updates. This cannot be undone.
+          This institution and its accounts will no longer recieve online updates. This
+          cannot be undone.
         </div>
       </>
     ),
@@ -140,7 +142,8 @@ const Institution: React.FC<PropsType> = observer(({
                 : null
             }
             <OnlineAccountsDialog account={editedAccount} />
-            <OfflineAccountDialog institution={institution} account={editedAccount} onHide={handleDialogHide} />
+            <OfflineAccountDialog institution={institution} account={editedAccount} onHide={
+              handleDialogHide} />
             <OfflineInstitutionDialog institution={institution} onHide={handleDialogHide} />
             <DeleteConfirmation />
             {

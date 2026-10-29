@@ -78,8 +78,10 @@ const CategoryRebalance: React.FC<PropsType> = ({
       <>
         <CategoryRebalanceItem
           key={category.id}
-          style={{ paddingLeft: level * 28, textDecoration: category.suspended ? 'line-through' : undefined }}
-          category={{ name: category.name, balanceCents: balance?.balanceCents ?? parseMoneyCents('0.00'), adjustment }}
+          style={{ paddingLeft: level * 28, textDecoration: category.suspended ?
+            'line-through' : undefined }}
+          category={{ name: category.name, balanceCents: balance?.balanceCents ?? parseMoneyCents(
+            '0.00'), adjustment }}
           onChange={(amount) => handleAmountChange(amount, category)}
         />
         {
@@ -91,7 +93,8 @@ const CategoryRebalance: React.FC<PropsType> = ({
     )
   }
 
-  const populateCategories = (categories: (GroupInterface | CategoryInterface)[], level: number): ReactElement[] => (
+  const populateCategories = (categories: (GroupInterface | CategoryInterface)[],
+    level: number): ReactElement[] => (
     categories
       .filter((node) => (
         isGroup(node)
@@ -103,7 +106,8 @@ const CategoryRebalance: React.FC<PropsType> = ({
           if (node.children.length > 0) {
             return (
               <>
-                <div key={node.id} className={styles.catRebalanceGroup} style={{ paddingLeft: level * 28 }}>
+                <div key={node.id} className={styles.catRebalanceGroup} style={{
+                  paddingLeft: level * 28 }}>
                   {node.name}
                 </div>
                 {populateCategories(node.children, level + 1)}

@@ -14,7 +14,8 @@ const EditButton: React.FC<PropsType> = ({
     <div style={{width: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       {
         category.useGoal
-          ? <Calendar size={12} strokeWidth={2.5} color={category.type === CategoryType.Bill ? '#ff8f8f' : undefined} />
+          ? <Calendar size={12} strokeWidth={2.5} color={category.type === CategoryType.Bill ?
+            '#ff8f8f' : undefined} />
           : <Mail size={12} strokeWidth={2.5} />
       }
     </div>

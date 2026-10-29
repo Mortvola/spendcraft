@@ -10,7 +10,8 @@ import WebhookLog from './WebhookLog';
 
 const PlaidLogs = observer(() => {
   const { plaidLogs } = useStores();
-  const [selectedLog, setSelectedLog] = React.useState<PlaidLogInterface | WebhookLogInterface | null>(null);
+  const [selectedLog, setSelectedLog] = React
+    .useState<PlaidLogInterface | WebhookLogInterface | null>(null);
 
   const handleClick = (log: PlaidLogInterface | WebhookLogInterface) => {
     setSelectedLog((prev) => (prev === log ? null : log))
@@ -22,11 +23,13 @@ const PlaidLogs = observer(() => {
         {
           plaidLogs.logs.map((log) => {
             if (isPlaidLog(log)) {
-              return <PlaidLog key={`R-${log.id}`} log={log} onClick={handleClick} selected={log === selectedLog} />
+              return <PlaidLog key={`R-${log.id}`} log={log} onClick={handleClick} selected={
+                log === selectedLog} />
             }
 
             if (isWebhookLog(log)) {
-              return <WebhookLog key={`WH-${log.id}`} log={log} onClick={handleClick} selected={log === selectedLog} />
+              return <WebhookLog key={`WH-${log.id}`} log={log} onClick={handleClick} selected={
+                log === selectedLog} />
             }
           })
             .filter((a) => a !== undefined)

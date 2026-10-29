@@ -30,7 +30,8 @@ const RelinkDialog: React.FC<PropsType & ModalProps> = ({
           <li>You changed your multi-factor authentication device, questions or answers.</li>
           <li>The institution changed its security protocols.</li>
         </ul>
-        If any of these have happend, you will need to relink to your institution. Would you like to do that now?
+        If any of these have happend, you will need to relink to your institution. Would
+        you like to do that now?
       </div>
       <div className={styles.buttons}>
         <Button onClick={handleNo}>No</Button>

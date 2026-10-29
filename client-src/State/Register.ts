@@ -9,7 +9,8 @@ import {
   isInsertCategoryTransferResponse, TransactionType, TransactionProps, TransactionsResponse,
 } from '../../common/ResponseTypes';
 import {
-  RegisterInterface, StoreInterface, TransactionInterface, TransactionContainerInterface, CategoryInterface,
+  RegisterInterface, StoreInterface, TransactionInterface, TransactionContainerInterface,
+    CategoryInterface,
 } from './Types';
 
 class Register implements RegisterInterface {
@@ -26,7 +27,9 @@ class Register implements RegisterInterface {
     },
     type: TransactionType,
   ): Promise<null> {
-    const response = await Http.post<CategoryTransferRequest, ApiResponse<unknown>>('/api/v1/category-transfer', { ...values, type, categories: encodeTransferCategories(values.categories) });
+    const response = await Http.post<CategoryTransferRequest, ApiResponse<unknown>>(
+      '/api/v1/category-transfer', { ...values, type, categories: encodeTransferCategories(values
+      .categories) });
 
     if (!response.ok) throw new Error('invalid response');
     const { data } = await response.body();
@@ -38,7 +41,8 @@ class Register implements RegisterInterface {
         if (
           this.store.uiState.selectedCategory !== null
           && values.categories.some((c) => (
-            this.store.uiState.selectedCategory && c.categoryId === this.store.uiState.selectedCategory.id
+            this.store.uiState.selectedCategory && c.categoryId === this.store.uiState
+              .selectedCategory.id
           ))
         ) {
           // Determine where to insert the transaction based on date.
@@ -61,7 +65,8 @@ class Register implements RegisterInterface {
         this.store.categoryTree.updateBalances(data.balances);
 
         // if (this.store.uiState.selectedCategory !== null) {
-        //   const category = body.balances.find((c) => c.id === this.store.uiState.selectedCategory.id);
+        // const category = body.balances.find((c) => c.id ===
+        // this.store.uiState.selectedCategory.id);
 
         //   if (category) {
         //     // this.balance = category.balance;
@@ -81,7 +86,8 @@ class Register implements RegisterInterface {
     ];
     for (const institution of this.store.accounts.institutions) {
       for (const account of institution.accounts) {
-        containers.push({ container: account.transactions }, { container: account.pendingTransactions });
+        containers.push({ container: account.transactions }, { container: account
+          .pendingTransactions });
       }
     }
     const addCategory = (category: CategoryInterface) => {
@@ -92,16 +98,20 @@ class Register implements RegisterInterface {
     this.store.categoryTree.budget.forEachCatgory(addCategory);
     this.store.categoryTree.bills.forEachCatgory(addCategory);
     if (this.store.categoryTree.unassignedCat) addCategory(this.store.categoryTree.unassignedCat);
-    if (this.store.categoryTree.accountTransferCat) addCategory(this.store.categoryTree.accountTransferCat);
-    if (this.store.categoryTree.rebalances) containers.push({ container: this.store.categoryTree.rebalances.transactions });
+    if (this.store.categoryTree.accountTransferCat) addCategory(this.store.categoryTree
+      .accountTransferCat);
+    if (this.store.categoryTree.rebalances) containers.push({ container: this.store.categoryTree
+      .rebalances.transactions });
     return containers.filter((entry, index) => containers.findIndex(
       (candidate) => candidate.container === entry.container,
     ) === index);
   }
 
   forEachTransaction(callback: (transaction: TransactionInterface) => void): void {
-    const transactions = new Set(this.containers().flatMap(({ container }) => container.transactions));
-    if (this.store.uiState.selectedTransaction) transactions.add(this.store.uiState.selectedTransaction);
+    const transactions = new Set(this.containers().flatMap(({ container }) => container
+      .transactions));
+    if (this.store.uiState.selectedTransaction) transactions.add(this.store.uiState
+      .selectedTransaction);
     transactions.forEach(callback);
   }
 
@@ -116,8 +126,10 @@ class Register implements RegisterInterface {
         const transaction = container.transactions.find((entry) => entry.id === props.id);
         if (!transaction) continue;
         container.removeTransaction(id);
-        const belongs = categoryId === undefined || props.categories.some((entry) => entry.categoryId === categoryId)
-          || (props.categories.length === 0 && categoryId === this.store.categoryTree.unassignedCat?.id);
+        const belongs = categoryId === undefined || props.categories.some((entry) => entry
+          .categoryId === categoryId)
+          || (props.categories.length === 0 && categoryId === this.store.categoryTree.unassignedCat
+            ?.id);
         if (belongs) container.insertTransaction(transaction);
       }
     });
@@ -131,7 +143,8 @@ class Register implements RegisterInterface {
     if (ids.size === 0) return;
     // Use the existing batch endpoint without replacing paginated/filtered registers.
     const query = new URLSearchParams([...ids].map((id) => ['t', String(id)]));
-    const response = await Http.get<ApiResponse<TransactionsResponse>>(`/api/v1/transactions?${query}`);
+    const response = await Http.get<ApiResponse<TransactionsResponse>>(
+      `/api/v1/transactions?${query}`);
     if (!response.ok) throw new Error('Unable to refresh transaction reconciliation');
     const { data } = await response.body();
     if (!Array.isArray(data?.transactions) || data.transactions.length !== ids.size) {
@@ -139,7 +152,8 @@ class Register implements RegisterInterface {
     }
     const memberships = data.transactions.map((props) => {
       const statementId = props.accountTransaction?.statementId;
-      if (props.id === null || !ids.has(props.id) || props.accountTransaction?.account.id !== accountId
+      if (props.id === null || !ids.has(props.id) || props.accountTransaction?.account
+        .id !== accountId
         || (statementId !== null && !Number.isFinite(statementId))) {
         throw new Error('Invalid transaction reconciliation response');
       }
@@ -158,7 +172,8 @@ class Register implements RegisterInterface {
 
   removeTransaction(transactionId: number): void {
     for (const { container } of this.containers()) container.removeTransaction(transactionId);
-    if (this.store.uiState.selectedTransaction?.id === transactionId) this.store.uiState.selectTransaction(null);
+    if (this.store.uiState.selectedTransaction?.id === transactionId) this.store.uiState
+      .selectTransaction(null);
   }
 }
 

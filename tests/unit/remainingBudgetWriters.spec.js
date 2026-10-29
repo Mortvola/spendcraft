@@ -1,6 +1,7 @@
 import { requestFundingStorage } from '../../app/services/fundingStorage.ts'
 import { encodeMonetaryAmount } from '../../app/services/categoryAmountCodec.ts'
-import { validateSubmittedTaxForecast, serializeTaxForecast } from '../../app/services/taxMonetaryCodec.ts'
+import { validateSubmittedTaxForecast, serializeTaxForecast } from
+  '../../app/services/taxMonetaryCodec.ts'
 import { replaceTaxForecast } from '../../app/services/taxMonetaryStorage.ts'
 import { test } from '@japa/runner'
 import { readFile } from 'node:fs/promises'
@@ -18,40 +19,53 @@ async function method(file, name, context, dependencyLoader = false) {
   visit(ast)
   let body = member.body.getText(ast)
   // Replace only dynamic dependency loading; the production algorithm is unchanged.
-  if (dependencyLoader) body = body.replace("await import('@adonisjs/lucid/services/db')", 'await loadDatabase()')
+  if (dependencyLoader) body = body.replace("await import('@adonisjs/lucid/services/db')",
+    'await loadDatabase()')
     .replace("await import('#models/Budget')", 'await loadBudget()')
-  return runInNewContext(ts.transpileModule(`(async function(${member.parameters.map((p) => p.getText(ast)).join(',')}) ${body})`,
-    { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, { requestFundingStorage, encodeMonetaryAmount, validateSubmittedTaxForecast, replaceTaxForecast, ...context })
+  return runInNewContext(ts.transpileModule(`(async function(${member.parameters.map((p) => p
+    .getText(ast)).join(',')}) ${body})`,
+    { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, { requestFundingStorage,
+      encodeMonetaryAmount, validateSubmittedTaxForecast, replaceTaxForecast, ...context })
 }
 const noop = async () => undefined
 
 test.group('Remaining Budget writer characterization without DB', () => {
-  test('unlink waits for Budget before fresh identity reads and preserves financial amounts', async ({ assert }) => {
+  test('unlink waits for Budget before fresh identity reads and preserves financial amounts',
+    async ({ assert }) => {
     const events = []
     let acquire, entered
     const acquired = new Promise((resolve) => { acquire = resolve })
     const waiting = new Promise((resolve) => { entered = resolve })
     const owner = { commit: async () => { events.push('commit') }, rollback: noop }
     const link = { providerTransactionId: 'purchase', amount: -5,
-      merge(values) { Object.assign(this, values); return this }, save: async () => { events.push('link.save') } }
+      merge(values) { Object.assign(this, values); return this }, save: async () => { events.push(
+        'link.save') } }
     const account = { plaidAccountId: 'provider-account', balance: 95,
-      merge(values) { Object.assign(this, values); return this }, save: async () => { events.push('account.save') },
+      merge(values) { Object.assign(this, values); return this }, save: async () => { events.push(
+        'account.save') },
       related: () => ({ query: async () => [link] }) }
-    const institution = { accessToken: 'test-token', institutionId: 'provider-bank', plaidItemId: 'item', cursor: 'c1',
-      merge(values) { Object.assign(this, values); return this }, save: async () => { events.push('institution.save') },
+    const institution = { accessToken: 'test-token', institutionId: 'provider-bank', plaidItemId:
+      'item', cursor: 'c1',
+      merge(values) { Object.assign(this, values); return this }, save: async () => { events.push(
+        'institution.save') },
       related: () => ({ query: async () => [account] }) }
     const run = await method('app/Controllers/Http/InstitutionController.ts', 'unlink', {
       db: { transaction: async () => owner }, budgetInstitutions: (budgetId, { client }) => {
         assert.equal(budgetId, 7); assert.strictEqual(client, owner)
         assert.include(events, 'budget.acquired')
-        return { where() { return this }, firstOrFail: async () => { events.push('institution.read'); return institution } }
-      }, app: { container: { make: async () => ({ removeItem: async (token) => { assert.equal(token, 'fresh-token'); events.push('remote.remove') } }) } },
+        return { where() { return this }, firstOrFail: async () => { events.push(
+          'institution.read'); return institution } }
+      }, app: { container: { make: async () => ({ removeItem: async (token) => { assert.equal(token,
+        'fresh-token'); events.push('remote.remove') } }) } },
     })
-    const user = { budgetId: 7, useTransaction(client) { assert.strictEqual(client, owner); events.push('user.bound') },
+    const user = { budgetId: 7, useTransaction(client) { assert.strictEqual(client, owner); events
+      .push('user.bound') },
       related: () => ({ query: () => ({ forUpdate() { events.push('budget.wait'); return this },
-        async firstOrFail() { entered(); await acquired; events.push('budget.acquired'); return { id: 7 } },
+        async firstOrFail() { entered(); await acquired; events.push('budget.acquired'); return {
+          id: 7 } },
       }) }) }
-    const operation = run({ request: { params: () => ({ instId: 1 }) }, auth: { user }, logger: { error: noop } })
+    const operation = run({ request: { params: () => ({ instId: 1 }) }, auth: { user }, logger: {
+      error: noop } })
     await waiting
     try {
       assert.deepEqual(events, ['user.bound', 'budget.wait'])
@@ -62,11 +76,13 @@ test.group('Remaining Budget writer characterization without DB', () => {
     await operation
     assert.deepEqual(events, ['user.bound', 'budget.wait', 'budget.acquired', 'institution.read',
       'remote.remove', 'institution.save', 'account.save', 'link.save', 'commit'])
-    assert.isNull(institution.cursor); assert.isNull(institution.accessToken); assert.isNull(link.providerTransactionId)
+    assert.isNull(institution.cursor); assert.isNull(institution.accessToken); assert.isNull(link
+      .providerTransactionId)
     assert.equal(account.balance, 95); assert.equal(link.amount, -5)
   })
 
-  test('unlink rolls back a failed Budget lookup before any provider or identity work', async ({ assert }) => {
+  test('unlink rolls back a failed Budget lookup before any provider or identity work', async ({
+    assert }) => {
     let rolledBack = false
     const owner = { rollback: async () => { rolledBack = true } }
     const run = await method('app/Controllers/Http/InstitutionController.ts', 'unlink', {
@@ -82,7 +98,9 @@ test.group('Remaining Budget writer characterization without DB', () => {
     assert.isTrue(rolledBack)
   })
 
-  test('CheckUnassigned waits for fresh JSON selection and commits each Budget before acquiring the next', async ({ assert }) => {
+  test(
+    'CheckUnassigned waits for fresh JSON selection and commits each Budget before acquiring the \
+next', async ({ assert }) => {
     const events = []
     let release, entered
     const gate = new Promise((resolve) => { release = resolve })
@@ -111,16 +129,21 @@ test.group('Remaining Budget writer characterization without DB', () => {
           }, related: () => ({ query: () => ({ useTransaction(client) {
             assert.strictEqual(client, owner); return this
           }, whereRaw(sql, args) {
-            assert.equal(sql, 'jsonb_array_length(categories) = ?'); assert.deepEqual(Array.from(args), [0]); return this
-          }, has(name) { assert.equal(name, 'accountTransaction'); return this }, async preload(name) {
+            assert.equal(sql, 'jsonb_array_length(categories) = ?'); assert.deepEqual(Array.from(
+              args), [0]); return this
+          }, has(name) { assert.equal(name, 'accountTransaction'); return this }, async preload(
+            name) {
             assert.equal(name, 'accountTransaction'); events.push(`read${owner.id}`)
-            return owner.id === 1 ? (stored.categories.length === 0 ? [{ categories: [], accountTransaction: { amount: stored.amount }, save: async () => { throw new Error('Stale target selected') } }] : []) : [second]
+            return owner.id === 1 ? (stored.categories.length === 0 ? [{ categories: [],
+              accountTransaction: { amount: stored.amount }, save: async () => { throw new Error(
+              'Stale target selected') } }] : []) : [second]
           } }) }) }
         } }
     } }
     const run = await method('commands/CheckUnassigned.ts', 'checkUnassigned', {
       validateStoredCategoryConservation: async () => undefined,
-      loadDatabase: async () => ({ default: database }), loadBudget: async () => ({ default: Budget }),
+      loadDatabase: async () => ({ default: database }), loadBudget: async () => ({
+        default: Budget }),
       console: { log: (message) => { events.push(message) } },
     }, true)
     const operation = run()
@@ -132,10 +155,12 @@ test.group('Remaining Budget writer characterization without DB', () => {
     await operation
     assert.deepEqual(stored.categories, [{ categoryId: 20, amount: 10 }])
     assert.equal(second.categories[0].categoryId, 99); assert.equal(second.categories[0].amount, 12)
-    assert.deepEqual(events, ['gate1', 'read1', 'commit1', 'gate2', 'read2', 'save2', 'commit2', 'budget: 2, count: 1'])
+    assert.deepEqual(events, ['gate1', 'read1', 'commit1', 'gate2', 'read2', 'save2', 'commit2',
+      'budget: 2, count: 1'])
   })
 
-  test('CheckUnassigned rolls back a failed Budget without starting the next Budget', async ({ assert }) => {
+  test('CheckUnassigned rolls back a failed Budget without starting the next Budget', async ({
+    assert }) => {
     const events = []
     const owner = {}
     const run = await method('commands/CheckUnassigned.ts', 'checkUnassigned', {
@@ -148,9 +173,12 @@ test.group('Remaining Budget writer characterization without DB', () => {
         if (!options) return { select: async () => [{ id: 1 }, { id: 2 }] }
         assert.strictEqual(options.client, owner)
         return { where() { return this }, forUpdate() { return this }, firstOrFail: async () => ({
-          getUnassignedCategory: async ({ client }) => { assert.strictEqual(client, owner); return { id: 99 } },
-          related: () => ({ query: () => ({ useTransaction(client) { assert.strictEqual(client, owner); return this },
-            whereRaw() { return this }, has() { return this }, preload: async () => [{ categories: [], accountTransaction: { amount: 5 },
+          getUnassignedCategory: async ({ client }) => { assert.strictEqual(client, owner); return {
+            id: 99 } },
+          related: () => ({ query: () => ({ useTransaction(client) { assert.strictEqual(client,
+            owner); return this },
+            whereRaw() { return this }, has() { return this }, preload: async () => [{ categories: [
+              ], accountTransaction: { amount: 5 },
               save: async () => { throw new Error('save failed') } }],
           }) }),
         }) }
@@ -160,7 +188,8 @@ test.group('Remaining Budget writer characterization without DB', () => {
     assert.deepEqual(events, ['rollback', 'save failed'])
   })
 
-  test('remove-item command waits for Budget, reloads scoped identity and uses its owning transaction')
+  test(
+    'remove-item command waits for Budget, reloads scoped identity and uses its owning transaction')
     .with(['success', 'changed-token', 'save-failure'])
     .run(async ({ assert }, scenario) => {
       const events = []
@@ -169,7 +198,8 @@ test.group('Remaining Budget writer characterization without DB', () => {
       const waiting = new Promise((resolve) => { entered = resolve })
       const owner = {}
       const selection = { id: 12, budgetId: 7 }
-      const fresh = { accessToken: 'access-test-token', plaidItemId: 'item', institutionId: 'fresh-bank',
+      const fresh = { accessToken: 'access-test-token', plaidItemId: 'item', institutionId:
+        'fresh-bank',
         cursor: 'keep-cursor', async save() {
           assert.include(events, 'identity.reload')
           events.push('save')
@@ -184,7 +214,8 @@ test.group('Remaining Budget writer characterization without DB', () => {
         } },
         Budget: { query: ({ client }) => {
           assert.strictEqual(client, owner)
-          return { where(key, value) { assert.equal(key, 'id'); assert.equal(value, 7); return this },
+          return { where(key, value) { assert.equal(key, 'id'); assert.equal(value, 7);
+            return this },
             forUpdate() { events.push('budget.wait'); return this }, async firstOrFail() {
               entered(); await acquired; events.push('budget.acquired'); return { id: 7 }
             } }
@@ -202,7 +233,8 @@ test.group('Remaining Budget writer characterization without DB', () => {
             } }
         } },
       })
-      const context = { accessToken: 'access-test-token', logger: { info: noop, error: (error) => { errors.push(error) } },
+      const context = { accessToken: 'access-test-token', logger: { info: noop, error: (error) => {
+        errors.push(error) } },
         app: { container: { make: async () => ({ removeItem: async (token, institutionId) => {
           assert.equal(token, 'access-test-token'); assert.equal(institutionId, 'fresh-bank')
           events.push('remote.remove'); return {}
@@ -214,11 +246,13 @@ test.group('Remaining Budget writer characterization without DB', () => {
       await operation
       assert.deepEqual(events, scenario === 'changed-token'
         ? ['identity.discover', 'budget.wait', 'budget.acquired', 'identity.reload', 'rollback']
-        : ['identity.discover', 'budget.wait', 'budget.acquired', 'identity.reload', 'remote.remove', 'save',
+        : ['identity.discover', 'budget.wait', 'budget.acquired', 'identity.reload',
+          'remote.remove', 'save',
           scenario === 'success' ? 'commit' : 'rollback'])
       assert.lengthOf(errors, scenario === 'success' ? 0 : 1)
       assert.equal(fresh.cursor, 'keep-cursor')
-      if (scenario === 'success') { assert.isNull(fresh.accessToken); assert.isNull(fresh.plaidItemId) }
+      if (scenario === 'success') { assert.isNull(fresh.accessToken); assert.isNull(fresh
+        .plaidItemId) }
     })
 
   test('get-item fix fetches before Budget, revalidates identity and leaves inspection read-only')
@@ -230,7 +264,8 @@ test.group('Remaining Budget writer characterization without DB', () => {
       const waiting = new Promise((resolve) => { entered = resolve })
       const owner = {}
       const selection = { id: 12, budgetId: 7, plaidItemId: 'stale-item' }
-      const fresh = { plaidItemId: scenario === 'already-current' ? 'provider-item' : 'fresh-local-item',
+      const fresh = { plaidItemId: scenario === 'already-current' ? 'provider-item' :
+        'fresh-local-item',
         cursor: 'keep-cursor', accessToken: 'access-test-token', async save() {
           events.push('save')
           if (scenario === 'save-failure') throw new Error('Injected save failure')
@@ -243,7 +278,8 @@ test.group('Remaining Budget writer characterization without DB', () => {
         } },
         Budget: { query: ({ client }) => {
           assert.strictEqual(client, owner)
-          return { where(key, value) { assert.equal(key, 'id'); assert.equal(value, 7); return this },
+          return { where(key, value) { assert.equal(key, 'id'); assert.equal(value, 7);
+            return this },
             forUpdate() { events.push('budget.wait'); return this }, async firstOrFail() {
               entered(); await acquired; events.push('budget.acquired'); return { id: 7 }
             } }
@@ -275,7 +311,8 @@ test.group('Remaining Budget writer characterization without DB', () => {
         try { assert.deepEqual(events, ['identity.discover', 'provider.get', 'budget.wait']) }
         finally { acquire() }
         await operation
-        assert.deepEqual(events, ['identity.discover', 'provider.get', 'budget.wait', 'budget.acquired',
+        assert.deepEqual(events, ['identity.discover', 'provider.get', 'budget.wait',
+          'budget.acquired',
           'identity.reload', ...(['success', 'save-failure'].includes(scenario) ? ['save'] : []),
           scenario === 'save-failure' ? 'rollback' : 'commit'])
       }
@@ -283,18 +320,22 @@ test.group('Remaining Budget writer characterization without DB', () => {
       assert.equal(selection.plaidItemId, 'stale-item')
       if (scenario === 'success') assert.equal(fresh.plaidItemId, 'provider-item')
       if (scenario === 'changed-token') assert.equal(fresh.plaidItemId, 'fresh-local-item')
-      assert.equal(fresh.cursor, 'keep-cursor'); assert.equal(fresh.accessToken, 'access-test-token')
+      assert.equal(fresh.cursor, 'keep-cursor'); assert.equal(fresh.accessToken,
+        'access-test-token')
     })
 
-  test('installed Lucid upsert can create twice when both initial row lookups are absent', async ({ assert }) => {
+  test('installed Lucid upsert can create twice when both initial row lookups are absent', async ({
+    assert }) => {
     let lookups = 0, release
     const bothRead = new Promise((resolve) => { release = resolve })
     const stored = []
-    const upsert = await method('node_modules/@adonisjs/lucid/build/src/orm/base_model/index.js', 'updateOrCreate', {
+    const upsert = await method('node_modules/@adonisjs/lucid/build/src/orm/base_model/index.js',
+      'updateOrCreate', {
       managedTransaction: async (_client, callback) => callback({}),
     })
     const model = { boot: noop, $adapter: { modelConstructorClient: () => ({}) },
-      query: () => ({ clientOptions: {}, forUpdate() { return this }, where() { return this }, async first() {
+      query: () => ({ clientOptions: {}, forUpdate() { return this }, where() { return this },
+        async first() {
         if (++lookups === 2) release()
         await bothRead
         return undefined
@@ -308,7 +349,8 @@ test.group('Remaining Budget writer characterization without DB', () => {
   })
 
 
-  test('Category settings wait and reload before dirty-field persistence, preventing a hybrid', async ({ assert }) => {
+  test('Category settings wait and reload before dirty-field persistence, preventing a hybrid',
+    async ({ assert }) => {
     const stored = { name: 'Original', fundingAmount: 5, groupId: 10 }
     let tail = Promise.resolve()
     const readNames = []
@@ -328,13 +370,16 @@ test.group('Remaining Budget writer characterization without DB', () => {
         assert.isTrue(client.acquired)
         return { where() { return this }, firstOrFail: async () => {
           const original = { ...stored }; readNames.push(original.name)
-          return { ...original, merge(values) { Object.assign(this, values); return this }, async save() {
-            for (const key of Object.keys(original)) if (this[key] !== original[key]) stored[key] = this[key]
+          return { ...original, merge(values) { Object.assign(this, values); return this },
+            async save() {
+            for (const key of Object.keys(original)) if (this[key] !== original[key]) stored[key] =
+              this[key]
           } }
         } }
       }, updateCategory: {},
       authorizeCategories: async (_id, _ids, { client }) => { assert.isTrue(client.acquired) },
-      removeUndefined: (values) => Object.fromEntries(Object.entries(values).filter(([, value]) => value !== undefined)),
+      removeUndefined: (values) => Object.fromEntries(Object.entries(values).filter(([, value]) =>
+        value !== undefined)),
     })
     const request = (name, fundingAmount) => {
       let owner
@@ -342,7 +387,8 @@ test.group('Remaining Budget writer characterization without DB', () => {
         related: () => ({ query: () => ({ forUpdate() { return this }, async firstOrFail() {
           await owner.previous; owner.acquired = true
         } }) }) } }, request: {
-        params: () => ({ groupId: '10', catId: '20' }), validateUsing: async (_validator, { meta }) => {
+        params: () => ({ groupId: '10', catId: '20' }), validateUsing: async (_validator, {
+          meta }) => {
           assert.strictEqual(meta.trx, owner); return { name, fundingAmount }
         },
       } }
@@ -355,7 +401,8 @@ test.group('Remaining Budget writer characterization without DB', () => {
 })
 
 for (const action of ['addGroup', 'updateGroup']) {
-  test(`${action} waits before Group reads and binds validation and save to Budget transaction`, async ({ assert }) => {
+  test(`${action} waits before Group reads and binds validation and save to Budget transaction`,
+    async ({ assert }) => {
     const events = []
     const owner = {}
     let release, entered
@@ -385,7 +432,8 @@ for (const action of ['addGroup', 'updateGroup']) {
     const operation = run({ auth: { user }, request: {
       params: () => ({ groupId: 3 }),
       async validateUsing(_validator, { meta }) {
-        assert.strictEqual(meta.trx, owner); assert.include(events, 'acquired'); events.push('validate')
+        assert.strictEqual(meta.trx, owner); assert.include(events, 'acquired'); events.push(
+          'validate')
         return { name: 'Fresh', hidden: false, parentGroupId: 4 }
       },
     } })
@@ -401,7 +449,9 @@ for (const action of ['addGroup', 'updateGroup']) {
 
 for (const action of ['deleteGroup', 'addCategory', 'updateCategory']) {
   for (const outcome of ['success', 'rejected']) {
-    test(`${action} ${outcome}: waits for Budget, binds dependencies and writes, preserves response`, async ({ assert }) => {
+    test(
+      `${action} ${outcome}: waits for Budget, binds dependencies and writes, preserves response`,
+      async ({ assert }) => {
       const events = []
       const owner = {}
       let release, entered
@@ -410,7 +460,8 @@ for (const action of ['deleteGroup', 'addCategory', 'updateCategory']) {
       const failure = new Error('validation failed')
       class FakeCategory {
         balance = 42
-        useTransaction(client) { assert.strictEqual(client, owner); this.client = client; return this }
+        useTransaction(client) { assert.strictEqual(client, owner); this.client = client;
+          return this }
         fill(values) { Object.assign(this, values); return this }
         merge(values) { return this.fill(values) }
         async save() { assert.strictEqual(this.client, owner); events.push('save'); return this }
@@ -418,13 +469,15 @@ for (const action of ['deleteGroup', 'addCategory', 'updateCategory']) {
       const category = new FakeCategory().useTransaction(owner)
       const group = {
         related: () => ({ query: () => ({ useTransaction(client) {
-          assert.strictEqual(client, owner); assert.include(events, 'acquired'); events.push('membership')
+          assert.strictEqual(client, owner); assert.include(events, 'acquired'); events.push(
+            'membership')
           return Promise.resolve(outcome === 'rejected' ? [{}] : [])
         } }) }),
         async delete() { events.push('delete') },
       }
       const query = (value, budgetId, { client }) => {
-        assert.equal(budgetId, 7); assert.strictEqual(client, owner); assert.include(events, 'acquired'); events.push('read')
+        assert.equal(budgetId, 7); assert.strictEqual(client, owner); assert.include(events,
+          'acquired'); events.push('read')
         return { where() { return this }, firstOrFail: async () => value }
       }
       const run = await method('app/Controllers/Http/CategoriesController.ts', action, {
@@ -438,19 +491,22 @@ for (const action of ['deleteGroup', 'addCategory', 'updateCategory']) {
         authorizeCategories: async (id, ids, options) => {
           assert.deepEqual(ids, [9]); query({}, id, options); events.push('funding.authorized')
         },
-        removeUndefined: (values) => Object.fromEntries(Object.entries(values).filter(([, value]) => value !== undefined)),
+        removeUndefined: (values) => Object.fromEntries(Object.entries(values).filter(([, value]) =>
+          value !== undefined)),
       })
       const user = { budgetId: 7, useTransaction(client) { assert.strictEqual(client, owner) },
         related: () => ({ query: () => ({ forUpdate() { return this }, async firstOrFail() {
           entered(); await gate; events.push('acquired')
         } }) }) }
       let status
-      const operation = run({ auth: { user }, response: { status(value) { status = value } }, request: {
+      const operation = run({ auth: { user }, response: { status(value) { status = value } },
+        request: {
         params: () => ({ groupId: '10', catId: '20' }),
         async validateUsing(_validator, { meta }) {
           assert.strictEqual(meta.trx, owner); assert.include(events, 'acquired')
           if (outcome === 'rejected') throw failure
-          return { name: 'Fresh', fundingCategories: [{ categoryId: 9, amount: 5, percentage: false }] }
+          return { name: 'Fresh', fundingCategories: [{ categoryId: 9, amount: 5,
+            percentage: false }] }
         },
       } })
       await waiting
@@ -464,7 +520,8 @@ for (const action of ['deleteGroup', 'addCategory', 'updateCategory']) {
         assert.equal(events.at(-1), 'commit')
         if (action === 'deleteGroup') {
           assert.equal(status, outcome === 'rejected' ? 409 : 204)
-          if (outcome === 'rejected') { assert.notInclude(events, 'delete'); assert.equal(result.errors[0].code, 'HAS_CHILDREN') }
+          if (outcome === 'rejected') { assert.notInclude(events, 'delete'); assert.equal(result
+            .errors[0].code, 'HAS_CHILDREN') }
           else assert.include(events, 'delete')
         } else {
           assert.equal(result.data.name, 'Fresh'); assert.include(events, 'funding.authorized')
@@ -477,12 +534,14 @@ for (const action of ['deleteGroup', 'addCategory', 'updateCategory']) {
 }
 
 for (const failure of [undefined, 'budget', 'cascade']) {
-  test(`deleteAccount locks Budget before fresh scope/cascade and ${failure ?? 'commits'} without changing cascade rules`, async ({ assert }) => {
+  test(`deleteAccount locks Budget before fresh scope/cascade and ${failure ??
+    'commits'} without changing cascade rules`, async ({ assert }) => {
     const events = []
     let release, entered
     const gate = new Promise((resolve) => { release = resolve })
     const waiting = new Promise((resolve) => { entered = resolve })
-    const owner = { commit: async () => { events.push('commit') }, rollback: async () => { events.push('rollback') } }
+    const owner = { commit: async () => { events.push('commit') }, rollback: async () => { events
+      .push('rollback') } }
     const budget = { id: 7, $trx: owner }
     const account = { id: 20 }
     const balances = [{ id: 9, balance: 45 }]
@@ -490,7 +549,8 @@ for (const failure of [undefined, 'budget', 'cascade']) {
       db: { transaction: async () => owner },
       budgetInstitutions(id, { client }) {
         assert.equal(id, 7); assert.strictEqual(client, owner); assert.include(events, 'acquired')
-        return { where(key, value) { assert.equal(key, 'id'); assert.equal(value, 10); return this },
+        return { where(key, value) { assert.equal(key, 'id'); assert.equal(value, 10);
+          return this },
           async firstOrFail() {
             events.push('institution')
             return { related: () => ({ query: () => ({
@@ -513,7 +573,8 @@ for (const failure of [undefined, 'budget', 'cascade']) {
         if (failure === 'budget') throw new Error('budget failed')
         events.push('acquired'); return budget
       } }) }) }
-    const operation = run({ auth: { user }, request: { params: () => ({ instId: 10, acctId: 20 }) }, logger: { error: noop } })
+    const operation = run({ auth: { user }, request: { params: () => ({ instId: 10, acctId: 20 }) },
+      logger: { error: noop } })
     await waiting
     assert.deepEqual(events, [])
     release()
@@ -528,27 +589,33 @@ for (const failure of [undefined, 'budget', 'cascade']) {
   })
 }
 
-for (const scenario of ['offline', 'online', 'budget-failure', 'remote-failure', 'delete-failure']) {
-  test(`Institution delete ${scenario}: Budget precedes fresh reads, remote work and cascade`, async ({ assert }) => {
+for (const scenario of ['offline', 'online', 'budget-failure', 'remote-failure',
+  'delete-failure']) {
+  test(`Institution delete ${scenario}: Budget precedes fresh reads, remote work and cascade`,
+    async ({ assert }) => {
     const events = []
     let release, entered
     const gate = new Promise((resolve) => { release = resolve })
     const waiting = new Promise((resolve) => { entered = resolve })
-    const owner = { commit: async () => { events.push('commit') }, rollback: async () => { events.push('rollback') } }
+    const owner = { commit: async () => { events.push('commit') }, rollback: async () => { events
+      .push('rollback') } }
     const budget = { id: 7, $trx: owner }
     const accounts = [{ id: 20 }]
     const balances = [{ id: 9, balance: 45 }]
-    const institution = { accessToken: scenario === 'offline' ? null : 'stale-token', institutionId: 'bank',
+    const institution = { accessToken: scenario === 'offline' ? null : 'stale-token',
+      institutionId: 'bank',
       related: () => ({ query: () => ({ useTransaction(trx) {
         assert.strictEqual(trx, owner); events.push('accounts'); return Promise.resolve(accounts)
       } }) }),
-      async delete() { events.push('delete'); if (scenario === 'delete-failure') throw new Error('delete failed') },
+      async delete() { events.push('delete'); if (scenario === 'delete-failure') throw new Error(
+        'delete failed') },
     }
     const run = await method('app/Controllers/Http/InstitutionController.ts', 'delete', {
       db: { transaction: async () => owner },
       budgetInstitutions(id, { client }) {
         assert.equal(id, 7); assert.strictEqual(client, owner); assert.include(events, 'acquired')
-        return { where(key, value) { assert.equal(key, 'id'); assert.equal(value, 10); return this },
+        return { where(key, value) { assert.equal(key, 'id'); assert.equal(value, 10);
+          return this },
           async firstOrFail() { events.push('institution'); return institution } }
       },
       app: { container: { make: async () => ({ async removeItem(token, providerId) {
@@ -566,7 +633,8 @@ for (const scenario of ['offline', 'online', 'budget-failure', 'remote-failure',
         if (scenario === 'budget-failure') throw new Error('budget failed')
         events.push('acquired'); return budget
       } }) }) }
-    const operation = run({ auth: { user }, request: { params: () => ({ instId: 10 }) }, logger: { error: noop } })
+    const operation = run({ auth: { user }, request: { params: () => ({ instId: 10 }) }, logger: {
+      error: noop } })
     await waiting
     assert.deepEqual(events, [])
     // Earlier sync/unlink commits before this waiter can read authoritative identity.
@@ -579,23 +647,27 @@ for (const scenario of ['offline', 'online', 'budget-failure', 'remote-failure',
       if (scenario === 'remote-failure') assert.notInclude(events, 'cascade')
     } else {
       assert.strictEqual(await operation, balances)
-      assert.deepEqual(events, ['acquired', 'institution', 'accounts', ...(scenario === 'online' ? ['remote'] : []), 'cascade', 'delete', 'commit'])
+      assert.deepEqual(events, ['acquired', 'institution', 'accounts', ...(scenario === 'online' ? [
+        'remote'] : []), 'cascade', 'delete', 'commit'])
     }
   })
 }
 
 for (const scenario of ['transactions', 'balances', 'missing-institution', 'statement-failure']) {
-  test(`addOfflineAccount ${scenario}: fresh parent and response balances follow Budget gate`, async ({ assert }) => {
+  test(`addOfflineAccount ${scenario}: fresh parent and response balances follow Budget gate`,
+    async ({ assert }) => {
     const events = []
     let release, entered
     const gate = new Promise((resolve) => { release = resolve })
     const waiting = new Promise((resolve) => { entered = resolve })
-    const owner = { commit: async () => { events.push('commit') }, rollback: async () => { events.push('rollback') } }
+    const owner = { commit: async () => { events.push('commit') }, rollback: async () => { events
+      .push('rollback') } }
     const pool = { id: 1, balance: 100 }
     const unassigned = { id: 2, balance: 5 }
     const budget = {
       async getFundingPoolCategory({ client }) {
-        assert.strictEqual(client, owner); assert.include(events, 'acquired'); events.push('pool'); return pool
+        assert.strictEqual(client, owner); assert.include(events, 'acquired'); events.push('pool');
+          return pool
       },
       async getUnassignedCategory({ client }) {
         assert.strictEqual(client, owner); events.push('unassigned'); return unassigned
@@ -622,7 +694,8 @@ for (const scenario of ['transactions', 'balances', 'missing-institution', 'stat
       budgetInstitutions(id, { client }) {
         assert.equal(id, 7); assert.strictEqual(client, owner); assert.include(events, 'acquired')
         return { where(key, value) { assert.equal(key, 'id'); assert.equal(value, 3); return this },
-          async firstOrFail() { events.push('institution'); if (scenario === 'missing-institution') throw new Error('not found'); return { id: 3 } } }
+          async firstOrFail() { events.push('institution'); if (scenario ===
+            'missing-institution') throw new Error('not found'); return { id: 3 } } }
       },
     })
     const user = { budgetId: 7, useTransaction(client) { assert.strictEqual(client, owner) },
@@ -631,14 +704,16 @@ for (const scenario of ['transactions', 'balances', 'missing-institution', 'stat
       } }) }) }
     const operation = run({ auth: { user }, logger: { error: noop }, request: {
       params: () => ({ instId: 3 }), validateUsing: async () => ({ name: 'New', balance: 10,
-        startDate: '2025-01-01', tracking: scenario === 'transactions' ? 'transactions' : 'balances', type: 'depository', subtype: 'checking' }),
+        startDate: '2025-01-01', tracking: scenario === 'transactions' ? 'transactions' :
+          'balances', type: 'depository', subtype: 'checking' }),
     } })
     await waiting
     assert.deepEqual(events, [])
     pool.balance = 80 // A preceding writer commits while this operation waits.
     release()
     if (scenario === 'missing-institution' || scenario === 'statement-failure') {
-      await assert.rejects(() => operation, scenario === 'missing-institution' ? 'not found' : 'statement failed')
+      await assert.rejects(() => operation, scenario === 'missing-institution' ? 'not found' :
+        'statement failed')
       assert.equal(events.at(-1), 'rollback'); assert.notInclude(events, 'commit')
       if (scenario === 'missing-institution') assert.notInclude(events, 'account.save')
     } else {
@@ -646,7 +721,8 @@ for (const scenario of ['transactions', 'balances', 'missing-institution', 'stat
       assert.equal(result.data.account.balance, 10)
       assert.equal(result.data.categories[0].balance, 80)
       assert.equal(result.data.categories[1].balance, 5)
-      assert.equal(events.filter((event) => event === 'statement').length, scenario === 'balances' ? 1 : 0)
+      assert.equal(events.filter((event) => event === 'statement').length, scenario ===
+        'balances' ? 1 : 0)
       assert.equal(events.at(-1), 'commit')
     }
     assert.equal(pool.balance, 80); assert.equal(unassigned.balance, 5)
@@ -659,17 +735,21 @@ for (const scenario of ['success', 'missing', 'save-failure']) {
     let release, entered
     const gate = new Promise((resolve) => { release = resolve })
     const waiting = new Promise((resolve) => { entered = resolve })
-    const owner = { commit: async () => { events.push('commit') }, rollback: async () => { events.push('rollback') } }
+    const owner = { commit: async () => { events.push('commit') }, rollback: async () => { events
+      .push('rollback') } }
     const institution = { name: 'Old', accessToken: 'current-token', cursor: 'current-cursor',
-      merge(values) { assert.deepEqual(Object.keys(values), ['name']); Object.assign(this, values) },
-      async save() { events.push('save'); if (scenario === 'save-failure') throw new Error('save failed') },
+      merge(values) { assert.deepEqual(Object.keys(values), ['name']); Object.assign(this,
+        values) },
+      async save() { events.push('save'); if (scenario === 'save-failure') throw new Error(
+        'save failed') },
     }
     const run = await method('app/Controllers/Http/InstitutionController.ts', 'updateOffline', {
       db: { transaction: async () => owner }, update: {},
       budgetInstitutions(id, { client }) {
         assert.equal(id, 7); assert.strictEqual(client, owner); assert.include(events, 'acquired')
         return { where(key, value) { assert.equal(key, 'id'); assert.equal(value, 3); return this },
-          async firstOrFail() { events.push('institution'); if (scenario === 'missing') throw new Error('not found'); return institution } }
+          async firstOrFail() { events.push('institution'); if (scenario ===
+            'missing') throw new Error('not found'); return institution } }
       },
     })
     const user = { budgetId: 7, useTransaction(client) { assert.strictEqual(client, owner) },
@@ -690,20 +770,24 @@ for (const scenario of ['success', 'missing', 'save-failure']) {
       assert.equal(events.at(-1), 'rollback'); assert.notInclude(events, 'commit')
       if (scenario === 'missing') assert.notInclude(events, 'save')
     }
-    assert.equal(institution.accessToken, 'current-token'); assert.equal(institution.cursor, 'current-cursor')
+    assert.equal(institution.accessToken, 'current-token'); assert.equal(institution.cursor,
+      'current-cursor')
   })
 }
 
 for (const scenario of ['success', 'missing', 'save-failure']) {
-  test(`dedup ${scenario}: fresh active scoped target follows Budget and only marker changes`, async ({ assert }) => {
+  test(`dedup ${scenario}: fresh active scoped target follows Budget and only marker changes`,
+    async ({ assert }) => {
     const events = []
     let release, entered
     const gate = new Promise((resolve) => { release = resolve })
     const waiting = new Promise((resolve) => { entered = resolve })
     const owner = {}
     const filters = []
-    const transaction = { duplicateOfTransactionId: 99, categories: [{ categoryId: 3, amount: 10 }], version: 4,
-      async save() { events.push('save'); if (scenario === 'save-failure') throw new Error('save failed') },
+    const transaction = { duplicateOfTransactionId: 99, categories: [{ categoryId: 3, amount: 10 }],
+      version: 4,
+      async save() { events.push('save'); if (scenario === 'save-failure') throw new Error(
+        'save failed') },
     }
     const run = await method('app/Controllers/Http/TransactionsController.ts', 'dedup', {
       db: { transaction: async (callback) => {
@@ -714,7 +798,8 @@ for (const scenario of ['success', 'missing', 'save-failure']) {
         assert.strictEqual(client, owner); assert.include(events, 'acquired'); events.push('query')
         return { where(key, value) { filters.push([key, value]); return this },
           andWhere(key, value) { return this.where(key, value) },
-          async firstOrFail() { if (scenario === 'missing') throw new Error('not found'); return transaction } }
+          async firstOrFail() { if (scenario === 'missing') throw new Error('not found');
+            return transaction } }
       } },
     })
     const user = { budgetId: 7, useTransaction(client) { assert.strictEqual(client, owner) },
@@ -724,7 +809,8 @@ for (const scenario of ['success', 'missing', 'save-failure']) {
     const operation = run({ auth: { user }, request: { params: () => ({ trxId: 20 }) } })
     await waiting
     assert.deepEqual(events, [])
-    transaction.categories = [{ categoryId: 3, amount: 15 }] // Prior PATCH commits before the waiter reads.
+    transaction.categories = [{ categoryId: 3,
+      amount: 15 }] // Prior PATCH commits before the waiter reads.
     release()
     if (scenario === 'success') {
       assert.isUndefined(await operation); assert.isNull(transaction.duplicateOfTransactionId)
@@ -732,22 +818,27 @@ for (const scenario of ['success', 'missing', 'save-failure']) {
     } else {
       await assert.rejects(() => operation, scenario === 'missing' ? 'not found' : 'save failed')
       assert.equal(events.at(-1), 'rollback'); assert.notInclude(events, 'commit')
-      if (scenario === 'missing') { assert.notInclude(events, 'save'); assert.equal(transaction.duplicateOfTransactionId, 99) }
+      if (scenario === 'missing') { assert.notInclude(events, 'save'); assert.equal(transaction
+        .duplicateOfTransactionId, 99) }
     }
     assert.deepEqual(filters, [['id', 20], ['budgetId', 7], ['deleted', false]])
-    assert.deepEqual(transaction.categories, [{ categoryId: 3, amount: 15 }]); assert.equal(transaction.version, 4)
+    assert.deepEqual(transaction.categories, [{ categoryId: 3, amount: 15 }]); assert.equal(
+      transaction.version, 4)
   })
 }
 
 for (const scenario of ['create', 'update', 'save-failure', 'create-failure']) {
-  test(`tax forecast ${scenario}: Budget precedes scoped lookup and owning-transaction persistence`, async ({ assert }) => {
+  test(`tax forecast ${scenario}: Budget precedes scoped lookup and owning-transaction persistence`,
+    async ({ assert }) => {
     const events = []
     let release, entered
     const gate = new Promise((resolve) => { release = resolve })
     const waiting = new Promise((resolve) => { entered = resolve })
     const owner = {}
     const forecast = { taxableInterest: 25 }
-    const existing = { year: 2026, $attributes: { data: { taxableInterest: 5 } }, get data() { return this.$attributes.data }, serialize() { return { data: serializeTaxForecast(this.data) } }, async save() {
+    const existing = { year: 2026, $attributes: { data: { taxableInterest: 5 } }, get data() {
+      return this.$attributes.data }, serialize() { return { data: serializeTaxForecast(this
+      .data) } }, async save() {
       events.push('save'); if (scenario === 'save-failure') throw new Error('save failed')
     } }
     const filters = []
@@ -758,7 +849,8 @@ for (const scenario of ['create', 'update', 'save-failure', 'create-failure']) {
       } },
       Tax: {
         query({ client }) {
-          assert.strictEqual(client, owner); assert.include(events, 'acquired'); events.push('query')
+          assert.strictEqual(client, owner); assert.include(events, 'acquired'); events.push(
+            'query')
           return { where(key, value) { filters.push([key, value]); return this },
             first: async () => ['update', 'save-failure'].includes(scenario) ? existing : null }
         },
@@ -777,16 +869,19 @@ for (const scenario of ['create', 'update', 'save-failure', 'create-failure']) {
       related: () => ({ query: () => ({ forUpdate() { return this }, async firstOrFail() {
         entered(); await gate; events.push('acquired'); return { id: 7 }
       } }) }) }
-    const operation = run({ auth: { user }, request: { input: () => serializeTaxForecast(forecast), validateUsing: async () => ({ year: 2026, forecast }) } })
+    const operation = run({ auth: { user }, request: { input: () => serializeTaxForecast(forecast),
+      validateUsing: async () => ({ year: 2026, forecast }) } })
     await waiting
     assert.deepEqual(events, [])
     release()
     if (scenario.endsWith('failure')) {
-      await assert.rejects(() => operation, scenario === 'save-failure' ? 'save failed' : 'create failed')
+      await assert.rejects(() => operation, scenario === 'save-failure' ? 'save failed' :
+        'create failed')
       assert.equal(events.at(-1), 'rollback'); assert.notInclude(events, 'actuals')
     } else {
       const response = await operation
-      assert.equal(response.data.year, 2026); assert.equal(response.data.forecast.taxableInterest, '25.00')
+      assert.equal(response.data.year, 2026); assert.equal(response.data.forecast.taxableInterest,
+        '25.00')
       assert.deepEqual(Array.from(response.data.actuals), [])
       assert.equal(events.at(-1), 'actuals')
     }
@@ -794,7 +889,8 @@ for (const scenario of ['create', 'update', 'save-failure', 'create-failure']) {
   })
 }
 
-test('tax forecast concurrent first saves reload after Budget and create only once', async ({ assert }) => {
+test('tax forecast concurrent first saves reload after Budget and create only once', async ({
+  assert }) => {
   let tail = Promise.resolve()
   let stored = null
   let creates = 0
@@ -807,26 +903,31 @@ test('tax forecast concurrent first saves reload after Budget and create only on
     } },
     Tax: {
       query: () => ({ where() { return this }, first: async () => stored }),
-      async create(values) { creates++; stored = { ...values, $attributes: { data: values.data }, get data() { return this.$attributes.data }, save: noop, serialize() { return { data: serializeTaxForecast(this.data) } } }; return stored },
+      async create(values) { creates++; stored = { ...values, $attributes: { data: values.data },
+        get data() { return this.$attributes.data }, save: noop, serialize() { return {
+        data: serializeTaxForecast(this.data) } } }; return stored },
     }, TaxesController: { getActuals: async () => [] },
   })
   function context(value) {
     let owner
     return { auth: { user: { useTransaction(trx) { owner = trx }, related: () => ({ query: () => ({
       forUpdate() { return this }, async firstOrFail() { await owner.previous; return { id: 7 } },
-    }) }) } }, request: { input: () => ({ taxableInterest: encodeMonetaryAmount(value) }), validateUsing: async () => ({ year: 2026, forecast: { taxableInterest: value } }) } }
+    }) }) } }, request: { input: () => ({ taxableInterest: encodeMonetaryAmount(value) }),
+      validateUsing: async () => ({ year: 2026, forecast: { taxableInterest: value } }) } }
   }
   await Promise.all([run(context(10)), run(context(20))])
   assert.equal(creates, 1); assert.equal(stored.data.taxableInterest, 20)
 })
 
 for (const scenario of ['other-user', 'last-user', 'budget-failure', 'cleanup-failure']) {
-  test(`User delete ${scenario}: Budget precedes deletion and fresh membership/cleanup`, async ({ assert }) => {
+  test(`User delete ${scenario}: Budget precedes deletion and fresh membership/cleanup`, async ({
+    assert }) => {
     const events = []
     let release, entered
     const gate = new Promise((resolve) => { release = resolve })
     const waiting = new Promise((resolve) => { entered = resolve })
-    const owner = { commit: async () => { events.push('commit') }, rollback: async () => { events.push('rollback') } }
+    const owner = { commit: async () => { events.push('commit') }, rollback: async () => { events
+      .push('rollback') } }
     const budget = { related(name) { return { query: async () => {
       assert.include(events, 'acquired'); events.push(name)
       if (scenario === 'cleanup-failure') throw new Error('cleanup failed')
@@ -854,18 +955,21 @@ for (const scenario of ['other-user', 'last-user', 'budget-failure', 'cleanup-fa
     assert.deepEqual(events, [])
     release()
     if (scenario.endsWith('failure')) {
-      await assert.rejects(() => operation, scenario === 'budget-failure' ? 'budget failed' : 'cleanup failed')
+      await assert.rejects(() => operation, scenario === 'budget-failure' ? 'budget failed' :
+        'cleanup failed')
       assert.equal(events.at(-1), 'rollback'); assert.notInclude(events, 'commit')
       if (scenario === 'budget-failure') assert.notInclude(events, 'user.delete')
     } else {
       assert.isUndefined(await operation)
       assert.deepEqual(events, ['acquired', 'user.delete', 'membership',
-        ...(scenario === 'last-user' ? ['institutions', 'transactions', 'groups', 'budget.delete'] : []), 'commit'])
+        ...(scenario === 'last-user' ? ['institutions', 'transactions', 'groups',
+          'budget.delete'] : []), 'commit'])
     }
   })
 }
 
-test('two same-Budget user deletions serialize and the final member removes Budget', async ({ assert }) => {
+test('two same-Budget user deletions serialize and the final member removes Budget', async ({
+  assert }) => {
   const members = new Set([1, 2])
   let tail = Promise.resolve()
   let budgetDeletes = 0
@@ -881,7 +985,8 @@ test('two same-Budget user deletions serialize and the final member removes Budg
   })
   function context(id) {
     let owner
-    const budget = { related: () => ({ query: async () => [] }), delete: async () => { budgetDeletes++ } }
+    const budget = { related: () => ({ query: async () => [] }), delete: async () => {
+      budgetDeletes++ } }
     return { auth: { user: { budgetId: 7,
       useTransaction(client) { owner = client }, delete: async () => { members.delete(id) },
       related: () => ({ query: () => ({ forUpdate() { return this }, async firstOrFail() {

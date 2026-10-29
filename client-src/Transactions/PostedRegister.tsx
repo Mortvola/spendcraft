@@ -3,7 +3,8 @@ import React from 'react';
 import { observer } from 'mobx-react-lite';
 import RegisterTransactions from './RegisterTransactions';
 import {
-  AccountInterface, BaseTransactionInterface, CategoryInterface, TransactionContainerInterface, TransactionInterface,
+  AccountInterface, BaseTransactionInterface, CategoryInterface, TransactionContainerInterface,
+    TransactionInterface,
 } from '../State/Types';
 import RegisterTitles from './RegisterTitles';
 import useTrxDialog from './TrxDialog';
@@ -71,7 +72,8 @@ const PostedRegister: React.FC<PropsType> = observer(({
     const accountSign = account?.sign ?? 1
     const zero = parseMoneyCents('0.00');
     const balance = category?.balanceCents ?? account?.balanceCents ?? zero;
-    let runningBalance = category || accountSign === 1 ? balance : subtractMoneyCents(zero, balance);
+    let runningBalance = category || accountSign === 1 ? balance : subtractMoneyCents(zero,
+      balance);
 
     return trxContainer.transactions.map((transaction) => {
       let amountCents = transaction.amountCents;
@@ -100,7 +102,8 @@ const PostedRegister: React.FC<PropsType> = observer(({
       )
 
       if (runningBalance !== undefined) {
-        runningBalance = subtractMoneyCents(runningBalance, accountSign === 1 ? amountCents : subtractMoneyCents(zero, amountCents));
+        runningBalance = subtractMoneyCents(runningBalance,
+          accountSign === 1 ? amountCents : subtractMoneyCents(zero, amountCents));
       }
 
       return element;

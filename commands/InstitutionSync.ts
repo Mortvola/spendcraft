@@ -27,7 +27,8 @@ export default class InstitutionSync extends BaseCommand {
     const trx = await db.transaction();
 
     try {
-      const institution = await Institution.findByOrFail('plaidItemId', this.itemId, { client: trx });
+      const institution = await Institution.findByOrFail('plaidItemId', this.itemId, {
+        client: trx });
 
       await institution.syncUpdate()
 

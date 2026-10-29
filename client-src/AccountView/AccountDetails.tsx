@@ -65,7 +65,8 @@ const AccountDetails: React.FC = observer(() => {
 
   return (
     <div className={`${styles2.layout}`}>
-      <div className={`${styles2.mainTrayTitle} ellipsis`}>{`${selectedAccount.institution.name}: ${selectedAccount.name}`}</div>
+      <div className={`${styles2.mainTrayTitle} ellipsis`}>{`${selectedAccount.institution
+        .name}: ${selectedAccount.name}`}</div>
       {
         selectedAccount.tracking === TrackingType.Balances
           ? (
@@ -78,7 +79,8 @@ const AccountDetails: React.FC = observer(() => {
           )
           : (
             <>
-              <Nav variant="underline" className={styles2.menu} onSelect={handleSelect} activeKey={selected}>
+              <Nav variant="underline" className={styles2.menu} onSelect={handleSelect} activeKey={
+                selected}>
                 <Nav.Link as="div" eventKey={Tab.Transaction}>Transactions</Nav.Link>
                 <Nav.Link as="div" eventKey={Tab.Pending}>Pending</Nav.Link>
                 <Nav.Link as="div" eventKey={Tab.Balances}>Balances</Nav.Link>

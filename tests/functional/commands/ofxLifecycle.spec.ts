@@ -45,7 +45,8 @@ test.group('OFX command transaction lifecycle', (group) => {
     const entered = signal()
     const release = signal()
     const prompt = mock.method(command.prompt, 'ask', async () => {
-      entered.release(); await release.promise; events.push('username-resolved'); return 'missing-ofx-lifecycle-user'
+      entered.release(); await release.promise; events.push('username-resolved');
+        return 'missing-ofx-lifecycle-user'
     })
     cleanup(() => prompt.mock.restore())
     let completed = false
@@ -65,7 +66,8 @@ test.group('OFX command transaction lifecycle', (group) => {
     .with(['run', 'exec']).run(async ({ assert, cleanup }, entry) => {
       const command = await ace.create(OfxUpload, ['fixture.ofx'])
       const failure = new Error('Injected username prompt rejection')
-      const prompt = mock.method(command.prompt, 'ask', async () => { events.push('username-rejected'); throw failure })
+      const prompt = mock.method(command.prompt, 'ask', async () => { events.push(
+        'username-rejected'); throw failure })
       cleanup(() => prompt.mock.restore())
       if (entry === 'run') {
         let observed: unknown
@@ -86,13 +88,18 @@ test.group('OFX command transaction lifecycle', (group) => {
     const budget = await Budget.create({})
     const user = await budget.related('users').create({ username: `ofx-command-${++sequence}`,
       email: `ofx-command-${sequence}@example.com`, password: 'testPassw0rd' })
-    const institution = await budget.related('institutions').create({ name: `OFX command bank ${sequence}` })
-    const account = await institution.related('accounts').create({ name: `OFX command card ${sequence}`,
-      balance: 0, type: AccountType.Credit, subtype: 'credit card', tracking: TrackingType.Transactions,
+    const institution = await budget.related('institutions').create({
+      name: `OFX command bank ${sequence}` })
+    const account = await institution.related('accounts').create({
+      name: `OFX command card ${sequence}`,
+      balance: 0, type: AccountType.Credit, subtype: 'credit card', tracking: TrackingType
+        .Transactions,
       startDate: DateTime.fromISO('2025-01-01'), rate: 0, closed: false })
     const command = await ace.create(OfxUpload, ['fixture.ofx'])
-    const ask = mock.method(command.prompt, 'ask', async () => { events.push('username-resolved'); return user.username })
-    const choice = mock.method(command.prompt, 'choice', async (title: string) => title === 'Select the institution' ? institution.name : account.name)
+    const ask = mock.method(command.prompt, 'ask', async () => { events.push('username-resolved');
+      return user.username })
+    const choice = mock.method(command.prompt, 'choice', async (title: string) => title ===
+      'Select the institution' ? institution.name : account.name)
     cleanup(() => { ask.mock.restore(); choice.mock.restore() })
     await command.run()
     assert.lengthOf(transactions, 1)
@@ -101,7 +108,8 @@ test.group('OFX command transaction lifecycle', (group) => {
     assert.deepEqual(events, ['username-resolved', 'transaction-acquired', 'commit'])
   })
 
-  test('post-prompt failure is caught and completes through awaited rollback', async ({ assert, cleanup }) => {
+  test('post-prompt failure is caught and completes through awaited rollback', async ({ assert,
+    cleanup }) => {
     const command = await ace.create(OfxUpload, ['fixture.ofx'])
     const logged: unknown[] = []
     const log = mock.method(console, 'log', (...values: unknown[]) => { logged.push(...values) })

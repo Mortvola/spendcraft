@@ -25,7 +25,8 @@ async function fixture() {
     const account = await institution.related('accounts').create({ name: 'Checking', balance: 0,
       type: AccountType.Depository, subtype: 'checking', rate: 0, closed: false,
       tracking: TrackingType.Transactions, startDate: DateTime.fromISO('2025-01-01') })
-    const group = await budget.related('groups').create({ name: 'Precision categories', type: 'Regular' })
+    const group = await budget.related('groups').create({ name: 'Precision categories', type:
+      'Regular' })
     const categories = []
     for (const name of ['Fixed', 'First percentage', 'Last percentage']) {
       categories.push(await group.related('categories').create({ name, type: CategoryType.Regular,
@@ -36,13 +37,17 @@ async function fixture() {
 }
 
 function provider(amount: number): Plaid.Transaction {
-  return { account_id: 'precision-account', transaction_id: `precision-${sequence}`, amount: -amount,
+  return { account_id: 'precision-account', transaction_id: `precision-${sequence}`, amount: -
+    amount,
     date: '2025-02-10', name: 'Precision match', merchant_name: null, iso_currency_code: 'USD',
-    unofficial_currency_code: null, pending: false, pending_transaction_id: null, account_owner: null,
+    unofficial_currency_code: null, pending: false, pending_transaction_id: null,
+      account_owner: null,
     authorized_date: null, authorized_datetime: null, datetime: null,
     payment_channel: Plaid.TransactionPaymentChannelEnum.Online, transaction_code: null,
-    location: { address: null, city: null, region: null, postal_code: null, country: null, lat: null, lon: null, store_number: null },
-    payment_meta: { reference_number: null, ppd_id: null, payee: null, by_order_of: null, payer: null, payment_method: null, payment_processor: null, reason: null } }
+    location: { address: null, city: null, region: null, postal_code: null, country: null,
+      lat: null, lon: null, store_number: null },
+    payment_meta: { reference_number: null, ppd_id: null, payee: null, by_order_of: null,
+      payer: null, payment_method: null, payment_processor: null, reason: null } }
 }
 
 test.group('Monetary persistence and allocation regressions', () => {
@@ -68,36 +73,47 @@ test.group('Monetary persistence and allocation regressions', () => {
       await db.transaction(async (trx) => {
         f.budget.useTransaction(trx)
         f.account.useTransaction(trx)
-        const rule = await f.budget.related('autoAssignment').create({ name: 'Mixed-unit regression', searchStrings: ['Precision match'] })
+        const rule = await f.budget.related('autoAssignment').create({ name:
+          'Mixed-unit regression', searchStrings: ['Precision match'] })
         // Equal values in each ordering group avoid assuming an unspecified tie order.
         for (const [index, amount] of scenario.fixed.entries()) {
-          await rule.related('categories').create({ categoryId: f.categories[index].id, amount, percentage: false })
+          await rule.related('categories').create({ categoryId: f.categories[index].id, amount,
+            percentage: false })
         }
         for (const [index, amount] of scenario.percentages.entries()) {
-          await rule.related('categories').create({ categoryId: f.categories[scenario.fixed.length + index].id, amount, percentage: true })
+          await rule.related('categories').create({ categoryId: f.categories[scenario.fixed.length +
+            index].id, amount, percentage: true })
         }
         await f.account.addOrUpdateTransaction(provider(scenario.amount), f.budget)
-        transactionId = (await f.account.related('accountTransactions').query().firstOrFail()).transactionId
+        transactionId = (await f.account.related('accountTransactions').query().firstOrFail())
+          .transactionId
       })
       const transaction = await Transaction.findOrFail(transactionId)
       assert.deepEqual(transaction.categories.map((split) => split.amount), scenario.expected)
-      assert.equal(transaction.categories.reduce((sum, split) => sum + Math.round(split.amount * 100), 0), Math.round(scenario.amount * 100))
+      assert.equal(transaction.categories.reduce((sum, split) => sum + Math.round(split.amount *
+        100), 0), Math.round(scenario.amount * 100))
       for (const split of transaction.categories) {
         assert.equal((await Category.findOrFail(split.categoryId)).balance, split.amount)
       }
     })
 
-  test('repeated sub-cent writes persist canonical zeros without accumulating fractional allocations', async ({ client, assert }) => {
+  test(
+    'repeated sub-cent writes persist canonical zeros without accumulating fractional allocations',
+    async ({ client, assert }) => {
     const f = await fixture()
     for (let i = 0; i < 3; i++) {
       const response = await client.post(`/api/v1/account/${f.account.id}/transactions`)
-        .json(transactionRequest({ date: '2025-02-10', name: `Repeated sub-cent ${i}`, amount: 0.004,
-          categories: [{ categoryId: f.categories[0].id, amount: 0.004 }] })).accept('json').loginAs(f.user)
+        .json(transactionRequest({ date: '2025-02-10', name: `Repeated sub-cent ${i}`,
+          amount: 0.004,
+          categories: [{ categoryId: f.categories[0].id, amount: 0.004 }] })).accept('json')
+            .loginAs(f.user)
       response.assertStatus(200)
     }
     const transactions = await f.budget.related('transactions').query()
-    const rawSplitTotal = transactions.reduce((sum, transaction) => sum + transaction.categories.reduce((subtotal, split) => subtotal + split.amount, 0), 0)
-    const associationTotal = (await f.account.related('accountTransactions').query()).reduce((sum, row) => sum + row.amount, 0)
+    const rawSplitTotal = transactions.reduce((sum, transaction) => sum + transaction.categories
+      .reduce((subtotal, split) => subtotal + split.amount, 0), 0)
+    const associationTotal = (await f.account.related('accountTransactions').query()).reduce((sum,
+      row) => sum + row.amount, 0)
     assert.lengthOf(transactions, 3)
     assert.equal(rawSplitTotal, 0)
     assert.equal(associationTotal, 0)
@@ -108,40 +124,51 @@ test.group('Monetary persistence and allocation regressions', () => {
   })
 
   test('client-rounded HTTP inputs preserve allocation and decimal-column conservation')
-    .with([0, 0.01, -0.01, 0.004, 0.005, 0.006, -0.004, -0.005, -0.006, 1.234, -1.234, '0.005', '-0.005', '1.23', '0.01', '1.234', 0.1 + 0.2])
+    .with([0, 0.01, -0.01, 0.004, 0.005, 0.006, -0.004, -0.005, -0.006, 1.234, -1.234, '0.005',
+      '-0.005', '1.23', '0.01', '1.234', 0.1 + 0.2])
     .run(async ({ client, assert }, amount) => {
       const f = await fixture()
       const encoded = encodeMonetaryAmount(Number(amount))
-      const decimal = (await db.rawQuery('SELECT CAST(? AS numeric(12,2))::text AS amount', [encoded])).rows[0].amount
+      const decimal = (await db.rawQuery('SELECT CAST(? AS numeric(12,2))::text AS amount', [
+        encoded])).rows[0].amount
       const conserves = monetaryAmountCents(Number(amount)) === monetaryAmountCents(decimal)
-      const before = await db.from('categories').whereIn('id', f.categories.map((row) => row.id)).orderBy('id')
+      const before = await db.from('categories').whereIn('id', f.categories.map((row) => row.id))
+        .orderBy('id')
       const response = await client.post(`/api/v1/account/${f.account.id}/transactions`)
         .json(transactionRequest({ date: '2025-02-10', name: 'Fractional cent', amount: encoded,
-          categories: [{ categoryId: f.categories[0].id, amount: encoded }] })).accept('json').loginAs(f.user)
+          categories: [{ categoryId: f.categories[0].id, amount: encoded }] })).accept('json')
+            .loginAs(f.user)
       const association = await f.account.related('accountTransactions').query().first()
-      const transaction = association ? await Transaction.findOrFail(association.transactionId) : null
+      const transaction = association ? await Transaction.findOrFail(association
+        .transactionId) : null
       const category = await Category.findOrFail(f.categories[0].id)
       const account = await Account.findOrFail(f.account.id)
-      const database = association ? await db.from('account_transactions').where('id', association.id).select('amount').first() : null
+      const database = association ? await db.from('account_transactions').where('id', association
+        .id).select('amount').first() : null
       response.assertStatus(conserves ? 200 : 422)
       if (!conserves) {
         assert.isNull(association)
         assert.lengthOf(await f.budget.related('transactions').query(), 0)
         assert.equal(account.balance, 0)
-        assert.deepEqual(await db.from('categories').whereIn('id', f.categories.map((row) => row.id)).orderBy('id'), before)
+        assert.deepEqual(await db.from('categories').whereIn('id', f.categories.map((row) => row
+          .id)).orderBy('id'), before)
       } else {
-        if (!transaction || !association) throw new Error('Successful CREATE must persist its Transaction and AccountTransaction')
+        if (!transaction || !association) throw new Error(
+          'Successful CREATE must persist its Transaction and AccountTransaction')
         assert.equal(transaction.categories[0].amount, monetaryAmountCents(Number(amount)) / 100)
-        assert.equal((await db.from('transactions').where('id', transaction.id).first()).categories[0].amount, encodeMonetaryAmount(Number(amount)))
+        assert.equal((await db.from('transactions').where('id', transaction.id).first()).categories[
+          0].amount, encodeMonetaryAmount(Number(amount)))
         assert.equal(association.amount, Number(decimal))
       }
-      console.log(JSON.stringify({ scenario: 'fractional cent', input: amount, status: response.status(),
+      console.log(JSON.stringify({ scenario: 'fractional cent', input: amount, status: response
+        .status(),
         persistedAmount: association?.amount, persistedSplits: transaction?.categories,
         categoryBalance: category.balance, accountBalance: account.balance,
         rawDecimalAmount: database?.amount, body: response.body() }))
     })
 
-  test('numeric scale-two cast records signed rounding without creating schema objects', async ({ assert }) => {
+  test('numeric scale-two cast records signed rounding without creating schema objects', async ({
+    assert }) => {
     const values = ['0.004', '0.005', '0.006', '-0.004', '-0.005', '-0.006',
       '1.004', '1.005', '1.006', '-1.004', '-1.005', '-1.006']
     const expected = ['0.00', '0.01', '0.01', '0.00', '-0.01', '-0.01',
@@ -149,12 +176,14 @@ test.group('Monetary persistence and allocation regressions', () => {
     for (const [index, value] of values.entries()) {
       const result = await db.rawQuery('SELECT CAST(? AS numeric(12,2))::text AS amount', [value])
       assert.equal(result.rows[0].amount, expected[index])
-      console.log(JSON.stringify({ scenario: 'numeric scale-two rounding', input: value, storedScaleValue: result.rows[0].amount }))
+      console.log(JSON.stringify({ scenario: 'numeric scale-two rounding', input: value,
+        storedScaleValue: result.rows[0].amount }))
     }
   })
 
   test('transaction PATCH and transfer POST/PATCH record JSON, balance and response precision')
-    .with([0, 0.01, -0.01, 0.004, 0.005, 0.006, -0.004, -0.005, -0.006, 1.234, -1.234, '0.005', '-0.005', '0.01', '1.234', 0.1 + 0.2])
+    .with([0, 0.01, -0.01, 0.004, 0.005, 0.006, -0.004, -0.005, -0.006, 1.234, -1.234, '0.005',
+      '-0.005', '0.01', '1.234', 0.1 + 0.2])
     .run(async ({ client, assert }, input) => {
       const amount = Number(input)
       const f = await fixture()
@@ -164,76 +193,106 @@ test.group('Monetary persistence and allocation regressions', () => {
       })
       await writeCanonicalTransactionFixture(transaction)
       const association = await f.account.related('accountTransactions').create({
-        transactionId: transaction.id, name: 'Precision update', amount: 0, pending: false, provider: 'NONE',
+        transactionId: transaction.id, name: 'Precision update', amount: 0, pending: false,
+          provider: 'NONE',
       })
       const response = await client.patch(`/api/v1/transaction/${transaction.id}`)
-        .json(transactionRequest({ version: 0, amount: encodeMonetaryAmount(amount), categories: [{ categoryId: f.categories[0].id, amount: encodeMonetaryAmount(amount) }] }))
+        .json(transactionRequest({ version: 0, amount: encodeMonetaryAmount(amount), categories: [{
+          categoryId: f.categories[0].id, amount: encodeMonetaryAmount(amount) }] }))
         .accept('json').loginAs(f.user)
-      const decimal = (await db.rawQuery('SELECT CAST(? AS numeric(12,2))::text AS amount', [encodeMonetaryAmount(amount)])).rows[0].amount
+      const decimal = (await db.rawQuery('SELECT CAST(? AS numeric(12,2))::text AS amount', [
+        encodeMonetaryAmount(amount)])).rows[0].amount
       const conserves = monetaryAmountCents(amount) === monetaryAmountCents(decimal)
       response.assertStatus(conserves ? 200 : 422)
-      assert.equal((await Transaction.findOrFail(transaction.id)).categories[0].amount, conserves ? monetaryAmountCents(amount) / 100 : 0)
-      assert.equal((await AccountTransaction.findOrFail(association.id)).amount, conserves ? Number(decimal) : 0)
-      if (conserves) assert.equal((await db.from('transactions').where('id', transaction.id).first()).categories[0].amount, encodeMonetaryAmount(amount))
+      assert.equal((await Transaction.findOrFail(transaction.id)).categories[0].amount,
+        conserves ? monetaryAmountCents(amount) / 100 : 0)
+      assert.equal((await AccountTransaction.findOrFail(association.id)).amount, conserves ? Number(
+        decimal) : 0)
+      if (conserves) assert.equal((await db.from('transactions').where('id', transaction.id).first(
+        )).categories[0].amount, encodeMonetaryAmount(amount))
       else {
         assert.equal((await Account.findOrFail(f.account.id)).balance, 0)
         assert.equal((await Category.findOrFail(f.categories[0].id)).balance, 0)
         assert.equal((await Transaction.findOrFail(transaction.id)).version, 0)
       }
-      console.log(JSON.stringify({ scenario: 'fractional PATCH', input, amount: (await AccountTransaction.findOrFail(association.id)).amount,
+      console.log(JSON.stringify({ scenario: 'fractional PATCH', input, amount: (
+        await AccountTransaction.findOrFail(association.id)).amount,
         splits: (await Transaction.findOrFail(transaction.id)).categories,
         categoryBalance: (await Category.findOrFail(f.categories[0].id)).balance,
         accountBalance: (await Account.findOrFail(f.account.id)).balance, body: response.body() }))
-      const splits = [{ categoryId: f.categories[1].id, amount }, { categoryId: f.categories[2].id, amount: -amount }]
-      const created = await client.post('/api/v1/category-transfer').json(categoryTransferRequest({ date: '2025-02-10', type: TransactionType.REBALANCE_TRANSACTION,
+      const splits = [{ categoryId: f.categories[1].id, amount }, { categoryId: f.categories[2].id,
+        amount: -amount }]
+      const created = await client.post('/api/v1/category-transfer').json(categoryTransferRequest({
+        date: '2025-02-10', type: TransactionType.REBALANCE_TRANSACTION,
         categories: splits })).accept('json').loginAs(f.user)
       // Negative half ties can fail this sign-asymmetric rounded zero-sum check.
-      created.assertStatus(monetaryAmountCents(amount) + monetaryAmountCents(-amount) === 0 ? 200 : 422)
+      created.assertStatus(monetaryAmountCents(amount) + monetaryAmountCents(-
+        amount) === 0 ? 200 : 422)
       if (created.status() === 200) {
         const id = created.body().data.transaction.id
-        const updated = await client.patch(`/api/v1/category-transfer/${id}`).json(categoryTransferRequest({ date: '2025-02-11',
-          type: TransactionType.REBALANCE_TRANSACTION, categories: splits })).accept('json').loginAs(f.user)
+        const updated = await client.patch(`/api/v1/category-transfer/${id}`).json(
+          categoryTransferRequest({ date: '2025-02-11',
+          type: TransactionType.REBALANCE_TRANSACTION, categories: splits })).accept('json')
+            .loginAs(f.user)
         updated.assertStatus(200)
-        console.log(JSON.stringify({ scenario: 'fractional transfer', input, status: created.status(),
+        console.log(JSON.stringify({ scenario: 'fractional transfer', input, status: created.status(
+          ),
           splits: (await Transaction.findOrFail(id)).categories,
-          categoryBalances: await Promise.all(f.categories.slice(1).map(async c => (await Category.findOrFail(c.id)).balance)),
+          categoryBalances: await Promise.all(f.categories.slice(1).map(async c => (await Category
+            .findOrFail(c.id)).balance)),
           createBody: created.body(), updateBody: updated.body() }))
       } else {
         assert.equal((await Category.findOrFail(f.categories[1].id)).balance, 0)
         assert.equal((await Category.findOrFail(f.categories[2].id)).balance, 0)
         assert.equal((await f.budget.related('transactions').query()).length, 1)
-        const control = await client.post('/api/v1/category-transfer').json(categoryTransferRequest({ date: '2025-02-10', type: TransactionType.REBALANCE_TRANSACTION,
-          categories: splits.map(split => ({ ...split, amount: 0 })) })).accept('json').loginAs(f.user)
+        const control = await client.post('/api/v1/category-transfer').json(categoryTransferRequest(
+          { date: '2025-02-10', type: TransactionType.REBALANCE_TRANSACTION,
+          categories: splits.map(split => ({ ...split, amount: 0 })) })).accept('json').loginAs(f
+            .user)
         control.assertStatus(200)
         const id = control.body().data.transaction.id
-        const before = await Promise.all([db.from('transactions').where('application_id', f.budget.id).orderBy('id'),
+        const before = await Promise.all([db.from('transactions').where('application_id', f.budget
+          .id).orderBy('id'),
           db.from('categories').whereIn('id', f.categories.map(c => c.id)).orderBy('id')])
-        const rejected = await client.patch(`/api/v1/category-transfer/${id}`).json(categoryTransferRequest({ date: '2025-02-11',
-          type: TransactionType.REBALANCE_TRANSACTION, categories: splits })).accept('json').loginAs(f.user)
+        const rejected = await client.patch(`/api/v1/category-transfer/${id}`).json(
+          categoryTransferRequest({ date: '2025-02-11',
+          type: TransactionType.REBALANCE_TRANSACTION, categories: splits })).accept('json')
+            .loginAs(f.user)
         rejected.assertStatus(422)
-        assert.deepEqual(await Promise.all([db.from('transactions').where('application_id', f.budget.id).orderBy('id'),
+        assert.deepEqual(await Promise.all([db.from('transactions').where('application_id', f.budget
+          .id).orderBy('id'),
           db.from('categories').whereIn('id', f.categories.map(c => c.id)).orderBy('id')]), before)
-        console.log(JSON.stringify({ scenario: 'fractional transfer rejected', input, createBody: created.body(), patchBody: rejected.body() }))
+        console.log(JSON.stringify({ scenario: 'fractional transfer rejected', input,
+          createBody: created.body(), patchBody: rejected.body() }))
       }
     })
 
-  test('Category funding configuration and Statement writers record decimal versus JSON response precision')
-    .with([0, 0.01, -0.01, 0.004, 0.005, 0.006, -0.004, -0.005, -0.006, 1.234, -1.234, '0.005', '0.01', '1.234', 0.1 + 0.2])
+  test(
+    'Category funding configuration and Statement writers record decimal versus JSON response \
+precision')
+    .with([0, 0.01, -0.01, 0.004, 0.005, 0.006, -0.004, -0.005, -0.006, 1.234, -1.234, '0.005',
+      '0.01', '1.234', 0.1 + 0.2])
     .run(async ({ client, assert }, amount) => {
       const f = await fixture()
-      const config = await client.patch(`/api/v1/groups/${f.categories[0].groupId}/categories/${f.categories[0].id}`)
-        .json(categoryRequest({ name: 'Currency configuration', fundingAmount: Number(amount) })).accept('json').loginAs(f.user)
+      const config = await client.patch(`/api/v1/groups/${f.categories[0].groupId}/categories/${f
+        .categories[0].id}`)
+        .json(categoryRequest({ name: 'Currency configuration', fundingAmount: Number(amount) }))
+          .accept('json').loginAs(f.user)
       config.assertStatus(200)
-      const data = { shortTermCapitalGains: Number(amount), longTermCapitalGains: 0, dividends: 0, taxableInterest: 0 }
+      const data = { shortTermCapitalGains: Number(amount), longTermCapitalGains: 0, dividends: 0,
+        taxableInterest: 0 }
       const statement = await client.post(`/api/v1/account/${f.account.id}/statements`)
-        .json(statementRequest({ startDate: '2025-02-01', endDate: '2025-02-28', startingBalance: Number(amount), endingBalance: Number(amount), data }))
+        .json(statementRequest({ startDate: '2025-02-01', endDate: '2025-02-28',
+          startingBalance: Number(amount), endingBalance: Number(amount), data }))
         .accept('json').loginAs(f.user)
       statement.assertStatus(200)
       const storedStatement = await db.from('statements').where('account_id', f.account.id).first()
       // Statement income now has its accepted canonical-string storage boundary.
-      assert.strictEqual(storedStatement.data.shortTermCapitalGains, (Math.round(Number(amount) * 100) / 100).toFixed(2))
+      assert.strictEqual(storedStatement.data.shortTermCapitalGains, (Math.round(Number(amount) *
+        100) / 100).toFixed(2))
       const updated = await client.patch(`/api/v1/statements/${storedStatement.id}`)
-        .json(statementRequest({ startingBalance: Number(amount), endingBalance: Number(amount), data })).accept('json').loginAs(f.user)
+        .json(statementRequest({ startingBalance: Number(amount), endingBalance: Number(amount),
+          data })).accept('json').loginAs(f.user)
       updated.assertStatus(200)
       console.log(JSON.stringify({ scenario: 'currency config and statement', input: amount,
         category: (await Category.findOrFail(f.categories[0].id)).fundingAmount,
@@ -242,13 +301,16 @@ test.group('Monetary persistence and allocation regressions', () => {
         categoryBody: config.body(), statementBody: statement.body(), updateBody: updated.body() }))
     })
 
-  test('balance-tracked Statement raw response and persisted current balance record separate precision')
+  test(
+    ("balance-tracked Statement raw response and " +
+"persisted current balance record separate precision"))
     .with([0.004, 0.005, -0.005, 0.1 + 0.2])
     .run(async ({ client, assert }, amount) => {
       const f = await fixture()
       await f.account.merge({ tracking: TrackingType.Balances }).save()
       const response = await client.post(`/api/v1/account/${f.account.id}/statements`)
-        .json(statementRequest({ startDate: '2025-02-01', endDate: '2025-02-28', startingBalance: amount, endingBalance: amount }))
+        .json(statementRequest({ startDate: '2025-02-01', endDate: '2025-02-28',
+          startingBalance: amount, endingBalance: amount }))
         .accept('json').loginAs(f.user)
       response.assertStatus(200)
       const stored = await db.from('statements').where('account_id', f.account.id).first()
@@ -257,12 +319,16 @@ test.group('Monetary persistence and allocation regressions', () => {
         .json(statementRequest({ endingBalance: amount })).accept('json').loginAs(f.user)
       updated.assertStatus(200)
       assert.equal((await Account.findOrFail(f.account.id)).balance, Number(stored.ending_balance))
-      console.log(JSON.stringify({ scenario: 'balance-tracked statement', input: amount, postBody: response.body(), patchBody: updated.body(),
-        storedStatement: await db.from('statements').where('id', stored.id).select('starting_balance', 'ending_balance').first(),
+      console.log(JSON.stringify({ scenario: 'balance-tracked statement', input: amount,
+        postBody: response.body(), patchBody: updated.body(),
+        storedStatement: await db.from('statements').where('id', stored.id).select(
+          'starting_balance', 'ending_balance').first(),
         postBalance, patchBalance: (await Account.findOrFail(f.account.id)).balance }))
     })
 
-  test('fixed-plus-percentage and percentage-only allocation record conservation and individual shares')
+  test(
+    ("fixed-plus-percentage and percentage-only " +
+"allocation record conservation and individual shares"))
     .with([{ amount: 100, fixed: 10 }, { amount: -100, fixed: -10 }, { amount: 0.01, fixed: 0 }])
     .run(async ({ assert }, scenario) => {
       const f = await fixture()
@@ -270,18 +336,25 @@ test.group('Monetary persistence and allocation regressions', () => {
       await db.transaction(async (trx) => {
         f.budget.useTransaction(trx)
         f.account.useTransaction(trx)
-        const rule = await f.budget.related('autoAssignment').create({ name: 'Precision rule', searchStrings: ['Precision match'] })
-        if (scenario.fixed !== 0) await rule.related('categories').create({ categoryId: f.categories[0].id, amount: scenario.fixed, percentage: false })
-        for (const category of f.categories.slice(1)) await rule.related('categories').create({ categoryId: category.id, amount: 50, percentage: true })
+        const rule = await f.budget.related('autoAssignment').create({ name: 'Precision rule',
+          searchStrings: ['Precision match'] })
+        if (scenario.fixed !== 0) await rule.related('categories').create({ categoryId: f
+          .categories[0].id, amount: scenario.fixed, percentage: false })
+        for (const category of f.categories.slice(1)) await rule.related('categories').create({
+          categoryId: category.id, amount: 50, percentage: true })
         await f.account.addOrUpdateTransaction(provider(scenario.amount), f.budget)
-        transactionId = (await f.account.related('accountTransactions').query().firstOrFail()).transactionId
+        transactionId = (await f.account.related('accountTransactions').query().firstOrFail())
+          .transactionId
       })
       const transaction = await Transaction.findOrFail(transactionId)
       const association = await AccountTransaction.findByOrFail('transactionId', transactionId)
-      const balances = await Promise.all(f.categories.map(async (category) => (await Category.findOrFail(category.id)).balance))
-      const cents = transaction.categories.reduce((total, split) => total + Math.round(split.amount * 100), 0)
+      const balances = await Promise.all(f.categories.map(async (category) => (await Category
+        .findOrFail(category.id)).balance))
+      const cents = transaction.categories.reduce((total, split) => total + Math.round(split
+        .amount * 100), 0)
       assert.equal(cents, Math.round(association.amount * 100))
-      console.log(JSON.stringify({ scenario: 'allocation', input: scenario, persistedAmount: association.amount,
+      console.log(JSON.stringify({ scenario: 'allocation', input: scenario,
+        persistedAmount: association.amount,
         splits: transaction.categories, balances, conservedCents: cents }))
     })
 
@@ -289,10 +362,12 @@ test.group('Monetary persistence and allocation regressions', () => {
     .with([65536.01, 131072.01, 1000000.01])
     .run(async ({ assert }, amount) => {
     const f = await fixture()
-    const rule = await f.budget.related('autoAssignment').create({ name: 'Large fixed rule', searchStrings: ['Large fixed'] })
+    const rule = await f.budget.related('autoAssignment').create({ name: 'Large fixed rule',
+      searchStrings: ['Large fixed'] })
     const entry = await rule.related('categories').create({ categoryId: f.categories[0].id,
       amount, percentage: false })
-    await rule.related('categories').create({ categoryId: f.categories[1].id, amount: 0.01, percentage: false })
+    await rule.related('categories').create({ categoryId: f.categories[1].id, amount: 0.01,
+      percentage: false })
     const persisted = await rule.related('categories').query().where('id', entry.id).firstOrFail()
     const storage = await db.from('auto_assignment_categories').where('id', entry.id)
       .select(db.raw('amount::text as stored_value')).first()
@@ -300,15 +375,18 @@ test.group('Monetary persistence and allocation regressions', () => {
     await db.transaction(async (trx) => {
       f.budget.useTransaction(trx)
       f.account.useTransaction(trx)
-      await f.account.addOrUpdateTransaction({ ...provider(amount + 0.01), name: 'Large fixed' }, f.budget)
-      transactionId = (await f.account.related('accountTransactions').query().firstOrFail()).transactionId
+      await f.account.addOrUpdateTransaction({ ...provider(amount + 0.01), name: 'Large fixed' }, f
+        .budget)
+      transactionId = (await f.account.related('accountTransactions').query().firstOrFail())
+        .transactionId
     })
     const transaction = await Transaction.findOrFail(transactionId)
     assert.isNumber(persisted.amount)
     assert.equal(persisted.amount, amount)
     assert.equal(storage.stored_value, amount.toFixed(2))
     assert.deepEqual(transaction.categories.map(split => split.amount), [amount, 0.01])
-    assert.equal(transaction.categories.reduce((total, split) => total + monetaryAmountCents(split.amount), 0),
+    assert.equal(transaction.categories.reduce((total, split) => total + monetaryAmountCents(split
+      .amount), 0),
       monetaryAmountCents(amount) + 1)
   })
 })

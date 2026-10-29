@@ -7,16 +7,19 @@ import { GroupType } from '../../../common/ResponseTypes.ts'
 import { decodeFundingHistoryReport, fundingHistoryTotals } from '../../../client-src/monetary.ts'
 import { formatMoneyCents } from '../../../common/moneyCents.ts'
 
-const row = (history, categoryId = 1) => ({ groupId: 3, groupName: 'Group', groupType: GroupType.NoGroup,
+const row = (history, categoryId = 1) => ({ groupId: 3, groupName: 'Group', groupType: GroupType
+  .NoGroup,
   categoryId, categoryName: `Category ${categoryId}`, history })
 const entry = (amount, year = 2026, month = 1) => ({ year, month, amount })
 
 async function expression(name, context = {}) {
   const source = await readFile('client-src/Reports/FundingHistory.tsx', 'utf8')
-  const ast = ts.createSourceFile('FundingHistory.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const ast = ts.createSourceFile('FundingHistory.tsx', source, ts.ScriptTarget.Latest, true, ts
+    .ScriptKind.TSX)
   let found
   function visit(node) {
-    if (ts.isVariableDeclaration(node) && node.name.getText(ast) === name) found = node.initializer.getText(ast)
+    if (ts.isVariableDeclaration(node) && node.name.getText(ast) === name) found = node.initializer
+      .getText(ast)
     ts.forEachChild(node, visit)
   }
   visit(ast)
@@ -27,7 +30,8 @@ async function expression(name, context = {}) {
 }
 
 test('Funding History retains exact cents, metadata and null/empty histories', ({ assert }) => {
-  const source = [row([entry('0.10'), entry('-0.20', 2025, 12), entry('0.00', 2025, 11)]), row(null, 2), row([], 3)]
+  const source = [row([entry('0.10'), entry('-0.20', 2025, 12), entry('0.00', 2025, 11)]), row(null,
+    2), row([], 3)]
   const before = globalThis.structuredClone(source)
   const rows = decodeFundingHistoryReport(source)
   assert.deepEqual(rows[0], { ...source[0], history: [
@@ -53,7 +57,8 @@ test('Funding History monthly totals use checked cents and separate years', ({ a
   assert.deepEqual(rows, before)
   assert.deepEqual(fundingHistoryTotals([]), [])
   const large = decodeFundingHistoryReport([row([entry('90071992547409.91')])])
-  assert.strictEqual(formatMoneyCents(fundingHistoryTotals(large)[0].amountCents), '90071992547409.91')
+  assert.strictEqual(formatMoneyCents(fundingHistoryTotals(large)[0].amountCents),
+    '90071992547409.91')
   large.push(...decodeFundingHistoryReport([row([entry('0.01')], 2)]))
   const baseline = globalThis.structuredClone(large)
   assert.throws(() => fundingHistoryTotals(large))
@@ -66,7 +71,8 @@ test('Funding History rejects noncanonical and unsafe response amounts').with([
   assert.throws(() => decodeFundingHistoryReport([row([entry(amount)])]))
 })
 
-test('Funding History preserves month ordering, missing-month blanks and change highlighting', async ({ assert }) => {
+test('Funding History preserves month ordering, missing-month blanks and change highlighting',
+  async ({ assert }) => {
   const subtractMonth = await expression('subtractMonth')
   const render = await expression('renderHistory', {
     DateTime: { now: () => DateTime.fromISO('2026-01-01') }, subtractMonth, maxDisplayedMonths: 12,

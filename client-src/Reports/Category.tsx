@@ -15,7 +15,8 @@ import { CategoryType, type CategoryReportRow } from '../../common/ResponseTypes
 
 const Category: React.FC = () => {
   const { categoryTree: { budget } } = useStores();
-  const { setData, SortableTable } = useSortableTable<CategoryCentsReportRow>(['groupName', 'categoryName', 'sumCents', 'count']);
+  const { setData, SortableTable } = useSortableTable<CategoryCentsReportRow>(['groupName',
+    'categoryName', 'sumCents', 'count']);
 
   interface FormValues {
     startDate: string,
@@ -105,14 +106,16 @@ const Category: React.FC = () => {
                               .map((c) => {
                                 index += 1;
                                 return (
-                                  <FormCheckbox key={c.id} name={`category[${index}].value`} label={`${g.name}:${c.name}`} />
+                                  <FormCheckbox key={c.id} name={`category[${index}].value`} label={
+                                    `${g.name}:${c.name}`} />
                                 )
                               })
                           }
 
                           index += 1;
                           return (
-                            <FormCheckbox key={g.id} name={`category[${index}].value`} label={`${g.name}`} />
+                            <FormCheckbox key={g.id} name={`category[${index}].value`} label={`${g
+                              .name}`} />
                           )
                         }))
                       }

@@ -40,7 +40,8 @@ export const plugins: Config['plugins'] = [
  */
 export const runnerHooks: Required<Pick<Config, 'setup' | 'teardown'>> = {
   setup: [
-    () => { app.config.set('plaidCleanup', { activeKey: 'test-v1', keys: JSON.stringify({ 'test-v1': randomBytes(32).toString('base64') }) }) },
+    () => { app.config.set('plaidCleanup', { activeKey: 'test-v1', keys: JSON.stringify({
+      'test-v1': randomBytes(32).toString('base64') }) }) },
     async () => {
       const safety = await installDatabaseSafety(db);
       try {

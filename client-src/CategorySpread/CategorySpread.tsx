@@ -72,10 +72,12 @@ const CategorySpread: React.FC<PropsType> = ({
                 <FormField name={`${name}[${i}].amount`}>
                   {({ field, form }: FieldProps<string | number>) => c.percentage ? (
                     <AmountInput name={field.name} value={c.amount} onBlur={field.onBlur}
-                      onValueChange={text => form.setFieldValue(field.name, text.trim() === '' ? NaN : Number(text))}
+                      onValueChange={text => form.setFieldValue(field.name, text.trim() ===
+                        '' ? NaN : Number(text))}
                       style={{ marginTop: 0 }} />
                   ) : (
-                    <AmountInput name={field.name} value={c.amount} onChange={field.onChange} onBlur={field.onBlur}
+                    <AmountInput name={field.name} value={c.amount} onChange={field
+                      .onChange} onBlur={field.onBlur}
                       exactCents style={{ marginTop: 0 }} />
                   )}
                 </FormField>
@@ -90,7 +92,8 @@ const CategorySpread: React.FC<PropsType> = ({
                           const percentage = !field.value;
                           let amount: string | number = c.amount;
                           if (percentage) {
-                            amount = typeof amount === 'string' && amount.trim() === '' ? NaN : Number(amount);
+                            amount = typeof amount === 'string' && amount.trim() ===
+                              '' ? NaN : Number(amount);
                           } else {
                             try { amount = formatMoneyCents(inputMoneyCents(String(amount))); }
                             catch { amount = String(amount); }

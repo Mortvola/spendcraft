@@ -12,13 +12,18 @@ async function createDomain(label: string) {
   return db.transaction(async (trx) => {
     const budget = await Budget.create({}, { client: trx })
     await budget.initialize()
-    const user = await budget.related('users').create({ username: 'funding-isolation-' + label + '-' + ++sequence,
+    const user = await budget.related('users').create({ username: 'funding-isolation-' + label +
+      '-' + ++sequence,
       email: 'funding-isolation-' + sequence + '@example.com', password: 'testPassw0rd' })
     const group = await budget.related('groups').create({ name: label + ' group', type: 'Regular' })
-    const category = await group.related('categories').create({ name: label + ' category', type: CategoryType.Regular,
-      balance: 100, fundingAmount: label === 'own' ? 10 : 99, useGoal: false, recurrence: 1, fundingCategories: [] })
-    const transaction = await budget.related('transactions').create({ date: DateTime.fromISO('2025-02-01'),
-      type: TransactionType.MANUAL_TRANSACTION, categories: [{ categoryId: category.id, amount: 10 }], taxes: [], deleted: false })
+    const category = await group.related('categories').create({ name: label + ' category',
+      type: CategoryType.Regular,
+      balance: 100, fundingAmount: label === 'own' ? 10 : 99, useGoal: false, recurrence: 1,
+        fundingCategories: [] })
+    const transaction = await budget.related('transactions').create({ date: DateTime.fromISO(
+      '2025-02-01'),
+      type: TransactionType.MANUAL_TRANSACTION, categories: [{ categoryId: category.id,
+        amount: 10 }], taxes: [], deleted: false })
     return { budget, user, category, transaction }
   })
 }
@@ -27,7 +32,8 @@ async function createFixture() {
   const own = await createDomain('own')
   const foreign = await createDomain('foreign')
   const shared = await User.create({ username: 'funding-isolation-shared-' + ++sequence,
-    email: 'funding-isolation-' + sequence + '@example.com', password: 'testPassw0rd', budgetId: own.budget.id })
+    email: 'funding-isolation-' + sequence + '@example.com', password: 'testPassw0rd', budgetId: own
+      .budget.id })
   return { own, foreign, shared }
 }
 
@@ -40,32 +46,40 @@ test.group('Removed funding routes and proposed funding isolation', (group) => {
       db.from('funding_plans').orderBy('id'), db.from('funding_plan_categories').orderBy('id')])
   }
 
-  test('removed funding configuration route rejects foreign and missing targets without mutation').with(['foreign', 'missing']).run(async ({ client, assert }, target) => {
+  test('removed funding configuration route rejects foreign and missing targets without mutation')
+    .with(['foreign', 'missing']).run(async ({ client, assert }, target) => {
     const before = await state()
     const id = target === 'foreign' ? fixture.foreign.category.id : missingId
     const response = await client.put(`/api/v1/funding-plans/item/${id}`)
-      .json({ amount: 25, useGoal: true, goalDate: '2025-12-01', recurrence: 2 }).accept('json').loginAs(fixture.own.user)
+      .json({ amount: 25, useGoal: true, goalDate: '2025-12-01', recurrence: 2 }).accept('json')
+        .loginAs(fixture.own.user)
     assert.deepEqual(await state(), before)
     response.assertStatus(404)
   })
 
-  test('removed funding configuration route rejects owner and shared-budget writes without mutation').with(['owner', 'shared']).run(async ({ client, assert }, actor) => {
+  test(
+    'removed funding configuration route rejects owner and shared-budget writes without mutation')
+    .with(['owner', 'shared']).run(async ({ client, assert }, actor) => {
     const before = await state()
     const response = await client.put(`/api/v1/funding-plans/item/${fixture.own.category.id}`)
-      .json({ amount: 25, useGoal: true, goalDate: '2025-12-01', recurrence: 2 }).accept('json').loginAs(actor === 'owner' ? fixture.own.user : fixture.shared)
+      .json({ amount: 25, useGoal: true, goalDate: '2025-12-01', recurrence: 2 }).accept('json')
+        .loginAs(actor === 'owner' ? fixture.own.user : fixture.shared)
     response.assertStatus(404)
     assert.deepEqual(await state(), before)
   })
 
-  test('removed funding plan GET route returns not found without mutation', async ({ client, assert }) => {
+  test('removed funding plan GET route returns not found without mutation', async ({ client,
+    assert }) => {
     const before = await state()
-    const response = await client.get('/api/v1/funding-plans').accept('json').loginAs(fixture.shared)
+    const response = await client.get('/api/v1/funding-plans').accept('json').loginAs(fixture
+      .shared)
     response.assertStatus(404)
     assert.deepEqual(await state(), before)
   })
 
   test('proposed funding reads contain only budget categories', async ({ client, assert }) => {
-    const proposed = await client.get('/api/v1/funding-plans/proposed?date=2025-03-01').accept('json').loginAs(fixture.shared)
+    const proposed = await client.get('/api/v1/funding-plans/proposed?date=2025-03-01').accept(
+      'json').loginAs(fixture.shared)
     proposed.assertStatus(200)
     const proposedIds = proposed.body().data.map((row: { categoryId: number }) => row.categoryId)
     assert.include(proposedIds, fixture.own.category.id)

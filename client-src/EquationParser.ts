@@ -308,13 +308,17 @@ export function parseEquationCents(equation: string): MoneyCents {
     negate: value => ({ ...value, numerator: -value.numerator }),
     binary: (operator, left, right) => {
       switch (operator) {
-        case '+': return { numerator: left.numerator * right.denominator + right.numerator * left.denominator, denominator: left.denominator * right.denominator };
-        case '-': return { numerator: left.numerator * right.denominator - right.numerator * left.denominator, denominator: left.denominator * right.denominator };
-        case '*': return { numerator: left.numerator * right.numerator, denominator: left.denominator * right.denominator };
+        case '+': return { numerator: left.numerator * right.denominator + right.numerator * left
+          .denominator, denominator: left.denominator * right.denominator };
+        case '-': return { numerator: left.numerator * right.denominator - right.numerator * left
+          .denominator, denominator: left.denominator * right.denominator };
+        case '*': return { numerator: left.numerator * right.numerator, denominator: left
+          .denominator * right.denominator };
         case '/': {
           if (right.numerator === 0n) throw new Error('Division by zero');
           const sign = right.numerator < 0n ? -1n : 1n;
-          return { numerator: sign * left.numerator * right.denominator, denominator: sign * left.denominator * right.numerator };
+          return { numerator: sign * left.numerator * right.denominator, denominator: sign * left
+            .denominator * right.numerator };
         }
         default: throw new Error('parsing error');
       }
@@ -325,7 +329,8 @@ export function parseEquationCents(equation: string): MoneyCents {
   const remainder = scaled % result.denominator;
   if (remainder > 0n && remainder * 2n >= result.denominator) cents += 1n;
   if (remainder < 0n && -remainder * 2n > result.denominator) cents -= 1n;
-  if (cents > BigInt(Number.MAX_SAFE_INTEGER) || cents < -BigInt(Number.MAX_SAFE_INTEGER)) throw new Error('Unsafe monetary cents');
+  if (cents > BigInt(Number.MAX_SAFE_INTEGER) || cents < -BigInt(Number
+    .MAX_SAFE_INTEGER)) throw new Error('Unsafe monetary cents');
   return moneyCentsFromInteger(Number(cents));
 }
 

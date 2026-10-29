@@ -19,12 +19,16 @@ async function fixture() {
     const user = await budget.related('users').create({ username: `funding-config-${++sequence}`,
       email: `funding-config-${sequence}@example.com`, password: 'testPassw0rd' })
     const group = await budget.related('groups').create({ name: 'Configuration', type: 'Regular' })
-    const category = await group.related('categories').create({ name: 'Destination', type: CategoryType.Bill,
+    const category = await group.related('categories').create({ name: 'Destination',
+      type: CategoryType.Bill,
       balance: 0, useGoal: false, fundingCategories: [] })
-    const source = await group.related('categories').create({ name: 'Source', type: CategoryType.Regular,
+    const source = await group.related('categories').create({ name: 'Source', type: CategoryType
+      .Regular,
       balance: 100, useGoal: false, fundingCategories: [] })
     const pool = await budget.getFundingPoolCategory({ client: trx })
-    const categories = [{ categoryId: category.id, amount: 10, fundingCategories: [{ categoryId: source.id, amount: 100, percentage: true }] }, { categoryId: source.id, amount: -10 }, { categoryId: pool.id, amount: 0 }]
+    const categories = [{ categoryId: category.id, amount: 10, fundingCategories: [{
+      categoryId: source.id, amount: 100, percentage: true }] }, { categoryId: source.id, amount: -
+      10 }, { categoryId: pool.id, amount: 0 }]
     const transaction = await budget.related('transactions').create({
       date: DateTime.fromISO('2025-03-01'), type: TransactionType.FUNDING_TRANSACTION, categories,
     })
@@ -64,10 +68,12 @@ test.group('Funding configuration validation regression', (group) => {
   group.each.timeout(30_000)
   group.teardown(() => testUtils.db().truncate())
   for (const writer of ['category create', 'category update', 'funding create', 'funding update']) {
-    test(`${writer}: supplied configurations enforce validation and persistence`, async ({ client, assert }) => {
+    test(`${writer}: supplied configurations enforce validation and persistence`, async ({ client,
+      assert }) => {
       const f = await fixture()
       for (const [index, scenario] of cases.entries()) {
-        const spread = scenario.percentages.map((amount) => ({ categoryId: f.source.id, amount, percentage: true }))
+        const spread = scenario.percentages.map((amount) => ({ categoryId: f.source.id, amount,
+          percentage: true }))
         const configuration = scenario.fixed === undefined ? spread
           : [{ categoryId: f.source.id, amount: scenario.fixed, percentage: false }, ...spread]
         const categoryPath = `/api/v1/groups/${f.group.id}/categories`
@@ -76,31 +82,46 @@ test.group('Funding configuration validation regression', (group) => {
           : writer === 'funding create' ? client.post('/api/v1/category-transfer')
           : client.patch(`/api/v1/category-transfer/${f.transaction.id}`)
         const body = writer.startsWith('category')
-          ? { name: `Configuration ${index}`, type: CategoryType.Bill, useGoal: false, fundingCategories: configuration }
+          ? { name: `Configuration ${index}`, type: CategoryType.Bill, useGoal: false,
+            fundingCategories: configuration }
           : { date: '2025-03-01', type: TransactionType.FUNDING_TRANSACTION,
-            categories: [{ categoryId: f.category.id, amount: 10, fundingCategories: configuration },
+            categories: [{ categoryId: f.category.id, amount: 10,
+              fundingCategories: configuration },
               { categoryId: f.source.id, amount: -10 }, { categoryId: f.pool.id, amount: 0 }] }
-        const before = await Promise.all([db.from('categories').where('group_id', f.group.id).orderBy('id'),
+        const before = await Promise.all([db.from('categories').where('group_id', f.group.id)
+          .orderBy('id'),
           db.from('transactions').where('application_id', f.budget.id).orderBy('id')])
-        const response = await request.json(writer.startsWith('category') ? categoryRequest(body) : categoryTransferRequest(body)).accept('json').loginAs(f.user)
+        const response = await request.json(writer.startsWith('category') ? categoryRequest(
+          body) : categoryTransferRequest(body)).accept('json').loginAs(f.user)
         if (['negative but total 100', 'negative single', 'negative fractional but total 100',
           'below hundred', 'above hundred', 'below pair', 'above pair', 'zero percentage total',
-          'nonnumeric'].includes(scenario.name) || (writer.startsWith('funding') && scenario.name === 'numeric strings')) {
+          'nonnumeric'].includes(scenario.name) || (writer.startsWith('funding') && scenario
+            .name === 'numeric strings')) {
           response.assertStatus(422)
           const rule = scenario.name.startsWith('negative') ? 'fundingPercentageNonnegative'
-            : ['nonnumeric', 'numeric strings'].includes(scenario.name) ? 'number' : 'fundingPercentageTotal'
-          const field = writer.startsWith('category') ? 'fundingCategories' : 'categories.*.fundingCategories'
-          assert.deepEqual(response.body().errors.map((error: { code: string, source: { pointer: string } }) => ({ rule: error.code, field: error.source.pointer })),
-            Array.from({ length: scenario.name === 'numeric strings' ? 2 : 1 }, () => ({ rule, field: ['nonnumeric', 'numeric strings'].includes(scenario.name) ? `${field}.*.amount` : field })))
-          assert.deepEqual(await Promise.all([db.from('categories').where('group_id', f.group.id).orderBy('id'),
+            : ['nonnumeric', 'numeric strings'].includes(scenario.name) ? 'number' :
+              'fundingPercentageTotal'
+          const field = writer.startsWith('category') ? 'fundingCategories' :
+            'categories.*.fundingCategories'
+          assert.deepEqual(response.body().errors.map((error: { code: string, source: {
+            pointer: string } }) => ({ rule: error.code, field: error.source.pointer })),
+            Array.from({ length: scenario.name === 'numeric strings' ? 2 : 1 }, () => ({ rule,
+              field: ['nonnumeric', 'numeric strings'].includes(scenario
+              .name) ? `${field}.*.amount` : field })))
+          assert.deepEqual(await Promise.all([db.from('categories').where('group_id', f.group.id)
+            .orderBy('id'),
             db.from('transactions').where('application_id', f.budget.id).orderBy('id')]), before)
           continue
         }
         response.assertStatus(200)
-        const expected = configuration.map((entry) => ({ ...entry, amount: Math.round(Number(entry.amount) * 100) / 100 }))
+        const expected = configuration.map((entry) => ({ ...entry, amount: Math.round(Number(entry
+          .amount) * 100) / 100 }))
         const stored = writer.startsWith('category')
-          ? (await Category.findOrFail(writer === 'category create' ? response.body().data.id : f.category.id)).fundingCategories
-          : decodeFundingRules((await db.from('transactions').where('id', writer === 'funding create' ? response.body().data.transaction.id : f.transaction.id).first()).categories[0].fundingCategories)
+          ? (await Category.findOrFail(writer === 'category create' ? response.body().data.id : f
+            .category.id)).fundingCategories
+          : decodeFundingRules((await db.from('transactions').where('id', writer ===
+            'funding create' ? response.body().data.transaction.id : f.transaction.id).first())
+            .categories[0].fundingCategories)
         assert.deepEqual(stored, expected, `${writer}: ${scenario.name}`)
         const after = await db.from('categories').where('group_id', f.group.id).orderBy('id')
         if (writer === 'category create') {
@@ -108,7 +129,8 @@ test.group('Funding configuration validation regression', (group) => {
         } else if (writer === 'category update') {
           assert.deepEqual(after.map((row) => row.id === f.category.id
             ? { ...row, name: before[0].find((original) => original.id === row.id).name,
-              funding_categories: before[0].find((original) => original.id === row.id).funding_categories,
+              funding_categories: before[0].find((original) => original.id === row.id)
+                .funding_categories,
               updated_at: before[0].find((original) => original.id === row.id).updated_at }
             : row), before[0])
         } else {
@@ -116,7 +138,8 @@ test.group('Funding configuration validation regression', (group) => {
             const original = before[0].find((entry) => entry.id === row.id)
             const delta = writer === 'funding create' ? (row.id === f.category.id ? 10 : -10) : 0
             assert.equal(Number(row.balance), Number(original.balance) + delta)
-            assert.deepEqual({ ...row, balance: original.balance, updated_at: original.updated_at }, original)
+            assert.deepEqual({ ...row, balance: original.balance, updated_at: original.updated_at },
+              original)
           }
         }
 
@@ -124,43 +147,54 @@ test.group('Funding configuration validation regression', (group) => {
     })
   }
 
-  test('Category POST requires configuration even when empty is allowed', async ({ client, assert }) => {
+  test('Category POST requires configuration even when empty is allowed', async ({ client,
+    assert }) => {
     const f = await fixture()
     const before = await db.from('categories').where('group_id', f.group.id).orderBy('id')
     for (const extra of [{}, { fundingCategories: null }]) {
       const response = await client.post(`/api/v1/groups/${f.group.id}/categories`)
-        .json(categoryRequest({ name: 'Missing configuration', useGoal: false, ...extra })).accept('json').loginAs(f.user)
+        .json(categoryRequest({ name: 'Missing configuration', useGoal: false, ...extra })).accept(
+          'json').loginAs(f.user)
       response.assertStatus(422)
-      assert.deepEqual(await db.from('categories').where('group_id', f.group.id).orderBy('id'), before)
+      assert.deepEqual(await db.from('categories').where('group_id', f.group.id).orderBy('id'),
+        before)
     }
   })
 
-  test('Category PATCH omission and null preserve legacy configuration; explicit arrays replace it', async ({ client, assert }) => {
+  test('Category PATCH omission and null preserve legacy configuration; explicit arrays replace it',
+    async ({ client, assert }) => {
     const f = await fixture()
-    const legacy = [{ categoryId: f.source.id, amount: -1, percentage: true }, { categoryId: f.source.id, amount: 101, percentage: true }]
+    const legacy = [{ categoryId: f.source.id, amount: -1, percentage: true }, { categoryId: f
+      .source.id, amount: 101, percentage: true }]
     await f.category.merge({ fundingCategories: legacy }).save()
     const path = `/api/v1/groups/${f.group.id}/categories/${f.category.id}`
     for (const extra of [{}, { fundingCategories: null }]) {
       const before = await db.from('categories').where('id', f.category.id).first()
-      const response = await client.patch(path).json({ name: 'Unrelated update', hidden: true, ...extra }).accept('json').loginAs(f.user)
+      const response = await client.patch(path).json({ name: 'Unrelated update', hidden: true,
+        ...extra }).accept('json').loginAs(f.user)
       response.assertStatus(200)
       assert.deepEqual((await Category.findOrFail(f.category.id)).fundingCategories, legacy)
       const after = await db.from('categories').where('id', f.category.id).first()
       assert.equal(after.name, 'Unrelated update')
       assert.isTrue(after.hidden)
-      assert.deepEqual({ ...after, name: before.name, hidden: before.hidden, updated_at: before.updated_at }, before)
+      assert.deepEqual({ ...after, name: before.name, hidden: before.hidden, updated_at: before
+        .updated_at }, before)
     }
     const before = await db.from('categories').where('id', f.category.id).first()
-    const rejected = await client.patch(path).json(categoryRequest({ name: 'Must not change', fundingCategories: legacy })).accept('json').loginAs(f.user)
+    const rejected = await client.patch(path).json(categoryRequest({ name: 'Must not change',
+      fundingCategories: legacy })).accept('json').loginAs(f.user)
     rejected.assertStatus(422)
     assert.deepEqual(await db.from('categories').where('id', f.category.id).first(), before)
     const valid = [{ categoryId: f.source.id, amount: 100, percentage: true }]
-    const response = await client.patch(path).json(categoryRequest({ name: 'Replaced', fundingCategories: valid })).accept('json').loginAs(f.user)
+    const response = await client.patch(path).json(categoryRequest({ name: 'Replaced',
+      fundingCategories: valid })).accept('json').loginAs(f.user)
     response.assertStatus(200)
     assert.deepEqual((await Category.findOrFail(f.category.id)).fundingCategories, valid)
   })
 
-  test('transfer PATCH requires split replacement; omitted or null embedded configuration is removed', async ({ client, assert }) => {
+  test(
+    'transfer PATCH requires split replacement; omitted or null embedded configuration is removed',
+    async ({ client, assert }) => {
     const f = await fixture()
     const path = `/api/v1/category-transfer/${f.transaction.id}`
     const body = { date: f.transaction.date.toISODate(), type: TransactionType.FUNDING_TRANSACTION }
@@ -169,15 +203,20 @@ test.group('Funding configuration validation regression', (group) => {
     const missing = await client.patch(path).json(body).accept('json').loginAs(f.user)
     missing.assertStatus(422)
     assert.deepEqual(await db.from('transactions').where('id', f.transaction.id).first(), before)
-    assert.deepEqual(await db.from('categories').where('group_id', f.group.id).orderBy('id'), balances)
+    assert.deepEqual(await db.from('categories').where('group_id', f.group.id).orderBy('id'),
+      balances)
     for (const extra of [{}, { fundingCategories: null }]) {
-      await db.from('transactions').where('id', f.transaction.id).update({ categories: JSON.stringify(before.categories) })
-      const response = await client.patch(path).json(categoryTransferRequest({ ...body, categories: [
-        { categoryId: f.category.id, amount: 10, ...extra }, { categoryId: f.source.id, amount: -10 }, { categoryId: f.pool.id, amount: 0 },
+      await db.from('transactions').where('id', f.transaction.id).update({ categories: JSON
+        .stringify(before.categories) })
+      const response = await client.patch(path).json(categoryTransferRequest({ ...body,
+        categories: [
+        { categoryId: f.category.id, amount: 10, ...extra }, { categoryId: f.source.id, amount: -
+          10 }, { categoryId: f.pool.id, amount: 0 },
       ] })).accept('json').loginAs(f.user)
       response.assertStatus(200)
       const stored = await db.from('transactions').where('id', f.transaction.id).first()
-      assert.deepEqual(stored.categories, encodeCategoryAllocations([{ categoryId: f.category.id, amount: 10 },
+      assert.deepEqual(stored.categories, encodeCategoryAllocations([{ categoryId: f.category.id,
+        amount: 10 },
         { categoryId: f.source.id, amount: -10 }, { categoryId: f.pool.id, amount: 0 }]))
     }
   })

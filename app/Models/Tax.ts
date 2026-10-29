@@ -4,7 +4,8 @@ import type { JSON } from '#types/db'
 import { FilingStatus } from '#common/ResponseTypes'
 
 import { serializeTaxForecast } from '#services/taxMonetaryCodec'
-import { consumeTaxForecast, prepareTaxForecast, stageTaxMoneySave, finishTaxMoneySave } from '#services/taxMonetaryStorage'
+import { consumeTaxForecast, prepareTaxForecast, stageTaxMoneySave, finishTaxMoneySave } from
+  '#services/taxMonetaryStorage'
 
 export default class Tax extends TaxSchema {
   @beforeSave()

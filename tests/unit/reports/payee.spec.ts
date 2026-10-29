@@ -17,7 +17,8 @@ test('payee amounts retain exact cents and preserve counts and metadata', ({ ass
     assert.strictEqual(result.paymentChannel, 'online')
     assert.strictEqual(result.rowNumber, '1')
   }
-  assert.strictEqual(formatMoneyCents(addMoneyCents(decoded[0].sumCents, decoded[1].sumCents)), '0.30')
+  assert.strictEqual(formatMoneyCents(addMoneyCents(decoded[0].sumCents, decoded[1].sumCents)),
+    '0.30')
   assert.strictEqual(formatMoneyCents(decoded[4].sumCents), '90071992547409.91')
   assert.deepEqual(source, before)
   assert.deepEqual(decodePayeeReport([]), [])

@@ -1,5 +1,6 @@
 import { autorun, observable } from "mobx";
-import { Worksheet29PeriodResult, worksheet2_10_2026, worksheet2_9_2026, WORKSHEET_2_9_2026 } from "./Estimated";
+import { Worksheet29PeriodResult, worksheet2_10_2026, worksheet2_9_2026, WORKSHEET_2_9_2026 } from
+  "./Estimated";
 import { TaxesInterface } from "./Types";
 
 class Worksheet2_9 {
@@ -44,8 +45,10 @@ class Worksheet2_9 {
         worksheet2_10_2026({
           filingStatus: this.taxes.filingStatus,
           line1: taxableIncome,
-          line2: this.taxes.income.qualifiedDividends * WORKSHEET_2_9_2026.annualizationFactors[period],
-          line3: this.taxes.income.getCapitalGains(period) * WORKSHEET_2_9_2026.annualizationFactors[period],
+          line2: this.taxes.income.qualifiedDividends * WORKSHEET_2_9_2026.annualizationFactors[
+            period],
+          line3: this.taxes.income.getCapitalGains(period) * WORKSHEET_2_9_2026
+            .annualizationFactors[period],
         })
       ),
       estimatedTaxWorksheetLine12c: this.taxes.worksheet2_1.result?.lines['12c'] ?? 0,

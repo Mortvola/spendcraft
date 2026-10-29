@@ -8,7 +8,8 @@ import PushSubscription from '#app/Models/PushSubscription';
 import webPush from 'web-push';
 import env from '#start/env';
 
-type FetchType = (input: string | Request, init?: Partial<FetchInit> | undefined) => Promise<Response>;
+type FetchType = (input: string | Request, init?: Partial<FetchInit> | undefined) =>
+  Promise<Response>;
 
 class ApplePushNotifications {
   pushNotificationKey: CryptoKey | null = null;
@@ -104,7 +105,8 @@ class ApplePushNotifications {
   ) {
     console.log(`send push notification for ${unassigned} transactions.`)
     
-    const notification: webPush.PushSubscription = subscription.subscription as webPush.PushSubscription;
+    const notification: webPush.PushSubscription = subscription.subscription as webPush
+      .PushSubscription;
 
     const result = await webPush.sendNotification(notification, JSON.stringify({
       title: 'New Transactions',
@@ -132,7 +134,8 @@ class ApplePushNotifications {
       aps: {
         alert: {
           title: 'New Transactions',
-          body: `You have ${unassigned} transaction${unassigned == 1 ? '' : 's'} ready to be assigned.`,
+          body: `You have ${unassigned} transaction${unassigned == 1 ? '' :
+            's'} ready to be assigned.`,
         },
         sound: 'default',
       },
@@ -141,7 +144,8 @@ class ApplePushNotifications {
     try {
       logger.info(`pushing notification to ${subscription.subscription}`);
 
-      const response = await fetch(`https://api.push.apple.com/3/device/${subscription.subscription}`, {
+      const response = await fetch(`https://api.push.apple.com/3/device/${subscription
+        .subscription}`, {
         method: 'POST',
         body: JSON.stringify(notification),
         headers: {
@@ -155,7 +159,8 @@ class ApplePushNotifications {
       })
 
       if (response.ok) {
-        logger.info(`apns success, device token: ${subscription.subscription}, apns id: ${response.headers.get('apns-id')}`);
+        logger.info(`apns success, device token: ${subscription.subscription}, apns id: ${response
+          .headers.get('apns-id')}`);
       }
       else {
         const body = await response.json();
@@ -165,7 +170,8 @@ class ApplePushNotifications {
           await subscription.delete();
         }
 
-        logger.error(`apns failure: ${response.status}: ${response.statusText}, body: ${JSON.stringify(body)}`)
+        logger.error(`apns failure: ${response.status}: ${response.statusText}, body: ${JSON
+          .stringify(body)}`)
       }
     }
     catch (error) {

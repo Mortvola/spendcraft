@@ -4,7 +4,8 @@ import { excludeTaxStorage } from '#services/taxStorageBinding';
 import { canonicalCategoryAllocations } from '#services/categoryAmountCodec';
 import { hasCategoryStorage, excludeCategoryStorage } from '#services/categoryStorageBinding';
 import { validateStoredCategoryConservation } from '#services/transactionCategoryStorage';
-import { accountEligible, categoryEligible, categoryEffectDeltas } from '#services/transactionEligibility';
+import { accountEligible, categoryEligible, categoryEffectDeltas } from
+  '#services/transactionEligibility';
 import { HttpContext } from '@adonisjs/core/http';
 import { Exception } from '@adonisjs/core/exceptions';
 import db from '@adonisjs/lucid/services/db';
@@ -12,7 +13,8 @@ import Category from '#app/Models/Category';
 import Transaction from '#app/Models/Transaction';
 import AccountTransaction from '#app/Models/AccountTransaction';
 import {
-  AccountBalanceProps, AccountType, ApiResponse, CategoryBalanceProps, CategoryType, RequestErrorCode,
+  AccountBalanceProps, AccountType, ApiResponse, CategoryBalanceProps, CategoryType,
+    RequestErrorCode,
   StatementProps,
   TrackingType,
   TransactionProps, TransactionsResponse, TransactionType,
@@ -141,7 +143,8 @@ export default class TransactionsController {
           errors: [{
             code: RequestErrorCode.INCORRECT_VERSION,
             status: '409',
-            detail: 'The version of the transaction does not match the version stored in the database.'
+            detail:
+              'The version of the transaction does not match the version stored in the database.'
           }],
         }
       }
@@ -152,7 +155,8 @@ export default class TransactionsController {
       const unassigned = await budget.getUnassignedCategory({ client: trx });
 
       const acctTrans = await transaction.related('accountTransaction').query().firstOrFail();
-      // const acctTrans = await AccountTransaction.findByOrFail('transactionId', trxId, { client: trx });
+      // const acctTrans = await AccountTransaction.findByOrFail('transactionId', trxId, { client:
+      // trx });
 
       const account = await acctTrans.related('account').query()
         .whereHas('institution', (query) => query.where('budgetId', budget.id))
@@ -167,7 +171,8 @@ export default class TransactionsController {
         ...(requestData.categories ?? []).map((category) => category.categoryId),
       ]);
       for (const categoryId of categoryIds) {
-        const referencedCategory = await budgetCategories(budget.id, { client: trx }).where('id', categoryId).firstOrFail();
+        const referencedCategory = await budgetCategories(budget.id, { client: trx }).where('id',
+          categoryId).firstOrFail();
         if (referencedCategory.type === CategoryType.Loan) {
           excludeCategoryStorage(transaction);
           excludeTaxStorage(transaction);
@@ -175,7 +180,8 @@ export default class TransactionsController {
       }
 
       const taxReplacement = requestData.taxCategories === undefined ? undefined
-        : await prepareTaxReplacement(transaction, requestData.taxCategories, request.input('taxCategories'));
+        : await prepareTaxReplacement(transaction, requestData.taxCategories, request.input(
+          'taxCategories'));
 
       if (requestData.categories !== undefined && hasCategoryStorage(transaction)) {
         requestData.categories = canonicalCategoryAllocations(requestData.categories);
@@ -185,7 +191,8 @@ export default class TransactionsController {
         const statement = await Statement.query({ client: trx })
           .where('id', requestData.statementId)
           .whereHas('account', (query) => {
-            query.whereHas('institution', (institution) => institution.where('budgetId', budget.id));
+            query.whereHas('institution', (institution) => institution.where('budgetId', budget
+              .id));
           })
           .firstOrFail();
         if (statement.accountId !== account.id) {
@@ -208,14 +215,17 @@ export default class TransactionsController {
       // Ordinary effects use independent old/new eligibility; nominal splits stay intact.
       const ordinary = account.type !== AccountType.Loan
         && account.tracking === TrackingType.Transactions
-        && [TransactionType.REGULAR_TRANSACTION, TransactionType.MANUAL_TRANSACTION].includes(transaction.type);
+        && [TransactionType.REGULAR_TRANSACTION, TransactionType.MANUAL_TRANSACTION].includes(
+          transaction.type);
       const nextDate = requestData.date ?? transaction.date;
-      const oldState = { date: transaction.date, deleted: transaction.deleted, pending: acctTrans.pending };
+      const oldState = { date: transaction.date, deleted: transaction.deleted, pending: acctTrans
+        .pending };
       const newState = { ...oldState, date: nextDate };
       const oldCategoryEligible = categoryEligible(oldState, account.startDate);
       const newCategoryEligible = categoryEligible(newState, account.startDate);
       const accountDelta = ordinary
-        ? (accountEligible(newState, account.startDate) ? requestData.amount ?? acctTrans.amount : 0)
+        ? (accountEligible(newState, account.startDate) ? requestData.amount ?? acctTrans
+          .amount : 0)
           - (accountEligible(oldState, account.startDate) ? acctTrans.amount : 0)
         : 0;
 
@@ -229,13 +239,16 @@ export default class TransactionsController {
         const nominalNew = requestData.categories ?? transaction.categories;
         const newSplits = nominalNew.length > 0 ? nominalNew
           : [{ categoryId: unassignedCat.id, amount: requestData.amount ?? acctTrans.amount }];
-        const deltas = categoryEffectDeltas(oldSplits, newSplits, oldCategoryEligible, newCategoryEligible);
+        const deltas = categoryEffectDeltas(oldSplits, newSplits, oldCategoryEligible,
+          newCategoryEligible);
         for (const [categoryId, delta] of deltas) {
           if (delta === 0) continue;
-          const category = await budgetCategories(budget.id, { client: trx }).where('id', categoryId).firstOrFail();
+          const category = await budgetCategories(budget.id, { client: trx }).where('id',
+            categoryId).firstOrFail();
           category.balance += delta;
           await category.save();
-          categoriesResult.push({ id: category.id, balance: encodeMonetaryAmount(category.balance) });
+          categoriesResult.push({ id: category.id, balance: encodeMonetaryAmount(category
+            .balance) });
         }
       }
 
@@ -256,7 +269,8 @@ export default class TransactionsController {
            
           for (const transCategory of categories) {
              
-            const category = await budgetCategories(budget.id, { client: trx }).where('id', transCategory.categoryId).firstOrFail();
+            const category = await budgetCategories(budget.id, { client: trx }).where('id',
+              transCategory.categoryId).firstOrFail();
 
             category.balance -= transCategory.amount;
 
@@ -275,7 +289,7 @@ export default class TransactionsController {
           //   if (split.loanTransaction) {
           //     split.loanTransaction.delete();
           //     // eslint-disable-next-line no-await-in-loop
-          //     const loan = await Loan.findByOrFail('categoryId', split.categoryId, { client: trx });
+          // const loan = await Loan.findByOrFail('categoryId', split.categoryId, { client: trx });
           //     // eslint-disable-next-line no-await-in-loop
           //     await loan.updateBalance();
           //   }
@@ -301,7 +315,8 @@ export default class TransactionsController {
 
           for (const transCategory of requestData.categories) {
              
-            const category = await budgetCategories(budget.id, { client: trx }).where('id', transCategory.categoryId).firstOrFail();
+            const category = await budgetCategories(budget.id, { client: trx }).where('id',
+              transCategory.categoryId).firstOrFail();
 
             category.balance += transCategory.amount;
 
@@ -312,7 +327,8 @@ export default class TransactionsController {
               // const loanTrx = (new LoanTransaction()).useTransaction(trx);
 
               // // eslint-disable-next-line no-await-in-loop
-              // const loan = await Loan.findByOrFail('categoryId', split.categoryId, { client: trx });
+              // const loan = await Loan.findByOrFail('categoryId', split.categoryId, { client: trx
+              // });
 
               // loanTrx.fill({
               //   loanId: loan.id,
@@ -465,7 +481,8 @@ export default class TransactionsController {
        
       for (const cat of categoriesResult) {
          
-        const category = await budgetCategories(budget.id, { client: trx }).where('id', cat.id).firstOrFail();
+        const category = await budgetCategories(budget.id, { client: trx }).where('id', cat.id)
+          .firstOrFail();
 
          
         cat.count = await category.transactionsCount(budget);
@@ -574,7 +591,8 @@ export default class TransactionsController {
         .andWhere('deleted', false)
         .firstOrFail();
 
-      const acctTransaction = await AccountTransaction.findBy('transactionId', transaction.id, { client: trx });
+      const acctTransaction = await AccountTransaction.findBy('transactionId', transaction.id, {
+        client: trx });
 
       let account: Account | null = null;
 
@@ -605,7 +623,8 @@ export default class TransactionsController {
 
           unassignedCat.balance -= acctTransaction.amount;
 
-          result.categories.push({ id: unassignedCat.id, balance: encodeMonetaryAmount(unassignedCat.balance) });
+          result.categories.push({ id: unassignedCat.id, balance: encodeMonetaryAmount(unassignedCat
+            .balance) });
 
           await unassignedCat.save();
         }
@@ -614,7 +633,8 @@ export default class TransactionsController {
          
         for (const trxCat of trxCategories) {
            
-          const category = await budgetCategories(budget.id, { client: trx }).where('id', trxCat.categoryId).firstOrFail();
+          const category = await budgetCategories(budget.id, { client: trx }).where('id', trxCat
+            .categoryId).firstOrFail();
 
           category.balance -= trxCat.amount;
 
@@ -624,12 +644,14 @@ export default class TransactionsController {
             balance.balance = encodeMonetaryAmount(category.balance);
           }
           else {
-            result.categories.push({ id: category.id, balance: encodeMonetaryAmount(category.balance) });
+            result.categories.push({ id: category.id, balance: encodeMonetaryAmount(category
+              .balance) });
           }
 
           if (category.type === CategoryType.Loan) {
             // // eslint-disable-next-line no-await-in-loop
-            // const loanTransaction = await trxCat.related('loanTransaction').query().firstOrFail();
+            // const loanTransaction = await
+            // trxCat.related('loanTransaction').query().firstOrFail();
 
             // // eslint-disable-next-line no-await-in-loop
             // await loanTransaction.delete();
@@ -662,7 +684,8 @@ export default class TransactionsController {
 
           await account.save();
 
-          result.acctBalances.push({ id: account.id, balance: encodeMonetaryAmount(account.balance) });
+          result.acctBalances.push({ id: account.id, balance: encodeMonetaryAmount(account
+            .balance) });
         }
       }
 

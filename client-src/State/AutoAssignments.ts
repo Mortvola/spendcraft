@@ -3,7 +3,8 @@ import Http from '@mortvola/http';
 import { observable, runInAction } from 'mobx';
 import AutoAssignment, { encodeAutoAssignmentRules } from './AutoAssignment';
 import {
-  AutoAssignmentProps, AutoAssignmentRule, AutoAssignmentsInterface, AutoAssignmentsResponse, StoreInterface,
+  AutoAssignmentProps, AutoAssignmentRule, AutoAssignmentsInterface, AutoAssignmentsResponse,
+    StoreInterface,
 } from './Types';
 
 class AutoAssignments implements AutoAssignmentsInterface {
@@ -41,7 +42,8 @@ class AutoAssignments implements AutoAssignmentsInterface {
     searchStrings: string[],
     categories: AutoAssignmentRule[],
   }) {
-    const response = await Http.post<AutoAssignmentWriteRequest, AutoAssignmentProps>('/api/v1/auto-assignments', {
+    const response = await Http.post<AutoAssignmentWriteRequest, AutoAssignmentProps>(
+      '/api/v1/auto-assignments', {
       name: props.name,
       searchStrings: props.searchStrings,
       categories: encodeAutoAssignmentRules(props.categories),
@@ -55,7 +57,8 @@ class AutoAssignments implements AutoAssignmentsInterface {
 
         runInAction(() => {
           // Find the position to insert the new assignment.
-          const index = this.autoAssignemnts.findIndex((n) => (autoAssignment.name.localeCompare(n.name) < 0));
+          const index = this.autoAssignemnts.findIndex((n) => (autoAssignment.name.localeCompare(n
+            .name) < 0));
 
           if (index === -1) {
             // No assignment was found that was greater lexically so at it to the end.

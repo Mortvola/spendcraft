@@ -55,10 +55,12 @@ export default class OfxUpload extends BaseCommand {
       const selectionBudget = await user.related('budget').query().firstOrFail();
 
       const institutions = await selectionBudget.related('institutions').query()
-        .whereHas('accounts', (accountQuery) => accountQuery.where('tracking', '!=', TrackingType.Balances))
+        .whereHas('accounts', (accountQuery) => accountQuery.where('tracking', '!=', TrackingType
+          .Balances))
         .orderBy('name');
 
-      const institutionName = await this.prompt.choice('Select the institution', institutions.map((i) => i.name));
+      const institutionName = await this.prompt.choice('Select the institution', institutions.map((
+        i) => i.name));
 
       const inst = institutions.find((i) => i.name === institutionName);
 

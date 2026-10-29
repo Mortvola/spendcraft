@@ -25,7 +25,8 @@ async function method(file, name) {
     ts.forEachChild(node, inspect)
   }
   inspect(found.body)
-  return { body: found.body.getText(ast), writes, parameters: found.parameters.map((parameter) => parameter.getText(ast)).join(', ') }
+  return { body: found.body.getText(ast), writes, parameters: found.parameters.map((parameter) =>
+    parameter.getText(ast)).join(', ') }
 }
 
 const accounts = 'app/Controllers/Http/AccountsController.ts'
@@ -51,7 +52,8 @@ test.group('Current Account writer concurrency characterization', () => {
     assert.isAbove(body.indexOf('.forUpdate()'), body.indexOf('user.useTransaction(trx)'))
   })
 
-  test('PATCH and HTTP OFX acquire existing gate before fresh Account lookup', async ({ assert }) => {
+  test('PATCH and HTTP OFX acquire existing gate before fresh Account lookup', async ({ assert }) =>
+    {
     for (const [file, name] of [[transactions, 'update'], [accounts, 'uploadOfx']]) {
       const { body } = await method(file, name)
       assert.isAbove(body.indexOf('.forUpdate()'), -1)
@@ -69,20 +71,25 @@ test.group('Current Account writer concurrency characterization', () => {
 
   test('provider refresh and shared-state branches follow the gate', async ({ assert }) => {
     const sync = await method('app/Models/Institution.ts', 'syncUpdate')
-    assert.isAbove(sync.body.indexOf("const accounts = await this.related('accounts')"), sync.body.indexOf('.forUpdate()'))
+    assert.isAbove(sync.body.indexOf("const accounts = await this.related('accounts')"), sync.body
+      .indexOf('.forUpdate()'))
     const batch = await method('app/Controllers/Http/InstitutionController.ts', 'syncAll')
     assert.notInclude(batch.body, 'Promise.all(')
     const balances = await method('app/Models/Institution.ts', 'updateAccountBalances')
     assert.notInclude(balances.body, 'Promise.all(')
     assert.include(balances.writes, 'acct.balance')
     assert.isAbove(sync.body.indexOf('await this.refresh()'), sync.body.indexOf('.forUpdate()'))
-    assert.isAbove(sync.body.indexOf('let nextCursor = this.cursor'), sync.body.indexOf('await this.refresh()'))
+    assert.isAbove(sync.body.indexOf('let nextCursor = this.cursor'), sync.body.indexOf(
+      'await this.refresh()'))
   })
 
-  test('command selects identity before gate and reloads scoped Account after it', async ({ assert }) => {
+  test('command selects identity before gate and reloads scoped Account after it', async ({
+    assert }) => {
     const command = await method('commands/OfxUpload.ts', 'run')
-    assert.isAbove(command.body.indexOf('.forUpdate()'), command.body.indexOf('this.prompt.choice('))
-    assert.isAbove(command.body.indexOf('const account = await Account.query({ client: trx })'), command.body.indexOf('.forUpdate()'))
+    assert.isAbove(command.body.indexOf('.forUpdate()'), command.body.indexOf(
+      'this.prompt.choice('))
+    assert.isAbove(command.body.indexOf('const account = await Account.query({ client: trx })'),
+      command.body.indexOf('.forUpdate()'))
     assert.include(command.body, "query.where('budgetId', budget.id)")
     assert.include(command.body, "User.findBy('username', username, { client: trx })")
     const check = await method('commands/CheckBalances.ts', 'checkCategoryBalances')
@@ -119,12 +126,16 @@ test.group('Budget-gated controller behavior without a database', () => {
           return budget
         } }) }) } },
       }
-      const operation = runInNewContext(ts.transpileModule(`(async function(${source.parameters}) ${source.body})`, {
+      const operation = runInNewContext(ts.transpileModule(`(async function(${source
+        .parameters}) ${source.body})`, {
         compilerOptions: { target: ts.ScriptTarget.ES2022 },
       }).outputText, { db: { transaction: async () => trx }, addTransaction: {},
-        Transaction: { query(options) { assert.strictEqual(options.client, trx); financialReads++; throw stop } },
+        Transaction: { query(options) { assert.strictEqual(options.client, trx); financialReads++;
+          throw stop } },
       })
-      const running = operation({ auth: { user }, request: { params: () => ({}), validateUsing: async () => ({}) }, logger: { error() { /* The caller captures the intentional test failure. */ } } })
+      const running = operation({ auth: { user }, request: { params: () => ({}),
+        validateUsing: async () => ({}) }, logger: { error() {
+        /* The caller captures the intentional test failure. */ } } })
       const observed = running.catch((error) => error)
       await waiting
       assert.equal(financialReads, 0)
@@ -134,9 +145,11 @@ test.group('Budget-gated controller behavior without a database', () => {
       assert.isTrue(rolledBack)
     })
 
-  test('deprecated history mutations are absent rather than joining the gate', async ({ assert }) => {
+  test('deprecated history mutations are absent rather than joining the gate', async ({ assert }) =>
+    {
     const source = await readFile(accounts, 'utf8')
-    for (const name of ['addBalance', 'updateBalance', 'deleteBalance']) assert.notInclude(source, `async ${name}(`)
+    for (const name of ['addBalance', 'updateBalance', 'deleteBalance']) assert.notInclude(source,
+      `async ${name}(`)
   })
 })
 
@@ -152,14 +165,17 @@ test.group('Provider concurrency behavior without a database', () => {
     const institution = {
       accessToken: 'old-token', cursor: 'stale-cursor', $trx: {},
       related(name) {
-        if (name === 'budget') return { query: () => ({ forUpdate: () => ({ firstOrFail: async () => {
+        if (name === 'budget') return { query: () => ({ forUpdate: () => ({ firstOrFail: async () =>
+          {
           entered(); await gate; events.push('gate'); return budget
         } }) }) }
         return { query: async () => { events.push('accounts'); return [] } }
       },
-      async refresh() { events.push('refresh'); this.cursor = 'committed-cursor'; this.accessToken = 'fresh-token' },
+      async refresh() { events.push('refresh'); this.cursor = 'committed-cursor'; this.accessToken =
+        'fresh-token' },
     }
-    const sync = runInNewContext(ts.transpileModule(`(async function(${source.parameters}) ${source.body})`, {
+    const sync = runInNewContext(ts.transpileModule(`(async function(${source.parameters}) ${source
+      .body})`, {
       compilerOptions: { target: ts.ScriptTarget.ES2022 },
     }).outputText, {
       logger: { error() { /* The caller captures the intentional test failure. */ } },
@@ -197,10 +213,13 @@ test.group('Provider concurrency behavior without a database', () => {
       },
       async save() { events.push(`save-${id}`) },
     }))
-    const update = runInNewContext(ts.transpileModule(`(async function(${source.parameters}) ${source.body})`, {
+    const update = runInNewContext(ts.transpileModule(`(async function(${source
+      .parameters}) ${source.body})`, {
       compilerOptions: { target: ts.ScriptTarget.ES2022 },
-    }).outputText, { TrackingType: { Balances: 'Balances' }, AccountType: { Credit: 'Credit', Loan: 'Loan' } })
-    await update(budget, accounts, accounts.map((account, i) => ({ account_id: account.plaidAccountId, balances: { current: i + 1 } })))
+    }).outputText, { TrackingType: { Balances: 'Balances' }, AccountType: { Credit: 'Credit', Loan:
+      'Loan' } })
+    await update(budget, accounts, accounts.map((account, i) => ({ account_id: account
+      .plaidAccountId, balances: { current: i + 1 } })))
     assert.equal(persistedPool, 3)
     assert.deepEqual(events, ['opening-1', 'save-1', 'opening-2', 'save-2'])
   })

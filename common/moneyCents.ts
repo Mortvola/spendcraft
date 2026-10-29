@@ -24,7 +24,8 @@ export function moneyCentsFromInteger(value: number): MoneyCents {
 
 // Match the canonical API format, parsing decimal digits without floating-point scaling.
 export function parseMoneyCents(value: unknown): MoneyCents {
-  if (typeof value !== 'string' || value.length > 24 || !/^-?(?:0|[1-9]\d*)\.\d{2}$/.test(value) || value === '-0.00') {
+  if (typeof value !== 'string' || value.length > 24 || !/^-?(?:0|[1-9]\d*)\.\d{2}$/.test(value) ||
+    value === '-0.00') {
     throw new Error('Invalid canonical monetary string');
   }
   const negative = value.startsWith('-');

@@ -26,7 +26,8 @@ test.group('Durable Plaid Item cleanup', (group) => {
     calls = 0
     failure = undefined
     const original = { ...app.config.get<{ activeKey: string, keys: string }>('plaidCleanup') }
-    app.config.set('plaidCleanup', { activeKey: 'v1', keys: JSON.stringify({ v1: randomBytes(32).toString('base64') }) })
+    app.config.set('plaidCleanup', { activeKey: 'v1', keys: JSON.stringify({ v1: randomBytes(32)
+      .toString('base64') }) })
     wrapper = new PlaidWrapper(app.config.get('plaid'))
     app.container.swap(PlaidWrapper, () => wrapper)
     const removal = mock.method(wrapper, 'removeItem', async () => {
@@ -34,12 +35,15 @@ test.group('Durable Plaid Item cleanup', (group) => {
       if (failure) throw failure
       return { request_id: 'synthetic-remove' }
     })
-    return () => { app.config.set('plaidCleanup', original); removal.mock.restore(); app.container.restore(PlaidWrapper) }
+    return () => { app.config.set('plaidCleanup', original); removal.mock.restore(); app.container
+      .restore(PlaidWrapper) }
   })
   const protect = () => service.protect(randomUUID(), token)
-  const due = async (row: Cleanup) => { row.nextAttemptAt = DateTime.utc().minus({ seconds: 1 }); await row.save() }
+  const due = async (row: Cleanup) => { row.nextAttemptAt = DateTime.utc().minus({ seconds: 1 });
+    await row.save() }
 
-  test('durable protection is encrypted, purpose-bound, versioned and excluded from serialization', async ({ assert }) => {
+  test('durable protection is encrypted, purpose-bound, versioned and excluded from serialization',
+    async ({ assert }) => {
     await service.ready()
     const row = await protect()
     assert.equal(row.status, 'protected')
@@ -58,7 +62,8 @@ test.group('Durable Plaid Item cleanup', (group) => {
     const budget = await Budget.create({})
     await db.transaction(async (trx) => {
       const locked = await service.lockSetup(row.id, trx)
-      await Institution.create({ budgetId: budget.id, plaidItemId: row.itemId, name: 'Committed', accessToken: token }, { client: trx })
+      await Institution.create({ budgetId: budget.id, plaidItemId: row.itemId, name: 'Committed',
+        accessToken: token }, { client: trx })
       await service.cancelSetup(locked)
     })
     await service.attempt(row.id, true)
@@ -68,7 +73,8 @@ test.group('Durable Plaid Item cleanup', (group) => {
     assert.isNull(row.encryptedAccessToken)
   })
 
-  test('failed setup rolls back cancellation and preserves decryptable recovery', async ({ assert }) => {
+  test('failed setup rolls back cancellation and preserves decryptable recovery', async ({
+    assert }) => {
     const row = await protect()
     const trx = await db.transaction()
     await service.cancelSetup(await service.lockSetup(row.id, trx))
@@ -87,10 +93,12 @@ test.group('Durable Plaid Item cleanup', (group) => {
     assert.isNull(row.encryptedAccessToken)
   })
 
-  test('committed Institution safety check overrides stale recovery responsibility', async ({ assert }) => {
+  test('committed Institution safety check overrides stale recovery responsibility', async ({
+    assert }) => {
     const row = await protect()
     const budget = await Budget.create({})
-    await Institution.create({ budgetId: budget.id, plaidItemId: row.itemId, name: 'Committed', accessToken: token })
+    await Institution.create({ budgetId: budget.id, plaidItemId: row.itemId, name: 'Committed',
+      accessToken: token })
     await service.attempt(row.id, true)
     await row.refresh()
     assert.equal(calls, 0)
@@ -106,12 +114,15 @@ test.group('Durable Plaid Item cleanup', (group) => {
     try {
       let blocked = false
       for (let i = 0; i < 100 && !blocked; i++) {
-        const waiting = await db.rawQuery("SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock' AND query LIKE '%plaid_item_cleanups%'")
+        const waiting = await db.rawQuery(
+          "SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname = current_database() \
+AND wait_event_type = 'Lock' AND query LIKE '%plaid_item_cleanups%'")
         blocked = waiting.rows[0].count > 0
         if (!blocked) await new Promise((resolve) => setTimeout(resolve, 5))
       }
       assert.isTrue(blocked, 'Cleanup must actually be blocked on the active setup row lock')
-      await Institution.create({ budgetId: budget.id, plaidItemId: row.itemId, name: 'Concurrent', accessToken: token }, { client: trx })
+      await Institution.create({ budgetId: budget.id, plaidItemId: row.itemId, name: 'Concurrent',
+        accessToken: token }, { client: trx })
       await service.cancelSetup(locked)
       await trx.commit()
     } finally {
@@ -143,11 +154,13 @@ test.group('Durable Plaid Item cleanup', (group) => {
     failure = new Error('Synthetic transport')
     await service.attempt(row.id, true)
     const trx = await db.transaction()
-    try { await assert.rejects(() => service.lockSetup(row.id, trx), 'Plaid setup recovery state unavailable') }
+    try { await assert.rejects(() => service.lockSetup(row.id, trx),
+      'Plaid setup recovery state unavailable') }
     finally { await trx.rollback() }
   })
 
-  test('transport and ambiguous lost response retain responsibility').with(['transport', 'lost response']).run(async ({ assert }) => {
+  test('transport and ambiguous lost response retain responsibility').with(['transport',
+    'lost response']).run(async ({ assert }) => {
     const row = await protect()
     failure = new Error('Synthetic ambiguous result')
     await service.attempt(row.id, true)
@@ -165,7 +178,8 @@ test.group('Durable Plaid Item cleanup', (group) => {
     ['API_ERROR', 'UNRECOGNIZED_SYNTHETIC', 'review_required'],
   ]).run(async ({ assert }, [type, code, expected]) => {
     const row = await protect()
-    failure = new PlaidException({ response: { status: 500, data: { error_type: type, error_code: code, error_message: token } } })
+    failure = new PlaidException({ response: { status: 500, data: { error_type: type,
+      error_code: code, error_message: token } } })
     await service.attempt(row.id, true)
     await row.refresh()
     assert.equal(row.status, expected)
@@ -173,10 +187,12 @@ test.group('Durable Plaid Item cleanup', (group) => {
     assert.isNotNull(row.encryptedAccessToken)
   })
 
-  test('automatic attempts are bounded and exhaustion retains credential for thirty days', async ({ assert }) => {
+  test('automatic attempts are bounded and exhaustion retains credential for thirty days', async ({
+    assert }) => {
     const row = await protect()
     failure = new Error('Synthetic outage')
-    for (let i = 0; i < 7; i++) { await due(row); await service.attempt(row.id); await row.refresh() }
+    for (let i = 0; i < 7; i++) { await due(row); await service.attempt(row.id); await row.refresh(
+      ) }
     assert.equal(calls, 7)
     assert.equal(row.status, 'review_required')
     assert.equal(row.attemptCount, 7)
@@ -197,9 +213,11 @@ test.group('Durable Plaid Item cleanup', (group) => {
     assert.equal(calls, 0)
   })
 
-  test('administrative retention extension is explicit and retry is bounded anew', async ({ assert }) => {
+  test('administrative retention extension is explicit and retry is bounded anew', async ({
+    assert }) => {
     const row = await protect()
-    row.status = 'review_required'; row.credentialExpiresAt = DateTime.utc().plus({ days: 1 }); await row.save()
+    row.status = 'review_required'; row.credentialExpiresAt = DateTime.utc().plus({ days: 1 });
+      await row.save()
     await service.administer(row.id, 'extend', 40)
     await row.refresh()
     assert.isAbove(row.credentialExpiresAt?.toMillis() ?? 0, Date.now() + 39 * 86400000)
@@ -213,7 +231,8 @@ test.group('Durable Plaid Item cleanup', (group) => {
     await assert.rejects(() => service.ready(), 'Plaid cleanup encryption unavailable')
   })
 
-  test('tampered ciphertext and missing old key escalate safely').with(['tampered', 'missing key']).run(async ({ assert }, scenario) => {
+  test('tampered ciphertext and missing old key escalate safely').with(['tampered', 'missing key'])
+    .run(async ({ assert }, scenario) => {
     const row = await protect()
     if (scenario === 'tampered') { row.encryptedAccessToken = 'invalid'; await row.save() }
     else app.config.set('plaidCleanup.keys', '{}')
@@ -241,7 +260,8 @@ test.group('Durable Plaid Item cleanup', (group) => {
     assert.equal((await row.refresh()).lastErrorClass, 'context_mismatch')
   })
 
-  test('restart sweep recovers due state, retries Redis enqueue failure, and queues IDs only', async ({ assert, cleanup }) => {
+  test('restart sweep recovers due state, retries Redis enqueue failure, and queues IDs only',
+    async ({ assert, cleanup }) => {
     const row = await protect()
     await due(row)
     const original = await app.container.make('bullmq')
@@ -251,7 +271,8 @@ test.group('Durable Plaid Item cleanup', (group) => {
     const queueMethod = mock.method(isolated, 'queue', () => queue)
     app.container.swap(BullMQ, () => isolated)
     cleanup(() => { queueMethod.mock.restore(); app.container.restore(BullMQ) })
-    const fail = mock.method(queue, 'add', async () => { throw new Error('Synthetic Redis unavailable') })
+    const fail = mock.method(queue, 'add', async () => { throw new Error(
+      'Synthetic Redis unavailable') })
     await assert.rejects(() => new Service().sweep())
     fail.mock.restore()
     // sweep closes its own handle; open a fresh isolated handle after failure.
@@ -270,11 +291,13 @@ test.group('Durable Plaid Item cleanup', (group) => {
     assert.equal(calls, 1)
     assert.equal(QueueNamesEnum.PlaidItemCleanup, 'PlaidItemCleanup')
   })
-  test('attempt accounting survives a crash before recording successful removal', async ({ assert, cleanup }) => {
+  test('attempt accounting survives a crash before recording successful removal', async ({ assert,
+    cleanup }) => {
     const row = await protect()
     const originalSave = Cleanup.prototype.save
     const interruption = mock.method(Cleanup.prototype, 'save', function (this: Cleanup) {
-      if (this.status === 'completed') throw new Error('Synthetic process interruption after remote success')
+      if (this.status === 'completed') throw new Error(
+        'Synthetic process interruption after remote success')
       return originalSave.call(this)
     })
     cleanup(() => interruption.mock.restore())
@@ -307,12 +330,14 @@ test.group('Durable Plaid Item cleanup', (group) => {
   test('unprotected fallback cannot remove a committed Item', async ({ assert }) => {
     const budget = await Budget.create({})
     const itemId = randomUUID()
-    await Institution.create({ budgetId: budget.id, plaidItemId: itemId, name: 'Committed fallback', accessToken: token })
+    await Institution.create({ budgetId: budget.id, plaidItemId: itemId, name: 'Committed fallback',
+      accessToken: token })
     await service.compensateUnprotected(itemId, token)
     assert.equal(calls, 0)
   })
 
-  test('duplicate protection fallback respects successful setup cancellation', async ({ assert }) => {
+  test('duplicate protection fallback respects successful setup cancellation', async ({ assert }) =>
+    {
     const row = await protect()
     await db.transaction(async (trx) => service.cancelSetup(await service.lockSetup(row.id, trx)))
     await assert.rejects(() => service.protect(row.itemId, token))
@@ -320,7 +345,8 @@ test.group('Durable Plaid Item cleanup', (group) => {
     assert.equal(calls, 0)
   })
 
-  test('missing provider configuration enters bounded administrative retention', async ({ assert, cleanup }) => {
+  test('missing provider configuration enters bounded administrative retention', async ({ assert,
+    cleanup }) => {
     const row = await protect()
     const original = app.config.get<string>('plaid.clientId')
     app.config.set('plaid.clientId', '')

@@ -45,7 +45,8 @@ const Transaction: React.FC<PropsType> = observer(({
       return <div className={`${styles.trxAmount} currency`} />;
     }
 
-    return <MoneyCentsAmount className={`${styles.trxAmount} currency`} amount={transaction.amountCents} />
+    return <MoneyCentsAmount className={`${styles.trxAmount} currency`} amount={transaction
+      .amountCents} />
   }
 
   const loanFields = () => (
@@ -57,8 +58,10 @@ const Transaction: React.FC<PropsType> = observer(({
             transaction.type !== TransactionType.STARTING_BALANCE
               ? (
                 <>
-                  <MoneyCentsAmount className="currency" amount={subtractMoneyCents(transaction.amountCents, transaction.principleCents ?? parseMoneyCents('0.00'))} />
-                  <MoneyCentsAmount className="currency" amount={transaction.principleCents ?? parseMoneyCents('0.00')} />
+                  <MoneyCentsAmount className="currency" amount={subtractMoneyCents(transaction
+                    .amountCents, transaction.principleCents ?? parseMoneyCents('0.00'))} />
+                  <MoneyCentsAmount className="currency" amount={transaction.principleCents ??
+                    parseMoneyCents('0.00')} />
                 </>
               )
               : (
@@ -77,7 +80,8 @@ const Transaction: React.FC<PropsType> = observer(({
   const reverseClassName = accountSign === -1 ? 'reverse' : ''
 
   return (
-    <div className={`${className ?? ''} ${styles.transaction} ${transaction.pending ? styles.pendingTrx : ''}`} onClick={handleClick}>
+    <div className={`${className ?? ''} ${styles.transaction} ${transaction.pending ? styles
+      .pendingTrx : ''}`} onClick={handleClick}>
       {
         transaction.duplicateOfTransactionId
           ? <ArrowRightLeft />
@@ -85,9 +89,11 @@ const Transaction: React.FC<PropsType> = observer(({
       }
       <Date className={styles.date} date={transaction.date} />
       <div className={styles.name}>{transaction.name}</div>
-      <MoneyCentsAmount className={`${styles.amount} currency ${reverseClassName}`} amount={accountSign === -1
+      <MoneyCentsAmount className={`${styles.amount} currency ${reverseClassName}`} amount={
+        accountSign === -1
         ? subtractMoneyCents(parseMoneyCents('0.00'), amountCents) : amountCents} />
-      <MoneyCentsAmount className={`${styles.runningBalance} currency ${reverseClassName}`} amount={runningBalanceCents} />
+      <MoneyCentsAmount className={`${styles.runningBalance} currency ${reverseClassName}`} amount={
+        runningBalanceCents} />
       <TransactionAccount transaction={transaction} />
       {transactionAmount()}
       { loanFields() }

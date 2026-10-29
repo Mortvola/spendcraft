@@ -9,14 +9,17 @@ import { parseMoneyCents, formatMoneyCents } from '../../../common/moneyCents.ts
 const createElement = (type, props, ...children) => ({ type, props: { ...props, children } })
 const find = (node, type) => Array.isArray(node) ? node.flatMap(child => find(child, type))
   : !node || typeof node !== 'object' ? []
-  : [...(node.type === type ? [node] : []), ...(node.props?.children ?? []).flatMap(child => find(child, type))]
+  : [...(node.type === type ? [node] : []), ...(node.props?.children ?? []).flatMap(child => find(
+    child, type))]
 
 async function harness(initialResponse) {
   const text = await readFile('client-src/Reports/BudgetProgress.tsx', 'utf8')
-  const ast = ts.createSourceFile('BudgetProgress.tsx', text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const ast = ts.createSourceFile('BudgetProgress.tsx', text, ts.ScriptTarget.Latest, true, ts
+    .ScriptKind.TSX)
   let expression
   function visit(node) {
-    if (ts.isVariableDeclaration(node) && node.name.getText(ast) === 'BudgetProgress') expression = node.initializer.getText(ast)
+    if (ts.isVariableDeclaration(node) && node.name.getText(ast) === 'BudgetProgress') expression =
+      node.initializer.getText(ast)
     ts.forEachChild(node, visit)
   }
   visit(ast)
@@ -31,11 +34,14 @@ async function harness(initialResponse) {
   const view = runInNewContext(ts.transpileModule(`(${expression})`, {
     compilerOptions: { target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.React },
   }).outputText, {
-    React: { createElement, useState, useCallback: callback => callback }, useState, useEffect: callback => { effect = callback },
+    React: { createElement, useState, useCallback: callback => callback }, useState,
+      useEffect: callback => { effect = callback },
     observer: c => c, DateTime, parseMoneyCents, formatMoneyCents, useStores: () => ({}),
-    Http: { get: async url => { requests.push(url); return { ok: true, body: async () => response } } },
+    Http: { get: async url => { requests.push(url); return { ok: true, body: async () =>
+      response } } },
     console: { log: error => errors.push(error) },
-    Formik: 'form', ReportControls: 'controls', MonthSelector: 'month', Chart: 'chart', PleaseWait: 'wait',
+    Formik: 'form', ReportControls: 'controls', MonthSelector: 'month', Chart: 'chart', PleaseWait:
+      'wait',
     RegisterTransactions: 'register', Transaction: 'transaction',
     TransactionContainer: class {
       transactions = []
@@ -45,10 +51,12 @@ async function harness(initialResponse) {
   })
   const render = () => { cursor = 0; return view() }
   return { render, requests, errors, transactionReads, get days() { return slots[0] },
-    async load(next = response) { response = next; render(); effect(); await setImmediate(); return render() } }
+    async load(next = response) { response = next; render(); effect(); await setImmediate();
+      return render() } }
 }
 
-test('Budget Progress fills missing days in cents and retains transaction selection', async ({ assert }) => {
+test('Budget Progress fills missing days in cents and retains transaction selection', async ({
+  assert }) => {
   const source = [['2024-02-02', '0.10', [1, 2]], ['2024-02-04', '90071992547409.91', [9]]]
   const before = globalThis.structuredClone(source)
   const f = await harness(source)
@@ -71,13 +79,15 @@ test('Budget Progress fills missing days in cents and retains transaction select
   assert.strictEqual(chart.props.data[3][1].v, 0.1)
   assert.strictEqual(chart.props.data[3][1].f, '0.10')
   assert.strictEqual(chart.props.data[4][1].f, '90,071,992,547,409.91')
-  chart.props.chartEvents[0].callback({ chartWrapper: { getChart: () => ({ getSelection: () => [{ row: 2 }] }) } })
+  chart.props.chartEvents[0].callback({ chartWrapper: { getChart: () => ({ getSelection: () => [{
+    row: 2 }] }) } })
   assert.deepEqual(f.transactionReads, [{ url: '/api/v1/transactions?t=1&t=2', offset: 0 }])
   assert.deepEqual(source, before)
   assert.lengthOf(f.errors, 0)
 })
 
-test('Budget Progress preserves negative amounts and resets an empty month to zero', async ({ assert }) => {
+test('Budget Progress preserves negative amounts and resets an empty month to zero', async ({
+  assert }) => {
   const f = await harness([['2026-01-01', '-0.30', [5]]])
   find(f.render(), 'month')[0].props.onChange({ target: { value: '1-2026' } })
   let tree = await f.load()

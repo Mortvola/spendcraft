@@ -54,7 +54,8 @@ const StatementView: React.FC<PropsType> = observer(({
         </label>
         <label>
           Starting Balance:
-          <StatementAmount amount={statement.startingBalanceCents} sign={accountSign} onUpdate={handleStartingBalanceUpdate} />
+          <StatementAmount amount={statement.startingBalanceCents} sign={accountSign} onUpdate={
+            handleStartingBalanceUpdate} />
         </label>
         <label>
           Credits:
@@ -70,7 +71,8 @@ const StatementView: React.FC<PropsType> = observer(({
         </label>
         <label>
           Target Ending Balance:
-          <StatementAmount amount={statement.endingBalanceCents} sign={accountSign} onUpdate={handleEndingBalanceUpdate} />
+          <StatementAmount amount={statement.endingBalanceCents} sign={accountSign} onUpdate={
+            handleEndingBalanceUpdate} />
         </label>
         <label>
           Ending Balance Difference:

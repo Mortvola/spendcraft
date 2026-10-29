@@ -5,7 +5,8 @@ import mail from '@adonisjs/mail/services/main';
 import User from '#app/Models/User';
 import { sha256 } from 'js-sha256';
 import { DateTime } from 'luxon';
-import { login, logout, refresh, register, requestCode, updatePassword, verifyCode } from '#app/validation/Validators/auth';
+import { login, logout, refresh, register, requestCode, updatePassword, verifyCode } from
+  '#app/validation/Validators/auth';
 import RequestCodeNotification from '#app/mails/requestCodeNotification';
 import { inject } from '@adonisjs/core';
 import { UserService } from '#services/userService';
@@ -78,8 +79,10 @@ export default class AuthController {
 
           const responseData: unknown = {
             errors: [
-              { field: 'username', message: 'The username or password does not match our records.' },
-              { field: 'password', message: 'The username or password does not match our records.' },
+              { field: 'username', message:
+                'The username or password does not match our records.' },
+              { field: 'password', message:
+                'The username or password does not match our records.' },
             ],
           };
 
@@ -143,7 +146,8 @@ export default class AuthController {
         const now = DateTime.now();
 
         if (now > user.oneTimePassCode.expires) {
-          console.log(`code has expired: ${now.toString()}, ${user.oneTimePassCode.expires.toString()}`)
+          console.log(`code has expired: ${now.toString()}, ${user.oneTimePassCode.expires.toString(
+            )}`)
 
           response.status(422)
 

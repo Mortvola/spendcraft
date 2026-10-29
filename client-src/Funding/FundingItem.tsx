@@ -12,7 +12,8 @@ import { inputMoneyCents } from '../monetary';
 import styles from './Funding.module.scss'
 import { FundingInfoType, ValueType } from './Types';
 import VerticalTitled from './VerticalTitled';
-import { calculateFunding, fundingCalculationInputs, fundingCategoryEffectCents } from './calculateFunding';
+import { calculateFunding, fundingCalculationInputs, fundingCategoryEffectCents } from
+  './calculateFunding';
 import { useStores } from '../State/Store';
 import { CategoryInterface } from '../State/Types';
 import CategorySpread from '../CategorySpread/CategorySpread';
@@ -42,7 +43,8 @@ const FundingItem: React.FC<PropsType> = ({
   let balance: MoneyCents | null = null;
   try {
     balance = addMoneyCents(fundingInfo?.initialAmountCents ?? zero,
-      fundingCategoryEffectCents(calculateFunding(fundingCalculationInputs(values.categories), fundingPoolCat.id), category.id));
+      fundingCategoryEffectCents(calculateFunding(fundingCalculationInputs(values.categories),
+        fundingPoolCat.id), category.id));
   }
   catch { /* Keep incomplete or unsafe edits visible without displaying a false balance. */ }
 
@@ -64,7 +66,8 @@ const FundingItem: React.FC<PropsType> = ({
     >
       {
         ({ field: fieldProps }: FieldProps<string, ValueType>) => (
-          <div className={`${styles.fundListItem} ${hide(fieldProps.value, fundingInfo?.previousBaseAmountCents) ? styles.hide : ''}`}>
+          <div className={`${styles.fundListItem} ${hide(fieldProps.value, fundingInfo
+            ?.previousBaseAmountCents) ? styles.hide : ''}`}>
             <div className={styles.fundListCatName}>{title}</div>
             <div className={styles.valuesWrapper}>
               <div className={styles.fundValues}>
@@ -76,19 +79,23 @@ const FundingItem: React.FC<PropsType> = ({
                   <FormError name={name} />
                 </VerticalTitled>
                 <VerticalTitled title="Balance">
-                  {balance === null ? <div>Invalid amount</div> : <MoneyCentsAmount amount={balance} />}
+                  {balance === null ? <div>Invalid amount</div> : <MoneyCentsAmount amount={
+                    balance} />}
                 </VerticalTitled>
                 <div>{`${previousMonthName} Funding:`}</div>
-                <MoneyCentsAmount style={{ minWidth: '6rem' }} amount={fundingInfo?.previousBaseAmountCents ?? zero} />
+                <MoneyCentsAmount style={{ minWidth: '6rem' }} amount={fundingInfo
+                  ?.previousBaseAmountCents ?? zero} />
               </div>
               <div className={styles.fundValues2}>
                 <div className={styles.labeledAmount}>
                   {`${previousMonthName} Expenses:`}
-                  <MoneyCentsAmount style={{ minWidth: '6rem' }} amount={fundingInfo?.previousExpensesCents ?? zero} />
+                  <MoneyCentsAmount style={{ minWidth: '6rem' }} amount={fundingInfo
+                    ?.previousExpensesCents ?? zero} />
                 </div>
                 <div className={styles.labeledAmount}>
                   {`${previousMonthName} Category Transfers:`}
-                  <MoneyCentsAmount style={{ minWidth: '6rem' }} amount={fundingInfo?.previousCatTransfersCents ?? zero} />
+                  <MoneyCentsAmount style={{ minWidth: '6rem' }} amount={fundingInfo
+                    ?.previousCatTransfersCents ?? zero} />
                 </div>
               </div>
             </div>

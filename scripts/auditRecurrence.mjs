@@ -24,11 +24,13 @@ export function classify(result) {
   const counts = result.recurrenceCounts
   if (schema.length !== 1 || counts.length !== 1
     || schema[0].data_type !== 'integer' || schema[0].is_nullable !== 'NO') {
-    throw new AuditFailure('Schema differs from expected integer NOT NULL recurrence; check incomplete.', 3)
+    throw new AuditFailure(
+      'Schema differs from expected integer NOT NULL recurrence; check incomplete.', 3)
   }
   const c = counts[0]
   for (const key of ['total', 'below', 'above', 'nulls', 'noninteger']) {
-    if (!/^\d+$/.test(c[key])) throw new AuditFailure('Invalid aggregate result; check incomplete.', 3)
+    if (!/^\d+$/.test(c[key])) throw new AuditFailure('Invalid aggregate result; check incomplete.',
+      3)
   }
   const incompatible = BigInt(c.below) + BigInt(c.above)
   if (incompatible !== BigInt(result.incompatibleRows.length)) {
@@ -67,15 +69,20 @@ async function main() {
       target => console.log(JSON.stringify({ verified_target: target })))
     report.completion.connection_closed = true
     phase = 'writing reports'
-    await writeFile(`${config.outputDir}/report.json`, `${JSON.stringify(report, null, 2)}\n`, { flag: 'wx', mode: 0o600 })
+    await writeFile(`${config.outputDir}/report.json`, `${JSON.stringify(report, null, 2)}\n`, {
+      flag: 'wx', mode: 0o600 })
     const summary = [`# Recurrence prerequisite: ${report.outcome}`,
-      `Verified target: ${report.target.hostname}:${report.target.server_port}/${report.target.database}`,
+      `Verified target: ${report.target.hostname}:${report.target.server_port}/${report.target
+        .database}`,
       'READ ONLY / REPEATABLE READ', `Counts: ${JSON.stringify(report.counts)}`,
       ...report.incompatible_rows.map(row => `- Category ${row.id}: recurrence ${row.recurrence}`),
-      'Snapshot data check only. Migration bookkeeping and deployment lock planning remain separate.']
-    await writeFile(`${config.outputDir}/summary.md`, `${summary.join('\n')}\n`, { flag: 'wx', mode: 0o600 })
+      'Snapshot data check only. Migration bookkeeping and deployment lock planning remain \
+separate.']
+    await writeFile(`${config.outputDir}/summary.md`, `${summary.join('\n')}\n`, { flag: 'wx',
+      mode: 0o600 })
     process.exitCode = report.outcome === 'COMPATIBLE' ? 0 : 1
-    console.log(`${report.outcome}; private report.json and summary.md written to ${config.outputDir}.`)
+    console.log(`${report.outcome}; private report.json and summary.md written to ${config
+      .outputDir}.`)
   } catch (error) {
     process.exitCode = error instanceof AuditFailure ? error.exitCode : 3
     console.error(`INCOMPLETE/SAFETY FAILURE: ${failureReason(error, phase)} Do not proceed.`)

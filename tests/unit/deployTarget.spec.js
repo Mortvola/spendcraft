@@ -11,7 +11,8 @@ async function runDeploy(args, variables = {}, corrupt = false) {
   try {
     await mkdir(join(directory, 'build'))
     await mkdir(join(directory, 'installer'))
-    await writeFile(join(directory, 'installer/install.sh0'), await readFile('installer/install.sh0', 'utf8'))
+    await writeFile(join(directory, 'installer/install.sh0'), await readFile(
+      'installer/install.sh0', 'utf8'))
     await writeFile(join(directory, 'build/application.js'), '// tested application')
     await writeFile(join(directory, 'build/release-source.json'), JSON.stringify({ format: 1,
       commit: 'a'.repeat(40), dirty: false, builtAt: '2026-10-22T00:00:00.000Z' }))
@@ -24,7 +25,8 @@ async function runDeploy(args, variables = {}, corrupt = false) {
     const result = spawnSync('bash', ['-c', `
 scp() { cp "$3" "$UPLOAD_CAPTURE"; printf 'UPLOAD_KEY:%s\\nUPLOAD_DEST:%s\\n' "$2" "$4"; }
 source "$1" "\${@:2}"
-`, 'deploy-test', resolve('deploy.sh'), ...args.map((arg) => arg === '<release>' ? release.directory : arg)], {
+`, 'deploy-test', resolve('deploy.sh'), ...args.map((arg) => arg === '<release>' ? release
+  .directory : arg)], {
       cwd: directory,
       env: { PATH: process.env.PATH, TMPDIR: directory, UPLOAD_CAPTURE: upload, ...variables },
       encoding: 'utf8',
@@ -45,12 +47,14 @@ test.group('Deploy saved release target selection (mock upload, no build/network
       const result = await runDeploy(['<release>', target], configuration)
       assert.equal(result.status, 0, result.stderr)
       assert.include(result.stdout, 'Verified release ID: ' + result.release.id)
-      assert.include(result.stdout, `UPLOAD_KEY:/keys/${target} key.pem\nUPLOAD_DEST:ubuntu@${target}.example:`)
+      assert.include(result.stdout,
+        `UPLOAD_KEY:/keys/${target} key.pem\nUPLOAD_DEST:ubuntu@${target}.example:`)
       assert.include(result.installer, 'INSTALL_TARGET="$SPENDCRAFT_ENV"')
       assert.notInclude(result.stdout, 'BUILD')
     })
   test('rejects missing, invalid or extra arguments before packaging/upload')
-    .with([[], ['production'], ['<release>', 'test'], ['<release>', 'production', 'extra']]).run(async ({ assert }, args) => {
+    .with([[], ['production'], ['<release>', 'test'], ['<release>', 'production', 'extra']]).run(
+      async ({ assert }, args) => {
       const result = await runDeploy(args, configuration)
       assert.equal(result.status, 1)
       assert.equal(result.stdout, '')
@@ -67,7 +71,8 @@ test.group('Deploy saved release target selection (mock upload, no build/network
     })
   test('does not require the other environment configuration')
     .with(['production', 'staging']).run(async ({ assert }, target) => {
-      const variables = Object.fromEntries(Object.entries(configuration).filter(([key]) => key.includes('STAGING') === (target === 'staging')))
+      const variables = Object.fromEntries(Object.entries(configuration).filter(([key]) => key
+        .includes('STAGING') === (target === 'staging')))
       const result = await runDeploy(['<release>', target], variables)
       assert.equal(result.status, 0, result.stderr)
     })
@@ -77,7 +82,8 @@ test.group('Deploy saved release target selection (mock upload, no build/network
     assert.include(result.stderr, 'release_checksum_mismatch')
     assert.notInclude(result.stdout, 'UPLOAD_')
   })
-  test('deploy never invokes build, npm, zip or the live installer template', async ({ assert }) => {
+  test('deploy never invokes build, npm, zip or the live installer template', async ({ assert }) =>
+    {
     const source = await readFile('deploy.sh', 'utf8')
     assert.notInclude(source, './build.sh')
     assert.notMatch(source, /\bnpm\b|\bzip -|installer\/install\.sh0/)
@@ -85,7 +91,8 @@ test.group('Deploy saved release target selection (mock upload, no build/network
     assert.notInclude(source, '--target')
   })
   test('unified installer rejects invalid arguments before installation')
-    .with([['staging'], ['production'], ['unknown'], ['staging', 'extra']]).run(async ({ assert }, args) => {
+    .with([['staging'], ['production'], ['unknown'], ['staging', 'extra']]).run(async ({ assert },
+      args) => {
       const source = await readFile('installer/install.sh0', 'utf8')
       const header = source.slice(0, source.indexOf('\nconfirm_deployment() {'))
       const result = spawnSync('/bin/bash', ['-c', header, 'install.sh', ...args], {
@@ -120,12 +127,16 @@ test.group('Server-local installer and login-shell configuration (temporary file
       }
       // Simulate root ownership only; modes and symlinks use the real temporary filesystem.
       const statCommand = join(directory, 'stat-fixture')
-      await writeFile(statCommand, '#!' + process.execPath + '\nconst fs=require("node:fs");const p=process.argv.at(-1);process.stdout.write((process.env.TEST_BAD_OWNER ? "1000" : "0")+":"+(fs.statSync(p).mode & 0o7777).toString(8)+"\\n");\n', { mode: 0o700 })
+      await writeFile(statCommand, '#!' + process.execPath +
+        '\nconst fs=require("node:fs");const \
+p=process.argv.at(-1);process.stdout.write((process.env.TEST_BAD_OWNER ? "1000" : \
+"0")+":"+(fs.statSync(p).mode & 0o7777).toString(8)+"\\n");\n', { mode: 0o700 })
       const source = await readFile('installer/install.sh0', 'utf8')
       let script
       if (options.profile) {
         const guide = await readFile('installer/Installation.md', 'utf8')
-        const snippet = guide.split('<!-- spendcraft-profile-start -->')[1].split('<!-- spendcraft-profile-end -->')[0]
+        const snippet = guide.split('<!-- spendcraft-profile-start -->')[1].split(
+          '<!-- spendcraft-profile-end -->')[0]
         script = snippet.split('```sh\n')[1].split('```')[0]
       } else script = source.slice(0, source.indexOf('\nconfirm_deployment() {'))
       const quote = value => "'" + value.replaceAll("'", "'\\''") + "'"
@@ -134,7 +145,8 @@ test.group('Server-local installer and login-shell configuration (temporary file
       // A child shell confirms these are exports, not merely local assignments.
       script += `\n/bin/sh -c 'printf "%s|%s" "$SPENDCRAFT_ENV" "$SPENDCRAFT_ROOT"'\n`
       const result = spawnSync('/bin/bash', ['-c', script, 'install.sh'], { encoding: 'utf8',
-        env: { PATH: process.env.PATH, SPENDCRAFT_ENV: 'production', SPENDCRAFT_ROOT: '/inherited/incorrect',
+        env: { PATH: process.env.PATH, SPENDCRAFT_ENV: 'production', SPENDCRAFT_ROOT:
+          '/inherited/incorrect',
           INSTALL_TARGET: 'production', ...(options.badOwner ? { TEST_BAD_OWNER: '1' } : {}) } })
       return { ...result, server }
     } finally { await rm(directory, { recursive: true, force: true }) }
@@ -178,7 +190,8 @@ test.group('Server-local installer and login-shell configuration (temporary file
     assert.equal(result.stdout, 'production|/inherited/incorrect')
     assert.include(result.stderr, 'Invalid SpendCraft environment setting: UNKNOWN')
   })
-  test('deploy uploads only and never executes installation or overrides server settings', async ({ assert }) => {
+  test('deploy uploads only and never executes installation or overrides server settings', async ({
+    assert }) => {
     const source = await readFile('deploy.sh', 'utf8')
     assert.notMatch(source, /\bssh\b|SPENDCRAFT_ENV=|SPENDCRAFT_ROOT=|\/etc\/spendcraft/)
   })

@@ -50,7 +50,8 @@ const EnterEmailAddress: React.FC<PropsType> = ({
       {
         ({ isSubmitting }: FormikState<FormValues>) => (
           <Form className={styles.form}>
-            <div className={styles.subtitle}>Enter the email address associated with your account.</div>
+            <div className={styles.subtitle}>Enter the email address associated with your account.</
+              div>
             <FormField name="email" label="E-Mail" autoComplete="email" />
 
             <SubmitButton

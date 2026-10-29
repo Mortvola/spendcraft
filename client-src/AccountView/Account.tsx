@@ -37,7 +37,8 @@ const Account: React.FC<PropsType> = observer(({
         </div>
         <div style={{ marginTop: '1rem' }}>
           {
-            `Accounts can be ${account.closed ? 'reclosed' : 'reopened'} from the ${account.closed ? 'Opened' : 'Closed'} tab.`
+            `Accounts can be ${account.closed ? 'reclosed' : 'reopened'} from the ${account
+              .closed ? 'Opened' : 'Closed'} tab.`
           }
         </div>
       </>
@@ -80,13 +81,15 @@ const Account: React.FC<PropsType> = observer(({
       <div className={styles.accountInfo}>
         <div className={styles.accountName}>{account.name}</div>
         <div style={{ display: 'flex' }}>
-          <MoneyCentsAmount style={{ textAlign: 'left' }} amount={signedBalance(account.balanceCents)} />
+          <MoneyCentsAmount style={{ textAlign: 'left' }} amount={signedBalance(account
+            .balanceCents)} />
           {
             account.plaidBalanceCents !== null && account.balanceCents !== account.plaidBalanceCents
               ? (
                 <>
                   <div>/</div>
-                  <MoneyCentsAmount style={{ textAlign: 'left' }} amount={signedBalance(account.plaidBalanceCents)} />
+                  <MoneyCentsAmount style={{ textAlign: 'left' }} amount={signedBalance(account
+                    .plaidBalanceCents)} />
                 </>
               )
               : null

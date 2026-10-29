@@ -19,7 +19,8 @@ test.group('Webhooks', () => {
       const createdAt = DateTime.now()
   
       class PlaidFake extends Plaid {
-        async getWebhookVerificationKey(_keyId: string): Promise<WebhookVerificationKeyGetResponse> {
+        async getWebhookVerificationKey(
+          _keyId: string): Promise<WebhookVerificationKeyGetResponse> {
           return {
             key: {
               ...publicJWK,

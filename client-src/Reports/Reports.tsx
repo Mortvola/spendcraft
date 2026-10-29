@@ -11,7 +11,8 @@ import IncomeVsExpenses from './IncomeVsExpenses';
 import FundingHistory from './FundingHistory';
 import BudgetProgress from './BudgetProgress';
 
-type ReportTypes = 'netWorth' | 'payee' | 'category' | 'incomeVsExpenses' | 'fundingHistory' | 'budgetProgress';
+type ReportTypes = 'netWorth' | 'payee' | 'category' | 'incomeVsExpenses' | 'fundingHistory' |
+  'budgetProgress';
 
 const Reports: React.FC = observer(() => {
   const [reportType, setReportType] = useState<ReportTypes | null>(null);

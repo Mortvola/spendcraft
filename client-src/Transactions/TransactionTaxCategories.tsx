@@ -8,7 +8,8 @@ import styles from './TransactionTaxCategories.module.scss';
 import { addMoneyCents, type MoneyCents } from '../../common/moneyCents';
 import { inputMoneyCents } from '../monetary';
 
-export type TransactionTaxInput = Omit<TransactionTaxCategoryInterface, 'amountCents'> & { amount: string };
+export type TransactionTaxInput = Omit<TransactionTaxCategoryInterface, 'amountCents'> & {
+  amount: string };
 
 export const sumTaxCents = (taxCategories: readonly TransactionTaxInput[]): MoneyCents => (
   addMoneyCents(...taxCategories.map(tax => inputMoneyCents(tax.amount)))

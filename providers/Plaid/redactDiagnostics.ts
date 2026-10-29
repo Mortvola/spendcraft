@@ -14,7 +14,8 @@ export default function redactDiagnostics(value: unknown): unknown {
     return items.every((item, index) => item === value[index]) ? value : items
   }
   if (value === null || typeof value !== 'object') return value
-  if (Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(value) !== null) return value
+  if (Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(
+    value) !== null) return value
 
   let changed = false
   const entries = Object.entries(value).map(([key, item]) => {

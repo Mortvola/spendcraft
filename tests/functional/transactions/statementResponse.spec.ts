@@ -25,20 +25,25 @@ async function fixture(mode: string) {
     type: AccountType.Depository, subtype: 'checking', tracking: TrackingType.Transactions,
     startDate: DateTime.fromISO('2025-01-01'), rate: 0, closed: false })
   const category = await budget.getUnassignedCategory()
-  const oldStatement = await account.related('statements').create({ startDate: DateTime.fromISO('2025-01-01'),
+  const oldStatement = await account.related('statements').create({ startDate: DateTime.fromISO(
+    '2025-01-01'),
     endDate: DateTime.fromISO('2025-01-31'), startingBalance: 90, endingBalance: 100 })
-  const target = await account.related('statements').create({ startDate: DateTime.fromISO('2025-02-01'),
+  const target = await account.related('statements').create({ startDate: DateTime.fromISO(
+    '2025-02-01'),
     endDate: DateTime.fromISO('2025-02-28'), startingBalance: 90, endingBalance: 100 })
-  const transaction = await budget.related('transactions').create({ date: DateTime.fromISO('2025-02-10'),
+  const transaction = await budget.related('transactions').create({ date: DateTime.fromISO(
+    '2025-02-10'),
     type: TransactionType.MANUAL_TRANSACTION, categories: [{ categoryId: category.id, amount: 10 }],
     taxes: [], version: 0, deleted: false, sortOrder: 0 })
   await writeCanonicalTransactionFixture(transaction)
-  const association = await account.related('accountTransactions').create({ transactionId: transaction.id,
+  const association = await account.related('accountTransactions').create({
+    transactionId: transaction.id,
     amount: 10, name: 'Original', pending: false, provider: 'NONE',
     statementId: mode === 'assign' ? null : oldStatement.id })
   const responseStatement = mode === 'clear' ? oldStatement : target
   for (const [amount, deleted] of [[-4, false], [999, true]] as const) {
-    const sibling = await budget.related('transactions').create({ date: DateTime.fromISO('2025-02-11'),
+    const sibling = await budget.related('transactions').create({ date: DateTime.fromISO(
+      '2025-02-11'),
       type: TransactionType.MANUAL_TRANSACTION, categories: [{ categoryId: category.id, amount }],
       taxes: [], version: 0, deleted, sortOrder: 0 })
     await writeCanonicalTransactionFixture(sibling)
@@ -61,12 +66,14 @@ async function responseStatement(account: Account, id: number, trx: TransactionC
         .whereHas('transaction', (transaction) => transaction.where('deleted', false))
     })
     .where('id', id)
-  if (query.client !== trx) throw new Error('Statement query did not inherit the active transaction')
+  if (query.client !== trx) throw new Error(
+    'Statement query did not inherit the active transaction')
   return query.firstOrFail()
 }
 
 test.group('Transaction Statement response commit boundary', () => {
-  test('stale version retains the existing 409 response and rolls back without mutation', async ({ client, assert, cleanup }) => {
+  test('stale version retains the existing 409 response and rolls back without mutation', async ({
+    client, assert, cleanup }) => {
     const data = await fixture('assign')
     const before = (await Transaction.findOrFail(data.transaction.id)).serialize()
     const acquire = db.transaction.bind(db)
@@ -79,14 +86,17 @@ test.group('Transaction Statement response commit boundary', () => {
       return trx
     })
     cleanup(() => capture.mock.restore())
-    const response = await client.patch(`/api/v1/transaction/${data.transaction.id}`).json(transactionRequest({ version: 99,
+    const response = await client.patch(`/api/v1/transaction/${data.transaction.id}`).json(
+      transactionRequest({ version: 99,
       name: 'Updated', statementId: data.statementId })).accept('json').loginAs(data.user)
     response.assertStatus(409)
-    assert.equal(response.body().errors[0].detail, 'The version of the transaction does not match the version stored in the database.')
+    assert.equal(response.body().errors[0].detail,
+      'The version of the transaction does not match the version stored in the database.')
     assert.equal(commitCalls, 0)
     assert.isTrue(captured?.isCompleted)
     assert.deepEqual((await Transaction.findOrFail(data.transaction.id)).serialize(), before)
-    const persisted = await data.account.related('accountTransactions').query().where('id', data.association.id).firstOrFail()
+    const persisted = await data.account.related('accountTransactions').query().where('id', data
+      .association.id).firstOrFail()
     assert.equal(persisted.name, 'Original')
     assert.isNull(persisted.statementId)
   })
@@ -109,9 +119,11 @@ test.group('Transaction Statement response commit boundary', () => {
         assert.include(events, 'production Statement query completed')
         const account = await Account.findOrFail(data.account.id, { client: trx })
         assert.strictEqual(account.$trx, trx)
-        preparedStatement = (await responseStatement(account, data.responseStatement.id, trx)).serialize()
+        preparedStatement = (await responseStatement(account, data.responseStatement.id, trx))
+          .serialize()
         const transaction = await Transaction.findOrFail(data.transaction.id, { client: trx })
-        await transaction.load('accountTransaction', (query) => query.preload('account', (accountQuery) => accountQuery.preload('institution')))
+        await transaction.load('accountTransaction', (query) => query.preload('account', (
+          accountQuery) => accountQuery.preload('institution')))
         preparedTransaction = transaction.serialize(transactionFields)
         events.push('response prepared before commit')
         await commit()
@@ -121,7 +133,8 @@ test.group('Transaction Statement response commit boundary', () => {
     })
     cleanup(() => capture.mock.restore())
     const related = Account.prototype.related
-    const lookup = mock.method(Account.prototype, 'related', function (this: Account, ...args: Parameters<typeof related>) {
+    const lookup = mock.method(Account.prototype, 'related', function (this: Account,
+      ...args: Parameters<typeof related>) {
       if (this.id === data.account.id && args[0] === 'statements') {
         const relation = (related<'statements'>).call(this, 'statements')
         assert.strictEqual(this.$trx, captured)
@@ -143,12 +156,15 @@ test.group('Transaction Statement response commit boundary', () => {
       return related.apply(this, args)
     })
     cleanup(() => lookup.mock.restore())
-    const response = await client.patch(`/api/v1/transaction/${data.transaction.id}`).json(transactionRequest({ version: 0,
+    const response = await client.patch(`/api/v1/transaction/${data.transaction.id}`).json(
+      transactionRequest({ version: 0,
       name: 'Updated', statementId: data.statementId })).accept('json').loginAs(data.user)
     response.assertStatus(200)
     events.push('successful response observed')
-    assert.isBelow(events.indexOf('production Statement query completed'), events.indexOf('commit completed'))
-    assert.isBelow(events.indexOf('commit completed'), events.indexOf('successful response observed'))
+    assert.isBelow(events.indexOf('production Statement query completed'), events.indexOf(
+      'commit completed'))
+    assert.isBelow(events.indexOf('commit completed'), events.indexOf(
+      'successful response observed'))
     const body = response.body().data
     assert.deepEqual(body.statement, preparedStatement)
     assert.deepEqual(body.transaction, preparedTransaction)
@@ -161,21 +177,26 @@ test.group('Transaction Statement response commit boundary', () => {
     assert.equal(body.statement.credits, mode === 'clear' ? '0.00' : '10.00')
     assert.equal(body.statement.debits, '-4.00')
     assert.equal(body.transaction.version, 1)
-    assert.strictEqual(body.transaction.accountTransaction.amount, data.association.amount.toFixed(2))
+    assert.strictEqual(body.transaction.accountTransaction.amount, data.association.amount.toFixed(
+      2))
     assert.equal(body.transaction.accountTransaction.name, 'Updated')
     assert.equal(body.transaction.accountTransaction.statementId, data.statementId)
     assert.deepEqual(body.categories, [])
     assert.deepEqual(body.acctBalances, [{ id: data.account.id, balance: '100.00' }])
-    const persisted = await data.account.related('accountTransactions').query().where('id', data.association.id).firstOrFail()
+    const persisted = await data.account.related('accountTransactions').query().where('id', data
+      .association.id).firstOrFail()
     assert.equal(persisted.statementId, data.statementId)
-    console.log(JSON.stringify({ scenario: mode, events, statement: body.statement, transaction: body.transaction }))
+    console.log(JSON.stringify({ scenario: mode, events, statement: body.statement,
+      transaction: body.transaction }))
   })
 
-  test('production Statement query failure rolls back all update effects before propagation', async ({ client, assert, cleanup }) => {
+  test('production Statement query failure rolls back all update effects before propagation',
+    async ({ client, assert, cleanup }) => {
     const data = await fixture('assign')
     const before = (await Transaction.findOrFail(data.transaction.id)).serialize()
     const beforeCategory = (await Category.findOrFail(data.category.id)).serialize()
-    const beforeLogs = (await data.transaction.related('transactionLog').query()).map((log) => log.serialize())
+    const beforeLogs = (await data.transaction.related('transactionLog').query()).map((log) => log
+      .serialize())
     const failure = new Error('Injected active-transaction Statement dependency failure')
     const acquire = db.transaction.bind(db)
     let captured: TransactionClientContract | undefined
@@ -196,7 +217,8 @@ test.group('Transaction Statement response commit boundary', () => {
     })
     cleanup(() => capture.mock.restore())
     const related = Account.prototype.related
-    const injection = mock.method(Account.prototype, 'related', function (this: Account, ...args: Parameters<typeof related>) {
+    const injection = mock.method(Account.prototype, 'related', function (this: Account,
+      ...args: Parameters<typeof related>) {
       if (this.id === data.account.id && args[0] === 'statements') {
         assert.strictEqual(this.$trx, captured)
         assert.isFalse(captured?.isCompleted)
@@ -209,26 +231,32 @@ test.group('Transaction Statement response commit boundary', () => {
     cleanup(() => injection.mock.restore())
     const handled: unknown[] = []
     const handle = Handler.prototype.handle
-    const observer = mock.method(Handler.prototype, 'handle', async function (this: Handler, ...args: Parameters<typeof handle>) {
+    const observer = mock.method(Handler.prototype, 'handle', async function (this: Handler,
+      ...args: Parameters<typeof handle>) {
       assert.isTrue(captured?.isCompleted)
       events.push('global handler received error')
       handled.push(args[0]); return handle.apply(this, args)
     })
     cleanup(() => observer.mock.restore())
-    const response = await client.patch(`/api/v1/transaction/${data.transaction.id}`).json(transactionRequest({ version: 0,
-      name: 'Updated', amount: 20, categories: [{ categoryId: data.category.id, amount: 20 }], statementId: data.statementId })).accept('json').loginAs(data.user)
+    const response = await client.patch(`/api/v1/transaction/${data.transaction.id}`).json(
+      transactionRequest({ version: 0,
+      name: 'Updated', amount: 20, categories: [{ categoryId: data.category.id, amount: 20 }],
+        statementId: data.statementId })).accept('json').loginAs(data.user)
     response.assertStatus(500)
     assert.equal(commitCalls, 0)
     assert.isTrue(captured?.isCompleted)
     assert.include(handled, failure)
     assert.deepEqual((await Transaction.findOrFail(data.transaction.id)).serialize(), before)
-    const persisted = await data.account.related('accountTransactions').query().where('id', data.association.id).firstOrFail()
+    const persisted = await data.account.related('accountTransactions').query().where('id', data
+      .association.id).firstOrFail()
     assert.equal(persisted.name, 'Original')
     assert.isNull(persisted.statementId)
     assert.equal((await Account.findOrFail(data.account.id)).balance, 100)
-    assert.deepEqual((await data.transaction.related('transactionLog').query()).map((log) => log.serialize()), beforeLogs)
+    assert.deepEqual((await data.transaction.related('transactionLog').query()).map((log) => log
+      .serialize()), beforeLogs)
     assert.deepEqual((await Category.findOrFail(data.category.id)).serialize(), beforeCategory)
-    assert.deepEqual(events, ['Statement response preparation attempted', 'failure', 'rollback began', 'rollback completed', 'global handler received error'])
+    assert.deepEqual(events, ['Statement response preparation attempted', 'failure',
+      'rollback began', 'rollback completed', 'global handler received error'])
     console.log(JSON.stringify({ scenario: 'production preparation failure', events,
       status: response.status(), originalErrorReachedHandler: handled.includes(failure) }))
   })

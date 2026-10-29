@@ -29,7 +29,8 @@ const WebhookLog: React.FC<PropsType> = ({
         <DateTime dateTime={log.createdAt} />
         <div className={styles.layout2}>
           <div className={styles.message}>{log.type}</div>
-          <div className={styles.message}>{log.request.webhook_type}: {log.request.webhook_code}</div>
+          <div className={styles.message}>{log.request.webhook_type}: {log.request.webhook_code}</
+            div>
         </div>
       </div>
       {

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { formatMoneyCents, parseMoneyCents, subtractMoneyCents, type MoneyCents } from '../../common/moneyCents';
+import { formatMoneyCents, parseMoneyCents, subtractMoneyCents, type MoneyCents } from
+  '../../common/moneyCents';
 import { observer } from 'mobx-react-lite';
 import Chart from 'react-google-charts';
 import { useStores } from '../State/Store';
@@ -17,7 +18,8 @@ const AccountBalanceChart: React.FC = observer(() => {
 
   React.useEffect(() => {
     if (selectedAccount) { //&& selectedAccount.tracking === TrackingType.Balances) {
-      if (selectedAccount.tracking === TrackingType.Balances || selectedAccount.type === AccountType.Investment) {
+      if (selectedAccount.tracking === TrackingType.Balances || selectedAccount.type === AccountType
+        .Investment) {
         selectedAccount?.statements.load()
       } else {
         accountBalanceSeries.load(selectedAccount);
@@ -34,7 +36,8 @@ const AccountBalanceChart: React.FC = observer(() => {
 
   let data: [string | null, string | { v: number; f: string }][] = [];
 
-  if (selectedAccount?.tracking === TrackingType.Balances || selectedAccount?.type === AccountType.Investment) {
+  if (selectedAccount?.tracking === TrackingType.Balances || selectedAccount?.type === AccountType
+    .Investment) {
     const t: { balanceCents: MoneyCents, date: DateTime }[] = []
     const statements = selectedAccount?.statements.statements
 
@@ -117,7 +120,8 @@ const AccountBalanceChart: React.FC = observer(() => {
         <div className={styles.list}>
           {
             selectedAccount?.statements.statements.map((s) => (
-              <Balance key={s.id} id={s.id} balance={s.endingBalanceCents} date={s.endDate} onClick={() => showStmtDialog(s)} />
+              <Balance key={s.id} id={s.id} balance={s.endingBalanceCents} date={s.endDate} onClick=
+                {() => showStmtDialog(s)} />
             ))
           }
         </div>
@@ -125,7 +129,8 @@ const AccountBalanceChart: React.FC = observer(() => {
       {
         selectedAccount && editedStatement
           ? (
-            <StatementDialog statement={editedStatement} account={selectedAccount} onHide={handleHideDialog} />
+            <StatementDialog statement={editedStatement} account={selectedAccount} onHide={
+              handleHideDialog} />
           )
           : null
       }
@@ -133,7 +138,8 @@ const AccountBalanceChart: React.FC = observer(() => {
   )
 
   return (
-    <div className={`${styles.main} ${selectedAccount?.tracking === TrackingType.Balances ? styles.history : ''} window1`}>
+    <div className={`${styles.main} ${selectedAccount?.tracking === TrackingType.Balances ? styles
+      .history : ''} window1`}>
       <div className="chart-wrapper window ">
         <Chart
           chartType="LineChart"
@@ -149,7 +155,8 @@ const AccountBalanceChart: React.FC = observer(() => {
         />
       </div>
       {
-        selectedAccount?.tracking === TrackingType.Balances || selectedAccount?.type === AccountType.Investment
+        selectedAccount?.tracking === TrackingType.Balances || selectedAccount?.type === AccountType
+          .Investment
           ? renderStatemenents()
           : null
       }

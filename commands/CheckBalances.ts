@@ -71,7 +71,8 @@ export default class CheckBalances extends BaseCommand {
             (
               select transCats."categoryId", sum(transCats.amount) as trans_sum
               from transactions t
-              cross join lateral jsonb_to_recordset(t.categories) as transCats("categoryId" int, amount decimal)
+              cross join lateral jsonb_to_recordset(t.categories) as transCats("categoryId" int, \
+amount decimal)
               left outer join account_transactions at on at.transaction_id = t.id
               left outer join accounts a on a.id = at.account_id
               where (a.start_date is null OR t.date >= a.start_date)
@@ -112,8 +113,11 @@ export default class CheckBalances extends BaseCommand {
            
           for (const failure of app.failures) {
             const { category, transSum } = failure;
-            const difference = (Math.round(category.balance * 100) - Math.round(transSum * 100)) / 100.0;
-            this.logger.info(`\t"${category.group.name}:${category.name}" (${category.id}): ${category.balance.toFixed(2)}, Transactions: ${transSum.toFixed(2)}, difference: ${difference.toFixed(2)}`);
+            const difference = (Math.round(category.balance * 100) - Math.round(transSum * 100)) /
+              100.0;
+            this.logger.info(`\t"${category.group.name}:${category.name}" (${category
+              .id}): ${category.balance.toFixed(2)}, Transactions: ${transSum.toFixed(
+              2)}, difference: ${difference.toFixed(2)}`);
 
             issuesFound += 1;
 
@@ -254,7 +258,8 @@ export default class CheckBalances extends BaseCommand {
   //           const { account, transSum } = failure;
   //           const difference = account.balance - transSum;
    
-  //           this.logger.info(`\t"${account.name}" (${account.id}): ${account.balance.toFixed(2)}, Transactions: ${transSum.toFixed(2)}, difference: ${difference.toFixed(2)}`);
+  // this.logger.info(`\t"${account.name}" (${account.id}): ${account.balance.toFixed(2)},
+  // Transactions: ${transSum.toFixed(2)}, difference: ${difference.toFixed(2)}`);
 
   //           if (this.fix) {
   //             account.balance = transSum;

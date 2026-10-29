@@ -5,8 +5,11 @@ import Budget from '#app/Models/Budget';
 import Account from '#models/Account';
 import Category from '#models/Category';
 import { Exception } from '@adonisjs/core/exceptions';
-import { type BudgetProgressReportResponse, type NetworthReportResponse, type PayeeReportRow, type CategoryReportRow,
-  type IncomeVsExpensesReportResponse, type FundingHistoryReportResponse, type FundingHistoryReportRow, AccountType, CategoryType, TrackingType, TransactionType } from '#common/ResponseTypes';
+import { type BudgetProgressReportResponse, type NetworthReportResponse, type PayeeReportRow,
+  type CategoryReportRow,
+  type IncomeVsExpensesReportResponse, type FundingHistoryReportResponse,
+    type FundingHistoryReportRow, AccountType, CategoryType, TrackingType, TransactionType } from
+    '#common/ResponseTypes';
 import { DateTime } from 'luxon';
 
 type NetworthReportType = (string | number)[][];
@@ -42,7 +45,9 @@ class ReportController {
   public async get({
     request,
     auth: { user },
-  }: HttpContext): Promise<NetworthReportResponse | PayeeReportRow[] | CategoryReportRow[] | IncomeVsExpensesReportResponse | FundingHistoryReportResponse | BudgetProgressReportResponse> {
+  }: HttpContext): Promise<NetworthReportResponse | PayeeReportRow[] | CategoryReportRow[
+    ] | IncomeVsExpensesReportResponse | FundingHistoryReportResponse |
+      BudgetProgressReportResponse> {
     if (!user) {
       throw new Error('user not defined');
     }
@@ -98,7 +103,8 @@ class ReportController {
       case 'funding-history': {
         const rows = await ReportController.fundingHistory(budget);
         return rows.map((row) => ({ ...row,
-          history: row.history === null ? null : row.history.map((entry) => ({ ...entry, amount: encodeMonetaryAmount(entry.amount) })),
+          history: row.history === null ? null : row.history.map((entry) => ({ ...entry,
+            amount: encodeMonetaryAmount(entry.amount) })),
         }));
       }
 
@@ -109,7 +115,8 @@ class ReportController {
         const startDate = DateTime.fromFormat(`1-${m}`, 'd-M-yyyy');
         const endDate = startDate.endOf('month');
         const rows = await ReportController.budgetProgress(budget, startDate, endDate);
-        return rows.map<BudgetProgressReportResponse[number]>(([date, balance, transactions]) => [date, encodeMonetaryAmount(balance), transactions]);
+        return rows.map<BudgetProgressReportResponse[number]>(([date, balance, transactions]) => [
+          date, encodeMonetaryAmount(balance), transactions]);
       }
 
       default:
@@ -133,7 +140,10 @@ class ReportController {
           .andWhere('accounts.closed', false)
           .andWhere('accounts.tracking', TrackingType.Balances)
           .union((query2) => {
-            query2.select(db.raw('min(case when t.type = ? and a.tracking = ? and a.type != ? then a.start_date else t.date end) as date', [TransactionType.STARTING_BALANCE, TrackingType.Transactions, AccountType.Loan]))
+            query2.select(db.raw(
+              'min(case when t.type = ? and a.tracking = ? and a.type != ? then a.start_date else \
+t.date end) as date', [TransactionType.STARTING_BALANCE, TrackingType.Transactions, AccountType
+  .Loan]))
               .from('account_transactions as at')
               .join('transactions as t', 't.id', 'at.transaction_id')
               .join('accounts as a', 'a.id', 'at.account_id')
@@ -146,7 +156,8 @@ class ReportController {
                 TransactionType.REGULAR_TRANSACTION,
                 TransactionType.MANUAL_TRANSACTION])
               .andWhere((meaningful) => {
-                meaningful.whereNot('t.type', TransactionType.STARTING_BALANCE).orWhereNot('at.amount', 0)
+                meaningful.whereNot('t.type', TransactionType.STARTING_BALANCE).orWhereNot(
+                  'at.amount', 0)
               })
           })
           .as('union')
@@ -177,7 +188,8 @@ class ReportController {
         JOIN transactions t ON t.id = at.transaction_id
         WHERE i.application_id = ${budget.id}
           AND a.tracking = '${TrackingType.Transactions}' AND a.type != '${AccountType.Loan}'
-          AND t.type = ${TransactionType.STARTING_BALANCE} AND t.deleted = false AND at.pending = false
+          AND t.type = ${TransactionType
+            .STARTING_BALANCE} AND t.deleted = false AND at.pending = false
       ), opening_events AS (
         SELECT id, name, start_date AS date, opening, 0::numeric AS movement
         FROM openings WHERE opening != 0
@@ -186,7 +198,8 @@ class ReportController {
         FROM openings o
         JOIN account_transactions at ON at.account_id = o.id
         JOIN transactions t ON t.id = at.transaction_id
-        WHERE t.type IN (${[TransactionType.REGULAR_TRANSACTION, TransactionType.MANUAL_TRANSACTION]})
+        WHERE t.type IN (${[TransactionType.REGULAR_TRANSACTION, TransactionType
+          .MANUAL_TRANSACTION]})
           AND t.date >= o.start_date AND t.deleted = false AND at.pending = false
       ), opening_buckets AS (
         SELECT id, name, ${date} AS date, opening, sum(movement) AS movement
@@ -206,7 +219,8 @@ class ReportController {
       select
         date,
         id || '_' || name as name,
-        balance - COALESCE(sum(trans_sum) over (partition by id order by id, date desc rows between unbounded preceding and 1 preceding), 0) as balance
+        balance - COALESCE(sum(trans_sum) over (partition by id order by id, date desc rows \
+between unbounded preceding and 1 preceding), 0) as balance
       from (
         select a.id, a.name, ${date} as date, sum(at.amount) as trans_sum, a.balance
         from account_transactions at
@@ -216,7 +230,8 @@ class ReportController {
         where
           a.tracking != 'Balances'
           and NOT EXISTS (SELECT 1 FROM openings o WHERE o.id = a.id)
-          and t.type in (${[TransactionType.REGULAR_TRANSACTION, TransactionType.MANUAL_TRANSACTION]})
+          and t.type in (${[TransactionType.REGULAR_TRANSACTION, TransactionType
+            .MANUAL_TRANSACTION]})
           and i.application_id = ${budget.id}
           and at.pending = false
           and t.deleted = false
@@ -224,7 +239,8 @@ class ReportController {
       ) as daily
       union
       SELECT date, id || '_' || name AS name,
-        opening + sum(movement) OVER (PARTITION BY id ORDER BY date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS balance
+        opening + sum(movement) OVER (PARTITION BY id ORDER BY date ROWS BETWEEN UNBOUNDED \
+PRECEDING AND CURRENT ROW) AS balance
       FROM opening_buckets
       order by date`;
 
@@ -295,7 +311,8 @@ class ReportController {
         .join('institutions', 'institutions.id', 'accounts.institution_id')
         .where('pending', false)
         .andWhere('accounts.closed', false)
-        .andWhereIn('transactions.type', [TransactionType.REGULAR_TRANSACTION, TransactionType.MANUAL_TRANSACTION])
+        .andWhereIn('transactions.type', [TransactionType.REGULAR_TRANSACTION, TransactionType
+          .MANUAL_TRANSACTION])
         .andWhere('institutions.application_id', budget.id)
         .groupBy(['payment_channel'])
         .groupByRaw('coalesce(at.merchant_name, at.name)')
@@ -347,12 +364,15 @@ class ReportController {
           db.raw('CAST(count(*) as integer) as count'),
         )
         .from('transactions as t')
-        .joinRaw('cross join lateral jsonb_to_recordset(t.categories) as allocation("categoryId" int, amount decimal)')
+        .joinRaw(
+          'cross join lateral jsonb_to_recordset(t.categories) as allocation("categoryId" int, \
+amount decimal)')
         .join('categories as c', 'c.id', 'allocation.categoryId')
         .join('groups as g', 'g.id', 'c.group_id')
         .where('g.application_id', budget.id)
         .andWhere('t.application_id', budget.id)
-        .andWhereIn('t.type', [TransactionType.MANUAL_TRANSACTION, TransactionType.REGULAR_TRANSACTION])
+        .andWhereIn('t.type', [TransactionType.MANUAL_TRANSACTION, TransactionType
+          .REGULAR_TRANSACTION])
         .groupBy(['g.name', 'c.name'])
         .orderBy('g.name', 'asc')
         .orderBy('c.name', 'asc');
@@ -381,7 +401,9 @@ class ReportController {
     // One attribution total per Transaction prevents repeating each Account movement.
     const transfers = db.query()
       .from('transactions as transfer_transaction')
-      .joinRaw('cross join lateral jsonb_to_recordset(transfer_transaction.categories) as transfer("categoryId" int, amount decimal)')
+      .joinRaw(
+        'cross join lateral jsonb_to_recordset(transfer_transaction.categories) as \
+transfer("categoryId" int, amount decimal)')
       .select('transfer_transaction.id as transaction_id')
       .sum('transfer.amount as amount')
       .where('transfer_transaction.application_id', budget.id)
@@ -396,8 +418,12 @@ class ReportController {
           + '\'-\' || lpad(cast(date_part(\'month\', date) as varchar), 2, \'0\') as month',
         ),
         // The tc.amount is for removing any amount that was an account transfer
-        db.raw('sum(CASE WHEN at.amount >= 0 THEN at.amount - COALESCE(tc.amount, 0) ELSE 0 END) as income'),
-        db.raw('sum(CASE WHEN at.amount < 0 THEN at.amount - COALESCE(tc.amount, 0) ELSE 0 END) as expenses'),
+        db.raw(
+          'sum(CASE WHEN at.amount >= 0 THEN at.amount - COALESCE(tc.amount, 0) ELSE 0 END) as \
+income'),
+        db.raw(
+          'sum(CASE WHEN at.amount < 0 THEN at.amount - COALESCE(tc.amount, 0) ELSE 0 END) as \
+expenses'),
       )
       .from('transactions as t')
       .join('account_transactions as at', 'at.transaction_id', 't.id')
@@ -406,7 +432,9 @@ class ReportController {
       .where('t.application_id', budget.id)
       .andWhere('a.tracking', TrackingType.Transactions)
       .andWhere('t.type', '!=', TransactionType.STARTING_BALANCE)
-      .groupByRaw('date_part(\'year\', date) || \'-\' || lpad(cast(date_part(\'month\', date) as varchar), 2, \'0\')')
+      .groupByRaw(
+        'date_part(\'year\', date) || \'-\' || lpad(cast(date_part(\'month\', date) as varchar), \
+2, \'0\')')
       .orderBy('month', 'asc');
 
     return query.map((row) => [
@@ -436,7 +464,8 @@ class ReportController {
                 'month', EXTRACT(MONTH FROM t.date),
                 'amount', sum(allocation.amount)) AS monthly_amount
             from transactions as t
-            cross join lateral jsonb_to_recordset(t.categories) as allocation("categoryId" int, amount decimal)
+            cross join lateral jsonb_to_recordset(t.categories) as allocation("categoryId" int, \
+amount decimal)
             where t.type = 2 and t.application_id = g.application_id
               and allocation."categoryId" = c.id
             group by EXTRACT(MONTH FROM date), EXTRACT(YEAR FROM date)

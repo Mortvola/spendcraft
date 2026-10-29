@@ -1,4 +1,5 @@
-import { formatMoneyCents, parseMoneyCents, addMoneyCents, type MoneyCents } from '../../common/moneyCents';
+import { formatMoneyCents, parseMoneyCents, addMoneyCents, type MoneyCents } from
+  '../../common/moneyCents';
 import { decodeCentFundingRules, encodeCentFundingRules, type CentFundingRule } from '../monetary';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
@@ -66,7 +67,8 @@ class Category implements CategoryInterface {
     this.goalDate = props.goalDate ? DateTime.fromISO(props.goalDate) : null;
     this.useGoal = props.useGoal ?? false;
     this.recurrence = props.recurrence;
-    this.fundingCategories = decodeCentFundingRules(props.fundingCategories).map((c, index) => ({ id: index, ...c }));
+    this.fundingCategories = decodeCentFundingRules(props.fundingCategories).map((c, index) => ({
+      id: index, ...c }));
     this.hidden = props.hidden;
     this.store = store;
 
@@ -103,7 +105,8 @@ class Category implements CategoryInterface {
   }
 
   getTotalBalanceCents(): MoneyCents {
-    const subcatSum = this.subcategories.reduce((prev, current) => addMoneyCents(prev, current.balanceCents), parseMoneyCents('0.00'))
+    const subcatSum = this.subcategories.reduce((prev, current) => addMoneyCents(prev, current
+      .balanceCents), parseMoneyCents('0.00'))
     return addMoneyCents(this.balanceCents, subcatSum);
   }
 
@@ -114,9 +117,11 @@ class Category implements CategoryInterface {
       group, goalDate, fundingCategories, fundingAmountCents, ...p
     } = params;
 
-    const response = await Http.patch<CategoryWriteRequest, ApiResponse<UpdateCategoryResponse>>(`/api/v1/groups/${group.id}/categories/${this.id}`, {
+    const response = await Http.patch<CategoryWriteRequest, ApiResponse<UpdateCategoryResponse>>(
+      `/api/v1/groups/${group.id}/categories/${this.id}`, {
       ...p,
-      fundingAmount: fundingAmountCents === undefined ? undefined : formatMoneyCents(fundingAmountCents),
+      fundingAmount: fundingAmountCents === undefined ? undefined : formatMoneyCents(
+        fundingAmountCents),
       fundingCategories:
         p.type === CategoryType.Bill
           ? encodeCentFundingRules(fundingCategories)
@@ -137,7 +142,8 @@ class Category implements CategoryInterface {
     }
     else {
       const fundingAmount = body.data ? parseMoneyCents(body.data.fundingAmount) : undefined;
-      const fundingCategories = body.data ? decodeCentFundingRules(body.data.fundingCategories) : undefined;
+      const fundingCategories = body.data ? decodeCentFundingRules(body.data
+        .fundingCategories) : undefined;
       runInAction(() => {
         if (body.data && fundingAmount !== undefined && fundingCategories !== undefined) {
           const nameChanged = this.name !== body.data.name;

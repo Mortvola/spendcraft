@@ -4,7 +4,8 @@ import console from 'node:console'
 import { Buffer } from 'node:buffer'
 import { createHash } from 'node:crypto'
 import { createReadStream } from 'node:fs'
-import { readFile, lstat, realpath, mkdir, mkdtemp, copyFile, open, chmod, unlink } from 'node:fs/promises'
+import { readFile, lstat, realpath, mkdir, mkdtemp, copyFile, open, chmod, unlink } from
+  'node:fs/promises'
 import { join, resolve, dirname, basename } from 'node:path'
 import { execFile } from 'node:child_process'
 import { parseArgs, promisify } from 'node:util'
@@ -24,13 +25,16 @@ async function fingerprint(path) {
   return { sha256: digest.digest('hex'), size }
 }
 function validateSource(source) {
-  if (source?.format !== 1 || !/^[a-f0-9]{40}$/.test(source.commit ?? '') || typeof source.dirty !== 'boolean'
-    || typeof source.builtAt !== 'string' || !Number.isFinite(Date.parse(source.builtAt))) throw new Error('invalid_release_source')
+  if (source?.format !== 1 || !/^[a-f0-9]{40}$/.test(source.commit ?? '') || typeof source
+    .dirty !== 'boolean'
+    || typeof source.builtAt !== 'string' || !Number.isFinite(Date.parse(source
+      .builtAt))) throw new Error('invalid_release_source')
 }
 function validateTemplate(template) {
   if ((template.match(/^INSTALL_TARGET="\$SPENDCRAFT_ENV"$/gm) ?? []).length !== 1
     || (template.match(/^___END_OF_SHELL_SCRIPT___$/gm) ?? []).length !== 1
-    || !template.trimEnd().endsWith('___END_OF_SHELL_SCRIPT___')) throw new Error('invalid_installer_template')
+    || !template.trimEnd().endsWith('___END_OF_SHELL_SCRIPT___')) throw new Error(
+      'invalid_installer_template')
 }
 async function writeExclusive(path, value, mode = 0o600) {
   const file = await open(path, 'wx', mode)
@@ -43,7 +47,8 @@ async function syncDirectory(path) {
 
 export async function packageRelease(root, print = (message) => console.log(message)) {
   root = resolve(root)
-  if (await realpath(root) !== root || !(await lstat(join(root, 'build'))).isDirectory()) throw new Error('invalid_build_directory')
+  if (await realpath(root) !== root || !(await lstat(join(root, 'build'))).isDirectory(
+    )) throw new Error('invalid_build_directory')
   const sourcePath = join(root, 'build/release-source.json')
   await regularFile(sourcePath)
   const source = JSON.parse(await readFile(sourcePath, 'utf8'))
@@ -71,7 +76,8 @@ export async function packageRelease(root, print = (message) => console.log(mess
   }
   const content = { format: 1, source, files }
   const manifest = { ...content, id: hash(JSON.stringify(content)) }
-  await writeExclusive(join(directory, 'release.json'), JSON.stringify(manifest, null, 2) + '\n', 0o444)
+  await writeExclusive(join(directory, 'release.json'), JSON.stringify(manifest, null, 2) + '\n',
+    0o444)
   await syncDirectory(directory)
   await syncDirectory(parent)
   print('Release ID: ' + manifest.id)
@@ -81,21 +87,26 @@ export async function packageRelease(root, print = (message) => console.log(mess
 
 export async function verifyPackage(directory) {
   directory = resolve(directory)
-  if (await realpath(directory) !== directory || !(await lstat(directory)).isDirectory()) throw new Error('unsafe_release_directory')
+  if (await realpath(directory) !== directory || !(await lstat(directory)).isDirectory(
+    )) throw new Error('unsafe_release_directory')
   await regularFile(join(directory, 'release.json'))
   const manifest = JSON.parse(await readFile(join(directory, 'release.json'), 'utf8'))
   validateSource(manifest.source)
-  if (manifest.format !== 1 || !manifest.files || Object.keys(manifest.files).sort().join(',') !== [...fileNames].sort().join(',')) {
+  if (manifest.format !== 1 || !manifest.files || Object.keys(manifest.files).sort().join(',') !== [
+    ...fileNames].sort().join(',')) {
     throw new Error('invalid_release_manifest')
   }
   const content = { format: manifest.format, source: manifest.source, files: manifest.files }
-  if (manifest.id !== hash(JSON.stringify(content))) throw new Error('release_manifest_identity_mismatch')
+  if (manifest.id !== hash(JSON.stringify(content))) throw new Error(
+    'release_manifest_identity_mismatch')
   for (const name of fileNames) {
     const actual = await fingerprint(join(directory, name))
     const expected = manifest.files[name]
-    if (!expected || actual.sha256 !== expected.sha256 || actual.size !== expected.size) throw new Error('release_checksum_mismatch')
+    if (!expected || actual.sha256 !== expected.sha256 || actual.size !== expected
+      .size) throw new Error('release_checksum_mismatch')
   }
-  if (JSON.stringify(JSON.parse(await readFile(join(directory, 'release-source.json'), 'utf8'))) !== JSON.stringify(manifest.source)) {
+  if (JSON.stringify(JSON.parse(await readFile(join(directory, 'release-source.json'),
+    'utf8'))) !== JSON.stringify(manifest.source)) {
     throw new Error('release_source_mismatch')
   }
   validateTemplate(await readFile(join(directory, 'install.sh0'), 'utf8'))
@@ -106,11 +117,13 @@ export async function createInstaller(directory, output) {
   directory = resolve(directory)
   const manifest = await verifyPackage(directory)
   const savedTemplate = await readFile(join(directory, 'install.sh0'))
-  if (hash(savedTemplate) !== manifest.files['install.sh0'].sha256) throw new Error('release_changed_during_packaging')
+  if (hash(savedTemplate) !== manifest.files['install.sh0'].sha256) throw new Error(
+    'release_changed_during_packaging')
   const template = savedTemplate.toString('utf8')
   output = join(await realpath(dirname(resolve(output))), basename(output))
   // An installer is disposable upload output, never a mutation of the saved package.
-  if (output === directory || output.startsWith(directory + '/')) throw new Error('installer_output_inside_release')
+  if (output === directory || output.startsWith(directory + '/')) throw new Error(
+    'installer_output_inside_release')
   const file = await open(output, 'wx', 0o700)
   try {
     await file.writeFile(template.endsWith('\n') ? template : template + '\n')
@@ -124,7 +137,8 @@ export async function createInstaller(directory, output) {
       carry = bytes.subarray(end)
     }
     if (carry.length) await file.writeFile(carry.toString('base64') + '\n')
-    if (digest.digest('hex') !== manifest.files['build.zip'].sha256 || size !== manifest.files['build.zip'].size) {
+    if (digest.digest('hex') !== manifest.files['build.zip'].sha256 || size !== manifest.files[
+      'build.zip'].size) {
       throw new Error('release_changed_during_packaging')
     }
     await file.sync()
@@ -153,7 +167,8 @@ export async function main(args = process.argv.slice(2)) {
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   main().catch((error) => {
     const code = /^[a-z][a-z0-9_]+$/.test(error.message) ? error.message
-      : typeof error.code === 'string' && /^[A-Z0-9_]+$/.test(error.code) ? error.code : 'inspect_release_package'
+      : typeof error.code === 'string' && /^[A-Z0-9_]+$/.test(error.code) ? error.code :
+        'inspect_release_package'
     console.error('Release packaging failed: ' + code)
     process.exitCode = 1
   })

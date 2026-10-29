@@ -6,19 +6,22 @@ import Statement from '#models/Statement'
 import { AccountType, TrackingType, TransactionType } from '#common/ResponseTypes'
 
 let sequence = 0
-const investmentData = { shortTermCapitalGains: 1, longTermCapitalGains: 2, dividends: 3, taxableInterest: 4 }
+const investmentData = { shortTermCapitalGains: 1, longTermCapitalGains: 2, dividends: 3,
+  taxableInterest: 4 }
 
 async function createFixture() {
   return db.transaction(async (trx) => {
     const budget = await Budget.create({}, { client: trx })
     await budget.initialize()
     const user = await budget.related('users').create({
-      username: `statement-${++sequence}`, email: `statement-${sequence}@example.com`, password: 'testPassw0rd',
+      username: `statement-${++sequence}`, email: `statement-${sequence}@example.com`, password:
+        'testPassw0rd',
     })
     const institution = await budget.related('institutions').create({ name: 'Statement bank' })
     const account = await institution.related('accounts').create({
       name: 'Statement account', balance: 100, type: AccountType.Investment, subtype: 'IRA',
-      tracking: TrackingType.Transactions, startDate: DateTime.fromISO('2025-01-01'), rate: 0, closed: false,
+      tracking: TrackingType.Transactions, startDate: DateTime.fromISO('2025-01-01'), rate: 0,
+        closed: false,
     })
     return { budget, user, account }
   })
@@ -41,12 +44,17 @@ test.group('Statement DELETE persisted-state characterization', () => {
       await f.account.merge({ tracking: scenario.tracking, balance: 300 }).save()
       const target = await f.account.related('statements').create({
         startDate: DateTime.fromISO('2025-02-01'), endDate: DateTime.fromISO('2025-02-28'),
-        startingBalance: 100, endingBalance: scenario.position === 'older' ? 200 : 300, data: investmentData,
+        startingBalance: 100, endingBalance: scenario.position === 'older' ? 200 : 300,
+          data: investmentData,
       })
-      const neighbor = scenario.position === 'only' ? null : await f.account.related('statements').create({
-        startDate: DateTime.fromISO(scenario.position.startsWith('latest') ? '2025-01-01' : '2025-03-01'),
-        endDate: DateTime.fromISO(scenario.position.startsWith('latest') ? '2025-01-31' : '2025-03-31'),
-        startingBalance: 100, endingBalance: scenario.position === 'latest-zero' ? 0 : scenario.position === 'latest' ? 150 : 300, data: investmentData,
+      const neighbor = scenario.position === 'only' ? null : await f.account.related('statements')
+        .create({
+        startDate: DateTime.fromISO(scenario.position.startsWith('latest') ? '2025-01-01' :
+          '2025-03-01'),
+        endDate: DateTime.fromISO(scenario.position.startsWith('latest') ? '2025-01-31' :
+          '2025-03-31'),
+        startingBalance: 100, endingBalance: scenario.position === 'latest-zero' ? 0 : scenario
+          .position === 'latest' ? 150 : 300, data: investmentData,
       })
       for (let index = 0; index < scenario.count + 2; index++) {
         const transaction = await f.budget.related('transactions').create({
@@ -56,7 +64,8 @@ test.group('Statement DELETE persisted-state characterization', () => {
         await f.account.related('accountTransactions').create({
           transactionId: transaction.id, name: 'DELETE characterization', amount: scenario.amount,
           provider: 'NONE', pending: false,
-          statementId: index < scenario.count ? target.id : index === scenario.count ? neighbor?.id ?? null : null,
+          statementId: index < scenario.count ? target.id : index === scenario.count ? neighbor
+            ?.id ?? null : null,
         })
       }
       const snapshot = async () => Promise.all([
@@ -68,7 +77,8 @@ test.group('Statement DELETE persisted-state characterization', () => {
       ])
       const before = await snapshot()
       const deleteStartedAt = Date.now()
-      const response = await client.delete(`/api/v1/statements/${target.id}`).accept('json').loginAs(f.user)
+      const response = await client.delete(`/api/v1/statements/${target.id}`).accept('json')
+        .loginAs(f.user)
       response.assertStatus(200)
       const after = await snapshot()
       assert.deepEqual(after[2], before[2])
@@ -88,7 +98,8 @@ test.group('Statement DELETE persisted-state characterization', () => {
       assert.deepEqual(after[3], before[3].filter((row) => row.id !== target.id))
       assert.lengthOf(after[1].filter((row) => row.statement_id === target.id), 0)
       assert.isNull(await Statement.find(target.id))
-      const listed = await client.get(`/api/v1/account/${f.account.id}/statements`).accept('json').loginAs(f.user)
+      const listed = await client.get(`/api/v1/account/${f.account.id}/statements`).accept('json')
+        .loginAs(f.user)
       listed.assertStatus(200)
       assert.lengthOf(listed.body(), neighbor ? 1 : 0)
       const register = await client.get(`/api/v1/account/${f.account.id}/transactions`)
@@ -97,13 +108,16 @@ test.group('Statement DELETE persisted-state characterization', () => {
       assert.sameMembers(register.body().data.transactions.map((row: { id: number }) => row.id),
         after[2].map((row) => row.id))
       // Statement creation/reconcile-All eligibility requires a null statement_id.
-      const eligible = await db.from('account_transactions').where('account_id', f.account.id).whereNull('statement_id')
+      const eligible = await db.from('account_transactions').where('account_id', f.account.id)
+        .whereNull('statement_id')
       assert.lengthOf(eligible, scenario.count + (neighbor ? 1 : 2))
-      const repeat = await client.delete(`/api/v1/statements/${target.id}`).accept('json').loginAs(f.user)
+      const repeat = await client.delete(`/api/v1/statements/${target.id}`).accept('json').loginAs(f
+        .user)
       repeat.assertStatus(404)
       assert.deepEqual(await snapshot(), after)
     })
-  test('late account persistence failure rolls back unassignment and deletion', async ({ client, assert }) => {
+  test('late account persistence failure rolls back unassignment and deletion', async ({ client,
+    assert }) => {
     const f = await createFixture()
     await f.account.merge({ tracking: TrackingType.Balances, balance: 300 }).save()
     const statement = await f.account.related('statements').create({
@@ -115,7 +129,8 @@ test.group('Statement DELETE persisted-state characterization', () => {
       version: 0, deleted: false, sortOrder: 0, categories: [], taxes: [],
     })
     await f.account.related('accountTransactions').create({
-      transactionId: transaction.id, name: 'Rollback', amount: 10, provider: 'NONE', pending: false, statementId: statement.id,
+      transactionId: transaction.id, name: 'Rollback', amount: 10, provider: 'NONE', pending: false,
+        statementId: statement.id,
     })
     const snapshot = () => Promise.all([
       db.from('accounts').where('id', f.account.id),
@@ -123,9 +138,11 @@ test.group('Statement DELETE persisted-state characterization', () => {
       db.from('account_transactions').where('account_id', f.account.id),
     ])
     const before = await snapshot()
-    await db.rawQuery(`ALTER TABLE accounts ADD CONSTRAINT statement_delete_failure CHECK (id <> ${f.account.id} OR balance <> 0) NOT VALID`)
+    await db.rawQuery(`ALTER TABLE accounts ADD CONSTRAINT statement_delete_failure CHECK (id <> ${f
+      .account.id} OR balance <> 0) NOT VALID`)
     try {
-      const response = await client.delete(`/api/v1/statements/${statement.id}`).accept('json').loginAs(f.user)
+      const response = await client.delete(`/api/v1/statements/${statement.id}`).accept('json')
+        .loginAs(f.user)
       response.assertStatus(500)
       assert.deepEqual(await snapshot(), before)
     } finally {

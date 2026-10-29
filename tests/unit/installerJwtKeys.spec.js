@@ -21,7 +21,8 @@ test.group('Installer JWT key generation (temporary files, no app or database)',
     const messages = []
     const command = {
       app: { appRoot: pathToFileURL(join(root, 'release/')) }, exitCode: 0,
-      logger: { info: (message) => messages.push(message), error: (message) => messages.push(message) },
+      logger: { info: (message) => messages.push(message), error: (message) => messages.push(
+        message) },
     }
     await GenerateJwtKeys.prototype.run.call(command)
     return { messages, exitCode: command.exitCode }
@@ -36,7 +37,8 @@ test.group('Installer JWT key generation (temporary files, no app or database)',
     assert.equal(result.exitCode, 0, result.messages.join('\n'))
     const contents = await readFile(join(root, 'shared-env'), 'utf8')
     const env = parseEnv(contents)
-    const parsed = await new EnvParser(contents, pathToFileURL(join(root, 'release/')), { ignoreProcessEnv: true }).parse()
+    const parsed = await new EnvParser(contents, pathToFileURL(join(root, 'release/')), {
+      ignoreProcessEnv: true }).parse()
     assert.equal(parsed.JWT_PRIVATE_KEY, env.JWT_PRIVATE_KEY)
     assert.equal(parsed.JWT_PUBLIC_KEY, env.JWT_PUBLIC_KEY)
     // Same decoding used in config/auth.ts before passing keys to JwtGuard.
@@ -90,7 +92,8 @@ test.group('Installer JWT key generation (temporary files, no app or database)',
     await assert.rejects(() => run())
     await assert.rejects(() => readFile(join(root, 'shared-env')))
   })
-  test('installer invokes generation before prompting and omits JWT prompts', async ({ assert }) => {
+  test('installer invokes generation before prompting and omits JWT prompts', async ({ assert }) =>
+    {
     const source = await readFile('installer/install.sh0', 'utf8')
     const call = source.indexOf('\nENV_PATH= NODE_ENV=production node ace generate:jwt-keys\n')
     assert.isAbove(call, source.indexOf('\nensure_app_key\n'))

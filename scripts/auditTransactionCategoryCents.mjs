@@ -16,17 +16,21 @@ export async function configuration(envFile = '.env', options = {}, expectedData
       throw new Error('invalid_env_connection')
     }
   }
-  if (!/^\d+$/.test(fields.PG_PORT) || Number(fields.PG_PORT) < 1 || Number(fields.PG_PORT) > 65535 ||
-      fields.PG_HOST.includes('\0') || fields.PG_USER.includes('\0') || fields.PG_DB_NAME.includes('\0')) {
+  if (!/^\d+$/.test(fields.PG_PORT) || Number(fields.PG_PORT) < 1 || Number(fields
+    .PG_PORT) > 65535 ||
+      fields.PG_HOST.includes('\0') || fields.PG_USER.includes('\0') || fields.PG_DB_NAME.includes(
+        '\0')) {
     throw new Error('invalid_env_connection')
   }
   if (expectedDatabase !== undefined && expectedDatabase !== fields.PG_DB_NAME) {
     throw new Error('env_database_mismatch')
   }
-  // Reuse only validated audit limits/output defaults; legacy connection values cannot override the file.
+  // Reuse only validated audit limits/output defaults; legacy connection values cannot override the
+  // file.
   const limits = legacyConfiguration({ ...options, SPENDCRAFT_AUDIT_DATABASE: 'audit',
     SPENDCRAFT_AUDIT_SOCKET_DIR: '/tmp', SPENDCRAFT_AUDIT_PORT: '5432' })
-  return { ...limits, outputDir: options.SPENDCRAFT_AUDIT_OUTPUT_DIR, host: fields.PG_HOST, port: Number(fields.PG_PORT),
+  return { ...limits, outputDir: options.SPENDCRAFT_AUDIT_OUTPUT_DIR, host: fields.PG_HOST,
+    port: Number(fields.PG_PORT),
     serverPort: Number(fields.PG_PORT), database: fields.PG_DB_NAME, expected: fields.PG_DB_NAME,
     user: fields.PG_USER, password: fields.PG_PASSWORD }
 }
@@ -74,12 +78,14 @@ export function roundAmount(original) {
   const cents = Object.is(rounded, -0) ? 0 : rounded
   const amountString = (Math.round(amount * 100) / 100).toFixed(2)
   let encodingMatchesCents = false
-  try { encodingMatchesCents = decimalTextCents(amountString) === cents } catch { /* Flag the encoding, never substitute a value. */ }
+  try { encodingMatchesCents = decimalTextCents(amountString) === cents } catch {
+    /* Flag the encoding, never substitute a value. */ }
   return { original, cents, amountString, changed: amount !== cents / 100,
     negativeZero: Object.is(rounded, -0), encodingMatchesCents }
 }
 
-function object(value) { return typeof value === 'object' && value !== null && !Array.isArray(value) }
+function object(value) { return typeof value === 'object' && value !== null && !Array.isArray(
+  value) }
 
 // Input is a single transaction and *all* its links, not Lucid's hasOne relation.
 // No posting-eligibility filtering, implicit Unassigned fill or repair is performed.
@@ -87,10 +93,13 @@ export function auditTransaction(row) {
   const result = { transactionId: row.id, transactionType: row.type, status: 'unsupported',
     reason: '', originalCategoryAmounts: [], roundedCategoryAmounts: [], categoryCents: [],
     categorySumCents: null, expectedCents: null, differenceCents: null, amountsChanged: false,
-    deleted: row.deleted, pending: (Array.isArray(row.links) ? row.links : []).map((link) => object(link) ? link.pending : null) }
+    deleted: row.deleted, pending: (Array.isArray(row.links) ? row.links : []).map((link) => object(
+      link) ? link.pending : null) }
   if (row.deprecated) return { ...result, status: 'deprecated', reason: 'deprecated_feature' }
-  if (![0, 5, 2, 3, 4].includes(row.type)) return { ...result, reason: 'outside_supported_lifecycles' }
-  if (!Array.isArray(row.categories)) return { ...result, status: 'malformed', reason: 'categories_not_array' }
+  if (![0, 5, 2, 3, 4].includes(row.type)) return { ...result, reason:
+    'outside_supported_lifecycles' }
+  if (!Array.isArray(row.categories)) return { ...result, status: 'malformed', reason:
+    'categories_not_array' }
   result.originalCategoryAmounts = row.categories.map((split, index) => ({ index,
     categoryId: object(split) ? split.categoryId : null,
     present: object(split) && Object.hasOwn(split, 'amount'),
@@ -109,25 +118,32 @@ export function auditTransaction(row) {
       encodingMismatch ||= !rounded.encodingMatchesCents
     }
     result.categorySumCents = result.categoryCents.reduce(checkedAdd, 0)
-    if (encodingMismatch) return { ...result, reason: 'formatted_dollars_do_not_encode_rounded_cents' }
+    if (encodingMismatch) return { ...result, reason:
+      'formatted_dollars_do_not_encode_rounded_cents' }
     if (!Array.isArray(row.links)) return { ...result, reason: 'missing_link_evidence' }
     if ([0, 4, 5].includes(row.type)) {
       if (row.links.length !== 1) return { ...result, reason: 'ordinary_link_count_not_one' }
       const link = row.links[0]
-      if (!object(link) || link.scoped !== true || !['Transactions', 'Uncategorized Transactions'].includes(link.tracking)) {
+      if (!object(link) || link.scoped !== true || !['Transactions', 'Uncategorized Transactions']
+        .includes(link.tracking)) {
         return { ...result, reason: 'ordinary_account_scope_or_tracking_unsupported' }
       }
-      result.expectedCents = typeof link.amount === 'string' ? decimalTextCents(link.amount) : roundAmount(link.amount).cents
+      result.expectedCents = typeof link.amount === 'string' ? decimalTextCents(link
+        .amount) : roundAmount(link.amount).cents
     } else {
-      if (row.links.length !== 0) return { ...result, reason: 'funding_or_rebalance_has_account_links' }
-      if (row.categories.length === 0) return { ...result, reason: 'empty_funding_or_rebalance_not_supported_by_endpoint' }
+      if (row.links.length !== 0) return { ...result, reason:
+        'funding_or_rebalance_has_account_links' }
+      if (row.categories.length === 0) return { ...result, reason:
+        'empty_funding_or_rebalance_not_supported_by_endpoint' }
       result.expectedCents = 0
       if (row.type === 2) {
-        if (!Array.isArray(row.poolIds) || row.poolIds.length !== 1) return { ...result, reason: 'owning_budget_pool_not_unique' }
+        if (!Array.isArray(row.poolIds) || row.poolIds.length !== 1) return { ...result, reason:
+          'owning_budget_pool_not_unique' }
         const poolId = row.poolIds[0]
         let pool = 0, nonPool = 0, found = false
         row.categories.forEach((split, index) => {
-          if (split.categoryId === poolId) { pool = checkedAdd(pool, result.categoryCents[index]); found = true }
+          if (split.categoryId === poolId) { pool = checkedAdd(pool, result.categoryCents[index]);
+            found = true }
           else nonPool = checkedAdd(nonPool, result.categoryCents[index])
         })
         if (!found) return { ...result, reason: 'missing_pool_allocation' }
@@ -137,7 +153,8 @@ export function auditTransaction(row) {
         result.differenceCents = checkedAdd(nonPool, pool)
       }
     }
-    if (result.differenceCents === null) result.differenceCents = checkedAdd(result.categorySumCents, -result.expectedCents)
+    if (result.differenceCents === null) result.differenceCents = checkedAdd(result
+      .categorySumCents, -result.expectedCents)
     if (row.type === 3) result.signedRemainderCents = result.differenceCents
     result.status = result.differenceCents === 0 ? 'pass' : 'fail'
     result.reason = result.status === 'pass' ? 'conserved' : 'rounded_cent_conservation_mismatch'
@@ -160,7 +177,8 @@ export function countResult(summary, result) {
     if (result.transactionType === 3) summary.rebalance++
   }
   const key = String(result.transactionType)
-  const counts = summary.byType[key] ??= { total: 0, pass: 0, fail: 0, malformed: 0, unsupported: 0, deprecated: 0, amountsChanged: 0 }
+  const counts = summary.byType[key] ??= { total: 0, pass: 0, fail: 0, malformed: 0, unsupported: 0,
+    deprecated: 0, amountsChanged: 0 }
   counts.total++; counts[result.status]++
   if (result.amountsChanged) counts.amountsChanged++
 }
@@ -169,17 +187,21 @@ export function countResult(summary, result) {
 // link/allocation cardinality, and neither balance columns nor legacy storage is read.
 export const PAGE_SQL = `SELECT t.id, t.type, t.deleted, t.categories::text AS categories_text,
   COALESCE((SELECT jsonb_agg((entry.value->'amount')::text ORDER BY entry.ordinality)
-    FROM jsonb_array_elements(CASE WHEN jsonb_typeof(t.categories)='array' THEN t.categories ELSE '[]'::jsonb END)
+    FROM jsonb_array_elements(CASE WHEN jsonb_typeof(t.categories)='array' THEN t.categories ELSE \
+'[]'::jsonb END)
       WITH ORDINALITY entry(value,ordinality)), '[]'::jsonb)::text AS amount_tokens,
   COALESCE((SELECT jsonb_agg(jsonb_build_object('amount', at.amount::text, 'pending', at.pending,
     'tracking', a.tracking, 'scoped', i.application_id=t.application_id) ORDER BY at.id)
     FROM public.account_transactions at LEFT JOIN public.accounts a ON a.id=at.account_id
-    LEFT JOIN public.institutions i ON i.id=a.institution_id WHERE at.transaction_id=t.id), '[]'::jsonb)::text AS links_text,
+    LEFT JOIN public.institutions i ON i.id=a.institution_id WHERE at.transaction_id=t.id), \
+'[]'::jsonb)::text AS links_text,
   COALESCE((SELECT jsonb_agg(c.id ORDER BY c.id) FROM public.categories c
-    JOIN public.groups g ON g.id=c.group_id WHERE g.application_id=t.application_id AND c.type='FUNDING POOL'), '[]'::jsonb)::text AS pool_ids,
+    JOIN public.groups g ON g.id=c.group_id WHERE g.application_id=t.application_id AND \
+c.type='FUNDING POOL'), '[]'::jsonb)::text AS pool_ids,
   (EXISTS (SELECT 1 FROM public.account_transactions at JOIN public.accounts a ON a.id=at.account_id
       WHERE at.transaction_id=t.id AND a.type='loan')
-   OR EXISTS (SELECT 1 FROM jsonb_array_elements(CASE WHEN jsonb_typeof(t.categories)='array' THEN t.categories ELSE '[]'::jsonb END) e
+   OR EXISTS (SELECT 1 FROM jsonb_array_elements(CASE WHEN jsonb_typeof(t.categories)='array' THEN \
+t.categories ELSE '[]'::jsonb END) e
       JOIN public.categories c ON e->>'categoryId'=c.id::text WHERE c.type='LOAN')) AS deprecated
 FROM public.transactions t WHERE t.id > $1 ORDER BY t.id LIMIT $2`
 
@@ -190,20 +212,25 @@ const systemFailures = new Set(['EEXIST', 'EACCES', 'EPERM', 'ENOENT', 'ENOSPC',
 // Installed pg throws some connection/authentication Errors without a code.
 // Match known messages internally; only these fixed labels leave the process.
 const driverFailures = new Map([
-  ['SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a non-empty string', 'SASL_PASSWORD_MISSING'],
-  ['SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string', 'SASL_PASSWORD_INVALID_TYPE'],
+  ['SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a non-empty string',
+    'SASL_PASSWORD_MISSING'],
+  ['SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string',
+    'SASL_PASSWORD_INVALID_TYPE'],
   ['timeout expired', 'CONNECT_TIMEOUT'],
   ['Connection terminated', 'CONNECTION_TERMINATED'],
   ['Connection terminated unexpectedly', 'CONNECTION_TERMINATED'],
 ])
 
 export function failureInfo(error, phase, examined = 0) {
-  const code = typeof error?.code === 'string' && (/^[0-9A-Z]{5}$/.test(error.code) || systemFailures.has(error.code))
+  const code = typeof error?.code === 'string' && (/^[0-9A-Z]{5}$/.test(error.code) ||
+    systemFailures.has(error.code))
     ? error.code : ownFailures.has(error?.message) ? error.message
-      : driverFailures.get(error?.message) ?? (typeof error?.message === 'string' && error.message.startsWith('SASL: ')
+      : driverFailures.get(error?.message) ?? (typeof error?.message === 'string' && error.message
+        .startsWith('SASL: ')
         ? 'SASL_PROTOCOL_ERROR' : 'unclassified_error')
   const info = { phase, code, examined }
-  if (typeof error?.position === 'string' && /^\d{1,8}$/.test(error.position)) info.sqlPosition = error.position
+  if (typeof error?.position === 'string' && /^\d{1,8}$/.test(error.position)) info.sqlPosition =
+    error.position
   return info
 }
 
@@ -215,7 +242,9 @@ export async function runAudit(config, createClient, emit) {
   const client = createClient({ host: config.host, port: config.port, database: config.database,
     user: config.user, password: config.password, ssl: false, connectionTimeoutMillis: 10_000,
     application_name: 'spendcraft_category_cent_audit',
-    options: `-c default_transaction_read_only=on -c statement_timeout=${config.statementMs} -c lock_timeout=${config.lockMs} -c idle_in_transaction_session_timeout=30000 -c search_path=pg_catalog,public` })
+    options: `-c default_transaction_read_only=on -c statement_timeout=${config
+      .statementMs} -c lock_timeout=${config
+      .lockMs} -c idle_in_transaction_session_timeout=30000 -c search_path=pg_catalog,public` })
   const summary = newSummary()
   let transaction = false, expired = false, report, failure
   let phase = 'connect'
@@ -227,14 +256,17 @@ export async function runAudit(config, createClient, emit) {
     await client.connect()
     phase = 'verify_target'
     const { rows: [live] } = await client.query(VERIFY_SQL)
-    if (live?.database !== config.expected || live?.port !== config.serverPort || live?.default_read_only !== 'on') {
+    if (live?.database !== config.expected || live?.port !== config.serverPort || live
+      ?.default_read_only !== 'on') {
       throw new Error('target_or_readonly_verification_failed')
     }
     phase = 'begin_readonly_snapshot'
-    await client.query('BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY'); transaction = true
+    await client.query('BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY'); transaction =
+      true
     phase = 'verify_transaction_mode'
     const { rows: [mode] } = await client.query(MODE_SQL)
-    if (mode?.read_only !== 'on' || mode?.isolation !== 'repeatable read') throw new Error('transaction_mode_failed')
+    if (mode?.read_only !== 'on' || mode?.isolation !== 'repeatable read') throw new Error(
+      'transaction_mode_failed')
     let after = '0'
     while (true) {
       if (expired) throw new Error('audit_timeout')
@@ -245,7 +277,8 @@ export async function runAudit(config, createClient, emit) {
         if (expired) throw new Error('audit_timeout')
         phase = 'classify_transaction'
         const finding = auditTransaction({ ...row, categories: JSON.parse(row.categories_text),
-          amountTokens: JSON.parse(row.amount_tokens), links: JSON.parse(row.links_text), poolIds: JSON.parse(row.pool_ids) })
+          amountTokens: JSON.parse(row.amount_tokens), links: JSON.parse(row.links_text),
+            poolIds: JSON.parse(row.pool_ids) })
         countResult(summary, finding)
         // Stream all rows: passing but changed values are reviewable too.
         phase = 'write_details'
@@ -257,11 +290,13 @@ export async function runAudit(config, createClient, emit) {
     }
     phase = 'commit_readonly_snapshot'
     await client.query('COMMIT'); transaction = false
-    report = { status: 'complete', target: { database: live.database, port: live.port, transport: config.host.startsWith('/') ? 'local_unix_socket' : 'tcp' }, summary }
+    report = { status: 'complete', target: { database: live.database, port: live.port,
+      transport: config.host.startsWith('/') ? 'local_unix_socket' : 'tcp' }, summary }
   } catch (error) {
     failure = failureInfo(expired ? new Error('audit_timeout') : error, phase, summary.total)
   } finally {
-    clearTimeout(timer); process.removeListener('SIGINT', interrupt); process.removeListener('SIGTERM', interrupt)
+    clearTimeout(timer); process.removeListener('SIGINT', interrupt); process.removeListener(
+      'SIGTERM', interrupt)
     for (const [cleanupPhase, cleanup] of [
       ['rollback', async () => { if (transaction && !expired) await client.query('ROLLBACK') }],
       ['close_connection', () => client.end()],
@@ -287,14 +322,17 @@ async function main() {
     if (seen.has(arg)) { valid = false; break }
     seen.add(arg)
     if (arg === '--execute') execute = true
-    else if (['--env-file', '--database'].includes(arg) && args[index + 1] && !args[index + 1].startsWith('--')) {
+    else if (['--env-file', '--database'].includes(arg) && args[index + 1] && !args[index + 1]
+      .startsWith('--')) {
       const value = args[++index]
       if (arg === '--env-file') envFile = value
       else expectedDatabase = value
     } else { valid = false; break }
   }
   if (!valid || !execute) {
-    console.error('After authorization only: --execute [--env-file PATH] [--database NAME] (or offline --print-sql)')
+    console.error(
+      'After authorization only: --execute [--env-file PATH] [--database NAME] (or offline \
+--print-sql)')
     process.exitCode = 2; return
   }
   let details, summaryFile
@@ -317,8 +355,10 @@ async function main() {
     phase = 'write_summary'
     await summaryFile.writeFile(`${JSON.stringify(report, null, 2)}\n`)
     const s = report.summary
-    console.log(`COMPLETE: ${s.total} transactions; ordinary ${s.ordinary}, opening ${s.opening}, funding ${s.funding}, rebalance ${s.rebalance}.`)
-    console.log(`Pass ${s.pass}; fail ${s.fail}; malformed ${s.malformed}; unsupported ${s.unsupported}; deprecated ${s.deprecated}; rounded changes ${s.amountsChanged}.`)
+    console.log(`COMPLETE: ${s.total} transactions; ordinary ${s.ordinary}, opening ${s
+      .opening}, funding ${s.funding}, rebalance ${s.rebalance}.`)
+    console.log(`Pass ${s.pass}; fail ${s.fail}; malformed ${s.malformed}; unsupported ${s
+      .unsupported}; deprecated ${s.deprecated}; rounded changes ${s.amountsChanged}.`)
     console.log(`Details and summary: ${config.outputDir}`)
     if (s.fail || s.malformed || s.unsupported) process.exitCode = 1
   } catch (error) {
@@ -326,11 +366,14 @@ async function main() {
     const failure = error instanceof AuditRunError ? error.auditFailure : failureInfo(error, phase)
     if (summaryFile) {
       try { await summaryFile.writeFile(`${JSON.stringify({ status: 'incomplete', failure })}\n`) }
-      catch (writeError) { failure.outputFailure = failureInfo(writeError, 'write_incomplete_summary') }
+      catch (writeError) { failure.outputFailure = failureInfo(writeError,
+        'write_incomplete_summary') }
     }
-    console.error('INCOMPLETE: audit did not finish. Do not use partial counts for migration approval.')
+    console.error(
+      'INCOMPLETE: audit did not finish. Do not use partial counts for migration approval.')
     console.error(`Diagnostic: ${JSON.stringify(failure)}`)
-    if (failure.code === 'EEXIST') console.error('Choose a fresh output directory; existing audit files are never overwritten.')
+    if (failure.code === 'EEXIST') console.error(
+      'Choose a fresh output directory; existing audit files are never overwritten.')
     if (failure.code === 'SASL_PASSWORD_MISSING') {
       console.error('The server requires a password. Set PG_PASSWORD in the selected .env file.')
     }

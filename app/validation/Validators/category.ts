@@ -12,7 +12,8 @@ export const addCategory = vine
       name: vine.string().unique({
           table: 'categories',
           column: 'name',
-          filter: (db, _value, field) => { db.useTransaction(field.meta.trx).where('group_id', field.meta.groupId) },
+          filter: (db, _value, field) => { db.useTransaction(field.meta.trx).where('group_id', field
+            .meta.groupId) },
         }),
       monthlyExpenses: vine.boolean().optional(),
       type: vine.enum([CategoryType.Regular, CategoryType.Bill, CategoryType.Goal]).optional(),
@@ -25,7 +26,8 @@ export const addCategory = vine
         vine.object({
           categoryId: vine.number(),
           amount: vine.union([
-            vine.union.if((_value, field) => vine.helpers.asBoolean(field.parent.percentage) === true, vine.number({ strict: true })),
+            vine.union.if((_value, field) => vine.helpers.asBoolean(field.parent
+              .percentage) === true, vine.number({ strict: true })),
             vine.union.else(monetaryAmount()),
           ]),
           percentage: vine.boolean(),
@@ -50,7 +52,8 @@ export const addGroup = vine
             db
               .useTransaction(field.meta.trx)
               .where('application_id', field.meta.budgetId)
-              .andWhereRaw('COALESCE(parent_group_id, ??) = ?', [field.meta.noGroupId, field.data.parentGroupId ?? field.meta.noGroupId])
+              .andWhereRaw('COALESCE(parent_group_id, ??) = ?', [field.meta.noGroupId, field.data
+                .parentGroupId ?? field.meta.noGroupId])
           },
         }),
       parentGroupId: vine.number().nullable().optional(),
@@ -75,7 +78,8 @@ export const updateCategory = vine
         }
       }),
       monthlyExpenses: vine.boolean().optional(),
-      type: vine.enum([CategoryType.Regular, CategoryType.Bill, CategoryType.Goal] as const).optional(),
+      type: vine.enum([CategoryType.Regular, CategoryType.Bill, CategoryType.Goal] as const)
+        .optional(),
       goalDate: vine.date().optional().transform((date) => DateTime.fromJSDate(date)),
       recurrence: vine.number().withoutDecimals().min(1).max(360).optional(),
       suspended: vine.boolean().optional(),
@@ -87,7 +91,8 @@ export const updateCategory = vine
         vine.object({
           categoryId: vine.number(),
           amount: vine.union([
-            vine.union.if((_value, field) => vine.helpers.asBoolean(field.parent.percentage) === true, vine.number({ strict: true })),
+            vine.union.if((_value, field) => vine.helpers.asBoolean(field.parent
+              .percentage) === true, vine.number({ strict: true })),
             vine.union.else(monetaryAmount()),
           ]),
           percentage: vine.boolean(),
@@ -102,7 +107,8 @@ updateCategory.messagesProvider = new SimpleMessagesProvider({
 })
 
 export const updateGroup = vine
-  .withMetaData<{ budgetId: number, groupId: number | string, noGroupId: number, trx: TransactionClientContract }>()
+  .withMetaData<{ budgetId: number, groupId: number | string, noGroupId: number,
+    trx: TransactionClientContract }>()
   .compile(
     vine.object({
       name: vine.string().unique({
@@ -112,7 +118,8 @@ export const updateGroup = vine
           db
             .useTransaction(field.meta.trx)
             .where('application_id', field.meta.budgetId)
-            .andWhereRaw(`COALESCE(parent_group_id, ??) = ?`, [field.meta.noGroupId, field.data.parentGroupId ?? field.meta.noGroupId])
+            .andWhereRaw(`COALESCE(parent_group_id, ??) = ?`, [field.meta.noGroupId, field.data
+              .parentGroupId ?? field.meta.noGroupId])
             .andWhereNot('id', field.meta.groupId)
         },
       }).optional(),

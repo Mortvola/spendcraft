@@ -11,7 +11,8 @@ export function transactionRequest(values: Record<string, unknown>): Record<stri
   for (const field of ['categories', 'taxCategories']) {
     if (Array.isArray(result[field])) result[field] = result[field].map((entry: unknown) => {
       if (entry === null || typeof entry !== 'object' || Array.isArray(entry)) return entry
-      return Object.hasOwn(entry, 'amount') ? { ...entry, amount: encode(Reflect.get(entry, 'amount')) } : { ...entry }
+      return Object.hasOwn(entry, 'amount') ? { ...entry, amount: encode(Reflect.get(entry,
+        'amount')) } : { ...entry }
     })
   }
   return result
@@ -20,19 +21,23 @@ export function transactionRequest(values: Record<string, unknown>): Record<stri
 // Funding/rebalance requests also carry monetary base amounts and fixed-dollar rules.
 export function categoryTransferRequest(values: object): Record<string, unknown> {
   const result = transactionRequest({ ...values })
-  if (Array.isArray(result.categories)) result.categories = result.categories.map((entry: unknown) => {
+  if (Array.isArray(result.categories)) result.categories = result.categories.map((
+    entry: unknown) => {
     if (entry === null || typeof entry !== 'object' || Array.isArray(entry)) return entry
     const category = { ...entry }
     const baseAmount: unknown = Reflect.get(category, 'baseAmount')
-    if (typeof baseAmount === 'number' && Number.isFinite(baseAmount) && Number.isSafeInteger(Math.round(baseAmount * 100))) {
+    if (typeof baseAmount === 'number' && Number.isFinite(baseAmount) && Number.isSafeInteger(Math
+      .round(baseAmount * 100))) {
       Reflect.set(category, 'baseAmount', encodeMonetaryAmount(baseAmount))
     }
     const rules: unknown = Reflect.get(category, 'fundingCategories')
-    if (Array.isArray(rules)) Reflect.set(category, 'fundingCategories', rules.map((rule: unknown) => {
+    if (Array.isArray(rules)) Reflect.set(category, 'fundingCategories', rules.map((
+      rule: unknown) => {
       if (rule === null || typeof rule !== 'object' || Array.isArray(rule)) return rule
       const amount: unknown = Reflect.get(rule, 'amount')
       if (Reflect.get(rule, 'percentage') === false && typeof amount === 'number'
-        && Number.isFinite(amount) && Number.isSafeInteger(Math.round(amount * 100))) return { ...rule, amount: encodeMonetaryAmount(amount) }
+        && Number.isFinite(amount) && Number.isSafeInteger(Math.round(amount * 100))) return {
+          ...rule, amount: encodeMonetaryAmount(amount) }
       return rule
     }))
     return category

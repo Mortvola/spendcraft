@@ -39,16 +39,22 @@ test.group('Exact funding percentage validation', () => {
     assert.equal(result.rule, rule)
   })
 
-  test('collection validation counts duplicates, excludes fixed entries and uses exact units', ({ assert }) => {
+  test('collection validation counts duplicates, excludes fixed entries and uses exact units', ({
+    assert }) => {
     assert.isUndefined(validateFundingPercentages([]))
     assert.isUndefined(validateFundingPercentages([{ amount: -7, percentage: false }]))
-    assert.isUndefined(validateFundingPercentages([0.29, 99.71].map((amount) => ({ amount, percentage: true }))))
-    assert.equal(validateFundingPercentages([{ amount: 0, percentage: true }])?.rule, 'fundingPercentageTotal')
-    assert.equal(validateFundingPercentages([{ amount: 1e21, percentage: true }])?.rule, 'fundingPercentagePrecision')
-    assert.isUndefined(validateFundingPercentages([0.001, 99.999].map(amount => ({ amount, percentage: true }))))
+    assert.isUndefined(validateFundingPercentages([0.29, 99.71].map((amount) => ({ amount,
+      percentage: true }))))
+    assert.equal(validateFundingPercentages([{ amount: 0, percentage: true }])?.rule,
+      'fundingPercentageTotal')
+    assert.equal(validateFundingPercentages([{ amount: 1e21, percentage: true }])?.rule,
+      'fundingPercentagePrecision')
+    assert.isUndefined(validateFundingPercentages([0.001, 99.999].map(amount => ({ amount,
+      percentage: true }))))
   })
 
-  test('Vine adapter accepts raw numeric/boolean strings and preserves child coercion', async ({ assert }) => {
+  test('Vine adapter accepts raw numeric/boolean strings and preserves child coercion', async ({
+    assert }) => {
     const output = await schema.validate({ fundingCategories: [
       { categoryId: '1', amount: '50', percentage: 'true' },
       { categoryId: '1', amount: '50', percentage: 'true' },
@@ -64,17 +70,21 @@ test.group('Exact funding percentage validation', () => {
     assert.deepEqual(await schema.validate({ fundingCategories: [] }), { fundingCategories: [] })
   })
 
-  test('Vine errors distinguish funding rules while malformed children retain generic errors').with([
-    { amount: -100, percentage: true, rule: 'fundingPercentageNonnegative', field: 'fundingCategories' },
+  test('Vine errors distinguish funding rules while malformed children retain generic errors').with(
+    [
+    { amount: -100, percentage: true, rule: 'fundingPercentageNonnegative', field:
+      'fundingCategories' },
     { amount: 0.001, percentage: true, rule: 'fundingPercentageTotal', field: 'fundingCategories' },
     { amount: 99.99, percentage: true, rule: 'fundingPercentageTotal', field: 'fundingCategories' },
     { amount: 'abc', percentage: true, rule: 'number', field: 'fundingCategories.0.amount' },
     { amount: null, percentage: true, rule: 'required', field: 'fundingCategories.0.amount' },
     { amount: 100, percentage: 'bad', rule: 'boolean', field: 'fundingCategories.0.percentage' },
   ]).run(async ({ assert }, scenario) => {
-    const [error] = await schema.tryValidate({ fundingCategories: [{ categoryId: 1, ...scenario }] }, { errorReporter: () => new JSONAPIErrorReporter() })
+    const [error] = await schema.tryValidate({ fundingCategories: [{ categoryId: 1,
+      ...scenario }] }, { errorReporter: () => new JSONAPIErrorReporter() })
     assert.isNotNull(error)
-    assert.deepEqual(error?.messages.map(({ code, source }: { code: string, source: { pointer: string } }) => ({ rule: code, field: source.pointer })),
+    assert.deepEqual(error?.messages.map(({ code, source }: { code: string, source: {
+      pointer: string } }) => ({ rule: code, field: source.pointer })),
       [{ rule: scenario.rule, field: scenario.field.replace('.0.', '.*.') }])
   })
 })

@@ -20,7 +20,8 @@ const TabView: React.FC = observer(() => {
 
   const handleCategoriesClick = () => {
     if (uiState.selectedCategory !== undefined && uiState.selectedCategory !== null) {
-      if (params.categoryId === undefined || parseInt(params.categoryId, 10) !== uiState.selectedCategory.id) {
+      if (params.categoryId === undefined || parseInt(params.categoryId, 10) !== uiState
+        .selectedCategory.id) {
         navigate(`/home/${uiState.selectedCategory.id}`)
       }
       else {
@@ -66,7 +67,8 @@ const TabView: React.FC = observer(() => {
 
   const handleAccountsClick = () => {
     if (uiState.selectedAccount !== undefined && uiState.selectedAccount !== null) {
-      if (params.accountId === undefined || parseInt(params.accountId, 10) !== uiState.selectedAccount.id) {
+      if (params.accountId === undefined || parseInt(params.accountId, 10) !== uiState
+        .selectedAccount.id) {
         navigate(`/accounts/${uiState.selectedAccount.id}`)
       }
       else {

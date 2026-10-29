@@ -8,12 +8,15 @@ import { encodeMonetaryAmount } from '../../app/services/categoryAmountCodec.ts'
 import Tax from '../../app/Models/Tax.ts'
 import TransactionLog from '../../app/Models/TransactionLog.ts'
 import { taxForecastFields, taxEstimatedFields, encodeTaxForecast, decodeTaxForecast,
-  encodeTransactionLogMoney, decodeTransactionLogMoney, validateSubmittedTaxForecast, serializeTaxForecast, serializeTransactionLogMoney } from '../../app/services/taxMonetaryCodec.ts'
+  encodeTransactionLogMoney, decodeTransactionLogMoney, validateSubmittedTaxForecast,
+    serializeTaxForecast, serializeTransactionLogMoney } from
+    '../../app/services/taxMonetaryCodec.ts'
 import { replaceTaxForecast } from '../../app/services/taxMonetaryStorage.ts'
 import { addTax } from '../../app/validation/Validators/tax.ts'
 import { loadWorksheet } from '../../scripts/auditTaxForecastPrecision.mjs'
 
-const forecast = amount => ({ filingStatus: 'Single', ...Object.fromEntries(taxForecastFields.map(f => [f, amount])),
+const forecast = amount => ({ filingStatus: 'Single', ...Object.fromEntries(taxForecastFields.map(
+  f => [f, amount])),
   estimated: Object.fromEntries(taxEstimatedFields.map(f => [f, amount])) })
 function sample(kind) {
   const Model = kind === 'tax' ? class extends Tax {} : class extends TransactionLog {}
@@ -21,9 +24,11 @@ function sample(kind) {
   Model.boot()
   Model.$adapter = {
     query() { return { client: { dialect: { dateTimeFormat: 'yyyy-MM-dd HH:mm:ss.SSSZZ' } } } },
-    async insert(_row, values) { writes.push(values) }, async update(_row, values) { writes.push(values) },
+    async insert(_row, values) { writes.push(values) }, async update(_row, values) { writes.push(
+      values) },
   }
-  const hydrated = value => Model.$createFromAdapterResult({ id: 1, budget_id: 3, application_id: 3, year: 2026,
+  const hydrated = value => Model.$createFromAdapterResult({ id: 1, budget_id: 3, application_id: 3,
+    year: 2026,
     transaction_id: 4, message: 'original', [property]: value })
   return { Model, property, writes, hydrated }
 }
@@ -31,11 +36,13 @@ function sample(kind) {
 test.group('Tax and TransactionLog monetary storage (no database)', () => {
   test('all 15 approved paths use individual approved rounding').with([
     [12.345, '12.35'], [0.125, '0.13'], [-0.125, '-0.12'], [1.005, '1.00'], [-1.005, '-1.00'],
-    [0.1 + 0.2, '0.30'], [0, '0.00'], [-0, '0.00'], [0.005, '0.01'], [-0.005, '0.00'], [-12.34, '-12.34'],
+    [0.1 + 0.2, '0.30'], [0, '0.00'], [-0, '0.00'], [0.005, '0.01'], [-0.005, '0.00'], [-12.34,
+      '-12.34'],
   ]).run(({ assert }, [amount, stored]) => {
     assert.equal(encodeMonetaryAmount(amount), stored)
     assert.deepEqual(encodeTaxForecast(forecast(amount)), forecast(stored))
-    assert.deepEqual(encodeTransactionLogMoney({ amount: { old: amount, new: amount } }), { amount: { old: stored, new: stored } })
+    assert.deepEqual(encodeTransactionLogMoney({ amount: { old: amount, new: amount } }), {
+      amount: { old: stored, new: stored } })
   })
   test('malformed, nonfinite and unsafe scalars reject').with([
     true, false, {}, [], NaN, Infinity, -Infinity, '', ' ', '1.2', '1.005', '1e2', '-0.00', '01.00',
@@ -45,57 +52,77 @@ test.group('Tax and TransactionLog monetary storage (no database)', () => {
     assert.throws(() => encodeTransactionLogMoney({ amount: { old: value } }))
   })
   test('canonical reads expose numbers and unrelated JSON', ({ assert }) => {
-    const raw = { ...forecast('2.00'), taxableInterest: '1.00', estimated: { ...forecast('2.00').estimated, priorYearAgi: '-0.12' },
+    const raw = { ...forecast('2.00'), taxableInterest: '1.00', estimated: { ...forecast('2.00')
+      .estimated, priorYearAgi: '-0.12' },
       note: { amount: 1.005, ordered: [2, 1, 2] } }, before = globalThis.structuredClone(raw)
     const decoded = decodeTaxForecast(raw)
     assert.equal(decoded.taxableInterest, 1); assert.equal(decoded.estimated.priorYearAgi, -0.12)
     assert.equal(decoded.estimated.priorYearTotalTax, 2); assert.deepEqual(raw, before)
     assert.deepEqual(decoded.note, raw.note)
-    const log = { amount: { old: '1.00', new: '2.00', currency: 'USD' }, categories: [{ amount: 1.005 }] }
-    assert.deepEqual(decodeTransactionLogMoney(log), { ...log, amount: { ...log.amount, old: 1, new: 2 } })
+    const log = { amount: { old: '1.00', new: '2.00', currency: 'USD' }, categories: [{
+      amount: 1.005 }] }
+    assert.deepEqual(decodeTransactionLogMoney(log), { ...log, amount: { ...log.amount, old: 1,
+      new: 2 } })
     assert.equal(log.amount.new, '2.00')
   })
   test('missing/null roots, parents and leaves remain missing/null').with([null, undefined])
     .run(({ assert }, value) => {
-      assert.strictEqual(encodeTaxForecast(value), value); assert.strictEqual(decodeTaxForecast(value), value)
-      assert.strictEqual(encodeTransactionLogMoney(value), value); assert.strictEqual(decodeTransactionLogMoney(value), value)
-      assert.deepEqual(encodeTaxForecast({ filingStatus: 'Single', taxableInterest: value, estimated: null }), { filingStatus: 'Single', taxableInterest: value, estimated: null })
+      assert.strictEqual(encodeTaxForecast(value), value); assert.strictEqual(decodeTaxForecast(
+        value), value)
+      assert.strictEqual(encodeTransactionLogMoney(value), value); assert.strictEqual(
+        decodeTransactionLogMoney(value), value)
+      assert.deepEqual(encodeTaxForecast({ filingStatus: 'Single', taxableInterest: value,
+        estimated: null }), { filingStatus: 'Single', taxableInterest: value, estimated: null })
     })
-  test('null leaves and message-only or unrelated changes are never filled with zeros', ({ assert }) => {
-    assert.deepEqual(encodeTaxForecast({ taxableInterest: null, estimated: { priorYearAgi: null } }), { taxableInterest: null, estimated: { priorYearAgi: null } })
-    for (const changes of [{}, { note: { old: 'a', new: 'b' } }, { amount: null }, { amount: { new: null } }]) {
-      assert.deepEqual(encodeTransactionLogMoney(changes), changes); assert.deepEqual(decodeTransactionLogMoney(changes), changes)
+  test('null leaves and message-only or unrelated changes are never filled with zeros', ({
+    assert }) => {
+    assert.deepEqual(encodeTaxForecast({ taxableInterest: null, estimated: {
+      priorYearAgi: null } }), { taxableInterest: null, estimated: { priorYearAgi: null } })
+    for (const changes of [{}, { note: { old: 'a', new: 'b' } }, { amount: null }, { amount: {
+      new: null } }]) {
+      assert.deepEqual(encodeTransactionLogMoney(changes), changes); assert.deepEqual(
+        decodeTransactionLogMoney(changes), changes)
     }
     assert.deepEqual(encodeTransactionLogMoney({ amount: { old: 1 } }), { amount: { old: '1.00' } })
   })
-  test('Tax requests require canonical strings and decode all monetary fields to numbers', async ({ assert }) => {
+  test('Tax requests require canonical strings and decode all monetary fields to numbers', async ({
+    assert }) => {
     for (const value of ['1.00', '-0.12', '0.00', '123.45']) {
       validateSubmittedTaxForecast(forecast(value))
       const validated = await addTax.validate({ year: 2026, forecast: forecast(value) })
       assert.deepEqual(validated.forecast, forecast(Number(value)))
     }
-    for (const value of [1, '1.005', '-.125', '1e-2', '-0.00', '01.00', true, '', ' ', '0x10', {}, [], Infinity, '900719925474099.00']) {
+    for (const value of [1, '1.005', '-.125', '1e-2', '-0.00', '01.00', true, '', ' ', '0x10', {}, [
+      ], Infinity, '900719925474099.00']) {
       assert.throws(() => validateSubmittedTaxForecast(forecast(value)))
       await assert.rejects(() => addTax.validate({ year: 2026, forecast: forecast(value) }))
     }
     const optional = forecast('1.00')
     delete optional.estimated
-    assert.notProperty((await addTax.validate({ year: 2026, forecast: optional })).forecast, 'estimated')
+    assert.notProperty((await addTax.validate({ year: 2026, forecast: optional })).forecast,
+      'estimated')
   })
-  test('real model new writes preserve numeric runtime values and serialize approved response types').with(['tax', 'log'])
+  test(
+    'real model new writes preserve numeric runtime values and serialize approved response types')
+    .with(['tax', 'log'])
     .run(async ({ assert }, kind) => {
       const { Model, property, writes } = sample(kind), row = new Model()
-      const value = kind === 'tax' ? forecast(-0.125) : { amount: { old: 0.125, new: -0.125 }, note: { unchanged: 1.005 } }
+      const value = kind === 'tax' ? forecast(-0.125) : { amount: { old: 0.125, new: -0.125 },
+        note: { unchanged: 1.005 } }
       row.merge({ id: 1, [property]: value }); await row.save()
       assert.lengthOf(writes, 1)
-      assert.deepEqual(JSON.parse(writes[0][property]), kind === 'tax' ? forecast('-0.12') : { ...value, amount: { old: '0.13', new: '-0.12' } })
-      assert.deepEqual(row.serialize()[property], kind === 'tax' ? forecast('-0.12') : { ...value, amount: { old: '0.13', new: '-0.12' } })
+      assert.deepEqual(JSON.parse(writes[0][property]), kind === 'tax' ? forecast('-0.12') : {
+        ...value, amount: { old: '0.13', new: '-0.12' } })
+      assert.deepEqual(row.serialize()[property], kind === 'tax' ? forecast('-0.12') : { ...value,
+        amount: { old: '0.13', new: '-0.12' } })
       assert.isFalse(row.$isDirty)
     })
-  test('real model reads and nonmoney saves never normalize historical amounts').with(['tax', 'log'])
+  test('real model reads and nonmoney saves never normalize historical amounts').with(['tax',
+    'log'])
     .run(async ({ assert }, kind) => {
       const { hydrated, property, writes } = sample(kind)
-      const raw = kind === 'tax' ? forecast('1.00') : { amount: { old: '1.00', new: '2.00' }, note: 'old' }
+      const raw = kind === 'tax' ? forecast('1.00') : { amount: { old: '1.00', new: '2.00' }, note:
+        'old' }
       const before = globalThis.structuredClone(raw), row = hydrated(raw)
       assert.isFalse(row.$isDirty); await row.save(); assert.lengthOf(writes, 0)
       if (kind === 'tax') row.year = 2027; else row.message = 'changed'
@@ -104,18 +131,24 @@ test.group('Tax and TransactionLog monetary storage (no database)', () => {
   test('metadata-only JSON saves retain historical leaf representations').with(['tax', 'log'])
     .run(async ({ assert }, kind) => {
       const { hydrated, property, writes } = sample(kind)
-      const raw = kind === 'tax' ? { ...forecast('1.00'), note: 'old' } : { amount: { old: '1.00', new: '2.00' }, note: 'old' }
+      const raw = kind === 'tax' ? { ...forecast('1.00'), note: 'old' } : { amount: { old: '1.00',
+        new: '2.00' }, note: 'old' }
       const row = hydrated(raw); row[property].note = 'new'; await row.save()
-      assert.deepEqual(JSON.parse(writes[0][property]), { ...raw, note: 'new' }); assert.isFalse(row.$isDirty)
+      assert.deepEqual(JSON.parse(writes[0][property]), { ...raw, note: 'new' }); assert.isFalse(row
+        .$isDirty)
     })
-  test('explicit Tax replacement encodes unchanged legacy amounts and preserves metadata', async ({ assert }) => {
-    const { hydrated, writes } = sample('tax'), row = hydrated({ ...forecast('1.00'), note: { amount: 1.005 },
+  test('explicit Tax replacement encodes unchanged legacy amounts and preserves metadata', async ({
+    assert }) => {
+    const { hydrated, writes } = sample('tax'), row = hydrated({ ...forecast('1.00'), note: {
+      amount: 1.005 },
       estimated: { ...forecast('1.00').estimated, evidence: 'keep' } })
     replaceTaxForecast(row, forecast(1)); await row.save()
-    assert.deepEqual(JSON.parse(writes[0].data), { ...forecast('1.00'), note: { amount: 1.005 }, estimated: { ...forecast('1.00').estimated, evidence: 'keep' } })
+    assert.deepEqual(JSON.parse(writes[0].data), { ...forecast('1.00'), note: { amount: 1.005 },
+      estimated: { ...forecast('1.00').estimated, evidence: 'keep' } })
     assert.deepEqual(row.data.estimated, { ...forecast(1).estimated, evidence: 'keep' })
   })
-  test('explicit null log changes retain JSON null while message-only writes omit changes', async ({ assert }) => {
+  test('explicit null log changes retain JSON null while message-only writes omit changes', async ({
+    assert }) => {
     const { Model, writes } = sample('log'), nullable = new Model(), absent = new Model()
     nullable.merge({ id: 2, changes: null }); await nullable.save()
     absent.merge({ id: 3, message: 'message only' }); await absent.save()
@@ -125,23 +158,33 @@ test.group('Tax and TransactionLog monetary storage (no database)', () => {
   test('a new log append never rewrites a hydrated historical log', async ({ assert }) => {
     const { Model, hydrated, writes } = sample('log'), old = hydrated({ amount: { old: '1.00' } })
     const original = globalThis.structuredClone(old.$attributes), created = new Model()
-    created.merge({ id: 2, message: 'new entry', changes: { amount: { new: 2.345 } } }); await created.save()
-    assert.lengthOf(writes, 1); assert.equal(writes[0].id, 2); assert.deepEqual(old.$attributes, original)
+    created.merge({ id: 2, message: 'new entry', changes: { amount: { new: 2.345 } } });
+      await created.save()
+    assert.lengthOf(writes, 1); assert.equal(writes[0].id, 2); assert.deepEqual(old.$attributes,
+      original)
   })
-  test('existing Worksheet 2-1 values/thresholds/safe-harbor and subcent installments survive storage', async ({ assert }) => {
+  test(
+    'existing Worksheet 2-1 values/thresholds/safe-harbor and subcent installments survive storage',
+    async ({ assert }) => {
     const worksheet = await loadWorksheet()
     for (const agi of [150000, 150000.01]) {
-      const original = { ...forecast(0), estimated: { expectedAgi: 100000, priorYearAgi: agi, priorYearTotalTax: 10000.01 } }
-      const decoded = decodeTaxForecast(encodeTaxForecast(original)); assert.deepEqual(decoded, original)
-      const input = data => ({ filingStatus: 'Single', deductions: worksheet.deductions('Single'), adjustedGrossIncome: data.estimated.expectedAgi,
-        priorYearAdjustedGrossIncome: data.estimated.priorYearAgi, priorYearTotalTax: data.estimated.priorYearTotalTax })
+      const original = { ...forecast(0), estimated: { expectedAgi: 100000, priorYearAgi: agi,
+        priorYearTotalTax: 10000.01 } }
+      const decoded = decodeTaxForecast(encodeTaxForecast(original)); assert.deepEqual(decoded,
+        original)
+      const input = data => ({ filingStatus: 'Single', deductions: worksheet.deductions('Single'),
+        adjustedGrossIncome: data.estimated.expectedAgi,
+        priorYearAdjustedGrossIncome: data.estimated.priorYearAgi, priorYearTotalTax: data.estimated
+          .priorYearTotalTax })
       assert.deepEqual(worksheet.calculate(input(decoded)), worksheet.calculate(input(original)))
-      if (agi === 150000) assert.equal(worksheet.calculate(input(decoded)).firstInstallment, 2500.0025)
+      if (agi === 150000) assert.equal(worksheet.calculate(input(decoded)).firstInstallment,
+        2500.0025)
     }
   })
 })
 
-test('Tax and TransactionLog responses encode strings while runtime models remain numeric', ({ assert }) => {
+test('Tax and TransactionLog responses encode strings while runtime models remain numeric', ({
+  assert }) => {
   for (const amount of [0, -0, 1, -1, 1.005, 0.125, -0.125, 0.1 + 0.2]) {
     const changes = { amount: { old: amount, new: amount }, note: { amount: 'unrelated' } }
     assert.throws(() => decodeTaxForecast(forecast(amount)))
@@ -149,10 +192,13 @@ test('Tax and TransactionLog responses encode strings while runtime models remai
     assert.throws(() => sample('tax').hydrated(forecast(amount)))
     assert.throws(() => sample('log').hydrated(changes))
     assert.deepEqual(serializeTaxForecast(forecast(amount)), forecast(encodeMonetaryAmount(amount)))
-    assert.deepEqual(serializeTransactionLogMoney(changes), { ...changes, amount: { old: encodeMonetaryAmount(amount), new: encodeMonetaryAmount(amount) } })
-    assert.deepEqual(new Tax().merge({ data: forecast(amount) }).serialize().data, forecast(encodeMonetaryAmount(amount)))
+    assert.deepEqual(serializeTransactionLogMoney(changes), { ...changes, amount: {
+      old: encodeMonetaryAmount(amount), new: encodeMonetaryAmount(amount) } })
+    assert.deepEqual(new Tax().merge({ data: forecast(amount) }).serialize().data, forecast(
+      encodeMonetaryAmount(amount)))
     const log = new TransactionLog().merge({ changes })
-    assert.deepEqual(log.serialize().changes, { ...changes, amount: { old: encodeMonetaryAmount(amount), new: encodeMonetaryAmount(amount) } })
+    assert.deepEqual(log.serialize().changes, { ...changes, amount: { old: encodeMonetaryAmount(
+      amount), new: encodeMonetaryAmount(amount) } })
     assert.deepEqual(log.changes, changes)
   }
   assert.throws(() => serializeTaxForecast(forecast('1.00')))
@@ -160,13 +206,17 @@ test('Tax and TransactionLog responses encode strings while runtime models remai
 })
 
 
-test('Tax actual response strings preserve monthly slots, unknown tax types and aggregate inputs', async ({ assert }) => {
-  const statementRows = [{ $extras: { month: 2, taxableInterest: 0.1 + 0.2, ordinaryDividends: -0.125,
+test('Tax actual response strings preserve monthly slots, unknown tax types and aggregate inputs',
+  async ({ assert }) => {
+  const statementRows = [{ $extras: { month: 2, taxableInterest: 0.1 + 0.2, ordinaryDividends: -
+    0.125,
     shortTermCapitalGains: 1.005, longTermCapitalGains: 0 } }]
-  const transactionRows = [{ $extras: { month: 2, tax_type: 'estimated_tax_payments', tax_amount: 12.5 } },
+  const transactionRows = [{ $extras: { month: 2, tax_type: 'estimated_tax_payments',
+    tax_amount: 12.5 } },
     { $extras: { month: 4, tax_type: 'custom', tax_amount: -0.3 } }]
   const before = globalThis.structuredClone([statementRows, transactionRows])
-  const query = rows => ({ whereHas() { return this }, where() { return this }, select() { return this },
+  const query = rows => ({ whereHas() { return this }, where() { return this }, select() {
+    return this },
     joinRaw() { return this }, whereBetween() { return this }, groupByRaw() { return this },
     then(resolve, reject) { return Promise.resolve(rows).then(resolve, reject) } })
   const statements = mock.method(Statement, 'query', () => query(statementRows))
@@ -175,26 +225,32 @@ test('Tax actual response strings preserve monthly slots, unknown tax types and 
     const result = await TaxesController.getActuals(2026, 3)
     assert.notProperty(result, '0')
     assert.deepEqual(result[1], { month: 2, taxableInterest: '0.30', ordinaryDividends: '-0.12',
-      shortTermCapitalGains: '1.00', longTermCapitalGains: '0.00', taxes: { estimated_tax_payments: '12.50' } })
+      shortTermCapitalGains: '1.00', longTermCapitalGains: '0.00', taxes: { estimated_tax_payments:
+        '12.50' } })
     assert.deepEqual(result[3], { month: 4, taxes: { custom: '-0.30' } })
     assert.deepEqual([statementRows, transactionRows], before)
   } finally { statements.mock.restore(); transactions.mock.restore() }
 })
 
-test('Tax GET and save use canonical forecast serialization while decoding canonical request values', async ({ assert }) => {
+test(
+  'Tax GET and save use canonical forecast serialization while decoding canonical request values',
+  async ({ assert }) => {
   const tax = new Tax().merge({ id: 1, year: 2026, data: forecast(1.005) })
-  const budget = { id: 3, related: () => ({ query: () => ({ where() { return this }, first: async () => tax }) }) }
+  const budget = { id: 3, related: () => ({ query: () => ({ where() { return this }, first: async (
+    ) => tax }) }) }
   let locked = false
   const user = { useTransaction: () => undefined, related: () => ({ query: () => ({
     forUpdate() { locked = true; return this }, firstOrFail: async () => budget,
   }) }) }
   const actuals = mock.method(TaxesController, 'getActuals', async () => [])
-  const query = mock.method(Tax, 'query', () => ({ where() { return this }, first: async () => tax }))
+  const query = mock.method(Tax, 'query', () => ({ where() { return this }, first: async () =>
+    tax }))
   const transaction = mock.method(db, 'transaction', async callback => callback({}))
   const save = mock.method(tax, 'save', async () => tax)
   try {
     const controller = new TaxesController()
-    const read = await controller.get({ auth: { user }, request: { params: () => ({ year: 2026 }) } })
+    const read = await controller.get({ auth: { user }, request: { params: () => ({
+      year: 2026 }) } })
     assert.deepEqual(read.data.forecast, forecast('1.00'))
     assert.deepEqual(tax.data, forecast(1.005))
     const request = { year: 2026, forecast: forecast('-0.12') }
@@ -206,11 +262,13 @@ test('Tax GET and save use canonical forecast serialization while decoding canon
     assert.deepEqual(tax.data, forecast(-0.12))
     assert.isTrue(locked)
     assert.lengthOf(save.mock.calls, 1)
-  } finally { actuals.mock.restore(); query.mock.restore(); transaction.mock.restore(); save.mock.restore() }
+  } finally { actuals.mock.restore(); query.mock.restore(); transaction.mock.restore(); save.mock
+    .restore() }
 })
 
 
-test('TransactionLog response encoding preserves missing/null amounts, metadata and model state', ({ assert }) => {
+test('TransactionLog response encoding preserves missing/null amounts, metadata and model state', ({
+  assert }) => {
   for (const changes of [null, {}, { amount: null }, { amount: { old: null } },
     { note: { old: 'before', new: 'after' } },
     { amount: { new: 0.1 + 0.2, currency: 'USD' }, categories: [{ amount: 1.005 }] }]) {
@@ -223,6 +281,7 @@ test('TransactionLog response encoding preserves missing/null amounts, metadata 
     assert.strictEqual(log.serialize().message, 'keep')
   }
   for (const value of [NaN, Infinity, -Infinity, Number.MAX_SAFE_INTEGER]) {
-    assert.throws(() => new TransactionLog().merge({ changes: { amount: { new: value } } }).serialize())
+    assert.throws(() => new TransactionLog().merge({ changes: { amount: { new: value } } })
+      .serialize())
   }
 })

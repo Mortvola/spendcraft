@@ -12,17 +12,20 @@ async function files(directory) {
 
 test.group('Legacy CategoryTransfer DELETE removal (no database)', () => {
   test('category-transfer route group retains only modern POST/PATCH', async ({ assert }) => {
-    const source = ts.createSourceFile('routes.ts', await read('start/routes.ts'), ts.ScriptTarget.Latest, true)
+    const source = ts.createSourceFile('routes.ts', await read('start/routes.ts'), ts.ScriptTarget
+      .Latest, true)
     let routes
     function visit(node) {
       if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)
-        && node.expression.name.text === 'prefix' && node.arguments[0]?.getText(source) === "'/category-transfer'") {
+        && node.expression.name.text === 'prefix' && node.arguments[0]?.getText(source) ===
+          "'/category-transfer'") {
         const group = node.expression.expression
         const result = []
         function calls(child) {
           if (ts.isCallExpression(child) && ts.isPropertyAccessExpression(child.expression)
             && child.expression.expression.getText(source) === 'router') {
-            result.push([child.expression.name.text, child.arguments[0].getText(source), child.arguments[1].getText(source)])
+            result.push([child.expression.name.text, child.arguments[0].getText(source), child
+              .arguments[1].getText(source)])
           }
           ts.forEachChild(child, calls)
         }
@@ -38,8 +41,14 @@ test.group('Legacy CategoryTransfer DELETE removal (no database)', () => {
   })
 
   test('no production legacy-table authority or standalone handler remains', async ({ assert }) => {
-    for (const file of (await Promise.all(['app', 'commands', 'start', 'client-src', 'common', 'providers'].map(files))).flat()) {
-      assert.notMatch(await read(file), /\btransferDelete\b|\bcategory_transfers\b|\bcategory_splits\b|#(?:app\/)?Models\/CategoryTransfer|#(?:app\/)?Models\/CategorySplit/, file)
+    for (const file of (await Promise.all(['app', 'commands', 'start', 'client-src', 'common',
+      'providers'].map(files))).flat()) {
+      assert.notMatch(await read(file),
+        new RegExp(
+"\\btransferDelete\\b|\\bcategory_transfers\\b|\\bcategory_sp" +
+"lits\\b|#(?:app\\/)?Models\\/CategoryTransfer|#(?:app\\/)?M" +
+"odels\\/CategorySplit",
+""), file)
     }
     for (const file of ['app/Models/CategoryTransfer.ts', 'app/Models/CategorySplit.ts']) {
       await assert.rejects(() => access(file))
@@ -52,16 +61,19 @@ test.group('Legacy CategoryTransfer DELETE removal (no database)', () => {
       function visit(node) {
         if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)
           && node.expression.name.text.toLowerCase() === 'delete') {
-          for (const arg of node.arguments) assert.notInclude(arg.getText(source), 'category-transfer', file)
+          for (const arg of node.arguments) assert.notInclude(arg.getText(source),
+            'category-transfer', file)
         }
         ts.forEachChild(node, visit)
       }
       visit(source)
     }
-    for (const dialog of ['client-src/Funding/FundingDialog.tsx', 'client-src/Rebalance/RebalanceDialog.tsx']) {
+    for (const dialog of ['client-src/Funding/FundingDialog.tsx',
+      'client-src/Rebalance/RebalanceDialog.tsx']) {
       assert.include(await read(dialog), 'transaction.delete()')
     }
-    assert.include(await read('client-src/State/Transaction.ts'), '`/api/v1/transaction/${this.id}`')
+    assert.include(await read('client-src/State/Transaction.ts'),
+      '`/api/v1/transaction/${this.id}`')
     assert.notInclude(await read('client-src/CategoryTransferDialog.tsx'), 'Http.delete')
   })
 
@@ -76,10 +88,16 @@ test.group('Legacy CategoryTransfer DELETE removal (no database)', () => {
     assert.include(await read('client-src/State/Register.ts'), "'/api/v1/category-transfer'")
   })
 
-  test('historical schema records remain and modern legacy allocations are separate', async ({ assert }) => {
-    assert.include(await read('database/old-migrations/1585435828322_category_transfers_schema.js'), "this.create('category_transfers'")
-    assert.include(await read('database/old-migrations/1585435670190_category_splits_schema.js'), "this.create('category_splits'")
-    assert.include(await read('database/old-migrations/1591064873260_transaction_categories_schema.js'), "this.rename('category_splits', 'transaction_categories')")
-    assert.include(await read('database/migrations/1626492161245_transaction_categories.ts'), "'transaction_categories'")
+  test('historical schema records remain and modern legacy allocations are separate', async ({
+    assert }) => {
+    assert.include(await read('database/old-migrations/1585435828322_category_transfers_schema.js'),
+      "this.create('category_transfers'")
+    assert.include(await read('database/old-migrations/1585435670190_category_splits_schema.js'),
+      "this.create('category_splits'")
+    assert.include(await read(
+      'database/old-migrations/1591064873260_transaction_categories_schema.js'),
+      "this.rename('category_splits', 'transaction_categories')")
+    assert.include(await read('database/migrations/1626492161245_transaction_categories.ts'),
+      "'transaction_categories'")
   })
 })

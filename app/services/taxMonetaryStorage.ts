@@ -14,13 +14,17 @@ function consume(value: unknown, row: LucidRow, property: 'data' | 'changes') {
   return decoded
 }
 export const consumeTaxForecast = (value: unknown, row: LucidRow) => consume(value, row, 'data')
-export const consumeTransactionLogMoney = (value: unknown, row: LucidRow) => consume(value, row, 'changes')
+export const consumeTransactionLogMoney = (value: unknown, row: LucidRow) => consume(value, row,
+  'changes')
 
 export function replaceTaxForecast(row: LucidRow, value: unknown): void {
-  const previous = row.$attributes.data === null || row.$attributes.data === undefined ? {} : monetaryObject(row.$attributes.data)
+  const previous = row.$attributes.data === null || row.$attributes.data === undefined ? {
+    } : monetaryObject(row.$attributes.data)
   const submitted = monetaryObject(value), result = { ...previous, ...submitted }
-  if (Object.hasOwn(submitted, 'estimated') && submitted.estimated !== null && submitted.estimated !== undefined) {
-    result.estimated = { ...(previous.estimated === null || previous.estimated === undefined ? {} : monetaryObject(previous.estimated)), ...monetaryObject(submitted.estimated) }
+  if (Object.hasOwn(submitted, 'estimated') && submitted.estimated !== null && submitted
+    .estimated !== undefined) {
+    result.estimated = { ...(previous.estimated === null || previous.estimated === undefined ? {
+      } : monetaryObject(previous.estimated)), ...monetaryObject(submitted.estimated) }
   }
   encodeTaxForecast(result) // Validate before changing the model.
   row.$attributes.data = result
@@ -33,7 +37,8 @@ export function stageTaxMoneySave(row: LucidRow): void {
     replacements.delete(row)
   }
 }
-function prepare(value: unknown, row: LucidRow, property: 'data' | 'changes'): string | null | undefined {
+function prepare(value: unknown, row: LucidRow, property: 'data' |
+  'changes'): string | null | undefined {
   if (value === null || value === undefined) {
     pending.set(row, value)
     // Preserve the log writer's JSON.stringify(null) semantics; omitted changes
@@ -42,7 +47,8 @@ function prepare(value: unknown, row: LucidRow, property: 'data' | 'changes'): s
   }
   const result = monetaryObject(value), original = originals.get(row)
   const raw = original === null || original === undefined ? null : monetaryObject(original)
-  const decoded = property === 'data' ? decodeTaxForecast(original) : decodeTransactionLogMoney(original)
+  const decoded = property === 'data' ? decodeTaxForecast(original) : decodeTransactionLogMoney(
+    original)
   for (const path of property === 'data' ? taxForecastPaths : transactionLogMoneyPaths) {
     const parent = path.length === 1 ? result : result[path[0]]
     if (parent === null || parent === undefined) continue
@@ -51,9 +57,12 @@ function prepare(value: unknown, row: LucidRow, property: 'data' | 'changes'): s
     const oldParent = path.length === 1 ? raw : raw?.[path[0]]
     const decodedParent = path.length === 1 ? decoded : decoded?.[path[0]]
     const old = oldParent === null || oldParent === undefined ? null : monetaryObject(oldParent)
-    const oldDecoded = decodedParent === null || decodedParent === undefined ? null : monetaryObject(decodedParent)
-    if (row.$isPersisted && old && Object.hasOwn(old, key) && isDeepStrictEqual(container[key], oldDecoded?.[key])) container[key] = old[key]
-    else if (container[key] !== null && container[key] !== undefined) container[key] = encodeMonetaryAmount(container[key])
+    const oldDecoded = decodedParent === null ||
+      decodedParent === undefined ? null : monetaryObject(decodedParent)
+    if (row.$isPersisted && old && Object.hasOwn(old, key) && isDeepStrictEqual(container[key],
+      oldDecoded?.[key])) container[key] = old[key]
+    else if (container[key] !== null && container[key] !== undefined) container[key] =
+      encodeMonetaryAmount(container[key])
     if (path.length === 1) result[key] = container[key]
     else result[path[0]] = container
   }
@@ -61,10 +70,12 @@ function prepare(value: unknown, row: LucidRow, property: 'data' | 'changes'): s
   return JSON.stringify(result)
 }
 export const prepareTaxForecast = (value: unknown, row: LucidRow) => prepare(value, row, 'data')
-export const prepareTransactionLogMoney = (value: unknown, row: LucidRow) => prepare(value, row, 'changes')
+export const prepareTransactionLogMoney = (value: unknown, row: LucidRow) => prepare(value, row,
+  'changes')
 export function finishTaxMoneySave(row: LucidRow, property: 'data' | 'changes'): void {
   if (!pending.has(row)) return
-  const raw = pending.get(row), decoded = property === 'data' ? decodeTaxForecast(raw) : decodeTransactionLogMoney(raw)
+  const raw = pending.get(row), decoded = property === 'data' ? decodeTaxForecast(
+    raw) : decodeTransactionLogMoney(raw)
   row.$attributes[property] = decoded
   row.$original[property] = structuredClone(decoded)
   originals.set(row, structuredClone(raw)); pending.delete(row)

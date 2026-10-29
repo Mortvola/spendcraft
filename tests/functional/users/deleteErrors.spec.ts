@@ -16,7 +16,8 @@ async function fixture(shared = false) {
   return db.transaction(async (trx) => {
     const budget = await Budget.create({}, { client: trx })
     await budget.initialize()
-    const createUser = () => budget.related('users').create({ username: `delete-error-${++sequence}`,
+    const createUser = () => budget.related('users').create({
+      username: `delete-error-${++sequence}`,
       email: `delete-error-${sequence}@example.com`, password: 'testPassw0rd' })
     const user = await createUser()
     const other = shared ? await createUser() : null
@@ -25,7 +26,8 @@ async function fixture(shared = false) {
 }
 async function snapshot(id: number) {
   return Promise.all([
-    db.from('applications').where('id', id), db.from('users').where('application_id', id).orderBy('id'),
+    db.from('applications').where('id', id), db.from('users').where('application_id', id).orderBy(
+      'id'),
     db.from('groups').where('application_id', id).orderBy('id'),
     db.from('categories').select('categories.*').join('groups', 'groups.id', 'categories.group_id')
       .where('groups.application_id', id).orderBy('categories.id'),
@@ -34,7 +36,9 @@ async function snapshot(id: number) {
 
 test.group('UsersController deletion error propagation', () => {
   for (const shared of [false, true]) {
-    test(shared ? 'deleting one shared-budget user preserves the budget' : 'successful last-user deletion commits and removes the budget', async ({ client, assert, cleanup }) => {
+    test(shared ? 'deleting one shared-budget user preserves the budget' :
+      'successful last-user deletion commits and removes the budget', async ({ client, assert,
+      cleanup }) => {
       const f = await fixture(shared)
       const captured: TransactionClientContract[] = []
       const transaction = db.transaction.bind(db)
@@ -55,7 +59,8 @@ test.group('UsersController deletion error propagation', () => {
     })
   }
 
-  test('unexpected Budget deletion failure reaches exception handling after rollback', async ({ client, assert, cleanup }) => {
+  test('unexpected Budget deletion failure reaches exception handling after rollback', async ({
+    client, assert, cleanup }) => {
     const f = await fixture()
     const before = await snapshot(f.budget.id)
     const failure = new Error('Injected failure after Budget deletion')
@@ -71,7 +76,8 @@ test.group('UsersController deletion error propagation', () => {
     const handled: unknown[] = []
     let completedAtHandling: boolean | undefined
     const handle = Handler.prototype.handle
-    const observeHandler = mock.method(Handler.prototype, 'handle', async function (this: Handler, ...args: Parameters<typeof handle>) {
+    const observeHandler = mock.method(Handler.prototype, 'handle', async function (this: Handler,
+      ...args: Parameters<typeof handle>) {
       handled.push(args[0])
       if (args[0] === failure) completedAtHandling = captured[0]?.isCompleted
       return handle.apply(this, args)
@@ -97,7 +103,8 @@ test.group('UsersController deletion error propagation', () => {
     })
     cleanup(() => capture.mock.restore())
     let requestCompleted = false
-    const request = client.delete('/api/v1/user').accept('json').loginAs(f.user).send().then((response) => {
+    const request = client.delete('/api/v1/user').accept('json').loginAs(f.user).send().then((
+      response) => {
       requestCompleted = true; return response
     })
     try {

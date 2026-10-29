@@ -9,7 +9,8 @@ test.group('Historical categories migration transaction binding characterization
     .with(['enabled-nested-rollback', 'enabled-outer-rollback', 'disabled-manual-rollback'])
     .run(async ({ assert }, scenario) => {
       const table = `migration_binding_probe_${randomUUID().replaceAll('-', '')}`
-      await db.connection().schema.createTable(table, (builder) => { builder.integer('id').primary() })
+      await db.connection().schema.createTable(table, (builder) => { builder.integer('id').primary(
+        ) })
       let outer: TransactionClientContract | undefined
       let manual: TransactionClientContract | undefined
       let parentPid: number | undefined

@@ -131,7 +131,8 @@ const UserAccount: React.FC = () => {
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <div>Pending verification:</div>
                             <div style={{ display: 'flex', whiteSpace: 'nowrap' }}>
-                              <div className="ellipsis" style={{ margin: '0 0.5rem' }}>{stores.user.pendingEmail}</div>
+                              <div className="ellipsis" style={{ margin: '0 0.5rem' }}>{stores.user
+                                .pendingEmail}</div>
                               <LucideButton
                                 onClick={handleDeletePending}
                               >

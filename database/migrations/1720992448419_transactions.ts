@@ -15,9 +15,11 @@ export default class extends BaseSchema {
         const transactions = await trx.from('transactions');
     
         await Promise.all(transactions.map(async (transaction) => {
-          const transactionCategories = await trx.from('transaction_categories').where('transaction_id', transaction.id);
+          const transactionCategories = await trx.from('transaction_categories').where(
+            'transaction_id', transaction.id);
 
-          const newTransactionCategories: { categoryId: number, amount: number, comment?: string }[] = [];
+          const newTransactionCategories: { categoryId: number, amount: number, comment?: string }[
+            ] = [];
 
           for (const trxCat of transactionCategories) {
             newTransactionCategories.push({

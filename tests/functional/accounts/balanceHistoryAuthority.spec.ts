@@ -9,19 +9,22 @@ import BalanceHistory from '#models/BalanceHistory'
 import { AccountType, TrackingType } from '#common/ResponseTypes'
 
 let sequence = 0
-const investmentData = { shortTermCapitalGains: 1, longTermCapitalGains: 2, dividends: 3, taxableInterest: 4 }
+const investmentData = { shortTermCapitalGains: 1, longTermCapitalGains: 2, dividends: 3,
+  taxableInterest: 4 }
 
 async function createFixture() {
   return db.transaction(async (trx) => {
     const budget = await Budget.create({}, { client: trx })
     await budget.initialize()
     const user = await budget.related('users').create({
-      username: `history-authority-${++sequence}`, email: `history-authority-${sequence}@example.com`, password: 'testPassw0rd',
+      username: `history-authority-${++sequence}`,
+        email: `history-authority-${sequence}@example.com`, password: 'testPassw0rd',
     })
     const institution = await budget.related('institutions').create({ name: 'Statement bank' })
     const account = await institution.related('accounts').create({
       name: 'Statement account', balance: 100, type: AccountType.Investment, subtype: 'IRA',
-      tracking: TrackingType.Transactions, startDate: DateTime.fromISO('2025-01-01'), rate: 0, closed: false,
+      tracking: TrackingType.Transactions, startDate: DateTime.fromISO('2025-01-01'), rate: 0,
+        closed: false,
     })
     return { budget, user, account }
   })
@@ -34,8 +37,12 @@ test.group('Statement and balance-history authority characterization', (group) =
   group.each.setup(async () => {
     f = await createFixture()
     await f.account.merge({ tracking: TrackingType.Balances }).save()
-    older = await f.account.related('statements').create({ startDate: DateTime.fromISO('2025-01-01'), endDate: DateTime.fromISO('2025-01-31'), startingBalance: 0, endingBalance: 50, data: investmentData })
-    latest = await f.account.related('statements').create({ startDate: DateTime.fromISO('2025-02-01'), endDate: DateTime.fromISO('2025-02-28'), startingBalance: 50, endingBalance: 100, data: investmentData })
+    older = await f.account.related('statements').create({ startDate: DateTime.fromISO(
+      '2025-01-01'), endDate: DateTime.fromISO('2025-01-31'), startingBalance: 0, endingBalance: 50,
+      data: investmentData })
+    latest = await f.account.related('statements').create({ startDate: DateTime.fromISO(
+      '2025-02-01'), endDate: DateTime.fromISO('2025-02-28'), startingBalance: 50,
+      endingBalance: 100, data: investmentData })
   })
 
   async function snapshot() {
@@ -45,35 +52,43 @@ test.group('Statement and balance-history authority characterization', (group) =
       db.from('statements').where('account_id', f.account.id).orderBy('id'),
       db.from('transactions').where('application_id', f.budget.id).orderBy('id'),
       db.from('account_transactions').where('account_id', f.account.id).orderBy('id'),
-      db.from('categories').select('categories.*').join('groups', 'groups.id', 'categories.group_id')
+      db.from('categories').select('categories.*').join('groups', 'groups.id',
+        'categories.group_id')
         .where('groups.application_id', f.budget.id).orderBy('categories.id'),
       db.from('transaction_logs').where('application_id', f.budget.id).orderBy('id'),
     ])
   }
 
   async function seedHistory(finalOnly = false) {
-    const first = finalOnly ? null : await BalanceHistory.create({ accountId: f.account.id, date: DateTime.fromISO('2025-01-10'), balance: 50 })
-    const last = await BalanceHistory.create({ accountId: f.account.id, date: DateTime.fromISO('2025-02-10'), balance: 100 })
+    const first = finalOnly ? null : await BalanceHistory.create({ accountId: f.account.id,
+      date: DateTime.fromISO('2025-01-10'), balance: 50 })
+    const last = await BalanceHistory.create({ accountId: f.account.id, date: DateTime.fromISO(
+      '2025-02-10'), balance: 100 })
     return { first, last }
   }
 
   // Before enforcement these nine history mutations overwrote Account.balance independently
   // of Statements (including latest deletion -> 50 and final deletion -> 0).
   test('manual history rejects without overriding Statement authority')
-    .with(['create-newer', 'create-older', 'edit-latest-zero', 'edit-older', 'move-latest-earlier', 'move-older-later', 'delete-latest', 'delete-older', 'delete-final'])
+    .with(['create-newer', 'create-older', 'edit-latest-zero', 'edit-older', 'move-latest-earlier',
+      'move-older-later', 'delete-latest', 'delete-older', 'delete-final'])
     .run(async ({ client, assert }, operation) => {
       const rows = await seedHistory(operation === 'delete-final')
       const before = await snapshot()
-      const target = operation === 'edit-older' || operation === 'move-older-later' || operation === 'delete-older' ? rows.first : rows.last
+      const target = operation === 'edit-older' || operation === 'move-older-later' ||
+        operation === 'delete-older' ? rows.first : rows.last
       if (!target) throw new Error('Missing characterization history row')
       const path = `/api/v1/account/${f.account.id}/balances`
       const response = operation.startsWith('create')
-        ? await client.post(path).json({ date: operation === 'create-newer' ? '2025-03-10' : '2025-01-01', amount: 250 }).accept('json').loginAs(f.user)
+        ? await client.post(path).json({ date: operation === 'create-newer' ? '2025-03-10' :
+          '2025-01-01', amount: 250 }).accept('json').loginAs(f.user)
         : operation.startsWith('delete')
           ? await client.delete(`${path}/${target.id}`).accept('json').loginAs(f.user)
           : await client.patch(`${path}/${target.id}`).json({
-            date: operation === 'move-latest-earlier' ? '2025-01-05' : operation === 'move-older-later' ? '2025-03-10' : target.date.toISODate(),
-            amount: operation === 'edit-latest-zero' ? 0 : operation === 'edit-older' ? 80 : target.balance,
+            date: operation === 'move-latest-earlier' ? '2025-01-05' : operation ===
+              'move-older-later' ? '2025-03-10' : target.date.toISODate(),
+            amount: operation === 'edit-latest-zero' ? 0 : operation === 'edit-older' ? 80 : target
+              .balance,
           }).accept('json').loginAs(f.user)
       response.assertStatus(404)
       assert.deepEqual(await snapshot(), before)
@@ -87,12 +102,18 @@ test.group('Statement and balance-history authority characterization', (group) =
       if (operation === 'delete-only') await older.delete()
       const before = await snapshot()
       const response = operation === 'create'
-        ? await client.post(`/api/v1/account/${f.account.id}/statements`).json(statementRequest({ startDate: '2025-03-01', endDate: '2025-03-31', startingBalance: 100, endingBalance: 250 })).accept('json').loginAs(f.user)
+        ? await client.post(`/api/v1/account/${f.account.id}/statements`).json(statementRequest({
+          startDate: '2025-03-01', endDate: '2025-03-31', startingBalance: 100,
+          endingBalance: 250 })).accept('json').loginAs(f.user)
         : operation.startsWith('delete')
-          ? await client.delete(`/api/v1/statements/${operation === 'delete-older' ? older.id : latest.id}`).accept('json').loginAs(f.user)
-          : await client.patch(`/api/v1/statements/${latest.id}`).json(statementRequest(operation === 'ending-zero' ? { endingBalance: 0 } : { startDate: '2024-12-01', endDate: '2024-12-31' })).accept('json').loginAs(f.user)
+          ? await client.delete(`/api/v1/statements/${operation === 'delete-older' ? older
+            .id : latest.id}`).accept('json').loginAs(f.user)
+          : await client.patch(`/api/v1/statements/${latest.id}`).json(statementRequest(
+            operation === 'ending-zero' ? { endingBalance: 0 } : { startDate: '2024-12-01',
+            endDate: '2024-12-31' })).accept('json').loginAs(f.user)
       response.assertStatus(200)
-      const expected = operation === 'create' ? 250 : operation === 'ending-zero' || operation === 'delete-only' ? 0 : operation === 'delete-older' ? 100 : 50
+      const expected = operation === 'create' ? 250 : operation === 'ending-zero' || operation ===
+        'delete-only' ? 0 : operation === 'delete-older' ? 100 : 50
       assert.equal((await Account.findOrFail(f.account.id)).balance, expected)
       const after = await snapshot()
       assert.deepEqual(after[1], before[1])
@@ -103,11 +124,14 @@ test.group('Statement and balance-history authority characterization', (group) =
   // then history PATCH restored 250. History is now rejected throughout.
   test('history cannot override a later Statement mutation', async ({ client, assert }) => {
     const history = await seedHistory()
-    ;(await client.post(`/api/v1/account/${f.account.id}/balances`).json({ date: '2025-03-10', amount: 250 }).accept('json').loginAs(f.user)).assertStatus(404)
+    ;(await client.post(`/api/v1/account/${f.account.id}/balances`).json({ date: '2025-03-10',
+      amount: 250 }).accept('json').loginAs(f.user)).assertStatus(404)
     assert.equal((await Account.findOrFail(f.account.id)).balance, 100)
-    ;(await client.patch(`/api/v1/statements/${latest.id}`).json(statementRequest({ endingBalance: 120 })).accept('json').loginAs(f.user)).assertStatus(200)
+    ;(await client.patch(`/api/v1/statements/${latest.id}`).json(statementRequest({
+      endingBalance: 120 })).accept('json').loginAs(f.user)).assertStatus(200)
     const before = await snapshot()
-    ;(await client.patch(`/api/v1/account/${f.account.id}/balances/${history.last.id}`).json({ date: '2025-02-10', amount: 80 }).accept('json').loginAs(f.user)).assertStatus(404)
+    ;(await client.patch(`/api/v1/account/${f.account.id}/balances/${history.last.id}`).json({
+      date: '2025-02-10', amount: 80 }).accept('json').loginAs(f.user)).assertStatus(404)
     assert.deepEqual(await snapshot(), before)
     assert.equal((await Account.findOrFail(f.account.id)).balance, 120)
   })

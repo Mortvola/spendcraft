@@ -6,7 +6,8 @@ export const fundingPercentagesRule = vine.createRule((value, _options: undefine
   if (!Array.isArray(value)) return
   const entries: { amount: number, percentage: boolean }[] = []
   for (const entry of value) {
-    if (typeof entry !== 'object' || entry === null || !('amount' in entry) || !('percentage' in entry)) return
+    if (typeof entry !== 'object' || entry === null || !('amount' in entry) || !(
+      'percentage' in entry)) return
     const amount = vine.helpers.asNumber(entry.amount)
     const percentage = vine.helpers.asBoolean(entry.percentage)
     // Let existing child schemas report malformed/required fields conventionally.

@@ -127,7 +127,8 @@ export class JwtGuard<UserProvider extends JwtUserProviderContract<unknown>>
     accessTokenBuilder.setIssuer(this.#options.issuer)
     accessTokenBuilder.setAudience(this.#options.audience)
 
-    const jwtDuration = `${Duration.fromObject(this.#options.jwtDefaultExpire).toMillis() / 1000 / 60}m`
+    const jwtDuration = `${Duration.fromObject(this.#options.jwtDefaultExpire).toMillis() / 1000 /
+      60}m`
     accessTokenBuilder.setExpirationTime(jwtDuration)
 
     const secret = createPrivateKey(this.#options.privateKey)
@@ -141,7 +142,8 @@ export class JwtGuard<UserProvider extends JwtUserProviderContract<unknown>>
     // const expiresIn = this.#options.refreshTokenDefaultExpire
     // const milliseconds = typeof expiresIn === "string" ? string.toMs(expiresIn) : expiresIn;
     
-    const expiresAt = DateTime.now().plus(Duration.fromObject(this.#options.refreshTokenDefaultExpire));
+    const expiresAt = DateTime.now().plus(Duration.fromObject(this.#options
+      .refreshTokenDefaultExpire));
     redis.expireat(redisKey, expiresAt.toUnixInteger())
 
     return {

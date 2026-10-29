@@ -11,7 +11,8 @@ function record(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 export function configuredTarget(value: unknown): Target {
-  if (!record(value) || value.host !== 'localhost' || Number(value.port) !== 5432 || value.database !== 'spendcraft_test') {
+  if (!record(value) || value.host !== 'localhost' || Number(value.port) !== 5432 || value
+    .database !== 'spendcraft_test') {
     throw new Error(`Test database safety: configured target must be ${authorizedTestTarget}`)
   }
   return { host: 'localhost', port: 5432, database: 'spendcraft_test' }
@@ -23,18 +24,23 @@ function configuredUser(value: unknown): string {
   return value.user
 }
 function loopback(value: unknown) {
-  return typeof value === 'string' && /^(127\.0\.0\.1(?:\/32)?|::1(?:\/128)?|::ffff:127\.0\.0\.1(?:\/128)?)$/.test(value)
+  return typeof value === 'string' &&
+    /^(127\.0\.0\.1(?:\/32)?|::1(?:\/128)?|::ffff:127\.0\.0\.1(?:\/128)?)$/.test(value)
 }
 export function liveIdentity(value: unknown): Identity {
   if (!record(value) || value.database !== 'spendcraft_test' || Number(value.port) !== 5432
     || !loopback(value.server) || !loopback(value.peer)) {
     throw new Error('Test database safety: live identity is not authorized')
   }
-  return { database: 'spendcraft_test', port: 5432, server: String(value.server), peer: String(value.peer) }
+  return { database: 'spendcraft_test', port: 5432, server: String(value.server), peer: String(value
+    .peer) }
 }
 export function destructiveSql(sql: string) {
   // Conservative: comments/CTEs/batches cannot conceal a destructive statement.
-  return /\b(?:insert|update|delete|truncate|alter|drop|create|grant|revoke|comment|vacuum|reindex|copy|call|do)\b/i.test(sql)
+  return new RegExp(
+"\\b(?:insert|update|delete|truncate|alter|drop|create|gr" +
+"ant|revoke|comment|vacuum|reindex|copy|call|do)\\b",
+"i").test(sql)
 }
 function identityResult(value: unknown) {
   if (!record(value) || !record(value.response) || !Array.isArray(value.response.rows)) {
@@ -57,17 +63,21 @@ export async function installDatabaseSafety(db: Database) {
   checkConfigurations() // Fail before acquiring any connection on mismatch.
   const clients = names.map((name) => db.connection(name).getWriteClient().client)
   const prototype: object | null = Reflect.getPrototypeOf(clients[0])
-  if (!prototype || Reflect.getPrototypeOf(clients[1]) !== prototype) throw new Error('Test database safety: unexpected driver')
+  if (!prototype || Reflect.getPrototypeOf(clients[1]) !== prototype) throw new Error(
+    'Test database safety: unexpected driver')
   const candidate: unknown = Reflect.get(prototype, 'query')
-  if (typeof candidate !== 'function') throw new Error('Test database safety: driver query unavailable')
+  if (typeof candidate !== 'function') throw new Error(
+    'Test database safety: driver query unavailable')
   const original = candidate
   const verificationConnections: unknown[] = []
   let checks = 0
   let guarded = 0
   async function identify(client: object, connection: unknown, expectedUser?: string) {
-    const result: unknown = await Reflect.apply(original, client, [connection, { sql: identitySql, bindings: [] }])
+    const result: unknown = await Reflect.apply(original, client, [connection, { sql: identitySql,
+      bindings: [] }])
     const identity = identityResult(result)
-    if (!record(result) || !record(result.response) || !Array.isArray(result.response.rows)) throw new Error('Test database safety: missing user identity')
+    if (!record(result) || !record(result.response) || !Array.isArray(result.response
+      .rows)) throw new Error('Test database safety: missing user identity')
     const row: unknown = result.response.rows[0]
     const users = names.map(name => {
       const config = db.manager.get(name)?.config.connection
@@ -83,8 +93,10 @@ export async function installDatabaseSafety(db: Database) {
     checkConfigurations()
     const evidence = []
     for (let i = 0; i < clients.length; i++) {
-      evidence.push({ connection: names[i], configured: configuredTarget(db.manager.get(names[i])?.config.connection),
-        live: await identify(clients[i], verificationConnections[i], configuredUser(db.manager.get(names[i])?.config.connection)) })
+      evidence.push({ connection: names[i], configured: configuredTarget(db.manager.get(names[i])
+        ?.config.connection),
+        live: await identify(clients[i], verificationConnections[i], configuredUser(db.manager.get(
+          names[i])?.config.connection)) })
     }
     checks++
     if (checks === 1) console.info('Test database safety verified', JSON.stringify(evidence))
@@ -93,10 +105,12 @@ export async function installDatabaseSafety(db: Database) {
     for (const client of clients) verificationConnections.push(await client.acquireConnection())
     await verify()
   } catch (error) {
-    for (let i = 0; i < verificationConnections.length; i++) await clients[i].releaseConnection(verificationConnections[i])
+    for (let i = 0; i < verificationConnections.length; i++) await clients[i].releaseConnection(
+      verificationConnections[i])
     throw error
   }
-  Reflect.set(prototype, 'query', async function (this: object, connection: unknown, query: unknown) {
+  Reflect.set(prototype, 'query', async function (this: object, connection: unknown,
+    query: unknown) {
     const sql: unknown = typeof query === 'string' ? query : record(query) ? query.sql : undefined
     if (typeof sql !== 'string') throw new Error('Test database safety: unrecognized query')
     if (destructiveSql(sql)) {
@@ -110,8 +124,10 @@ export async function installDatabaseSafety(db: Database) {
     verify,
     async close() {
       Reflect.set(prototype, 'query', original)
-      for (let i = 0; i < clients.length; i++) await clients[i].releaseConnection(verificationConnections[i])
-      console.info(`Test database safety: ${checks} independent checks; ${guarded} guarded SQL operations`)
+      for (let i = 0; i < clients.length; i++) await clients[i].releaseConnection(
+        verificationConnections[i])
+      console.info(
+        `Test database safety: ${checks} independent checks; ${guarded} guarded SQL operations`)
     },
   }
 }

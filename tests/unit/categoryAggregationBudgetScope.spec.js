@@ -8,7 +8,8 @@ import { TransactionType } from '../../common/ResponseTypes.ts'
 // Evaluate the actual production SQL templates and binding expressions, without
 // bootstrapping Adonis or connecting to a database.
 async function aggregates(file, methodName, budgetId) {
-  const source = ts.createSourceFile(file, await readFile(file, 'utf8'), ts.ScriptTarget.Latest, true)
+  const source = ts.createSourceFile(file, await readFile(file, 'utf8'), ts.ScriptTarget.Latest,
+    true)
   let method
   function find(node) {
     if (ts.isMethodDeclaration(node) && node.name.getText(source) === methodName) method = node
@@ -49,12 +50,14 @@ function assertScope(assert, { sql, bindings }, budgetId) {
 test.group('Category allocation aggregation Budget scoping (no database)', () => {
   test('all four month summary aggregates bind the authorized Budget').with([7, 19])
     .run(async ({ assert }, budgetId) => {
-      const calls = await aggregates('app/Controllers/Http/CategoriesController.ts', 'get', budgetId)
+      const calls = await aggregates('app/Controllers/Http/CategoriesController.ts', 'get',
+        budgetId)
       assert.lengthOf(calls, 4)
       for (const call of calls) assertScope(assert, call, budgetId)
       assert.deepEqual(calls.map((call) => call.bindings), [
         ['2025-03-01', budgetId],
-        ['2025-03-01', '2025-02-01', budgetId, TransactionType.FUNDING_TRANSACTION, TransactionType.REBALANCE_TRANSACTION],
+        ['2025-03-01', '2025-02-01', budgetId, TransactionType.FUNDING_TRANSACTION, TransactionType
+          .REBALANCE_TRANSACTION],
         ['2025-03-01', '2025-02-01', budgetId, TransactionType.FUNDING_TRANSACTION],
         ['2025-03-01', '2025-02-01', budgetId, TransactionType.REBALANCE_TRANSACTION],
       ])

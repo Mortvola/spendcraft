@@ -30,8 +30,10 @@ const Register: React.FC<PropsType> = observer(({
 
       case 'account':
         if (uiState.selectedAccount) {
-          if (![TrackingType.Transactions, TrackingType.UncategorizedTransactions].includes(uiState.selectedAccount.tracking)) {
-            throw new Error(`invalid tracking type for register: ${uiState.selectedAccount.tracking}`);
+          if (![TrackingType.Transactions, TrackingType.UncategorizedTransactions].includes(uiState
+            .selectedAccount.tracking)) {
+            throw new Error(`invalid tracking type for register: ${uiState.selectedAccount
+              .tracking}`);
           }
 
           uiState.selectedAccount.transactions.getData(0);
@@ -47,7 +49,8 @@ const Register: React.FC<PropsType> = observer(({
       default:
         throw new Error(`unknown type: ${type}`);
     }
-  }, [categoryTree.unassignedCat, rebalances, store, type, uiState.selectedAccount, uiState.selectedCategory]);
+  }, [categoryTree.unassignedCat, rebalances, store, type, uiState.selectedAccount, uiState
+    .selectedCategory]);
 
   let category: CategoryInterface | null = null;
   let account: AccountInterface | null = null;

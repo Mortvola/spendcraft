@@ -11,7 +11,8 @@ for (const name of ['addGroup', 'updateGroup', 'addCategory', 'updateCategory'])
       && node.declarationList.declarations.some((entry) => entry.name.getText(source) === name))
     let filter
     function visit(node) {
-      if (ts.isPropertyAssignment(node) && node.name.getText(source) === 'filter') filter = node.initializer
+      if (ts.isPropertyAssignment(node) && node.name.getText(source) === 'filter') filter = node
+        .initializer
       ts.forEachChild(node, visit)
     }
     visit(declaration)
@@ -21,19 +22,24 @@ for (const name of ['addGroup', 'updateGroup', 'addCategory', 'updateCategory'])
     const owner = {}
     const calls = []
     const query = {
-      useTransaction(client) { assert.strictEqual(client, owner); calls.push('owner'); return this },
+      useTransaction(client) { assert.strictEqual(client, owner); calls.push('owner');
+        return this },
       where(key, value) { assert.equal(calls[0], 'owner'); calls.push([key, value]); return this },
       andWhereNot(key, value) { calls.push([key, value]); return this },
       andWhereRaw(sql, bindings) { calls.push([sql, ...bindings]); return this },
     }
-    run(query, 'Name', { meta: { trx: owner, budgetId: 7, groupId: 3, catId: 5, noGroupId: 9 }, data: {} })
+    run(query, 'Name', { meta: { trx: owner, budgetId: 7, groupId: 3, catId: 5, noGroupId: 9 },
+      data: {} })
     assert.equal(calls[0], 'owner')
     assert.deepEqual(calls[1], name.includes('Group') ? ['application_id', 7] : ['group_id', 3])
-    if (name.startsWith('update')) assert.deepEqual(calls.at(-1), ['id', name.includes('Group') ? 3 : 5])
+    if (name.startsWith('update')) assert.deepEqual(calls.at(-1), ['id', name.includes(
+      'Group') ? 3 : 5])
   })
 }
 
-test('Plaid sync waiter refreshes after Budget and rejects an earlier committed unlink before provider work', async ({ assert }) => {
+test(
+  'Plaid sync waiter refreshes after Budget and rejects an earlier committed unlink before \
+provider work', async ({ assert }) => {
   const source = ast(await readFile('app/Models/Institution.ts', 'utf8'))
   let node
   function visit(value) {
@@ -42,7 +48,8 @@ test('Plaid sync waiter refreshes after Budget and rejects an earlier committed 
   }
   visit(source)
   const events = []
-  const run = runInNewContext(ts.transpileModule(`(async function() ${node.body.getText(source)})`, {
+  const run = runInNewContext(ts.transpileModule(`(async function() ${node.body.getText(source)})`,
+    {
     compilerOptions: { target: ts.ScriptTarget.ES2022 },
   }).outputText, { logger: { error: () => undefined } })
   const institution = { accessToken: 'stale-token', $trx: {},

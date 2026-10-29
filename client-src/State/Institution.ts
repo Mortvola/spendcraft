@@ -104,7 +104,8 @@ class Institution implements InstitutionInterface {
     });
 
     // TODO: Fix this. The id after accounts is incorrect and unneeded.
-    const response = await Http.post<undefined, InstitutionSyncResponse>(`/api/v1/institution/${institutionId}/accounts/${this.id}/transactions/sync`);
+    const response = await Http.post<undefined, InstitutionSyncResponse>(
+      `/api/v1/institution/${institutionId}/accounts/${this.id}/transactions/sync`);
 
     if (response.ok) {
       const body = await response.body();
@@ -131,7 +132,8 @@ class Institution implements InstitutionInterface {
   }
 
   async update(): Promise<Institution | null> {
-    const response = await Http.post<null, AddInstitutionResponse>(`/api/v1/institution/${this.id}`);
+    const response = await Http.post<null, AddInstitutionResponse>(`/api/v1/institution/${this
+      .id}`);
 
     if (response.ok) {
       const body = await response.body();
@@ -218,7 +220,8 @@ class Institution implements InstitutionInterface {
     tracking: TrackingType,
     rate: number,
   ): Promise<ErrorProps[] | null> {
-    const response = await Http.post<AddOfflineAccountRequest, ApiResponse<AddOfflineAccountResponse>>(`/api/v1/institution/${this.id}/accounts`, {
+    const response = await Http.post<AddOfflineAccountRequest,
+      ApiResponse<AddOfflineAccountResponse>>(`/api/v1/institution/${this.id}/accounts`, {
       name: accountName,
       balance: formatMoneyCents(balanceCents),
       type,
@@ -257,7 +260,8 @@ class Institution implements InstitutionInterface {
   // }
 
   updateBalances(balances: AccountBalanceProps[]): void {
-    const decoded = balances.map(balance => ({ ...balance, balanceCents: parseMoneyCents(balance.balance) }));
+    const decoded = balances.map(balance => ({ ...balance, balanceCents: parseMoneyCents(balance
+      .balance) }));
     this.accounts.forEach((a) => {
       const balance = decoded.find((b) => b.id === a.id);
       if (balance) {

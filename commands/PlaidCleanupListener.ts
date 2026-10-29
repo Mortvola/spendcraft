@@ -12,7 +12,8 @@ export default class PlaidCleanupListener extends BaseCommand {
   async run() {
     const service = new PlaidItemCleanupService()
     const bull = await app.container.make('bullmq')
-    const worker = bull.worker<{ cleanupId: string }, null>(QueueNamesEnum.PlaidItemCleanup, async (job) => {
+    const worker = bull.worker<{ cleanupId: string }, null>(QueueNamesEnum.PlaidItemCleanup, async (
+      job) => {
       await service.attempt(job.data.cleanupId)
       return null
     })
@@ -22,7 +23,8 @@ export default class PlaidCleanupListener extends BaseCommand {
       if (sweeping) return
       sweeping = true
       try { await service.sweep() }
-      catch { logger.error('Plaid cleanup sweep failed; PostgreSQL retains recovery responsibility') }
+      catch { logger.error(
+        'Plaid cleanup sweep failed; PostgreSQL retains recovery responsibility') }
       finally { sweeping = false }
     }
     const timer = setInterval(() => { void sweep() }, 60_000)

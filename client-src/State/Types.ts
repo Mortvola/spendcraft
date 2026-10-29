@@ -258,7 +258,8 @@ export interface PlaidInterface {
   linkToken: string;
 }
 
-// export type Views = 'HOME' | 'PLANS' | 'ACCOUNTS' | 'REPORTS' | 'SEARCH' | 'USER_ACCOUNT' | 'LOGOUT';
+// export type Views = 'HOME' | 'PLANS' | 'ACCOUNTS' | 'REPORTS' | 'SEARCH' | 'USER_ACCOUNT' |
+// 'LOGOUT';
 
 export interface UIStateInterface {
   selectCategory(category: CategoryInterface | null): void;
@@ -587,7 +588,8 @@ export type { AddTransactionRequest } from '../../common/ResponseTypes';
 
 export type { AddStatementRequest } from '../../common/ResponseTypes';
 
-export type StatementUpdateValues = Omit<UpdateStatementProps, 'startingBalance' | 'endingBalance' | 'credits' | 'debits' | 'data'> & {
+export type StatementUpdateValues = Omit<UpdateStatementProps, 'startingBalance' |
+  'endingBalance' | 'credits' | 'debits' | 'data'> & {
   startingBalanceCents?: MoneyCents,
   endingBalanceCents?: MoneyCents,
   creditsCents?: MoneyCents,

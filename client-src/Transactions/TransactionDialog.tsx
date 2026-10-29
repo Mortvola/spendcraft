@@ -10,16 +10,19 @@ import {
   FormError, FormField, FormModal, setFormErrors,
 } from '@mortvola/forms';
 import CategorySplits, { sumSplitCents, type CategorySplitInput } from '../CategorySplits';
-import { formatMoneyCents, parseMoneyCents, subtractMoneyCents, type MoneyCents } from '../../common/moneyCents';
+import { formatMoneyCents, parseMoneyCents, subtractMoneyCents, type MoneyCents } from
+  '../../common/moneyCents';
 import { inputMoneyCents } from '../monetary';
 import MoneyCentsAmount from '../MoneyCentsAmount';
 import { AccountInterface, TransactionInterface } from '../State/Types';
 import AmountInput from '../AmountInput';
 import useMediaQuery from '../MediaQuery';
-import { AccountType, ApiError, ErrorProps, isApiErrorArray, isErrorPropsArray, RequestErrorCode, TrackingType, TransactionType } from '../../common/ResponseTypes';
+import { AccountType, ApiError, ErrorProps, isApiErrorArray, isErrorPropsArray, RequestErrorCode,
+  TrackingType, TransactionType } from '../../common/ResponseTypes';
 import styles from './TransactionDialog.module.scss';
 import PurchaseLocation from './PurchaseLocation';
-import TransactionTaxCategories, { sumTaxCents, type TransactionTaxInput } from './TransactionTaxCategories';
+import TransactionTaxCategories, { sumTaxCents, type TransactionTaxInput } from
+  './TransactionTaxCategories';
 
 interface PropsType {
   transaction?: TransactionInterface | null,
@@ -47,7 +50,8 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
   const { isMobile } = useMediaQuery();
 
   const zero = parseMoneyCents('0.00');
-  const absoluteCents = (amount: MoneyCents) => amount < 0 ? subtractMoneyCents(zero, amount) : amount;
+  const absoluteCents = (amount: MoneyCents) => amount < 0 ? subtractMoneyCents(zero,
+    amount) : amount;
   const transactionAmountCents = (value: string) => inputMoneyCents(value, account?.sign ?? 1);
 
   const loanInterestCents = (values: ValueType) => subtractMoneyCents(
@@ -56,7 +60,8 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
 
   const computeRemaining = (categories: CategorySplitInput[], total: string): MoneyCents => (
     // No explicit splits means the whole transaction belongs to the unassigned category.
-    categories.length === 0 ? zero : subtractMoneyCents(absoluteCents(transactionAmountCents(total)), sumSplitCents(categories))
+    categories.length === 0 ? zero : subtractMoneyCents(absoluteCents(transactionAmountCents(
+      total)), sumSplitCents(categories))
   );
 
   const handleValidate = (values: ValueType) => {
@@ -86,7 +91,8 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
 
   const handleSubmit = async (values: ValueType, { setErrors }: FormikHelpers<ValueType>) => {
     const amountCents = transactionAmountCents(values.amount);
-    const principleCents = values.principle === undefined ? undefined : inputMoneyCents(values.principle);
+    const principleCents = values.principle === undefined ? undefined : inputMoneyCents(values
+      .principle);
 
     // Keep amounts in cents until the state method formats the API request.
     const categories = values.splits.map(({ amount, ...split }) => {
@@ -103,7 +109,8 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
         principleCents,
         comment: values.comment,
         categories,
-        taxCategories: values.taxCategories.map(({ amount, ...tax }) => ({ ...tax, amountCents: inputMoneyCents(amount) })),
+        taxCategories: values.taxCategories.map(({ amount, ...tax }) => ({ ...tax,
+          amountCents: inputMoneyCents(amount) })),
       });
     }
     else {
@@ -265,7 +272,8 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
                 <div className="unassigned-label">Remaining:</div>
                 {remaining === null
                   ? <div>Invalid amount</div>
-                  : <MoneyCentsAmount amount={remaining} style={{ margin: '1px', padding: '1px' }} />}
+                  : <MoneyCentsAmount amount={remaining} style={{ margin: '1px', padding: '1px' }} /
+                    >}
               </div>
             </>
           )
@@ -327,7 +335,8 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
       formId="transactionDialogForm"
       validate={handleValidate}
       onSubmit={handleSubmit}
-      onDelete={transaction && transaction.type !== TransactionType.STARTING_BALANCE ? handleDelete : null}
+      onDelete={transaction && transaction.type !== TransactionType
+        .STARTING_BALANCE ? handleDelete : null}
     >
       <div className={styles.main}>
         <FormField name="date" type="date" label="Date:" readOnly={isReadOnly()} />
@@ -396,7 +405,8 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
                   readOnly
                 >
                   {({ form: { values } }: FieldProps<string, ValueType>) => {
-                    try { return <MoneyCentsAmount className="form-control" amount={loanInterestCents(values)} />; }
+                    try { return <MoneyCentsAmount className="form-control" amount={
+                      loanInterestCents(values)} />; }
                     catch { return <div className="form-control">Invalid amount</div>; }
                   }}
                 </FormField>

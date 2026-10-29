@@ -20,9 +20,12 @@ async function fixture(multiple = false) {
     await budget.initialize()
     const user = await budget.related('users').create({ username: `delete-order-${++sequence}`,
       email: `delete-order-${sequence}@example.com`, password: 'testPassw0rd' })
-    const group = await budget.related('groups').create({ name: 'Deletion ordering', type: 'Regular' })
-    const first = await group.related('categories').create({ name: 'Held category', type: CategoryType.Regular, balance: 0, fundingCategories: [] })
-    const second = multiple ? await group.related('categories').create({ name: 'Sibling category', type: CategoryType.Regular, balance: 0, fundingCategories: [] }) : null
+    const group = await budget.related('groups').create({ name: 'Deletion ordering', type:
+      'Regular' })
+    const first = await group.related('categories').create({ name: 'Held category',
+      type: CategoryType.Regular, balance: 0, fundingCategories: [] })
+    const second = multiple ? await group.related('categories').create({ name: 'Sibling category',
+      type: CategoryType.Regular, balance: 0, fundingCategories: [] }) : null
     return { budget, user, group, first, second }
   })
 }
@@ -33,11 +36,13 @@ async function state(f: Awaited<ReturnType<typeof fixture>>) {
 }
 
 test.group('Last-user deletion async lifecycle', () => {
-  test('normal last-user deletion records cleanup and transaction completion', async ({ client, assert, cleanup }) => {
+  test('normal last-user deletion records cleanup and transaction completion', async ({ client,
+    assert, cleanup }) => {
     const f = await fixture()
     const captured: TransactionClientContract[] = []
     const original = db.transaction.bind(db)
-    const capture = mock.method(db, 'transaction', async () => { const trx = await original(); captured.push(trx); return trx })
+    const capture = mock.method(db, 'transaction', async () => { const trx = await original();
+      captured.push(trx); return trx })
     cleanup(() => capture.mock.restore())
     const operations: Promise<void>[] = []
     const categoryDelete = Category.prototype.delete
@@ -53,7 +58,8 @@ test.group('Last-user deletion async lifecycle', () => {
     const outcomes = await Promise.allSettled(operations)
     response.assertStatus(200)
     assert.isTrue(outcomes.every((outcome) => outcome.status === 'fulfilled'))
-    assert.deepEqual(await state(f), { user: null, budget: null, group: null, first: null, second: null })
+    assert.deepEqual(await state(f), { user: null, budget: null, group: null, first: null,
+      second: null })
   })
 
   for (const scenario of ['delayed', 'delayed-failure', 'delayed-sibling']) {
@@ -75,9 +81,11 @@ test.group('Last-user deletion async lifecycle', () => {
         const trx = await transaction()
         captured.push(trx)
         const commit = trx.commit.bind(trx)
-        mock.method(trx, 'commit', async () => { events.push('commit-begins'); await commit(); events.push('commit-completes') })
+        mock.method(trx, 'commit', async () => { events.push('commit-begins'); await commit();
+          events.push('commit-completes') })
         const rollback = trx.rollback.bind(trx)
-        mock.method(trx, 'rollback', async () => { events.push('rollback-begins'); await rollback(); events.push('rollback-completes') })
+        mock.method(trx, 'rollback', async () => { events.push('rollback-begins'); await rollback();
+          events.push('rollback-completes') })
         return trx
       })
       cleanup(() => capture.mock.restore())
@@ -89,7 +97,8 @@ test.group('Last-user deletion async lifecycle', () => {
             events.push('held-delete-started'); started.release()
             await release.promise
             bindingAtExecution = this.$trx === captured[0]
-            if (scenario === 'delayed-failure') throw new Error('Injected delayed Category deletion failure')
+            if (scenario === 'delayed-failure') throw new Error(
+              'Injected delayed Category deletion failure')
           }
           if (this.id === f.second?.id) siblingStarted.release()
           await originalDelete.call(this)
@@ -106,7 +115,8 @@ test.group('Last-user deletion async lifecycle', () => {
         await groupDelete.call(this)
       })
       cleanup(() => groupCapture.mock.restore())
-      const request = client.delete('/api/v1/user').accept('json').loginAs(f.user).send().then((response) => {
+      const request = client.delete('/api/v1/user').accept('json').loginAs(f.user).send().then((
+        response) => {
         requestCompleted = true; events.push('request-completed'); return response
       })
       try {
@@ -139,15 +149,19 @@ test.group('Last-user deletion async lifecycle', () => {
         } else {
           assert.isTrue(outcomes.every((outcome) => outcome.status === 'fulfilled'))
           assert.include(events, 'commit-completes')
-          assert.isTrue(events.every((event, index) => !event.endsWith('delete-completed') || index < events.indexOf('commit-begins')))
-          assert.isBelow(events.indexOf('held-delete-completed'), events.indexOf('subsequent-group-delete-begins'))
+          assert.isTrue(events.every((event, index) => !event.endsWith('delete-completed') ||
+            index < events.indexOf('commit-begins')))
+          assert.isBelow(events.indexOf('held-delete-completed'), events.indexOf(
+            'subsequent-group-delete-begins'))
           assert.isBelow(events.indexOf('held-delete-completed'), events.indexOf('commit-begins'))
-          assert.deepEqual(await state(f), { user: null, budget: null, group: null, first: null, second: null })
+          assert.deepEqual(await state(f), { user: null, budget: null, group: null, first: null,
+            second: null })
         }
       } finally {
         release.release()
         await Promise.allSettled(deletes)
-        await request.catch(() => { /* The original request result remains observed by the test. */ })
+        await request.catch(() => {
+          /* The original request result remains observed by the test. */ })
         for (const trx of captured) if (!trx.isCompleted) await trx.rollback()
       }
     })

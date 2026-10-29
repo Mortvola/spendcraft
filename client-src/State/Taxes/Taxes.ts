@@ -1,5 +1,6 @@
 import { taxResultCents } from './taxResultCents';
-import { addMoneyCents, subtractMoneyCents, formatMoneyCents, parseMoneyCents, type MoneyCents } from "../../../common/moneyCents";
+import { addMoneyCents, subtractMoneyCents, formatMoneyCents, parseMoneyCents,
+  type MoneyCents } from "../../../common/moneyCents";
 import Http from "@mortvola/http";
 import { computed, observable, runInAction } from "mobx";
 import { ApiResponse, FilingStatus, TaxProps, TaxUpdateProps } from "../../../common/ResponseTypes";
@@ -71,7 +72,8 @@ export default class Taxes implements TaxesInterface {
   }
 
   updateValues(data: TaxProps) {
-    const amount = (value: string | null | undefined) => value == null ? parseMoneyCents("0.00") : parseMoneyCents(value);
+    const amount = (value: string | null | undefined) => value == null ? parseMoneyCents(
+      "0.00") : parseMoneyCents(value);
     const forecast = data.forecast && {
       ...data.forecast,
       taxableInterest: amount(data.forecast.taxableInterest),
@@ -118,12 +120,21 @@ export default class Taxes implements TaxesInterface {
         if (actuals == null) continue;
         for (let period = 0; period < 4; period += 1) {
           if (actuals.month <= periodMonthEnd[period]) {
-            periodActuals[period].taxableInterestCents = addMoneyCents(periodActuals[period].taxableInterestCents, actuals.taxableInterest ?? parseMoneyCents("0.00"));
-            periodActuals[period].oridinaryDividendsCents = addMoneyCents(periodActuals[period].oridinaryDividendsCents, actuals.ordinaryDividends ?? parseMoneyCents("0.00"));
-            periodActuals[period].shortTermCapitalGainsCents = addMoneyCents(periodActuals[period].shortTermCapitalGainsCents, actuals.shortTermCapitalGains ?? parseMoneyCents("0.00"));
-            periodActuals[period].longTermCapitalGainsCents = addMoneyCents(periodActuals[period].longTermCapitalGainsCents, actuals.longTermCapitalGains ?? parseMoneyCents("0.00"));
-            periodActuals[period].taxableSocialSecurityBenefitsCents = addMoneyCents(periodActuals[period].taxableSocialSecurityBenefitsCents, actuals.taxes.taxable_social_security_benefits ?? parseMoneyCents("0.00"));
-            periodActuals[period].estimatedTaxPaymentsCents = addMoneyCents(periodActuals[period].estimatedTaxPaymentsCents, actuals.taxes.estimated_tax_payments ?? parseMoneyCents("0.00"));
+            periodActuals[period].taxableInterestCents = addMoneyCents(periodActuals[period]
+              .taxableInterestCents, actuals.taxableInterest ?? parseMoneyCents("0.00"));
+            periodActuals[period].oridinaryDividendsCents = addMoneyCents(periodActuals[period]
+              .oridinaryDividendsCents, actuals.ordinaryDividends ?? parseMoneyCents("0.00"));
+            periodActuals[period].shortTermCapitalGainsCents = addMoneyCents(periodActuals[period]
+              .shortTermCapitalGainsCents, actuals.shortTermCapitalGains ?? parseMoneyCents(
+              "0.00"));
+            periodActuals[period].longTermCapitalGainsCents = addMoneyCents(periodActuals[period]
+              .longTermCapitalGainsCents, actuals.longTermCapitalGains ?? parseMoneyCents("0.00"));
+            periodActuals[period].taxableSocialSecurityBenefitsCents = addMoneyCents(periodActuals[
+              period].taxableSocialSecurityBenefitsCents, actuals.taxes
+              .taxable_social_security_benefits ?? parseMoneyCents("0.00"));
+            periodActuals[period].estimatedTaxPaymentsCents = addMoneyCents(periodActuals[period]
+              .estimatedTaxPaymentsCents, actuals.taxes.estimated_tax_payments ?? parseMoneyCents(
+              "0.00"));
           }
         }
       }
@@ -133,13 +144,20 @@ export default class Taxes implements TaxesInterface {
       this.income.taxableInterestCents = forecast?.taxableInterest ?? parseMoneyCents("0.00");
       this.income.qualifiedDividendsCents = forecast?.qualifiedDividends ?? parseMoneyCents("0.00");
       this.income.ordinaryDividendsCents = forecast?.ordinaryDividends ?? parseMoneyCents("0.00");
-      this.income.taxableIraDistributionsCents = forecast?.taxableIraDistributions ?? parseMoneyCents("0.00");
-      this.income.taxablePensionAndAnnuitiesCents = forecast?.taxablePensionAndAnnuities ?? parseMoneyCents("0.00");
-      this.income.taxableSocialSecurityBenefitsCents = forecast?.taxableSocialSecurityBenefits ?? parseMoneyCents("0.00");
-      this.income.additionalTaxableIncomeCents = forecast?.additionalTaxableIncome ?? parseMoneyCents("0.00");
-      this.income.shortTermCapitalGainsCents = forecast?.shortTermCapitalGains ?? parseMoneyCents("0.00");
-      this.income.longTermCapitalGainsCents = forecast?.longTermCapitalGains ?? parseMoneyCents("0.00");
-      this.qualifiedBusinessIncomeDeductionCents = forecast?.qualifiedBusinessIncomeDeduction ?? parseMoneyCents("0.00");
+      this.income.taxableIraDistributionsCents = forecast?.taxableIraDistributions ??
+        parseMoneyCents("0.00");
+      this.income.taxablePensionAndAnnuitiesCents = forecast?.taxablePensionAndAnnuities ??
+        parseMoneyCents("0.00");
+      this.income.taxableSocialSecurityBenefitsCents = forecast?.taxableSocialSecurityBenefits ??
+        parseMoneyCents("0.00");
+      this.income.additionalTaxableIncomeCents = forecast?.additionalTaxableIncome ??
+        parseMoneyCents("0.00");
+      this.income.shortTermCapitalGainsCents = forecast?.shortTermCapitalGains ?? parseMoneyCents(
+        "0.00");
+      this.income.longTermCapitalGainsCents = forecast?.longTermCapitalGains ?? parseMoneyCents(
+        "0.00");
+      this.qualifiedBusinessIncomeDeductionCents = forecast?.qualifiedBusinessIncomeDeduction ??
+        parseMoneyCents("0.00");
 
       for (let i = 0; i < 4; i += 1) {
         Object.assign(this.income.actuals[i], periodActuals[i]);
@@ -175,11 +193,13 @@ export default class Taxes implements TaxesInterface {
         ordinaryDividends: formatMoneyCents(this.income.ordinaryDividendsCents),
         taxableIraDistributions: formatMoneyCents(this.income.taxableIraDistributionsCents),
         taxablePensionAndAnnuities: formatMoneyCents(this.income.taxablePensionAndAnnuitiesCents),
-        taxableSocialSecurityBenefits: formatMoneyCents(this.income.taxableSocialSecurityBenefitsCents),
+        taxableSocialSecurityBenefits: formatMoneyCents(this.income
+          .taxableSocialSecurityBenefitsCents),
         additionalTaxableIncome: formatMoneyCents(this.income.additionalTaxableIncomeCents),
         shortTermCapitalGains: formatMoneyCents(this.income.shortTermCapitalGainsCents),
         longTermCapitalGains: formatMoneyCents(this.income.longTermCapitalGainsCents),
-        qualifiedBusinessIncomeDeduction: formatMoneyCents(this.qualifiedBusinessIncomeDeductionCents),
+        qualifiedBusinessIncomeDeduction: formatMoneyCents(this
+          .qualifiedBusinessIncomeDeductionCents),
         estimated: {
           expectedAgi: formatMoneyCents(this.worksheet2_1.expectedAgiCents),
           priorYearAgi: formatMoneyCents(this.worksheet2_1.priorYearAgiCents),
@@ -335,7 +355,8 @@ export default class Taxes implements TaxesInterface {
     }
 
     // Dollar conversion is only for the dimensionless effective-rate calculation.
-    const effectiveTaxRate = totalIncomeCents === 0 ? 0 : totalTaxes / Number(formatMoneyCents(totalIncomeCents)) * 100.0;
+    const effectiveTaxRate = totalIncomeCents === 0 ? 0 : totalTaxes / Number(formatMoneyCents(
+      totalIncomeCents)) * 100.0;
 
     return {
       brackets: sortedEntries.map(([rate, entry]) => [rate, {
@@ -361,7 +382,8 @@ export default class Taxes implements TaxesInterface {
     const capitalGainsCents = this.income.getCapitalGainsCents(period);
     const eligibleGainsCents = longTermGainsCents <= 0 || capitalGainsCents <= 0
       ? zero : longTermGainsCents < capitalGainsCents ? longTermGainsCents : capitalGainsCents;
-    const dividendsAndGainsCents = addMoneyCents(this.income.qualifiedDividendsCents, eligibleGainsCents);
+    const dividendsAndGainsCents = addMoneyCents(this.income.qualifiedDividendsCents,
+      eligibleGainsCents);
     const ordinaryIncomeDifference = subtractMoneyCents(taxableIncomeCents, dividendsAndGainsCents);
     const ordinaryIncomeCents = ordinaryIncomeDifference < 0 ? zero : ordinaryIncomeDifference;
 
@@ -378,7 +400,8 @@ export default class Taxes implements TaxesInterface {
     }
 
     // Compute 15% taxes
-    const line10 = taxableIncomeCents < dividendsAndGainsCents ? taxableIncomeCents : dividendsAndGainsCents;
+    const line10 =
+      taxableIncomeCents < dividendsAndGainsCents ? taxableIncomeCents : dividendsAndGainsCents;
     const line12Difference = subtractMoneyCents(line10, line9);
     const line12 = line12Difference > 0 ? line12Difference : zero;
     const line13 = this.maxFifteenPctTaxableIncomeCents();

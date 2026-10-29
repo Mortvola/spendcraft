@@ -8,7 +8,8 @@ export default class LoanTransactions extends BaseSchema {
       table.increments('id');
       table.integer('loan_id').notNullable().references('id').inTable('loans');
       table.decimal('principle', 12, 2).notNullable();
-      table.integer('transaction_category_id').notNullable().references('id').inTable('transaction_categories');
+      table.integer('transaction_category_id').notNullable().references('id').inTable(
+        'transaction_categories');
 
       /**
        * Uses timestamptz for PostgreSQL and DATETIME2 for MSSQL

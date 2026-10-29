@@ -42,7 +42,8 @@ function getObjectChanges(
   Object.keys(updates).forEach((k) => {
     if (DateTime.isDateTime(updates[k])) {
       if (!(updates[k] as DateTime).equals(original[k] as DateTime)) {
-        changes[k] = { old: (original[k] as DateTime).toISO(), new: (updates[k] as DateTime).toISO() }
+        changes[k] = { old: (original[k] as DateTime).toISO(), new: (updates[k] as DateTime).toISO(
+          ) }
       }
     }
     else if (updates[k] === null) {

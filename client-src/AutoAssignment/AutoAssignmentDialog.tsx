@@ -106,7 +106,8 @@ const AutoAssignmentDialog: React.FC<PropsType & ModalProps> = observer(({
     setShow(false)
   }
 
-  const initialCategories = (categories?: AutoAssignmentRule[]): (CategorySpreadInput & { id: number })[] => {
+  const initialCategories = (categories?: AutoAssignmentRule[]): (CategorySpreadInput & {
+    id: number })[] => {
     if (!categories || categories.length === 0) {
       return [{
         id: -1, categoryId: unassignedCat.id, amount: 100, percentage: true,
@@ -114,7 +115,8 @@ const AutoAssignmentDialog: React.FC<PropsType & ModalProps> = observer(({
     }
     return categories.map(c => c.percentage === true
       ? { id: c.id, categoryId: c.categoryId, amount: c.amount, percentage: true }
-      : { id: c.id, categoryId: c.categoryId, amount: formatMoneyCents(c.amountCents), percentage: false })
+      : { id: c.id, categoryId: c.categoryId, amount: formatMoneyCents(c.amountCents),
+        percentage: false })
 
   }
 
@@ -184,4 +186,5 @@ const AutoAssignmentDialog: React.FC<PropsType & ModalProps> = observer(({
   )
 })
 
-export const useAutoAssignmentDialog = makeUseModal<PropsType>(AutoAssignmentDialog, { size: 'md' });
+export const useAutoAssignmentDialog = makeUseModal<PropsType>(AutoAssignmentDialog, { size:
+  'md' });

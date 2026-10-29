@@ -1,7 +1,8 @@
 import { parseMoneyCents } from '../../common/moneyCents';
 import { observer } from 'mobx-react-lite';
 import React from 'react';
-import { BaseTransactionInterface, TransactionContainerInterface, TransactionInterface } from '../State/Types';
+import { BaseTransactionInterface, TransactionContainerInterface, TransactionInterface } from
+  '../State/Types';
 import Transaction from './Transaction';
 import transactionStyles from './Transactions.module.scss'
 import RegisterTransactions from './RegisterTransactions';

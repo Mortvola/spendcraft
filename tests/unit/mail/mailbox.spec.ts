@@ -39,10 +39,12 @@ test.group('Mailbox policy', () => {
   })
 
   test('trims spaces without changing recipient identity', ({ assert }) => {
-    assert.equal(mailboxAddress('  First.Last+Tag@GoogleMail.com  '), 'First.Last+Tag@GoogleMail.com')
+    assert.equal(mailboxAddress('  First.Last+Tag@GoogleMail.com  '),
+      'First.Last+Tag@GoogleMail.com')
   })
 
-  test('rejects unsafe mailboxes without exposing input').with(rejected).run(({ assert }, value) => {
+  test('rejects unsafe mailboxes without exposing input').with(rejected).run(({ assert }, value) =>
+    {
     assert.throws(() => mailboxAddress(value), 'A valid single mailbox address is required')
   })
 
@@ -60,24 +62,31 @@ test.group('Mailbox policy', () => {
     assert.equal((await entry.validate({ email: input })).email, expected)
   })
 
-  test('rejects raw unsafe input before entry normalization').with(rejected).run(async ({ assert }, email) => {
+  test('rejects raw unsafe input before entry normalization').with(rejected).run(async ({ assert },
+    email) => {
     await assert.rejects(() => entry.validate({ email }))
   })
 })
 
 test.group('Mail recipient boundary', () => {
   const factories = [
-    { name: 'verification', notificationClass: VerifyEmailNotification, create: (user: User) => new VerifyEmailNotification(user) },
-    { name: 'code', notificationClass: RequestCodeNotification, create: (user: User) => new RequestCodeNotification(user) },
-    { name: 'institution', notificationClass: ItemLoginRequiredNotification, create: (user: User) => new ItemLoginRequiredNotification(user, new Institution().merge({ name: 'Test institution' })) },
-    { name: 'command notification', notificationClass: TestNotification, create: (user: User) => new TestNotification(user.email) },
+    { name: 'verification', notificationClass: VerifyEmailNotification, create: (user: User) =>
+      new VerifyEmailNotification(user) },
+    { name: 'code', notificationClass: RequestCodeNotification, create: (user: User) =>
+      new RequestCodeNotification(user) },
+    { name: 'institution', notificationClass: ItemLoginRequiredNotification, create: (user: User) =>
+      new ItemLoginRequiredNotification(user, new Institution().merge({ name:
+      'Test institution' })) },
+    { name: 'command notification', notificationClass: TestNotification, create: (user: User) =>
+      new TestNotification(user.email) },
   ]
 
   function userWithEmail(email: string) {
     return new User().merge({ email, oneTimePassCode: { code: 'TEST', expires: DateTime.now() } })
   }
 
-  test('delivers an ordinary recipient to the fake').with(factories).run(async ({ assert, cleanup }, factory) => {
+  test('delivers an ordinary recipient to the fake').with(factories).run(async ({ assert, cleanup },
+    factory) => {
     const { mails } = mail.fake()
     cleanup(() => mail.restore())
     const notification = factory.create(userWithEmail(' User+Tag@example.com '))
@@ -86,11 +95,13 @@ test.group('Mail recipient boundary', () => {
     mails.assertSent(factory.notificationClass)
   })
 
-  test('rejects unsafe stored and command recipients before delivery').with(factories).run(async ({ assert, cleanup }, factory) => {
+  test('rejects unsafe stored and command recipients before delivery').with(factories).run(async ({
+    assert, cleanup }, factory) => {
     mail.fake()
     cleanup(() => mail.restore())
     const notification = factory.create(userWithEmail('"user"@example.com'))
-    await assert.rejects(() => mail.send(notification), 'A valid single mailbox address is required')
+    await assert.rejects(() => mail.send(notification),
+      'A valid single mailbox address is required')
     // The fake records attempts before prepare; rejection must leave To unset.
     assert.isUndefined(notification.message.nodeMailerMessage.to)
   })

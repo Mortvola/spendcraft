@@ -505,7 +505,8 @@ interface InsertCategoryTransferResponse {
   transaction: TransactionProps,
 }
 
-export const isInsertCategoryTransferResponse = (r: unknown): r is InsertCategoryTransferResponse => (
+export const isInsertCategoryTransferResponse = (r: unknown): r is InsertCategoryTransferResponse =>
+  (
   (r as InsertCategoryTransferResponse).balances !== undefined
   && Array.isArray((r as InsertCategoryTransferResponse).balances)
   && ((r as InsertCategoryTransferResponse).balances.length === 0
@@ -519,7 +520,8 @@ export interface AddOnlineAccountsResponse {
 
 export const isAddOnlineAccountsResponse = (r: unknown): r is AddOnlineAccountsResponse => (
   (r as AddOnlineAccountsResponse).accounts !== undefined
-  && ((r as AddOnlineAccountsResponse).accounts.length === 0 || isAccountProps((r as AddOnlineAccountsResponse).accounts[0]))
+  && ((r as AddOnlineAccountsResponse).accounts.length === 0 || isAccountProps((
+    r as AddOnlineAccountsResponse).accounts[0]))
 );
 
 export interface AddOfflineAccountResponse {
@@ -723,7 +725,8 @@ export interface CategoryReportRow {
   count: number;
 }
 
-export type IncomeVsExpensesReportResponse = [string, DecimalMoneyString, DecimalMoneyString, DecimalMoneyString][];
+export type IncomeVsExpensesReportResponse = [string, DecimalMoneyString, DecimalMoneyString,
+  DecimalMoneyString][];
 
 export interface FundingHistoryReportRow {
   groupId: number;

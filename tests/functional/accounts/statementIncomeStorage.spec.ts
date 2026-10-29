@@ -11,16 +11,22 @@ import { encodeStatementIncome, statementIncomeFields } from '#services/statemen
 import { AccountType, TrackingType } from '#common/ResponseTypes'
 
 let sequence = 0
-const income = (amount: number) => ({ shortTermCapitalGains: amount, longTermCapitalGains: amount, dividends: amount, taxableInterest: amount })
+const income = (amount: number) => ({ shortTermCapitalGains: amount, longTermCapitalGains: amount,
+  dividends: amount, taxableInterest: amount })
 async function fixture() {
   return db.transaction(async trx => {
     const budget = await Budget.create({}, { client: trx }); await budget.initialize()
-    const user = await budget.related('users').create({ username: `income-${++sequence}`, email: `income-${sequence}@example.com`, password: 'testPassw0rd' })
-    const institution = await budget.related('institutions').create({ name: 'Synthetic income bank' })
-    const account = await institution.related('accounts').create({ name: 'Synthetic income account', balance: 200,
+    const user = await budget.related('users').create({ username: `income-${++sequence}`,
+      email: `income-${sequence}@example.com`, password: 'testPassw0rd' })
+    const institution = await budget.related('institutions').create({ name:
+      'Synthetic income bank' })
+    const account = await institution.related('accounts').create({ name: 'Synthetic income account',
+      balance: 200,
       type: AccountType.Investment, subtype: 'brokerage', tracking: TrackingType.Transactions,
       startDate: DateTime.fromISO('2026-01-01'), rate: 0, closed: false })
-    const statement = await account.related('statements').create({ startDate: DateTime.fromISO('2026-01-01'), endDate: DateTime.fromISO('2026-01-31'), startingBalance: 100, endingBalance: 200, data: income(1) })
+    const statement = await account.related('statements').create({ startDate: DateTime.fromISO(
+      '2026-01-01'), endDate: DateTime.fromISO('2026-01-31'), startingBalance: 100,
+      endingBalance: 200, data: income(1) })
     return { budget, user, account, statement }
   })
 }
@@ -34,7 +40,8 @@ test.group('Statement income decimal-string PostgreSQL acceptance', group => {
       db.from('accounts').where('id', f.account.id),
       db.from('account_transactions').where('account_id', f.account.id).orderBy('id'),
       db.from('transactions').where('application_id', f.budget.id).orderBy('id'),
-      db.from('categories').select('categories.*').join('groups', 'groups.id', 'categories.group_id')
+      db.from('categories').select('categories.*').join('groups', 'groups.id',
+        'categories.group_id')
         .where('groups.application_id', f.budget.id).orderBy('categories.id'),
     ])
   }
@@ -44,70 +51,90 @@ test.group('Statement income decimal-string PostgreSQL acceptance', group => {
     { amount: 0.1 + 0.2, stored: '0.30', numeric: 0.30 },
     { amount: -0, stored: '0.00', numeric: 0 },
   ]).run(async ({ client, assert }, value) => {
-    const response = await client.post(`/api/v1/account/${f.account.id}/statements`).json(statementRequest({
-      startDate: '2026-02-01', endDate: '2026-02-28', startingBalance: 200, endingBalance: 200, data: income(value.amount),
+    const response = await client.post(`/api/v1/account/${f.account.id}/statements`).json(
+      statementRequest({
+      startDate: '2026-02-01', endDate: '2026-02-28', startingBalance: 200, endingBalance: 200,
+        data: income(value.amount),
     })).accept('json').loginAs(f.user)
     response.assertStatus(200)
     const stored = await db.from('statements').where('id', response.body().id).firstOrFail()
     for (const field of statementIncomeFields) {
       assert.strictEqual(stored.data[field], value.stored)
       assert.strictEqual(response.body().data[field], value.stored)
-      const result = await db.rawQuery('SELECT jsonb_typeof(data->?::text) AS kind FROM statements WHERE id=?', [field, stored.id])
+      const result = await db.rawQuery(
+        'SELECT jsonb_typeof(data->?::text) AS kind FROM statements WHERE id=?', [field, stored.id])
       assert.equal(result.rows[0].kind, 'string')
     }
   })
-  test('income-only Statement PATCH preserves financial state, balances and metadata').with([TrackingType.Transactions, TrackingType.Balances])
+  test('income-only Statement PATCH preserves financial state, balances and metadata').with([
+    TrackingType.Transactions, TrackingType.Balances])
     .run(async ({ client, assert }, tracking) => {
       f.account.tracking = tracking; await f.account.save()
-      await db.from('statements').where('id', f.statement.id).update({ data: JSON.stringify({ ...encodeStatementIncome(income(1)), note: { ordered: [2, 1, 2], amount: 1.005 } }) })
+      await db.from('statements').where('id', f.statement.id).update({ data: JSON.stringify({
+        ...encodeStatementIncome(income(1)), note: { ordered: [2, 1, 2], amount: 1.005 } }) })
       const before = await financialState(), old = await raw()
-      const response = await client.patch(`/api/v1/statements/${f.statement.id}`).json(statementRequest({ data: income(12.345) })).accept('json').loginAs(f.user)
+      const response = await client.patch(`/api/v1/statements/${f.statement.id}`).json(
+        statementRequest({ data: income(12.345) })).accept('json').loginAs(f.user)
       response.assertStatus(200)
       const after = await raw()
-      for (const field of statementIncomeFields) { assert.strictEqual(after.data[field], '12.35'); assert.strictEqual(response.body().data[field], '12.35') }
+      for (const field of statementIncomeFields) { assert.strictEqual(after.data[field], '12.35');
+        assert.strictEqual(response.body().data[field], '12.35') }
       assert.deepEqual(after.data.note, old.data.note)
-      assert.equal(after.starting_balance, old.starting_balance); assert.equal(after.ending_balance, old.ending_balance)
+      assert.equal(after.starting_balance, old.starting_balance); assert.equal(after.ending_balance,
+        old.ending_balance)
       assert.deepEqual(await financialState(), before)
     })
-  test('canonical income responses preserve raw JSON on reads and metadata-only saves', async ({ client, assert }) => {
+  test('canonical income responses preserve raw JSON on reads and metadata-only saves', async ({
+    client, assert }) => {
     const data = { ...encodeStatementIncome(income(1)), dividends: '2.00', note: { amount: 1.005 } }
     await db.from('statements').where('id', f.statement.id).update({ data: JSON.stringify(data) })
     const before = await raw()
-    const list = await client.get(`/api/v1/account/${f.account.id}/statements`).accept('json').loginAs(f.user)
+    const list = await client.get(`/api/v1/account/${f.account.id}/statements`).accept('json')
+      .loginAs(f.user)
     list.assertStatus(200)
     const item = list.body().find((row: { id: number }) => row.id === f.statement.id)
     assert.strictEqual(item.data.shortTermCapitalGains, '1.00')
     assert.strictEqual(item.data.dividends, '2.00')
     assert.deepEqual(await raw(), before)
-    const patch = await client.patch(`/api/v1/statements/${f.statement.id}`).json(statementRequest({ startDate: '2026-01-02' })).accept('json').loginAs(f.user)
+    const patch = await client.patch(`/api/v1/statements/${f.statement.id}`).json(statementRequest({
+      startDate: '2026-01-02' })).accept('json').loginAs(f.user)
     patch.assertStatus(200); assert.deepEqual((await raw()).data, data)
   })
-  test('existing real-aggregation tax reports accept mixed and string attribution', async ({ assert }) => {
-    await db.from('statements').where('id', f.statement.id).update({ data: JSON.stringify({ ...income(1.25), dividends: '2.50' }) })
+  test('existing real-aggregation tax reports accept mixed and string attribution', async ({
+    assert }) => {
+    await db.from('statements').where('id', f.statement.id).update({ data: JSON.stringify({
+      ...income(1.25), dividends: '2.50' }) })
     const mixed = await TaxesController.getActuals(2026, f.budget.id)
     assert.equal(mixed[0].ordinaryDividends, 2.5); assert.equal(mixed[0].taxableInterest, 1.25)
-    await db.from('statements').where('id', f.statement.id).update({ data: JSON.stringify(encodeStatementIncome({ ...income(1.25), dividends: 2.5 })) })
-    const model = await Statement.findOrFail(f.statement.id); replaceStatementIncome(model, { ...income(1.25), dividends: 2.5 }); await model.save()
+    await db.from('statements').where('id', f.statement.id).update({ data: JSON.stringify(
+      encodeStatementIncome({ ...income(1.25), dividends: 2.5 })) })
+    const model = await Statement.findOrFail(f.statement.id); replaceStatementIncome(model, {
+      ...income(1.25), dividends: 2.5 }); await model.save()
     assert.deepEqual(await TaxesController.getActuals(2026, f.budget.id), mixed)
   })
-  test('SQL-null data and omitted income remain unchanged on unrelated PATCH', async ({ client, assert }) => {
+  test('SQL-null data and omitted income remain unchanged on unrelated PATCH', async ({ client,
+    assert }) => {
     await db.from('statements').where('id', f.statement.id).update({ data: null })
-    const response = await client.patch(`/api/v1/statements/${f.statement.id}`).json(statementRequest({ startDate: '2026-01-02', data: null })).accept('json').loginAs(f.user)
+    const response = await client.patch(`/api/v1/statements/${f.statement.id}`).json(
+      statementRequest({ startDate: '2026-01-02', data: null })).accept('json').loginAs(f.user)
     response.assertStatus(200); assert.isNull((await raw()).data)
     assert.deepEqual(response.body().data, encodeStatementIncome(income(0)))
   })
   test('CREATE/PATCH reject numeric or noncanonical monetary fields without mutation')
-    .with(['create', 'patch'].flatMap(operation => ['startingBalance', 'endingBalance', ...statementIncomeFields]
+    .with(['create', 'patch'].flatMap(operation => ['startingBalance', 'endingBalance',
+      ...statementIncomeFields]
       .map(field => ({ operation, field }))))
     .run(async ({ client, assert }, { operation, field }) => {
       const before = await raw(), financial = await financialState()
       const statements = await db.from('statements').where('account_id', f.account.id).orderBy('id')
       for (const value of [0, '1.2', '-0.00', '90071992547409.92']) {
         const payload = {
-          startDate: '2026-02-01', endDate: '2026-02-28', startingBalance: '200.00', endingBalance: '200.00',
+          startDate: '2026-02-01', endDate: '2026-02-28', startingBalance: '200.00', endingBalance:
+            '200.00',
           data: { ...encodeStatementIncome(income(0)) },
         }
-        if (field === 'startingBalance' || field === 'endingBalance') Reflect.set(payload, field, value)
+        if (field === 'startingBalance' || field === 'endingBalance') Reflect.set(payload, field,
+          value)
         else Reflect.set(payload.data, field, value)
         const request = operation === 'create'
           ? client.post(`/api/v1/account/${f.account.id}/statements`)
@@ -116,21 +143,26 @@ test.group('Statement income decimal-string PostgreSQL acceptance', group => {
         response.assertStatus(422)
         assert.deepEqual(await raw(), before)
         assert.deepEqual(await financialState(), financial)
-        assert.deepEqual(await db.from('statements').where('account_id', f.account.id).orderBy('id'), statements)
+        assert.deepEqual(await db.from('statements').where('account_id', f.account.id).orderBy(
+          'id'), statements)
       }
     })
   test('rejected input leaves raw Statement and financial state unchanged').with([
-    { data: income(Number.MAX_SAFE_INTEGER) }, { data: { dividends: null } }, { data: { dividends: 'bad' } },
+    { data: income(Number.MAX_SAFE_INTEGER) }, { data: { dividends: null } }, { data: { dividends:
+      'bad' } },
   ]).run(async ({ client, assert }, input) => {
     const before = await raw(), financial = await financialState()
-    const response = await client.patch(`/api/v1/statements/${f.statement.id}`).json(input).accept('json').loginAs(f.user)
-    response.assertStatus(422); assert.lengthOf(response.redirects(), 0); assert.deepEqual(await raw(), before); assert.deepEqual(await financialState(), financial)
+    const response = await client.patch(`/api/v1/statements/${f.statement.id}`).json(input).accept(
+      'json').loginAs(f.user)
+    response.assertStatus(422); assert.lengthOf(response.redirects(), 0); assert.deepEqual(
+      await raw(), before); assert.deepEqual(await financialState(), financial)
   })
   test('owning transaction rollback restores exact original raw JSON', async ({ assert }) => {
     const before = await raw()
     await assert.rejects(async () => db.transaction(async trx => {
       await Budget.query({ client: trx }).where('id', f.budget.id).forUpdate().firstOrFail()
-      const statement = await Statement.query({ client: trx }).where('id', f.statement.id).firstOrFail()
+      const statement = await Statement.query({ client: trx }).where('id', f.statement.id)
+        .firstOrFail()
       replaceStatementIncome(statement, income(2.345)); await statement.save()
       const inside = await trx.from('statements').where('id', statement.id).firstOrFail()
       assert.equal(inside.data.dividends, '2.35'); throw new Error('intentional rollback')
@@ -139,7 +171,9 @@ test.group('Statement income decimal-string PostgreSQL acceptance', group => {
   })
   test('foreign Budget cannot mutate attribution', async ({ client, assert }) => {
     const other = await fixture(), before = await raw(), financial = await financialState()
-    const response = await client.patch(`/api/v1/statements/${f.statement.id}`).json(statementRequest({ data: income(10) })).accept('json').loginAs(other.user)
-    response.assertStatus(404); assert.deepEqual(await raw(), before); assert.deepEqual(await financialState(), financial)
+    const response = await client.patch(`/api/v1/statements/${f.statement.id}`).json(
+      statementRequest({ data: income(10) })).accept('json').loginAs(other.user)
+    response.assertStatus(404); assert.deepEqual(await raw(), before); assert.deepEqual(
+      await financialState(), financial)
   })
 })

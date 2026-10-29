@@ -1,9 +1,11 @@
 import { formatMoneyCents, type MoneyCents } from '../../common/moneyCents';
 import { observable, runInAction } from "mobx";
-import { AccountInterface, AddStatementRequest, StatementsInterface, StoreInterface } from "./Types";
+import { AccountInterface, AddStatementRequest, StatementsInterface, StoreInterface } from
+  "./Types";
 import Statement from "./Statement";
 import Http from "@mortvola/http";
-import { AddStatementResponse, ApiError, StatementProps, StatementsResponse, TrackingType } from "../../common/ResponseTypes";
+import { AddStatementResponse, ApiError, StatementProps, StatementsResponse, TrackingType } from
+  "../../common/ResponseTypes";
 
 class Statements implements StatementsInterface {
   @observable
@@ -20,7 +22,8 @@ class Statements implements StatementsInterface {
   }
 
   async load(): Promise<void> {
-    const response = await Http.get<StatementsResponse>(`/api/v1/account/${this.account.id}/statements`);
+    const response = await Http.get<StatementsResponse>(`/api/v1/account/${this.account
+      .id}/statements`);
 
     if (!response.ok) throw new Error('Unable to refresh statements');
     const body = await response.body();
@@ -64,8 +67,10 @@ class Statements implements StatementsInterface {
     dividendsCents: MoneyCents,
     taxableInterestCents: MoneyCents,
   ): Promise<ApiError[] | null> {
-    const response = await Http.post<AddStatementRequest, AddStatementResponse>(`/api/v1/account/${this.account.id}/statements`, {
-      startDate, endDate, startingBalance: formatMoneyCents(startingBalanceCents), endingBalance: formatMoneyCents(endingBalanceCents),
+    const response = await Http.post<AddStatementRequest, AddStatementResponse>(
+      `/api/v1/account/${this.account.id}/statements`, {
+      startDate, endDate, startingBalance: formatMoneyCents(startingBalanceCents),
+        endingBalance: formatMoneyCents(endingBalanceCents),
       data: {
         shortTermCapitalGains: formatMoneyCents(shortTermCapitalGainsCents),
         longTermCapitalGains: formatMoneyCents(longTermCapitalGainsCents),

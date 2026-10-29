@@ -16,7 +16,8 @@ test.group('Historical migration completion ordering', () => {
     .with([{ operation: 'commit' }, { operation: 'rollback' }])
     .run(async ({ assert }, scenario) => {
       const table = `migration_lifecycle_probe_${randomUUID().replaceAll('-', '')}`
-      await db.connection().schema.createTable(table, (builder) => { builder.integer('id').primary() })
+      await db.connection().schema.createTable(table, (builder) => { builder.integer('id').primary(
+        ) })
       let outer: TransactionClientContract | undefined
       let child: TransactionClientContract | undefined
       let completion: Promise<void> | undefined
@@ -33,10 +34,12 @@ test.group('Historical migration completion ordering', () => {
           async up() {
             this.defer(async () => {
               child = await this.db.transaction()
-              const complete = scenario.operation === 'commit' ? child.commit.bind(child) : child.rollback.bind(child)
+              const complete = scenario.operation === 'commit' ? child.commit.bind(child) : child
+                .rollback.bind(child)
               mock.method(child, scenario.operation === 'commit' ? 'commit' : 'rollback', () => {
                 entered.release()
-                completion = (async () => { await release.promise; await complete(); events.push('savepoint-completed') })()
+                completion = (async () => { await release.promise; await complete(); events.push(
+                  'savepoint-completed') })()
                 return completion
               })
               try {

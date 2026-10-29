@@ -18,6 +18,7 @@ export default tseslint.config(
   tseslint.configs.stylistic,
   {
     rules: {
+      "max-len": ["error", { code: 100, tabWidth: 2 }],
       "@typescript-eslint/consistent-type-definitions": "warn",
       "@typescript-eslint/no-empty-object-type": [
         "error",

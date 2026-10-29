@@ -28,7 +28,8 @@ const BudgetProgress: React.FC = observer(() => {
     setQuerying(true);
     (async () => {
       try {
-        const response = await Http.get<BudgetProgressReportResponse>(`/api/v1/reports/budget-progress?m=${value}`);
+        const response = await Http.get<BudgetProgressReportResponse>(
+          `/api/v1/reports/budget-progress?m=${value}`);
 
         if (response.ok) {
           const body = await response.body();
@@ -99,7 +100,8 @@ const BudgetProgress: React.FC = observer(() => {
     // }
   }, [store]);
 
-  const selectCallback = React.useCallback(({ chartWrapper }: { chartWrapper: GoogleChartWrapper | null}) => {
+  const selectCallback = React.useCallback(({ chartWrapper }: {
+    chartWrapper: GoogleChartWrapper | null}) => {
     if (chartWrapper) {
       const selection = chartWrapper.getChart().getSelection();
       if (selection.length > 0 && days) {
@@ -131,7 +133,8 @@ const BudgetProgress: React.FC = observer(() => {
                           ['date', 'amount'],
                           ...days.map(([amountCents], index) => {
                             const formatted = formatMoneyCents(amountCents);
-                            return [index + 1, { v: Number(formatted), f: formatted.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,') }];
+                            return [index + 1, { v: Number(formatted), f: formatted.replace(
+                              /(\d)(?=(\d{3})+(?!\d))/g, '$1,') }];
                           }),
                         ]}
                         width="100%"
@@ -159,7 +162,8 @@ const BudgetProgress: React.FC = observer(() => {
                     <RegisterTransactions trxContainer={transactions}>
                       {
                         transactions.transactions.map((t) => (
-                          <Transaction key={t.id} transaction={t} amountCents={t.amountCents} runningBalanceCents={parseMoneyCents('0.00')} />
+                          <Transaction key={t.id} transaction={t} amountCents={t
+                            .amountCents} runningBalanceCents={parseMoneyCents('0.00')} />
                         ))
                       }
                     </RegisterTransactions>

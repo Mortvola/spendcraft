@@ -11,7 +11,8 @@ const IncomeVsExpenses: React.FC = () => {
 
   useEffect(() => {
     (async () => {
-      const response = await Http.get<IncomeVsExpensesReportResponse>('/api/v1/reports/income-vs-expenses');
+      const response = await Http.get<IncomeVsExpensesReportResponse>(
+        '/api/v1/reports/income-vs-expenses');
 
       if (response.ok) {
         const body = await response.body();

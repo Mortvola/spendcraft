@@ -9,7 +9,8 @@ import Account, { AccountSyncResult } from '#app/Models/Account';
 import Category from '#app/Models/Category';
 import {
   AccountType,
-  AddInstitutionResponse, AddOfflineAccountResponse, type AddOnlineAccountsResponse, ApiResponse, CategoryBalanceProps,
+  AddInstitutionResponse, AddOfflineAccountResponse, type AddOnlineAccountsResponse, ApiResponse,
+    CategoryBalanceProps,
   InstitutionProps, InstitutionSyncResponse, TrackingType, UnlinkedAccountProps,
 } from '#common/ResponseTypes';
 import Transaction from '#app/Models/Transaction';
@@ -21,7 +22,8 @@ import { Exception } from '@adonisjs/core/exceptions';
 import * as Plaid from 'plaid';
 import env from '#start/env'
 import app from '@adonisjs/core/services/app';
-import { addInstitution, addInstitutionCheck, addInstitutionOffline, addOfflineAccount, update } from '#validators/institution';
+import { addInstitution, addInstitutionCheck, addInstitutionOffline, addOfflineAccount,
+  update } from '#validators/institution';
 
 function budgetInstitutions(budgetId: number, options?: ModelAdapterOptions) {
   return Institution.query(options).where('budgetId', budgetId);
@@ -125,7 +127,8 @@ class InstitutionController {
       }
 
       // Initial sync can invalidate the setup snapshot, even when identities stay the same.
-      const connectedInstitution = (await budget.getConnectedAccounts()).find((item) => item.id === institution.id);
+      const connectedInstitution = (await budget.getConnectedAccounts()).find((item) => item
+        .id === institution.id);
       if (!connectedInstitution) {
         throw new Error('Connected institution not found');
       }
@@ -141,7 +144,8 @@ class InstitutionController {
           name: connectedInstitution.name,
           syncDate: connectedInstitution.syncDate,
           accounts: connectedInstitution.accounts,
-          categories: categories.map((category) => ({ id: category.id, balance: encodeMonetaryAmount(category.balance) })),
+          categories: categories.map((category) => ({ id: category.id,
+            balance: encodeMonetaryAmount(category.balance) })),
         }
       };
     }
@@ -153,7 +157,8 @@ class InstitutionController {
         // A lost commit acknowledgement is resolved by the durable row and the
         // authoritative Institution check; never infer rollback from an exception.
         try { await cleanup.attempt(protection.id, true) }
-        catch { logger.error({ cleanupId: protection.id }, 'Plaid cleanup deferred to recovery sweep') }
+        catch { logger.error({ cleanupId: protection.id },
+          'Plaid cleanup deferred to recovery sweep') }
       }
 
       throw error;
@@ -279,7 +284,8 @@ class InstitutionController {
 
       const budget = await user.related('budget').query().forUpdate().firstOrFail();
 
-      const institution = await budgetInstitutions(user.budgetId, { client: trx }).where('id', request.params().instId).firstOrFail();
+      const institution = await budgetInstitutions(user.budgetId, { client: trx }).where('id',
+        request.params().instId).firstOrFail();
 
       const accountsResponse = await InstitutionController.addOnlineAccounts(
         budget, institution,
@@ -321,7 +327,8 @@ class InstitutionController {
       user.useTransaction(trx);
       await user.related('budget').query().forUpdate().firstOrFail();
 
-      const institution = await budgetInstitutions(user.budgetId, { client: trx }).where('id', request.params().instId).firstOrFail();
+      const institution = await budgetInstitutions(user.budgetId, { client: trx }).where('id',
+        request.params().instId).firstOrFail();
 
       institution.merge({
         name: requestData.name,
@@ -362,7 +369,8 @@ class InstitutionController {
 
       return accounts.map((acct) => {
         let balance = acct.balances.current;
-        if (balance !== null && (acct.type === AccountType.Credit || acct.type === AccountType.Loan)) {
+        if (balance !== null && (acct.type === AccountType.Credit || acct.type === AccountType
+          .Loan)) {
           balance = -balance;
         }
 
@@ -390,7 +398,8 @@ class InstitutionController {
       throw new Error('user is not defined');
     }
 
-    const inst = await budgetInstitutions(user.budgetId).where('id', request.params().instId).firstOrFail();
+    const inst = await budgetInstitutions(user.budgetId).where('id', request.params().instId)
+      .firstOrFail();
 
     const accounts: UnlinkedAccountProps[] = await InstitutionController
       .getUnconnectedAccounts(inst);
@@ -487,7 +496,8 @@ class InstitutionController {
     // even if both institutions belong to the same budget. Check the whole batch.
     const collision = await Account.query({ client: trx })
       .select('id')
-      .whereIn('plaidAccountId', plaidAccountsResponse.accounts.map((account) => account.account_id))
+      .whereIn('plaidAccountId', plaidAccountsResponse.accounts.map((account) => account
+        .account_id))
       .whereNot('institutionId', institution.id)
       .first();
     if (collision) {
@@ -498,7 +508,8 @@ class InstitutionController {
   
     for (const plaidAccount of plaidAccountsResponse.accounts) {
       let balance = plaidAccount.balances.current ?? 0;
-      if (balance && (plaidAccount.type === AccountType.Credit || plaidAccount.type === AccountType.Loan)) {
+      if (balance && (plaidAccount.type === AccountType.Credit || plaidAccount.type === AccountType
+        .Loan)) {
         balance = -balance;
       }
 
@@ -579,7 +590,8 @@ class InstitutionController {
       user.useTransaction(trx);
       const budget = await user.related('budget').query().forUpdate().firstOrFail();
 
-      const institution = await budgetInstitutions(user.budgetId, { client: trx }).where('id', request.params().instId).firstOrFail();
+      const institution = await budgetInstitutions(user.budgetId, { client: trx }).where('id',
+        request.params().instId).firstOrFail();
 
       const fundingPool = await budget.getFundingPoolCategory({ client: trx });
 
@@ -639,7 +651,8 @@ class InstitutionController {
             tracking: acct.tracking,
             balance: encodeMonetaryAmount(acct.balance),
             pendingBalance: '0.00',
-            plaidBalance: acct.plaidBalance == null ? null : encodeMonetaryAmount(acct.plaidBalance),
+            plaidBalance: acct.plaidBalance == null ? null : encodeMonetaryAmount(acct
+              .plaidBalance),
             startDate,
             rate: acct.rate,
             plaidId: acct.plaidAccountId,
@@ -713,7 +726,8 @@ class InstitutionController {
     const trx = await db.transaction();
 
     try {
-      const institution = await budgetInstitutions(user.budgetId, { client: trx }).where('id', request.params().instId).firstOrFail();
+      const institution = await budgetInstitutions(user.budgetId, { client: trx }).where('id',
+        request.params().instId).firstOrFail();
 
       await institution.syncUpdate();
 
@@ -744,7 +758,8 @@ class InstitutionController {
       throw new Error('user is not defined');
     }
 
-    const institution = await budgetInstitutions(user.budgetId).where('id', parseInt(request.params().instId, 10)).firstOrFail();
+    const institution = await budgetInstitutions(user.budgetId).where('id', parseInt(request.params(
+      ).instId, 10)).firstOrFail();
 
     if (institution.accessToken === null || institution.accessToken === '') {
       throw new Exception(`access token not set for ${institution.plaidItemId}`);
@@ -787,7 +802,8 @@ class InstitutionController {
       user.useTransaction(trx);
       await user.related('budget').query().forUpdate().firstOrFail();
 
-      const institution = await budgetInstitutions(user.budgetId, { client: trx }).where('id', request.params().instId).firstOrFail();
+      const institution = await budgetInstitutions(user.budgetId, { client: trx }).where('id',
+        request.params().instId).firstOrFail();
 
       if (institution.accessToken) {
         const plaidClient = await app.container.make('plaid')
@@ -840,7 +856,8 @@ class InstitutionController {
       throw new Error('user is not defined');
     }
 
-    const institution = await budgetInstitutions(user.budgetId).where('id', request.params().instId).firstOrFail();
+    const institution = await budgetInstitutions(user.budgetId).where('id', request.params().instId)
+      .firstOrFail();
 
     const plaidInstitution = institution.getPlaidInstition();
 
@@ -887,7 +904,8 @@ class InstitutionController {
      
     for (const acct of accounts) {
        
-      const acctTrans = await AccountTransaction.query({ client: budget.$trx }).where('accountId', acct.id);
+      const acctTrans = await AccountTransaction.query({ client: budget.$trx }).where('accountId',
+        acct.id);
 
        
       for (const acctTran of acctTrans) {
@@ -912,7 +930,8 @@ class InstitutionController {
                 catBalance.balance = encodeMonetaryAmount(unassignedCat.balance);
               }
               else {
-                categoryBalances.push({ id: unassignedCat.id, balance: encodeMonetaryAmount(unassignedCat.balance) })
+                categoryBalances.push({ id: unassignedCat.id, balance: encodeMonetaryAmount(
+                  unassignedCat.balance) })
               }
             }
           }
@@ -934,7 +953,8 @@ class InstitutionController {
                   catBalance.balance = encodeMonetaryAmount(category.balance);
                 }
                 else {
-                  categoryBalances.push({ id: category.id, balance: encodeMonetaryAmount(category.balance) })
+                  categoryBalances.push({ id: category.id, balance: encodeMonetaryAmount(category
+                    .balance) })
                 }
               }
 
@@ -952,7 +972,8 @@ class InstitutionController {
       }
 
        
-      const balanceHistories = await BalanceHistory.query({ client: budget.$trx }).where('accountId', acct.id);
+      const balanceHistories = await BalanceHistory.query({ client: budget.$trx }).where(
+        'accountId', acct.id);
 
        
       await Promise.all(balanceHistories.map((balanceHistory) => balanceHistory.delete()));
@@ -978,7 +999,8 @@ class InstitutionController {
       user.useTransaction(trx);
       const budget = await user.related('budget').query().forUpdate().firstOrFail();
   
-      const institution = await budgetInstitutions(user.budgetId, { client: trx }).where('id', request.params().instId).firstOrFail();
+      const institution = await budgetInstitutions(user.budgetId, { client: trx }).where('id',
+        request.params().instId).firstOrFail();
 
       const accounts = await institution.related('accounts').query().useTransaction(trx);
 

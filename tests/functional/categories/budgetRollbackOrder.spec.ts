@@ -14,8 +14,10 @@ function signal() {
 }
 async function fixture() {
   const budget = await Budget.create({})
-  const group = await budget.related('groups').create({ name: 'Rollback ordering', type: 'Regular' })
-  const category = await group.related('categories').create({ name: 'Original', type: CategoryType.Regular, balance: 0, fundingCategories: [] })
+  const group = await budget.related('groups').create({ name: 'Rollback ordering', type:
+    'Regular' })
+  const category = await group.related('categories').create({ name: 'Original', type: CategoryType
+    .Regular, balance: 0, fundingCategories: [] })
   return { budget, category }
 }
 
@@ -25,7 +27,8 @@ test.group('Budget synchronization rollback completion ordering', () => {
     const before = (await Category.findOrFail(f.category.id)).serialize()
     const captured: TransactionClientContract[] = []
     const original = db.transaction.bind(db)
-    const capture = mock.method(db, 'transaction', async () => { const trx = await original(); captured.push(trx); return trx })
+    const capture = mock.method(db, 'transaction', async () => { const trx = await original();
+      captured.push(trx); return trx })
     cleanup(() => capture.mock.restore())
     let calls = 0
     const sync = Category.prototype.syncBalance
@@ -41,7 +44,9 @@ test.group('Budget synchronization rollback completion ordering', () => {
   })
 
   for (const subsequentQuery of [false, true]) {
-    test(subsequentQuery ? 'awaiting caller queries only after rollback completes' : 'failure is logged and method waits for rollback before resolving', async ({ assert, cleanup }) => {
+    test(subsequentQuery ? 'awaiting caller queries only after rollback completes' :
+      'failure is logged and method waits for rollback before resolving', async ({ assert,
+      cleanup }) => {
       const f = await fixture()
       const before = (await Category.findOrFail(f.category.id)).serialize()
       const failure = new Error('Injected dormant synchronization failure')
@@ -59,13 +64,15 @@ test.group('Budget synchronization rollback completion ordering', () => {
         const rollback = trx.rollback.bind(trx)
         mock.method(trx, 'rollback', () => {
           started.release()
-          rollbackPromise = (async () => { await release.promise; await rollback(); events.push('rollback-completed') })()
+          rollbackPromise = (async () => { await release.promise; await rollback(); events.push(
+            'rollback-completed') })()
           return rollbackPromise
         })
         return trx
       })
       cleanup(() => capture.mock.restore())
-      const injection = mock.method(Category.prototype, 'syncBalance', async function (this: Category) {
+      const injection = mock.method(Category.prototype, 'syncBalance', async function (
+        this: Category) {
         assert.strictEqual(this.$trx, captured[0])
         // A test-only write demonstrates rollback of the transaction-bound execution.
         await this.merge({ name: 'Temporary characterization write' }).save()

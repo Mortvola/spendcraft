@@ -20,7 +20,8 @@ test.group('Web push key generation (temporary files, no application or database
     const messages = []
     const command = {
       app: { appRoot: pathToFileURL(join(root, 'release/')) }, exitCode: 0,
-      logger: { info: (message) => messages.push(message), error: (message) => messages.push(message) },
+      logger: { info: (message) => messages.push(message), error: (message) => messages.push(
+        message) },
     }
     await GenerateWebPushKeys.prototype.run.call(command)
     return { messages, exitCode: command.exitCode }
@@ -39,7 +40,8 @@ test.group('Web push key generation (temporary files, no application or database
     for (const [name, value] of Object.entries(parseEnv(original))) {
       if (!name.startsWith('VAPID_')) assert.equal(env[name], value)
     }
-    for (const line of original.split(/\r?\n/).filter((entry) => entry.startsWith('#'))) assert.include(contents, line)
+    for (const line of original.split(/\r?\n/).filter((entry) => entry.startsWith('#'))) assert
+      .include(contents, line)
     assert.match(env.VAPID_PUBLIC_KEY, /^[A-Za-z0-9_-]{87}$/)
     assert.match(env.VAPID_PRIVATE_KEY, /^[A-Za-z0-9_-]{43}$/)
     const ecdh = createECDH('prime256v1')
@@ -52,8 +54,10 @@ test.group('Web push key generation (temporary files, no application or database
     assert.equal((await run()).exitCode, 0)
     assert.equal(await readFile(join(root, 'shared-env'), 'utf8'), contents)
   })
-  test('preserves existing pairs byte-for-byte, including quoted exported assignments', async ({ assert }) => {
-    const original = 'export VAPID_PUBLIC_KEY="existing-public"\nVAPID_PRIVATE_KEY=existing-private\n'
+  test('preserves existing pairs byte-for-byte, including quoted exported assignments', async ({
+    assert }) => {
+    const original =
+      'export VAPID_PUBLIC_KEY="existing-public"\nVAPID_PRIVATE_KEY=existing-private\n'
     await writeFile(join(root, 'shared-env'), original)
     assert.equal((await run()).exitCode, 0)
     assert.equal(await readFile(join(root, 'shared-env'), 'utf8'), original)
@@ -68,13 +72,15 @@ test.group('Web push key generation (temporary files, no application or database
     assert.include(result.messages.join('\n'), 'Only one VAPID key is configured')
     assert.equal(await readFile(join(root, 'shared-env'), 'utf8'), original)
   })
-  test('EnvEditor writes empty example placeholders without exposing generated secrets', async ({ assert }) => {
+  test('EnvEditor writes empty example placeholders without exposing generated secrets', async ({
+    assert }) => {
     await writeFile(join(root, 'shared-env'), 'PG_DB_NAME=example\n')
     await writeFile(join(root, 'release/.env.example'), '# example\nPG_DB_NAME=\n')
     assert.equal((await run()).exitCode, 0)
     const env = parseEnv(await readFile(join(root, 'shared-env'), 'utf8'))
     const example = await readFile(join(root, 'release/.env.example'), 'utf8')
-    assert.deepEqual(parseEnv(example), { PG_DB_NAME: '', VAPID_PUBLIC_KEY: '', VAPID_PRIVATE_KEY: '' })
+    assert.deepEqual(parseEnv(example), { PG_DB_NAME: '', VAPID_PUBLIC_KEY: '', VAPID_PRIVATE_KEY:
+      '' })
     assert.notInclude(example, env.VAPID_PRIVATE_KEY)
     assert.notInclude(example, env.VAPID_PUBLIC_KEY)
   })

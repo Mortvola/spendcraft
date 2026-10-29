@@ -2,23 +2,30 @@ import type { AutoAssignmentWriteRequest } from '../../common/ResponseTypes';
 import { decodeCentFundingRules, encodeCentFundingRules, type CentFundingRule } from '../monetary';
 import Http from '@mortvola/http';
 import { observable, runInAction } from 'mobx';
-import { AutoAssignmentInterface, AutoAssignmentProps, AutoAssignmentRule, StoreInterface } from './Types';
+import { AutoAssignmentInterface, AutoAssignmentProps, AutoAssignmentRule, StoreInterface } from
+  './Types';
 
 // Null remains the legacy fixed-dollar mode on reads; requests use boolean modes.
-export const decodeAutoAssignmentRules = (rules: AutoAssignmentProps['categories']): AutoAssignmentRule[] => rules.map(rule => {
-  if (rule.percentage !== true && rule.percentage !== false && rule.percentage !== null) throw new Error('Invalid auto-assignment mode');
-  const [decoded] = decodeCentFundingRules([rule.percentage === true ? rule : { ...rule, percentage: false }]);
+export const decodeAutoAssignmentRules = (rules: AutoAssignmentProps[
+  'categories']): AutoAssignmentRule[] => rules.map(rule => {
+  if (rule.percentage !== true && rule.percentage !== false && rule
+    .percentage !== null) throw new Error('Invalid auto-assignment mode');
+  const [decoded] = decodeCentFundingRules([rule.percentage === true ? rule : { ...rule,
+    percentage: false }]);
   return decoded.percentage
     ? { ...decoded, id: rule.id }
     : { ...decoded, id: rule.id, percentage: rule.percentage === null ? null : false };
 });
 
-export const encodeAutoAssignmentRules = (rules: readonly AutoAssignmentRule[]): AutoAssignmentWriteRequest['categories'] => {
+export const encodeAutoAssignmentRules = (rules: readonly AutoAssignmentRule[
+  ]): AutoAssignmentWriteRequest['categories'] => {
   const normalized = rules.map<CentFundingRule>(rule => {
-    if (rule.percentage !== true && rule.percentage !== false && rule.percentage !== null) throw new Error('Invalid auto-assignment mode');
+    if (rule.percentage !== true && rule.percentage !== false && rule
+      .percentage !== null) throw new Error('Invalid auto-assignment mode');
     return rule.percentage === true ? rule : { ...rule, percentage: false };
   });
-  return encodeCentFundingRules(normalized).map((rule, index) => ({ ...rule, id: rules[index].id }));
+  return encodeCentFundingRules(normalized).map((rule, index) => ({ ...rule, id: rules[index]
+    .id }));
 };
 
 class AutoAssignment implements AutoAssignmentInterface {
@@ -50,7 +57,8 @@ class AutoAssignment implements AutoAssignmentInterface {
     searchStrings: string[],
     categories: AutoAssignmentRule[],
   }) {
-    const response = await Http.patch<AutoAssignmentWriteRequest, AutoAssignmentProps>(`/api/v1/auto-assignments/${this.id}`, {
+    const response = await Http.patch<AutoAssignmentWriteRequest, AutoAssignmentProps>(
+      `/api/v1/auto-assignments/${this.id}`, {
       name: props.name,
       searchStrings: props.searchStrings,
       categories: encodeAutoAssignmentRules(props.categories),

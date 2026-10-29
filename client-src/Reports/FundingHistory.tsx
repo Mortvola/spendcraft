@@ -1,4 +1,5 @@
-import { decodeFundingHistoryReport, fundingHistoryTotals, type FundingHistoryCentsItem, type FundingHistoryCentsRow } from '../monetary';
+import { decodeFundingHistoryReport, fundingHistoryTotals, type FundingHistoryCentsItem,
+  type FundingHistoryCentsRow } from '../monetary';
 import Http from '@mortvola/http';
 import { DateTime, MonthNumbers } from 'luxon';
 import React, { useEffect, useState } from 'react';
@@ -13,7 +14,8 @@ const FundingHistory: React.FC = () => {
 
   useEffect(() => {
     (async () => {
-      const response = await Http.get<FundingHistoryReportResponse>('/api/v1/reports/funding-history');
+      const response = await Http.get<FundingHistoryReportResponse>(
+        '/api/v1/reports/funding-history');
 
       if (response.ok) {
         const responseRows = await response.body();
@@ -72,7 +74,8 @@ const FundingHistory: React.FC = () => {
     return elements;
   }
 
-  const renderHistory = (history: FundingHistoryCentsItem[] | null): React.ReactElement[] | null => {
+  const renderHistory = (history: FundingHistoryCentsItem[] | null): React.ReactElement[] | null =>
+    {
     if (history) {
       let [year, month] = [DateTime.now().year, DateTime.now().month];
       const elements: React.ReactElement[] = [];
@@ -92,7 +95,8 @@ const FundingHistory: React.FC = () => {
             className += ` ${styles.change}`;
           }
 
-          elements.push(<MoneyCentsAmount key={i} className={className} amount={entry.amountCents} />)
+          elements.push(<MoneyCentsAmount key={i} className={className} amount={entry.amountCents} /
+            >)
         }
         else {
           let className = styles.historyItem;

@@ -1,10 +1,13 @@
-import { calculateFunding, fundingCalculationInputs } from '../../../client-src/Funding/calculateFunding.js';
+import { calculateFunding, fundingCalculationInputs } from
+  '../../../client-src/Funding/calculateFunding.js';
 import type { CategorySpreadInput } from '../../../client-src/Funding/Types.js';
 import { formatMoneyCents } from '../../../common/moneyCents.js';
 // Historical test-only preview from 7ebc714; never used by production.
 import type { CategoryFundingProps } from '../../../common/ResponseTypes.js';
 
-export type FundingInputs = Readonly<Record<string, { baseAmount: number | string; fundingCategories: CategoryFundingProps['fundingCategories']; includeFundingTransfers: boolean }>>;
+export type FundingInputs = Readonly<Record<string, { baseAmount: number | string;
+  fundingCategories: CategoryFundingProps['fundingCategories'];
+  includeFundingTransfers: boolean }>>;
 
 export const legacyPreview = (categories: FundingInputs, fundingCatId: number) => {
   let sum = 0;
@@ -41,11 +44,13 @@ export const legacyPreview = (categories: FundingInputs, fundingCatId: number) =
 
 // Previous dollar-based engine retained only as a regression oracle.
 // Existing number arithmetic, rounding, comparator and residual recipient are deliberate.
-export const legacyComputeSpread = (amount: number, fundingCategories: CategoryFundingProps['fundingCategories']): Map<number, number> => {
+export const legacyComputeSpread = (amount: number, fundingCategories: CategoryFundingProps[
+  'fundingCategories']): Map<number, number> => {
   let categoryAmount = Math.round(amount * 100);
   let percentSum = 0;
 
-  // Sort the funding categories by percentage so that fixed amounts are applied before percentage amounts.
+  // Sort the funding categories by percentage so that fixed amounts are applied before percentage
+  // amounts.
   const sortedCategories = (fundingCategories ?? []).slice().sort((a) => (a.percentage ? 1 : -1))
 
   const funders = new Map<number, number>();
@@ -84,7 +89,8 @@ export const legacyComputeSpread = (amount: number, fundingCategories: CategoryF
   return funders;
 };
 
-export const legacyCalculateFunding = (inputs: FundingInputs, fundingPoolId: number): CategoryFundingProps[] => {
+export const legacyCalculateFunding = (inputs: FundingInputs,
+  fundingPoolId: number): CategoryFundingProps[] => {
   const categories: CategoryFundingProps[] = Object.keys(inputs)
     .filter((k) => parseInt(k, 10) !== fundingPoolId)
     .map((k) => {
@@ -120,7 +126,8 @@ export const legacyCalculateFunding = (inputs: FundingInputs, fundingPoolId: num
 
   for (const category of categories) {
     if (category.includeFundingTransfers) {
-      const previousFundingAmount = legacyComputeSpread(category.amount, category.fundingCategories);
+      const previousFundingAmount = legacyComputeSpread(category.amount, category
+        .fundingCategories);
 
       for (const [categoryId, amount] of previousFundingAmount) {
         const funding = funders.get(categoryId) ?? 0;
@@ -164,7 +171,8 @@ export const legacyCalculateFunding = (inputs: FundingInputs, fundingPoolId: num
 
 
 // Execute the real cent engine, then adapt its results to the server's existing dollar interface.
-export function fundingForServer(inputs: FundingInputs, fundingPoolId: number): CategoryFundingProps[] {
+export function fundingForServer(inputs: FundingInputs,
+  fundingPoolId: number): CategoryFundingProps[] {
   const drafts = Object.fromEntries(Object.entries(inputs).map(([id, input]) => [id, {
     ...input,
     baseAmount: String(input.baseAmount),
@@ -172,7 +180,8 @@ export function fundingForServer(inputs: FundingInputs, fundingPoolId: number): 
       ? { ...rule, percentage: true }
       : { ...rule, percentage: false, amount: String(rule.amount) }),
   }]));
-  return calculateFunding(fundingCalculationInputs(drafts), fundingPoolId).map(({ amountCents, baseAmountCents, fundingCategories, ...row }) => ({
+  return calculateFunding(fundingCalculationInputs(drafts), fundingPoolId).map(({ amountCents,
+    baseAmountCents, fundingCategories, ...row }) => ({
     ...row,
     amount: Number(formatMoneyCents(amountCents)),
     baseAmount: Number(formatMoneyCents(baseAmountCents)),
@@ -184,6 +193,7 @@ export function fundingForServer(inputs: FundingInputs, fundingPoolId: number): 
   }));
 }
 
-export const fundingCategoryEffect = (rows: readonly { categoryId: number; amount: number }[], categoryId: number) => (
+export const fundingCategoryEffect = (rows: readonly { categoryId: number; amount: number }[],
+  categoryId: number) => (
   rows.filter(row => row.categoryId === categoryId).reduce((sum, row) => sum + row.amount, 0)
 );

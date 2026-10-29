@@ -5,7 +5,8 @@ export default class Accounts extends BaseSchema {
 
   public async up () {
     this.schema.table(this.tableName, (table) => {
-      table.integer('institution_id').notNullable().references('id').inTable('institutions').alter();
+      table.integer('institution_id').notNullable().references('id').inTable('institutions').alter(
+        );
     })
   }
 

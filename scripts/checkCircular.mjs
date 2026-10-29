@@ -56,14 +56,16 @@ export function cyclicComponents(graph) {
   for (const node of Object.keys(graph).sort()) {
     if (!indices.has(node)) visit(node)
   }
-  return components.sort((a, b) => JSON.stringify(a.members).localeCompare(JSON.stringify(b.members)))
+  return components.sort((a, b) => JSON.stringify(a.members).localeCompare(JSON.stringify(b
+    .members)))
 }
 
 /** Compare a single explicitly reviewed component without accepting new edges. */
 export function compareBaseline(graph, baseline) {
   const components = cyclicComponents(graph)
   const expected = new Set(baseline.members)
-  const matching = components.filter((component) => component.members.some((member) => expected.has(member)))
+  const matching = components.filter((component) => component.members.some((member) => expected.has(
+    member)))
   const members = sorted(matching.flatMap((component) => component.members))
   const edges = sorted(matching.flatMap((component) => component.edges).map(edgeKey))
   const expectedEdges = sorted(baseline.edges.map(edgeKey))
@@ -76,7 +78,8 @@ export function compareBaseline(graph, baseline) {
     acceptedComponentMissing: matching.length !== 1,
   }
   const ok = !differences.acceptedComponentMissing
-    && Object.entries(differences).every(([key, value]) => key === 'acceptedComponentMissing' || value.length === 0)
+    && Object.entries(differences).every(([key, value]) => key === 'acceptedComponentMissing' ||
+      value.length === 0)
   return { ok, ...differences }
 }
 
@@ -85,7 +88,8 @@ export function resolvedGraph(tree, repositoryRoot) {
   const graph = {}
   const problems = []
   const builtins = new Set()
-  const relative = (id) => path.relative(repositoryRoot, path.resolve(repositoryRoot, id)).split(path.sep).join('/')
+  const relative = (id) => path.relative(repositoryRoot, path.resolve(repositoryRoot, id)).split(
+    path.sep).join('/')
   for (const [id, dependencies] of Object.entries(tree)) {
     if (isBuiltin(id)) { builtins.add(id); continue }
     const node = relative(id)
@@ -99,7 +103,8 @@ export function resolvedGraph(tree, repositoryRoot) {
         problems.push(`Unresolved import ${JSON.stringify(dependency.request)} in ${node}`)
       } else {
         const target = relative(dependency.id)
-        if (target !== 'node_modules' && !target.startsWith('node_modules/')) graph[node].push(target)
+        if (target !== 'node_modules' && !target.startsWith('node_modules/')) graph[node].push(
+          target)
       }
     }
     graph[node] = sorted(graph[node])
@@ -116,22 +121,28 @@ async function main() {
     onProgress: (event) => { if (event === 'end') analyzed++ },
   })
   const { graph, problems, builtins } = resolvedGraph(tree, root)
-  if (!Object.keys(graph).length) throw new Error('Dependency analysis returned no repository files')
+  if (!Object.keys(graph).length) throw new Error(
+    'Dependency analysis returned no repository files')
   if (builtins.length) console.log(`Node built-ins (informational): ${builtins.join(', ')}`)
-  const baseline = JSON.parse(await readFile(new URL('./circular-baseline.json', import.meta.url), 'utf8'))
+  const baseline = JSON.parse(await readFile(new URL('./circular-baseline.json', import.meta.url),
+    'utf8'))
   const result = compareBaseline(graph, baseline)
   if (problems.length || !result.ok) {
-    console.error('Circular dependency regression check failed; review changes before updating the baseline.')
+    console.error(
+      'Circular dependency regression check failed; review changes before updating the baseline.')
     for (const problem of problems) console.error(problem)
     for (const [label, values] of Object.entries(result)) {
       if (label === 'ok') continue
-      if (values === true || (Array.isArray(values) && values.length)) console.error(`${label}: ${JSON.stringify(values)}`)
+      if (values === true || (Array.isArray(values) && values.length)) console.error(
+        `${label}: ${JSON.stringify(values)}`)
     }
     process.exitCode = 1
     return
   }
-  console.log(`Accepted Lucid model SCC: ${baseline.members.length} members / ${baseline.edges.length} internal edges; no unexpected cyclic components.`)
-  console.log(`Analyzed ${analyzed} files; graph contains ${Object.keys(graph).length} repository nodes (including asset leaves). Full cycle paths: npm run check:circular`)
+  console.log(`Accepted Lucid model SCC: ${baseline.members.length} members / ${baseline.edges
+    .length} internal edges; no unexpected cyclic components.`)
+  console.log(`Analyzed ${analyzed} files; graph contains ${Object.keys(graph)
+    .length} repository nodes (including asset leaves). Full cycle paths: npm run check:circular`)
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

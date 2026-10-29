@@ -35,7 +35,8 @@ const categoryGuards: {
     name: 'isInsertCategoryTransferResponse', guard: isInsertCategoryTransferResponse,
     response: (balances) => ({ balances, transaction: { id: 5 } }),
   },
-  { name: 'isDeleteInstitutionResponse', guard: isDeleteInstitutionResponse, response: (rows) => rows },
+  { name: 'isDeleteInstitutionResponse', guard: isDeleteInstitutionResponse, response: (rows) =>
+    rows },
   { name: 'isDeleteAccountResponse', guard: isDeleteAccountResponse, response: (rows) => rows },
 ]
 
@@ -116,7 +117,8 @@ test.group('Response guards / isAccountBalanceSeries', () => {
     assert.isFalse(isAccountBalanceSeries([{ id: 4, date: '2026-10-07' }]))
   })
   test('rejects malformed later points and non-array responses', ({ assert }) => {
-    for (const value of [[balance, null], null, [null], { length: 0 }, [{ date: 123, balance: 4 }]]) {
+    for (const value of [[balance, null], null, [null], { length: 0 }, [{ date: 123,
+      balance: 4 }]]) {
       assert.isFalse(isAccountBalanceSeries(value))
     }
   })

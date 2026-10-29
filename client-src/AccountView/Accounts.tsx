@@ -30,7 +30,8 @@ const Accounts: React.FC = observer(() => {
   const [StatementDialog, showStatementDialog] = useStatementDialog();
 
   React.useEffect(() => {
-    const matched = matchPath({ path: '/accounts/:accountId', caseSensitive: false, end: true }, location.pathname);
+    const matched = matchPath({ path: '/accounts/:accountId', caseSensitive: false, end: true },
+      location.pathname);
 
     if (matched) {
       setOpen(true);

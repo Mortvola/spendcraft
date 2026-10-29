@@ -4,7 +4,8 @@ import type { ModelAdapterOptions } from '@adonisjs/lucid/types/model';
 import Category from '#app/Models/Category';
 import Group from '#app/Models/Group';
 import Loan from '#app/Models/Loan';
-import { CategoryType, type LoanTransactionsProps, type LoanUpdateProps } from '#common/ResponseTypes';
+import { CategoryType, type LoanTransactionsProps, type LoanUpdateProps } from
+  '#common/ResponseTypes';
 import { addLoan, updateLoan } from '#validators/loan';
 
 function budgetLoans(budgetId: number, options?: ModelAdapterOptions) {
@@ -23,7 +24,8 @@ export default class LoansController {
       throw new Error('user is not defined');
     }
 
-    const loan = await budgetLoans(user.budgetId).where('categoryId', request.params().catId).firstOrFail();
+    const loan = await budgetLoans(user.budgetId).where('categoryId', request.params().catId)
+      .firstOrFail();
 
     return loan;
   }
@@ -100,7 +102,8 @@ export default class LoansController {
       user.useTransaction(trx);
       await user.related('budget').query().forUpdate().firstOrFail();
 
-      const loan = await budgetLoans(user.budgetId, { client: trx }).where('categoryId', request.params().catId).firstOrFail();
+      const loan = await budgetLoans(user.budgetId, { client: trx }).where('categoryId', request
+        .params().catId).firstOrFail();
       const category = await loan.related('category').query().firstOrFail();
 
       loan.merge({
@@ -141,7 +144,8 @@ export default class LoansController {
       throw new Error('user is not defined');
     }
 
-    const loan = await budgetLoans(user.budgetId).where('categoryId', request.params().catId).firstOrFail();
+    const loan = await budgetLoans(user.budgetId).where('categoryId', request.params().catId)
+      .firstOrFail();
 
     return await loan.getProps();
   }

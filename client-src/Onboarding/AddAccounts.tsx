@@ -33,7 +33,8 @@ const AddAccounts: React.FC = observer(() => {
       <div>
         {
           accounts.institutions
-            // .filter((institution) => (opened ? institution.hasOpenAccounts() : institution.hasClosedAccounts()))
+            // .filter((institution) => (opened ? institution.hasOpenAccounts() :
+            // institution.hasClosedAccounts()))
             .map((institution) => (
               <Institution
                 key={institution.id}

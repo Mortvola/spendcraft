@@ -18,7 +18,8 @@ class Budget extends Group {
       return this.fundingPoolCat
     }
 
-    const subcategory = this.fundingPoolCat?.subcategories.find((subcat) => subcat.id === categoryId)
+    const subcategory = this.fundingPoolCat?.subcategories.find((subcat) => subcat
+      .id === categoryId)
 
     if (subcategory) {
       return subcategory

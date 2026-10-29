@@ -59,7 +59,8 @@ const Category: React.FC<PropsType> = observer(({
       <div className={className} style={{ marginLeft: indent * level }} onClick={handleClick}>
         <div className={barClassName}>
           {
-            [CategoryType.Regular, CategoryType.Loan, CategoryType.Bill, CategoryType.Goal].includes(category.type)
+            [CategoryType.Regular, CategoryType.Loan, CategoryType.Bill, CategoryType.Goal]
+              .includes(category.type)
               ? <EditButton category={category} />
               : null
           }

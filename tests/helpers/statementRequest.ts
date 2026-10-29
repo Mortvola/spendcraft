@@ -8,7 +8,8 @@ export function statementRequest(values: Record<string, unknown>): Record<string
   }
   if (result.data !== null && typeof result.data === 'object' && !Array.isArray(result.data)) {
     const data = { ...result.data }
-    for (const field of ['shortTermCapitalGains', 'longTermCapitalGains', 'dividends', 'taxableInterest']) {
+    for (const field of ['shortTermCapitalGains', 'longTermCapitalGains', 'dividends',
+      'taxableInterest']) {
       const value = Reflect.get(data, field)
       if (typeof value === 'number') Reflect.set(data, field, encodeMonetaryAmount(value))
     }

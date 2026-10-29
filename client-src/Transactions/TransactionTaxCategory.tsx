@@ -62,7 +62,8 @@ const TransactionTaxCategory: React.FC<PropsType> = ({
             ))
           }
         </select>
-        <AmountInput exactCents onValueChange={handleAmountChange} value={split.amount} style={{ margin: '1px' }} />
+        <AmountInput exactCents onValueChange={handleAmountChange} value={split.amount} style={{
+          margin: '1px' }} />
       </div>
       <LucideButton onClick={handleAddItem}>
         <Plus size={16} strokeWidth={2.5} />

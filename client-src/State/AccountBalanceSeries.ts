@@ -20,7 +20,8 @@ class AccountBalanceSeries implements AccountBalanceSeriesInterface {
     if (!response.ok) throw new Error('Unable to load account chart');
     const body = await response.body();
     if (!isAccountBalanceSeries(body)) throw new Error('Invalid account chart response');
-    const points = body.map((point) => ({ date: DateTime.fromISO(point.date), balanceCents: parseMoneyCents(point.balance) }));
+    const points = body.map((point) => ({ date: DateTime.fromISO(point.date),
+      balanceCents: parseMoneyCents(point.balance) }));
     runInAction(() => {
       this.points = points;
       this.account = account;

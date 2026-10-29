@@ -9,7 +9,8 @@ import Account from './Account.ts';
 import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { serializeStatementIncomeResponse } from '#services/statementIncomeCodec'
 import type { StatementIncomeData } from '#services/statementIncomeCodec'
-import { consumeStatementIncome, prepareStatementIncome, stageStatementIncomeSave, finishStatementIncomeSave } from '#services/statementIncomeStorage'
+import { consumeStatementIncome, prepareStatementIncome, stageStatementIncomeSave,
+  finishStatementIncomeSave } from '#services/statementIncomeStorage'
 
 export default class Statement extends BaseModel {
   @beforeSave()

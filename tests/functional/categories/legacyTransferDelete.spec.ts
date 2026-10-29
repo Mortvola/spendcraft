@@ -15,8 +15,10 @@ async function fixture() {
     await budget.initialize()
     const user = await budget.related('users').create({ username: `legacy-delete-${++sequence}`,
       email: `legacy-delete-${sequence}@example.com`, password: 'testPassw0rd' })
-    const group = await budget.related('groups').create({ name: 'Legacy deletion boundary', type: 'Regular' })
-    const category = await group.related('categories').create({ name: 'Destination', type: CategoryType.Regular, balance: 0, fundingCategories: [] })
+    const group = await budget.related('groups').create({ name: 'Legacy deletion boundary', type:
+      'Regular' })
+    const category = await group.related('categories').create({ name: 'Destination',
+      type: CategoryType.Regular, balance: 0, fundingCategories: [] })
     const pool = await budget.getFundingPoolCategory({ client: trx })
     await pool.merge({ balance: 100 }).save()
     return { budget, user, group, category, pool }
@@ -25,7 +27,8 @@ async function fixture() {
 async function history() {
   const result: Record<string, unknown> = {}
   for (const table of ['category_transfers', 'category_splits']) {
-    result[table] = await db.connection().schema.hasTable(table) ? await db.from(table).orderBy('id') : null
+    result[table] = await db.connection().schema.hasTable(table) ? await db.from(table).orderBy(
+      'id') : null
   }
   return result
 }
@@ -35,12 +38,14 @@ async function seedRetainedHistory(categoryId: number, poolId: number) {
   if (!await db.connection().schema.hasTable('category_transfers')
     || !await db.connection().schema.hasTable('category_splits')) return undefined
   const [row] = await db.table('category_transfers').insert({ date: '2020-01-01' }).returning('id')
-  await db.table('category_splits').insert([{ transaction_id: -row.id, category_id: categoryId, amount: 98765.43 },
+  await db.table('category_splits').insert([{ transaction_id: -row.id, category_id: categoryId,
+    amount: 98765.43 },
     { transaction_id: -row.id, category_id: poolId, amount: -98765.43 }])
   return Number(row.id)
 }
 async function financialState() {
-  return Promise.all(['transactions', 'categories', 'accounts', 'account_transactions', 'transaction_logs']
+  return Promise.all(['transactions', 'categories', 'accounts', 'account_transactions',
+    'transaction_logs']
     .map((table) => db.from(table).orderBy('id')))
 }
 
@@ -58,14 +63,16 @@ test.group('Legacy CategoryTransfer DELETE removed', (group) => {
       await foreign.category.merge({ balance: 100 }).save()
       const ownId = await seedRetainedHistory(own.category.id, own.pool.id)
       const foreignId = await seedRetainedHistory(foreign.category.id, foreign.pool.id)
-      const id = kind === 'foreign' ? foreignId ?? foreign.category.id : kind === 'missing' ? 2147483647 : ownId ?? own.category.id
+      const id = kind === 'foreign' ? foreignId ?? foreign.category.id : kind ===
+        'missing' ? 2147483647 : ownId ?? own.category.id
       const path = kind === 'collection' ? '/api/v1/category-transfer'
         : kind === 'plural' ? `/api/v1/category-transfers/${id}`
         : kind === 'nested' ? `/api/v1/category/${own.category.id}/category-transfer/${id}`
         : `/api/v1/category-transfer/${id}`
       const before = await financialState(); const legacy = await history()
       assert.isUndefined(Reflect.get(CategoriesController.prototype, 'transferDelete'))
-      const saves = mock.method(Category.prototype, 'save', async () => { throw new Error('Removed route reached financial save') })
+      const saves = mock.method(Category.prototype, 'save', async () => { throw new Error(
+        'Removed route reached financial save') })
       try {
         const response = await client.delete(path).accept('json').loginAs(own.user)
         response.assertStatus(404)
@@ -81,15 +88,18 @@ test.group('Legacy CategoryTransfer DELETE removed', (group) => {
       const f = await fixture()
       await seedRetainedHistory(f.category.id, f.pool.id)
       const legacy = await history()
-      const rows = (amount: number) => [{ categoryId: f.category.id, amount }, { categoryId: f.pool.id, amount: -amount }]
+      const rows = (amount: number) => [{ categoryId: f.category.id, amount }, { categoryId: f.pool
+        .id, amount: -amount }]
       const created = await client.post('/api/v1/category-transfer')
-        .json(categoryTransferRequest({ type, date: '2025-03-01', categories: rows(10) })).loginAs(f.user)
+        .json(categoryTransferRequest({ type, date: '2025-03-01', categories: rows(10) })).loginAs(f
+          .user)
       created.assertStatus(200)
       const id = created.body().data.transaction.id
       assert.equal((await Category.findOrFail(f.category.id)).balance, 10)
       assert.equal((await Category.findOrFail(f.pool.id)).balance, 90)
       const changed = await client.patch(`/api/v1/category-transfer/${id}`)
-        .json(categoryTransferRequest({ type, date: type === 2 ? '2025-03-01' : '2025-04-01', categories: rows(20) })).loginAs(f.user)
+        .json(categoryTransferRequest({ type, date: type === 2 ? '2025-03-01' : '2025-04-01',
+          categories: rows(20) })).loginAs(f.user)
       changed.assertStatus(200)
       assert.equal((await Category.findOrFail(f.category.id)).balance, 20)
       assert.equal((await Category.findOrFail(f.pool.id)).balance, 80)
@@ -100,18 +110,21 @@ test.group('Legacy CategoryTransfer DELETE removed', (group) => {
       assert.deepEqual(await history(), legacy)
     })
 
-  test('Category parent deletion retains the existing no-legacy-cleanup contract', async ({ client, assert }) => {
+  test('Category parent deletion retains the existing no-legacy-cleanup contract', async ({ client,
+    assert }) => {
     const f = await fixture()
     await seedRetainedHistory(f.category.id, f.pool.id)
     const legacy = await history()
-    const response = await client.delete(`/api/v1/groups/${f.group.id}/categories/${f.category.id}`).loginAs(f.user)
+    const response = await client.delete(`/api/v1/groups/${f.group.id}/categories/${f.category.id}`)
+      .loginAs(f.user)
     response.assertStatus(204)
     assert.isNull(await Category.find(f.category.id))
     // The original legacy schemas define plain integer references, not FKs/cascades.
     assert.deepEqual(await history(), legacy)
   })
 
-  test('last-user Budget cleanup has no legacy-table runtime dependency', async ({ client, assert }) => {
+  test('last-user Budget cleanup has no legacy-table runtime dependency', async ({ client,
+    assert }) => {
     const f = await fixture()
     await seedRetainedHistory(f.category.id, f.pool.id)
     const legacy = await history()

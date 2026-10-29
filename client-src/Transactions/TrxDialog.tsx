@@ -18,7 +18,8 @@ const useTrxDialog = (account?: AccountInterface, onReload?: () => void): [
   const [CategoryTransferDialog, showCategoryTransferDialog] = useCategoryTransferDialog();
   const [FundingDialog, showFundingDialog] = useFundingDialog();
   const [RebalanceDialog, showRebalanceDialog] = useRebalanceDialog();
-  const [editedTransaction, setEditedTransaction] = React.useState<TransactionInterface | null>(null);
+  const [editedTransaction, setEditedTransaction] = React.useState<TransactionInterface | null>(
+    null);
   const { uiState } = useStores();
 
   const TrxDialog = React.useCallback(() => {
@@ -109,7 +110,8 @@ const useTrxDialog = (account?: AccountInterface, onReload?: () => void): [
       default:
         throw new Error('invalid transaction type');
     }
-  }, [showCategoryTransferDialog, showDuplicateDialog, showFundingDialog, showRebalanceDialog, showTransactionDialog]);
+  }, [showCategoryTransferDialog, showDuplicateDialog, showFundingDialog, showRebalanceDialog,
+    showTransactionDialog]);
 
   return [TrxDialog, showTrxDialog];
 };

@@ -3,11 +3,13 @@ import React, {
 } from 'react';
 import CategorySplitItem from './CategorySplitItem';
 import { useStores } from './State/Store';
-import { addMoneyCents, formatMoneyCents, parseMoneyCents, subtractMoneyCents, type MoneyCents } from '../common/moneyCents';
+import { addMoneyCents, formatMoneyCents, parseMoneyCents, subtractMoneyCents,
+  type MoneyCents } from '../common/moneyCents';
 import { inputMoneyCents } from './monetary';
 import { TransactionCategoryInterface } from './State/Types';
 
-export type CategorySplitInput = Omit<TransactionCategoryInterface, 'amountCents'> & { amount: string };
+export type CategorySplitInput = Omit<TransactionCategoryInterface, 'amountCents'> & {
+  amount: string };
 
 export const sumSplitCents = (splits: readonly CategorySplitInput[]): MoneyCents => (
   addMoneyCents(...splits.map(split => inputMoneyCents(split.amount)))
@@ -57,7 +59,8 @@ const CategorySplits: React.FC<PropsType> = ({
 
         return {
           ...s,
-          amount: credit ? s.amount : formatMoneyCents(subtractMoneyCents(parseMoneyCents('0.00'), inputMoneyCents(s.amount))),
+          amount: credit ? s.amount : formatMoneyCents(subtractMoneyCents(parseMoneyCents('0.00'),
+            inputMoneyCents(s.amount))),
         };
       })
       : [{

@@ -1,7 +1,8 @@
 import React from 'react';
 import AmountInput from '../AmountInput';
 import MoneyCentsAmount from '../MoneyCentsAmount';
-import { formatMoneyCents, parseMoneyCents, subtractMoneyCents, type MoneyCents } from '../../common/moneyCents';
+import { formatMoneyCents, parseMoneyCents, subtractMoneyCents, type MoneyCents } from
+  '../../common/moneyCents';
 import { inputMoneyCents } from '../monetary';
 
 interface PropsType {

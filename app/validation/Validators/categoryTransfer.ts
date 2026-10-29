@@ -17,7 +17,8 @@ export const updateCategoryTransfer = vine.compile(
           vine.object({
             categoryId: vine.number(),
             amount: vine.union([
-              vine.union.if((_value, field) => vine.helpers.asBoolean(field.parent.percentage) === true, vine.number({ strict: true })),
+              vine.union.if((_value, field) => vine.helpers.asBoolean(field.parent
+                .percentage) === true, vine.number({ strict: true })),
               vine.union.else(monetaryAmount()),
             ]),
             percentage: vine.boolean(),

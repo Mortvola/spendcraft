@@ -58,7 +58,8 @@ export default class GoalTest extends BaseCommand {
       b.$extras.goalDate = GoalTest.getGoalDate(b.goalDate, b.recurrence)
     }
 
-    bills.sort((a, b) => (a.$extras.goalDate ? a.$extras.goalDate.diff(b.$extras.goalDate, 'days').days : 0))
+    bills.sort((a, b) => (a.$extras.goalDate ? a.$extras.goalDate.diff(b.$extras.goalDate, 'days')
+      .days : 0))
 
      
     for (const b of bills) {

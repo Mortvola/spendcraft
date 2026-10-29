@@ -1,12 +1,15 @@
 import { test } from '@japa/runner'
-import { addInstitutionOffline, addOfflineAccount } from '../../app/validation/Validators/institution.ts'
+import { addInstitutionOffline, addOfflineAccount } from
+  '../../app/validation/Validators/institution.ts'
 import { AccountType, TrackingType } from '../../common/ResponseTypes.ts'
 
 test.group('Offline account balance request contract', () => {
   const account = balance => ({ name: 'Offline', balance, type: AccountType.Depository,
     subtype: 'checking', tracking: TrackingType.Balances, startDate: '2025-01-01', rate: 3.125 })
-  const institution = balance => ({ institution: { name: 'Bank' }, accounts: [account(balance)], startDate: '2025-01-01' })
-  test('canonical balances decode numerically without changing nonmonetary fields').with(['12.35', '-0.12', '0.00', '0.30'])
+  const institution = balance => ({ institution: { name: 'Bank' }, accounts: [account(balance)],
+    startDate: '2025-01-01' })
+  test('canonical balances decode numerically without changing nonmonetary fields').with(['12.35',
+    '-0.12', '0.00', '0.30'])
     .run(async ({ assert }, balance) => {
       const created = await addOfflineAccount.validate(account(balance))
       const batch = await addInstitutionOffline.validate(institution(balance))
