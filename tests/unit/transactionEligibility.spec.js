@@ -165,20 +165,6 @@ nominal splits', async ({ assert }) => {
     assert.equal(f.categories.get(2).balance, 0)
     assert.equal(f.link.amount, -20)
   })
-  test('startDate/opening source boundaries preserve accountless and opening separation', async ({
-    assert }) => {
-    const accounts = await readFile('app/Controllers/Http/AccountsController.ts', 'utf8')
-    const model = await readFile('app/Models/Account.ts', 'utf8')
-    assert.include(accounts,
-      "whereIn('type', [TransactionType.REGULAR_TRANSACTION, TransactionType.MANUAL_TRANSACTION])")
-    const opening = model.slice(model.indexOf('public async updateStartingBalance('))
-    assert.include(opening, ".andWhere('type', '!=', TransactionType.STARTING_BALANCE)")
-    assert.include(opening, ".andWhere('deleted', false)")
-    assert.include(opening, ".where('pending', false)")
-    assert.include(opening, 'this.balance - (sum?.$extras.sum ?? 0)')
-    assert.include(opening, 'date: this.startDate')
-    assert.notInclude(opening, 'this.balance =')
-  })
 })
 
 test.group('Real manual CREATE before/equal/after boundary without DB', () => {

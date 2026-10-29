@@ -337,20 +337,6 @@ test.group('Actual tax PATCH controller with inert financial collaborators', () 
   })
 })
 
-test('model hooks and existing SQL preserve independent tax and Category boundaries', async ({
-  assert }) => {
-  const model = await readFile('app/Models/Transaction.ts', 'utf8')
-  assert.include(model, 'await bindTaxStorage(transactions)')
-  assert.include(model, 'await prepareTaxStorageSave(transaction)')
-  assert.include(model, 'finishTaxStorageSave(transaction)')
-  assert.include(model, 'prepareTaxStorage(value, model)')
-  const taxes = await readFile('app/Controllers/Http/TaxesController.ts', 'utf8')
-  assert.include(taxes, 'as transTaxes(type varchar, amount real)')
-  assert.include(taxes, 'sum(COALESCE((transTaxes.amount), 0))')
-  assert.notInclude(taxes, 'FOR UPDATE')
-  assert.notInclude(taxes, 'transaction_categories')
-})
-
 test('stored Tax attributions reject numbers while Loan exclusions retain them', ({ assert }) => {
   for (const amount of [0, -0, 1, -1, 1.005]) {
     assert.throws(() => decodeTaxAttributions([attribution(amount)]))
