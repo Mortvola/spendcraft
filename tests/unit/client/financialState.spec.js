@@ -843,6 +843,24 @@ export * from ${source('common/ResponseTypes.ts')};
       income: { taxableInterestCents: Number.MAX_SAFE_INTEGER + 1 } }))
   })
 
+  test('Tax result outputs round only after raw bracket totals and rates are calculated', ({ assert }) => {
+    const printTaxes = f.store.taxes.constructor.printTaxes
+    const brackets = new Map([[10, { tax: 0.005, amount: 0.1 }], [20, { tax: 0.005, amount: 0.2 }]])
+    const before = globalThis.structuredClone([...brackets])
+    const result = printTaxes(brackets)
+    assert.deepEqual(result.brackets, [[10, { taxCents: 1, amountCents: 10 }], [20, { taxCents: 1, amountCents: 20 }]])
+    // Preserve rounding the unrounded total rather than adding rounded bracket displays.
+    assert.strictEqual(result.totalTaxesCents, 1)
+    assert.strictEqual(result.totalTaxedAmountCents, 30)
+    assert.strictEqual(result.marginalTaxRate, 20)
+    assert.strictEqual(result.effectiveTaxRate, (0.005 + 0.005) / (0.1 + 0.2) * 100)
+    assert.deepEqual([...brackets], before)
+    assert.deepEqual(printTaxes(new Map()), { brackets: [], totalTaxesCents: 0, totalTaxedAmountCents: 0,
+      marginalTaxRate: 0, effectiveTaxRate: 0 })
+    assert.throws(() => printTaxes(new Map([[10, { tax: Infinity, amount: 1 }]])))
+    assert.throws(() => printTaxes(new Map([[10, { tax: 1, amount: Number.MAX_SAFE_INTEGER }]])))
+  })
+
   test('auto-assignment load, CREATE and PATCH decode fixed dollars and encode fixed-dollar requests').with([
     { fixedCents: 250, fixedWire: '2.50' },
     { fixedCents: Number.MAX_SAFE_INTEGER, fixedWire: '90071992547409.91' },

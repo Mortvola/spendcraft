@@ -1,6 +1,7 @@
 import React, { Fragment } from 'react';
 import { observer } from 'mobx-react-lite';
 import Amount from '../Amount';
+import MoneyCentsAmount from '../MoneyCentsAmount';
 import Taxes from '../State/Taxes/Taxes';
 import style from './TaxDetails.module.scss';
 
@@ -21,19 +22,19 @@ const TaxComputation: React.FC<PropsType> = observer(({
           taxResults.brackets.map((t) => (
             <Fragment key={t[0]}>
               <div>{t[0]}%</div>
-              <Amount amount={t[1].amount} />
-              <Amount amount={t[1].tax} />
+              <MoneyCentsAmount amount={t[1].amountCents} />
+              <MoneyCentsAmount amount={t[1].taxCents} />
             </Fragment>
           ))
         }
       </div>
       <div className={style.summaryRecord}>
         <div>Taxed Amount:</div>
-        <Amount amount={taxResults.totalTaxedAmount} />
+        <MoneyCentsAmount amount={taxResults.totalTaxedAmountCents} />
       </div>
       <div className={style.summaryRecord}>
         <div>Total Taxes:</div>
-        <Amount amount={taxResults.totalTaxes} />
+        <MoneyCentsAmount amount={taxResults.totalTaxesCents} />
       </div>
       <div className={style.summaryRecord}>
         <div>Marginal Tax Rate:</div>

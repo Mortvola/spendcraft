@@ -1,3 +1,4 @@
+import TaxResultAmount from './TaxResultAmount';
 import React from "react"
 import Taxes from "../State/Taxes/Taxes";
 import style from './TaxDetails.module.scss';
@@ -25,7 +26,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['1']} />
+            <TaxResultAmount amount={period.lines['1']} />
           ))
         }
 
@@ -43,7 +44,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['3']} />
+            <TaxResultAmount amount={period.lines['3']} />
           ))
         }
 
@@ -52,7 +53,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['4']} />
+            <TaxResultAmount amount={period.lines['4']} />
           ))
         }
 
@@ -70,7 +71,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['6']} />
+            <TaxResultAmount amount={period.lines['6']} />
           ))
         }
 
@@ -79,7 +80,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['7']} />
+            <TaxResultAmount amount={period.lines['7']} />
           ))
         }
 
@@ -88,7 +89,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['8']} />
+            <TaxResultAmount amount={period.lines['8']} />
           ))
         }
 
@@ -97,7 +98,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['9a']} />
+            <TaxResultAmount amount={period.lines['9a']} />
           ))
         }
 
@@ -108,7 +109,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['9b']} />
+            <TaxResultAmount amount={period.lines['9b']} />
           ))
         }
 
@@ -117,7 +118,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['10']} />
+            <TaxResultAmount amount={period.lines['10']} />
           ))
         }
 
@@ -126,7 +127,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['11']} />
+            <TaxResultAmount amount={period.lines['11']} />
           ))
         }
 
@@ -135,7 +136,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['12']} />
+            <TaxResultAmount amount={period.lines['12']} />
           ))
         }
 
@@ -144,7 +145,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['13']} />
+            <TaxResultAmount amount={period.lines['13']} />
           ))
         }
 
@@ -153,7 +154,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['14']} />
+            <TaxResultAmount amount={period.lines['14']} />
           ))
         }
 
@@ -162,7 +163,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['15']} />
+            <TaxResultAmount amount={period.lines['15']} />
           ))
         }
 
@@ -171,7 +172,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['16']} />
+            <TaxResultAmount amount={period.lines['16']} />
           ))
         }
 
@@ -180,7 +181,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['17']} />
+            <TaxResultAmount amount={period.lines['17']} />
           ))
         }
 
@@ -189,7 +190,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['18']} />
+            <TaxResultAmount amount={period.lines['18']} />
           ))
         }
 
@@ -198,7 +199,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['19']} />
+            <TaxResultAmount amount={period.lines['19']} />
           ))
         }
 
@@ -207,7 +208,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['20']} />
+            <TaxResultAmount amount={period.lines['20']} />
           ))
         }
 
@@ -216,7 +217,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['21']} />
+            <TaxResultAmount amount={period.lines['21']} />
           ))
         }
 
@@ -234,7 +235,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['23']} />
+            <TaxResultAmount amount={period.lines['23']} />
           ))
         }
 
@@ -243,7 +244,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['24']} />
+            <TaxResultAmount amount={period.lines['24']} />
           ))
         }
 
@@ -252,7 +253,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['25']} />
+            <TaxResultAmount amount={period.lines['25']} />
           ))
         }
 
@@ -261,7 +262,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['26']} />
+            <TaxResultAmount amount={period.lines['26']} />
           ))
         }
 
@@ -270,7 +271,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['27']} />
+            <TaxResultAmount amount={period.lines['27']} />
           ))
         }
 
@@ -279,7 +280,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['28']} />
+            <TaxResultAmount amount={period.lines['28']} />
           ))
         }
 
@@ -288,7 +289,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['29']} />
+            <TaxResultAmount amount={period.lines['29']} />
           ))
         }
 
@@ -297,7 +298,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['30']} />
+            <TaxResultAmount amount={period.lines['30']} />
           ))
         }
 
@@ -306,7 +307,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['31']} />
+            <TaxResultAmount amount={period.lines['31']} />
           ))
         }
 
@@ -315,7 +316,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['32']} />
+            <TaxResultAmount amount={period.lines['32']} />
           ))
         }
       </div>

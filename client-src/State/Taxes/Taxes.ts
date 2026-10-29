@@ -1,3 +1,4 @@
+import { taxResultCents } from './taxResultCents';
 import { addMoneyCents, subtractMoneyCents, formatMoneyCents, parseMoneyCents, type MoneyCents } from "../../../common/moneyCents";
 import Http from "@mortvola/http";
 import { computed, observable, runInAction } from "mobx";
@@ -11,9 +12,9 @@ import { getCurrentPeriod } from "./Estimated";
 interface TaxBracketEntry { tax: number, amount: number }
 
 export interface TaxResults {
-  brackets: [number, TaxBracketEntry][],
-  totalTaxedAmount: number,
-  totalTaxes: number,
+  brackets: [number, { amountCents: MoneyCents; taxCents: MoneyCents }][],
+  totalTaxedAmountCents: MoneyCents,
+  totalTaxesCents: MoneyCents,
   marginalTaxRate: number,
   effectiveTaxRate: number,
 }
@@ -336,9 +337,12 @@ export default class Taxes implements TaxesInterface {
     const effectiveTaxRate = totalIncome == 0 ? 0 : totalTaxes / totalIncome * 100.0;
 
     return {
-      brackets: sortedEntries,
-      totalTaxedAmount,
-      totalTaxes,
+      brackets: sortedEntries.map(([rate, entry]) => [rate, {
+        amountCents: taxResultCents(entry.amount),
+        taxCents: taxResultCents(entry.tax),
+      }]),
+      totalTaxedAmountCents: taxResultCents(totalTaxedAmount),
+      totalTaxesCents: taxResultCents(totalTaxes),
       marginalTaxRate,
       effectiveTaxRate,
     }
