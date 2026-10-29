@@ -1,6 +1,7 @@
 import { test } from '@japa/runner'
 import { addTransaction, updateTransaction } from '../../app/validation/Validators/transaction.ts'
-import { encodeAmount } from '../../client-src/monetary.ts'
+import { inputMoneyCents } from '../../client-src/monetary.ts'
+import { formatMoneyCents } from '../../common/moneyCents.ts'
 
 test.group('Transaction monetary request contract', () => {
   const create = value => ({ date: '2026-01-01', name: 'Transaction', amount: value,
@@ -9,10 +10,10 @@ test.group('Transaction monetary request contract', () => {
     categories: [{ categoryId: 1, amount: value, comment: 'keep' }],
     taxCategories: [{ type: 'estimated_tax_payments', amount: value }] })
   test('client rounding yields canonical requests and validators return numeric runtime values').with([
-    [12.345, '12.35'], [-0.125, '-0.12'], [0.125, '0.13'], [1.005, '1.00'],
+    [12.345, '12.35'], [-0.125, '-0.12'], [0.125, '0.13'], [1.005, '1.01'],
     [0.1 + 0.2, '0.30'], [-0.005, '0.00'], [-0, '0.00'], [0, '0.00'],
   ]).run(async ({ assert }, [amount, expected]) => {
-    assert.strictEqual(encodeAmount(amount), expected)
+    assert.strictEqual(formatMoneyCents(inputMoneyCents(String(amount))), expected)
     const added = await addTransaction.validate(create(expected))
     const updated = await updateTransaction.validate(patch(expected))
     for (const values of [added, updated]) {

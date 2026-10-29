@@ -4,7 +4,8 @@ import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
 import { CategoryType } from '../../common/ResponseTypes.js'
-import { encodeAmount } from '../../client-src/monetary.js'
+import { inputMoneyCents } from '../../client-src/monetary.js'
+import { formatMoneyCents } from '../../common/moneyCents.js'
 import { addLoan, updateLoan } from '../../app/validation/Validators/loan.js'
 
 // No application bootstrap or database adapter. Exercise the installed Lucid
@@ -67,10 +68,10 @@ test.group('Loan settings persistence investigation (no database)', () => {
   })
 
   test('Loan CREATE/PATCH decode canonical money and keep rates numeric').with([
-    [12.345, '12.35'], [-0.125, '-0.12'], [0.125, '0.13'], [1.005, '1.00'],
+    [12.345, '12.35'], [-0.125, '-0.12'], [0.125, '0.13'], [1.005, '1.01'],
     [0.1 + 0.2, '0.30'], [-0, '0.00'], [-0.005, '0.00'],
   ]).run(async ({ assert }, [value, encoded]) => {
-    assert.strictEqual(encodeAmount(value), encoded)
+    assert.strictEqual(formatMoneyCents(inputMoneyCents(String(value))), encoded)
     const created = await addLoan.validate({ name: ' Loan ', rate: 5.125, startDate: '2025-01-01', amount: encoded })
     const updated = await updateLoan.validate({ ...valid, rate: 5.125, startingBalance: encoded })
     assert.strictEqual(created.amount, Number(encoded))

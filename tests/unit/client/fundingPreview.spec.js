@@ -2,7 +2,7 @@ import { validateFundingPercentages } from '../../../common/fundingPercentages.t
 import { parseMoneyCents, formatMoneyCents, addMoneyCents, subtractMoneyCents } from '../../../common/moneyCents.ts'
 import { setImmediate } from 'node:timers'
 import { encodeMonetaryAmount } from '../../../app/services/categoryAmountCodec.ts'
-import { decodeAmount, decodeCentFundingRules, inputMoneyCents } from '../../../client-src/monetary.ts'
+import { decodeCentFundingRules, inputMoneyCents } from '../../../client-src/monetary.ts'
 import { CategoryType, TransactionType } from '../../../common/ResponseTypes.ts'
 import { validateTransactionSplits } from '../../../app/validation/transactionSplits.ts'
 import { test } from '@japa/runner'
@@ -316,7 +316,7 @@ test.group('Funding preview API decimal strings', () => {
     assert.strictEqual(response.data[0].adjustedReason, 'keep')
     assert.deepEqual(proposed, before)
     const getProposed = runInNewContext(await expression('client-src/Funding/FundingDialog.tsx', 'getProposed'), {
-      React: { useCallback: callback => callback }, decodeAmount, decodeCentFundingRules, formatMoneyCents, parseMoneyCents, CategoryType,
+      React: { useCallback: callback => callback }, decodeCentFundingRules, formatMoneyCents, parseMoneyCents, CategoryType,
       categoryTree: { getCategory: () => ({ type: CategoryType.Regular }) },
       Http: { get: async () => ({ ok: true, body: async () => response }) },
     })

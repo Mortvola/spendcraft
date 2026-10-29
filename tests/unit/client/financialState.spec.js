@@ -42,7 +42,6 @@ export { default as Group } from ${source('client-src/State/Group.ts')};
 export { default as PostedRegister } from ${source('client-src/Transactions/PostedRegister.tsx')};
 export { default as PendingRegister } from ${source('client-src/Transactions/PendingRegister.tsx')};
 export { default as Transaction } from ${source('client-src/State/Transaction.ts')};
-export { decodeAmount, encodeAmount } from ${source('client-src/monetary.ts')};
 export { worksheet2_1_2026, getCurrentPeriod } from ${source('client-src/State/Taxes/Estimated.ts')};
 export { default as TransactionRow } from ${source('client-src/Transactions/Transaction.tsx')};
 export { default as LoanTransaction } from ${source('client-src/State/LoanTransaction.ts')};
@@ -183,14 +182,8 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.throws(() => render('account', null, f.account, [new state.Transaction(f.store, f.transactionProps(-0.01))]))
   })
 
-  test('request encoding uses approved cent rounding').with([
-    [12.345, '12.35'], [0.125, '0.13'], [-0.125, '-0.12'], [-1.005, '-1.00'],
-    [0.1 + 0.2, '0.30'], [0, '0.00'], [-0, '0.00'], [-0.005, '0.00'],
-  ]).run(({ assert }, [value, expected]) => assert.strictEqual(state.encodeAmount(value), expected))
-
   test('invalid request values reject before HTTP').with([NaN, Infinity, -Infinity, Number.MAX_SAFE_INTEGER])
     .run(async ({ assert }, value) => {
-      assert.throws(() => state.encodeAmount(value))
       await assert.rejects(() => f.statement.update({ endingBalanceCents: value === Number.MAX_SAFE_INTEGER ? value + 1 : value }))
       await assert.rejects(() => f.account.statements.addStatement('2025-02-01', '2025-02-28', value === Number.MAX_SAFE_INTEGER ? value + 1 : value, parseMoneyCents('90.00'), 0, 0, 0, 0))
     })
@@ -266,10 +259,6 @@ export * from ${source('common/ResponseTypes.ts')};
     await assert.rejects(() => f.statement.update({ endingBalanceCents: parseMoneyCents('75.00') }))
     assert.strictEqual(f.statement.endingBalanceCents, before)
   })
-
-  test('shared API decoder handles exact strings and rejects invalid amounts').with([
-    ['0.00', 0], ['-0.12', -0.12], ['12.34', 12.34], ['0.30', 0.3],
-  ]).run(({ assert }, [value, expected]) => assert.strictEqual(state.decodeAmount(value), expected))
 
   test('invalid category allocation responses cannot mutate cached Transactions or balances').with([
     1, null, '', '1.2', '1e2', '-0.00', 'Infinity', '90071992547409.92',

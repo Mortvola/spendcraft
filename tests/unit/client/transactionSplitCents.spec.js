@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
 import * as cents from '../../../common/moneyCents.ts'
-import { inputMoneyCents, decodeAmount, encodeTransferCategories } from '../../../client-src/monetary.ts'
+import { inputMoneyCents, encodeTransferCategories } from '../../../client-src/monetary.ts'
 import parseEquation, { parseEquationCents } from '../../../client-src/EquationParser.ts'
 import { DateTime } from 'luxon'
 import { setImmediate } from 'node:timers'
@@ -23,7 +23,7 @@ async function expression(file, name, context = {}) {
   if (!value) throw new Error(`Missing ${name}`)
   return runInNewContext(ts.transpileModule(`(${value})`, { compilerOptions: {
     jsx: ts.JsxEmit.React, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None,
-  } }).outputText, { ...cents, inputMoneyCents, decodeAmount, AccountType, TransactionType, TrackingType,
+  } }).outputText, { ...cents, inputMoneyCents, AccountType, TransactionType, TrackingType,
     React: { createElement, Fragment: 'fragment' }, useMemo: callback => callback(), useMediaQuery: () => ({ isMobile: false }),
     FormModal: 'modal', FormField: 'formField', Field: 'field', FormError: 'error', MoneyCentsAmount: 'money',
     AmountInput: 'input', CategorySplits: 'splits', TransactionTaxCategories: 'taxes', PurchaseLocation: 'location', styles: {}, ...context })
