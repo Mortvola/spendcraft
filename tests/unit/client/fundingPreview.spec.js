@@ -23,12 +23,17 @@ const numericRules = rules => rules.map(rule => rule.percentage ? rule : (() => 
 const numericRows = rows => rows.map(({ amountCents, baseAmountCents, fundingCategories, ...row }) => ({ ...row,
   amount: Number(formatMoneyCents(amountCents)), baseAmount: Number(formatMoneyCents(baseAmountCents)),
   fundingCategories: numericRules(fundingCategories) }))
-const calculateFunding = (inputs, id) => numericRows(calculateFundingCents(fundingCalculationInputs(inputs), id))
-const computeSpread = (amount, rules) => computeSpreadCents(inputMoneyCents(amount), fundingCalculationInputs({
-  1: { baseAmount: '0.00', fundingCategories: rules, includeFundingTransfers: false } })[1].fundingCategories)
+// Adapt legacy numeric comparison fixtures to the string-only editor contract.
+const editorInputs = inputs => Object.fromEntries(Object.entries(inputs).map(([id, row]) => [id, {
+  ...row, baseAmount: String(row.baseAmount),
+  fundingCategories: row.fundingCategories.map(rule => rule.percentage ? rule : { ...rule, amount: String(rule.amount) }),
+}]))
+const calculateFunding = (inputs, id) => numericRows(calculateFundingCents(fundingCalculationInputs(editorInputs(inputs)), id))
+const computeSpread = (amount, rules) => computeSpreadCents(inputMoneyCents(String(amount)), fundingCalculationInputs({
+  1: { baseAmount: '0.00', fundingCategories: rules.map(rule => rule.percentage ? rule : { ...rule, amount: String(rule.amount) }), includeFundingTransfers: false } })[1].fundingCategories)
 const fundingCategoryEffect = (rows, id) => rows.filter(row => row.categoryId === id).reduce((sum, row) => sum + row.amount, 0)
 const fundingCategoryEffectCents = (rows, id) => sumFundingCents(rows.map(row => ({ categoryId: row.categoryId,
-  amountCents: row.amountCents ?? inputMoneyCents(row.amount) })), id)
+  amountCents: row.amountCents ?? inputMoneyCents(String(row.amount)) })), id)
 
 const row = (baseAmount, from = 99, includeFundingTransfers = false) => ({ baseAmount,
   includeFundingTransfers, fundingCategories: [{ categoryId: from, amount: 100, percentage: true }] })
@@ -48,6 +53,7 @@ async function expression(file, name) {
 }
 
 async function dialog(values, { balance = 10, reject = false, editing = false, previousCategories, previousDate } = {}) {
+  values = { ...values, categories: editorInputs(values.categories) }
   let submitted
   let closed = false
   let modal
@@ -65,10 +71,10 @@ async function dialog(values, { balance = 10, reject = false, editing = false, p
     bills: { forEachCatgory: () => false }, getCategory: () => ({ getFundingPool: () => pool }) },
   register: { addCategoryTransfer: submit } }
   const transaction = editing ? { date: DateTime.fromISO(previousDate ?? values.date),
-    categories: (previousCategories ?? calculateFunding(values.categories, 99)).map(({ amount, baseAmount, fundingCategories, ...category }) => ({ ...category, amountCents: inputMoneyCents(amount),
-      baseAmountCents: inputMoneyCents(baseAmount), fundingCategories: fundingCategories.map(rule => rule.percentage ? rule
-        : { categoryId: rule.categoryId, percentage: false, amountCents: inputMoneyCents(rule.amount) }) })),
-    getCategoryAmountCents: index => inputMoneyCents((previousCategories ?? calculateFunding(values.categories, 99))[index].amount),
+    categories: (previousCategories ?? calculateFunding(values.categories, 99)).map(({ amount, baseAmount, fundingCategories, ...category }) => ({ ...category, amountCents: inputMoneyCents(String(amount)),
+      baseAmountCents: inputMoneyCents(String(baseAmount)), fundingCategories: fundingCategories.map(rule => rule.percentage ? rule
+        : { categoryId: rule.categoryId, percentage: false, amountCents: inputMoneyCents(String(rule.amount)) }) })),
+    getCategoryAmountCents: index => inputMoneyCents(String((previousCategories ?? calculateFunding(values.categories, 99))[index].amount)),
     updateCategoryTransfer: (request) => submit(request, 2) } : undefined
   const MoneyCentsAmount = ({ amount }) => React.createElement('output', { 'data-amount': formatMoneyCents(amount) }, formatMoneyCents(amount))
   const Field = ({ children }) => children({ field: { value: values.date }, form: { values } })
@@ -243,12 +249,12 @@ test.group('Funding same-state preview and submission without DB', () => {
     const component = runInNewContext(await expression('client-src/Funding/FundingItem.tsx', 'FundingItem'), {
       React, DateTime, calculateFunding: calculateFundingCents, fundingCalculationInputs, fundingCategoryEffectCents: sumFundingCents, addMoneyCents, parseMoneyCents, inputMoneyCents,
       useStores: () => ({ categoryTree: { budget: { fundingPoolCat: { id: 99 } } } }),
-      useFormikContext: () => ({ values }), useField: () => [{ value: 1 }], styles: { hide: 'hide' },
-      Field: ({ children }) => children({ field: { value: categories[10].baseAmount } }),
+      useFormikContext: () => ({ values: { ...values, categories: editorInputs(values.categories) } }), useField: () => [{ value: 1 }], styles: { hide: 'hide' },
+      Field: ({ children }) => children({ field: { value: String(categories[10].baseAmount) } }),
       VerticalTitled: ({ title, children }) => React.createElement('section', { 'data-title': title }, children),
       MoneyCentsAmount: ({ amount }) => React.createElement('output', {}, formatMoneyCents(amount)),
       AmountInput: props => { assert.isTrue(props.exactCents); return null }, FormCheckbox: () => null,
-      CategorySpread: props => { assert.isTrue(props.centAmounts); return null }, FormError: () => null,
+      CategorySpread: props => { assert.notProperty(props, 'centAmounts'); return null }, FormError: () => null,
     })
     const html = renderToStaticMarkup(component({ fundingInfo: { initialAmountCents: initialCents, previousBaseAmountCents: 30 }, groupName: null,
       category: { id: 10, name: 'A' }, date: DateTime.fromISO(values.date), diffOnly }))
@@ -448,12 +454,12 @@ test('Funding editor rejects invalid and unsafe amounts before submission').with
 
 
 test('Funding editor applies approved cent rounding without changing percentage inputs').with([
-  ['0.10', 0.1], ['0.20', 0.2], ['-0.125', -0.12], ['0.125', 0.13], ['1.005', 1], ['-0.00', 0],
+  ['0.10', 0.1], ['0.20', 0.2], ['-0.125', -0.12], ['0.125', 0.13], ['1.005', 1.01], ['-0.00', 0],
 ]).run(({ assert }, [text, expected]) => {
   const inputs = fundingCalculationInputs({ 10: { baseAmount: text, includeFundingTransfers: false,
     fundingCategories: [{ categoryId: 99, amount: text, percentage: false },
       { categoryId: 98, amount: 12.75, percentage: true }] } })
-  assert.strictEqual(inputs[10].baseAmountCents, inputMoneyCents(expected))
-  assert.strictEqual(inputs[10].fundingCategories[0].amountCents, inputMoneyCents(expected))
+  assert.strictEqual(inputs[10].baseAmountCents, inputMoneyCents(String(expected)))
+  assert.strictEqual(inputs[10].fundingCategories[0].amountCents, inputMoneyCents(String(expected)))
   assert.strictEqual(inputs[10].fundingCategories[1].amount, 12.75)
 })

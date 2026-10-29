@@ -267,11 +267,9 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
             }
 
             for (const fundingCat of fundingCats) {
-              obj[cat.categoryId].fundingCategories.push({
-                categoryId: fundingCat.categoryId,
-                amount: fundingCat.amount,
-                percentage: fundingCat.percentage,
-              });
+              obj[cat.categoryId].fundingCategories.push(fundingCat.percentage
+                ? { categoryId: fundingCat.categoryId, amount: fundingCat.amount, percentage: true }
+                : { categoryId: fundingCat.categoryId, amount: fundingCat.amount, percentage: false });
             }
           }
         })

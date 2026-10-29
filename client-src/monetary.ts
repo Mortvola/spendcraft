@@ -134,10 +134,10 @@ export function encodeTransferCategories(categories: readonly TransferCategoryIn
 }
 
 // Parse decimal input text exactly; apply account signs before rounding half ties
-// toward positive infinity. Numeric callers retain their existing rounding policy.
-export function inputMoneyCents(value: string | number, sign = 1): MoneyCents {
+// toward positive infinity.
+export function inputMoneyCents(value: string, sign = 1): MoneyCents {
   if (sign !== 1 && sign !== -1) throw new Error('Invalid monetary sign');
-  if (typeof value === 'number') return parseMoneyCents(encodeAmount(value * sign));
+  if (typeof value !== 'string') throw new Error('Expected monetary input text');
 
   const text = value.trim();
   if (text === '') return parseMoneyCents('0.00');

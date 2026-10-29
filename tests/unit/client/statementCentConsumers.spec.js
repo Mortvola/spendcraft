@@ -26,7 +26,7 @@ const createElement = (type, props, ...children) => ({ type, props: { ...props, 
 test.group('Statement cent consumers', () => {
   test('input conversion retains exact strings and applies the existing signed rounding policy').with([
     ['90071992547409.91', 1, Number.MAX_SAFE_INTEGER], ['0.125', 1, 13], ['0.125', -1, -12],
-    ['-0.125', -1, 13], [-0.005, 1, 0], ['-0.00', 1, 0], [0.1 + 0.2, 1, 30],
+    ['-0.125', -1, 13], ['-0.005', 1, 0], ['-0.00', 1, 0], ['0.30000000000000004', 1, 30],
   ]).run(({ assert }, [value, sign, expected]) => assert.strictEqual(inputMoneyCents(value, sign), expected))
 
   test('balance dialog initializes exact values and submits cents for edits and creation').with([1, -1])
@@ -57,7 +57,7 @@ test.group('Statement cent consumers', () => {
         dividends: '1.005', taxableInterest: '-0.00' })
       assert.strictEqual(created[2], sign === -1 ? -12 : 13)
       assert.strictEqual(created[3], sign * 30)
-      assert.deepEqual(created.slice(4), [-12, 13, 100, 0])
+      assert.deepEqual(created.slice(4), [-12, 13, 101, 0])
       for (const field of ['startingBalance', 'endingBalance', 'shortTermGains', 'longTermGains', 'dividends', 'taxableInterest']) {
         for (const value of ['', 'garbage', 'Infinity', '90071992547409.92']) {
           assert.isString(modal.props.validate({ ...modal.props.initialValues, [field]: value })[field])

@@ -48,8 +48,8 @@ const FundingItem: React.FC<PropsType> = ({
 
   const previousMonthName = date.minus({ months: 1 }).monthLong;
 
-  const hide = (current: string | number, previous: MoneyCents = zero) => {
-    try { return diffOnly && inputMoneyCents(current ?? 0) === previous; }
+  const hide = (current: string, previous: MoneyCents = zero) => {
+    try { return diffOnly && inputMoneyCents(current ?? '0.00') === previous; }
     catch { return false; }
   };
 

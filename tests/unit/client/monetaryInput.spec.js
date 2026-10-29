@@ -30,10 +30,10 @@ test.group('Exact fractional monetary input', () => {
     assert.throws(() => inputMoneyCents(text))
   })
 
-  test('preserves numeric caller rounding and rejects invalid numbers/signs', ({ assert }) => {
-    assert.strictEqual(inputMoneyCents(1.005), 100)
-    assert.strictEqual(inputMoneyCents(-0.125), -12)
-    for (const value of [NaN, Infinity, Number.MAX_SAFE_INTEGER]) assert.throws(() => inputMoneyCents(value))
+  test('rejects numeric dollars and invalid signs', ({ assert }) => {
+    for (const value of [0, 1.005, -0.125, NaN, Infinity, Number.MAX_SAFE_INTEGER]) {
+      assert.throws(() => inputMoneyCents(value))
+    }
     assert.throws(() => inputMoneyCents('1.00', 0))
   })
 })

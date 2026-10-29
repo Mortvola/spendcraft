@@ -9,10 +9,8 @@ import * as Console from './Console';
 import { formatMoneyCents } from '../common/moneyCents';
 import { inputMoneyCents } from './monetary';
 
-interface PropsType {
-  exactCents?: boolean,
+interface BaseProps {
   id?: string,
-  value?: number | string;
   onValueChange?: (amount: string) => void;
   onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onBlur?: (event: React.ChangeEvent<HTMLInputElement>) => void;
@@ -23,10 +21,15 @@ interface PropsType {
   readOnly?: boolean,
 }
 
+type PropsType = BaseProps & (
+  { exactCents: true; value?: string }
+  | { exactCents?: false; value?: number | string }
+);
+
 const AmountInput: React.FC<PropsType> = ({
   exactCents = false,
   id,
-  value = 0,
+  value = '0.00',
   onValueChange,
   onChange,
   onBlur,
@@ -37,6 +40,7 @@ const AmountInput: React.FC<PropsType> = ({
   readOnly,
 }) => {
   const convertExactAmount = (amount: string | number) => {
+    if (typeof amount !== 'string') throw new Error('Expected monetary input text');
     try { return formatMoneyCents(inputMoneyCents(amount)); }
     catch { return String(amount); }
   };

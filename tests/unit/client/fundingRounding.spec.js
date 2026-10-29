@@ -51,7 +51,7 @@ test.group('Funding residual correction regression', () => {
       const observed = expressions.get('computeSpread').replace('const funders = new Map<number, MoneyCents>();',
         'observeOrder(sortedCategories.map((entry) => entry.categoryId)); const funders = new Map<number, MoneyCents>();')
       const spread = evaluate(`const computeSpread = ${observed}; computeSpread;`, { observeOrder: (ids) => { order = [...ids] } })
-      const result = spread(inputMoneyCents(scenario.amount), [
+      const result = spread(inputMoneyCents(String(scenario.amount)), [
         { categoryId: 1, amount: 33.33, percentage: true },
         { categoryId: 2, amount: 33.33, percentage: true },
         { categoryId: 3, amount: 33.34, percentage: true },
@@ -113,7 +113,7 @@ test.group('Funding allocation rounding characterization', () => {
       }).outputText
       const trace = []
       const computeSpread = runInNewContext(compiled, { ...money, zero: money.parseMoneyCents('0.00'), trace })
-      const allocations = [...computeSpread(inputMoneyCents(amount), [
+      const allocations = [...computeSpread(inputMoneyCents(String(amount)), [
         { categoryId: 1, amount: 33.33, percentage: true },
         { categoryId: 2, amount: 33.33, percentage: true },
         { categoryId: 3, amount: 33.34, percentage: true },

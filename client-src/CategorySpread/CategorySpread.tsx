@@ -33,12 +33,9 @@ const FormCategoryInput = ({ name, types }: { name: string, types?: CategoryType
   )
 }
 
-export interface CategorySpreadInput {
-  id?: number,
-  categoryId: number,
-  amount: number | string,
-  percentage: boolean,
-}
+export type CategorySpreadInput = { id?: number; categoryId: number } & (
+  { percentage: true; amount: number } | { percentage: false; amount: string }
+);
 
 interface PropsType {
   name: string,
@@ -76,8 +73,13 @@ const CategorySpread: React.FC<PropsType> = ({
                   types={types}
                 />
                 <FormField name={`${name}[${i}].amount`}>
-                  {({ field }: FieldProps<string | number>) => (
-                    <AmountInput {...field} exactCents={!c.percentage} style={{ marginTop: 0 }} />
+                  {({ field, form }: FieldProps<string | number>) => c.percentage ? (
+                    <AmountInput name={field.name} value={c.amount} onBlur={field.onBlur}
+                      onValueChange={text => form.setFieldValue(field.name, text.trim() === '' ? NaN : Number(text))}
+                      style={{ marginTop: 0 }} />
+                  ) : (
+                    <AmountInput name={field.name} value={c.amount} onChange={field.onChange} onBlur={field.onBlur}
+                      exactCents style={{ marginTop: 0 }} />
                   )}
                 </FormField>
                 <Field name={`${name}[${i}].percentage`}>
@@ -91,10 +93,9 @@ const CategorySpread: React.FC<PropsType> = ({
                           const percentage = !field.value;
                           let amount: string | number = c.amount;
                           if (percentage) {
-                            const numeric = Number(amount);
-                            if (Number.isFinite(numeric)) amount = numeric;
+                            amount = typeof amount === 'string' && amount.trim() === '' ? NaN : Number(amount);
                           } else {
-                            try { amount = formatMoneyCents(inputMoneyCents(amount)); }
+                            try { amount = formatMoneyCents(inputMoneyCents(String(amount))); }
                             catch { amount = String(amount); }
                           }
                           form.setFieldValue(`${name}[${i}]`, { ...c, amount, percentage });

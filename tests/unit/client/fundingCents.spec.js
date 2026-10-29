@@ -1,6 +1,6 @@
 import { test } from '@japa/runner'
-import { parseMoneyCents, formatMoneyCents, addMoneyCents } from '../../../common/moneyCents.ts'
-import { inputMoneyCents, encodeTransferCategories } from '../../../client-src/monetary.ts'
+import { parseMoneyCents, formatMoneyCents, addMoneyCents, moneyCentsFromInteger } from '../../../common/moneyCents.ts'
+import { encodeTransferCategories } from '../../../client-src/monetary.ts'
 import { calculateFunding, computeSpread, fundingCalculationInputs, fundingCategoryEffectCents } from '../../../client-src/Funding/calculateFunding.ts'
 import { legacyCalculateFunding } from '../../fixtures/funding/legacyPreview.ts'
 
@@ -22,11 +22,15 @@ test('cent engine preserves previous posted allocations, ordering, caps and resi
   .run(({ assert }, editor) => {
     const before = globalThis.structuredClone(editor)
     const previous = legacyCalculateFunding(editor, 99)
-    const rows = calculateFunding(fundingCalculationInputs(editor), 99)
+    const drafts = Object.fromEntries(Object.entries(editor).map(([id, row]) => [id, {
+      ...row, baseAmount: String(row.baseAmount),
+      fundingCategories: row.fundingCategories.map(rule => rule.percentage ? rule : { ...rule, amount: String(rule.amount) }),
+    }]))
+    const rows = calculateFunding(fundingCalculationInputs(drafts), 99)
     assert.deepEqual(rows.map(({ categoryId, amountCents, baseAmountCents, funder, includeFundingTransfers }) => ({
       categoryId, amountCents, baseAmountCents, funder, includeFundingTransfers,
     })), previous.map(({ categoryId, amount, baseAmount, funder, includeFundingTransfers }) => ({
-      categoryId, amountCents: inputMoneyCents(amount), baseAmountCents: inputMoneyCents(baseAmount), funder, includeFundingTransfers,
+      categoryId, amountCents: moneyCentsFromInteger(Math.round(amount * 100)), baseAmountCents: moneyCentsFromInteger(Math.round(baseAmount * 100)), funder, includeFundingTransfers,
     })))
     assert.strictEqual(addMoneyCents(...rows.map(row => row.amountCents)), 0)
     assert.deepEqual(editor, before)

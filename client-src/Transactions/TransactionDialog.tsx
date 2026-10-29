@@ -36,8 +36,8 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
   interface ValueType {
     date: string,
     name: string,
-    amount: string | number,
-    principle?: string | number,
+    amount: string,
+    principle?: string,
     interest?: string,
     comment: string,
     splits: CategorySplitInput[],
@@ -48,13 +48,13 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
 
   const zero = parseMoneyCents('0.00');
   const absoluteCents = (amount: MoneyCents) => amount < 0 ? subtractMoneyCents(zero, amount) : amount;
-  const transactionAmountCents = (value: string | number) => inputMoneyCents(value, account?.sign ?? 1);
+  const transactionAmountCents = (value: string) => inputMoneyCents(value, account?.sign ?? 1);
 
   const loanInterestCents = (values: ValueType) => subtractMoneyCents(
     transactionAmountCents(values.amount), inputMoneyCents(values.principle ?? '0.00'),
   );
 
-  const computeRemaining = (categories: CategorySplitInput[], total: string | number): MoneyCents => (
+  const computeRemaining = (categories: CategorySplitInput[], total: string): MoneyCents => (
     // No explicit splits means the whole transaction belongs to the unassigned category.
     categories.length === 0 ? zero : subtractMoneyCents(absoluteCents(transactionAmountCents(total)), sumSplitCents(categories))
   );
@@ -368,7 +368,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
           readOnly={isReadOnly()}
         >
           {
-            ({ field }: FieldProps<string | number, ValueType>) => (
+            ({ field }: FieldProps<string, ValueType>) => (
               <AmountInput
                 exactCents
                 className="form-control"
@@ -386,7 +386,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
                   name="principle"
                   label="Principle:"
                 >
-                  {({ field }: FieldProps<string | number, ValueType>) => (
+                  {({ field }: FieldProps<string, ValueType>) => (
                     <AmountInput exactCents className="form-control" {...field} />
                   )}
                 </FormField>

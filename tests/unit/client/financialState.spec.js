@@ -375,9 +375,9 @@ export * from ${source('common/ResponseTypes.ts')};
       return { body: { data: { transaction: props, categories: [], acctBalances: [] } } }
     })
     assert.strictEqual(props.accountTransaction.amount, amount)
-    await cached.account.updateTransaction({ amountCents: inputMoneyCents(expected) })
-    assert.strictEqual(cached.account.amountCents, inputMoneyCents(expected))
-    assert.strictEqual(cached.category.amountCents, inputMoneyCents(expected))
+    await cached.account.updateTransaction({ amountCents: inputMoneyCents(String(expected)) })
+    assert.strictEqual(cached.account.amountCents, inputMoneyCents(String(expected)))
+    assert.strictEqual(cached.category.amountCents, inputMoneyCents(String(expected)))
     assert.isNumber(cached.account.amountCents)
   })
 
@@ -737,7 +737,7 @@ export * from ${source('common/ResponseTypes.ts')};
     for (const [principle, expected] of [['12.50', 12.5], ['-0.12', -0.12], ['0.00', 0], [null, null]]) {
       const props = f.transactionProps()
       const transaction = new state.Transaction(f.store, { ...props, accountTransaction: { ...props.accountTransaction, principle } })
-      assert.strictEqual(transaction.principleCents, expected === null ? null : inputMoneyCents(expected))
+      assert.strictEqual(transaction.principleCents, expected === null ? null : inputMoneyCents(String(expected)))
     }
     for (const principle of [1, '', '1.2', '-0.00', 'Infinity']) {
       const props = f.transactionProps()
@@ -746,7 +746,7 @@ export * from ${source('common/ResponseTypes.ts')};
   })
 
   test('offline institution and account requests encode balances and keep rates numeric').with([
-    [12.345, '12.35'], [-0.125, '-0.12'], [0.125, '0.13'], [1.005, '1.00'], [0.1 + 0.2, '0.30'], [-0, '0.00'],
+    [12.345, '12.35'], [-0.125, '-0.12'], [0.125, '0.13'], [1.005, '1.01'], [0.1 + 0.2, '0.30'], [-0, '0.00'],
     ['90071992547409.91', '90071992547409.91'],
   ]).run(async ({ assert }, [balance, expected]) => {
     const rate = 3.125
@@ -763,8 +763,8 @@ export * from ${source('common/ResponseTypes.ts')};
       assert.deepEqual(payload, { ...account, startDate: '2025-03-01' })
       return { ok: false, body: {} }
     })
-    await f.store.accounts.addOfflineAccount('Bank', 'Offline', inputMoneyCents(balance), '2025-03-01', 'depository', 'checking', state.TrackingType.Balances, rate)
-    await f.institution.addOfflineAccount('Offline', inputMoneyCents(balance), '2025-03-01', 'depository', 'checking', state.TrackingType.Balances, rate)
+    await f.store.accounts.addOfflineAccount('Bank', 'Offline', inputMoneyCents(String(balance)), '2025-03-01', 'depository', 'checking', state.TrackingType.Balances, rate)
+    await f.institution.addOfflineAccount('Offline', inputMoneyCents(String(balance)), '2025-03-01', 'depository', 'checking', state.TrackingType.Balances, rate)
     assert.strictEqual(calls, 2)
   })
   test('invalid offline cent balances fail before HTTP').with([NaN, Infinity, -Infinity, 0.1, Number.MAX_SAFE_INTEGER + 1])
@@ -1184,10 +1184,10 @@ export * from ${source('common/ResponseTypes.ts')};
     const cached = transactions()
     const returned = { ...f.transactionProps(amount), version: 1 }
     routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: returned, categories: [{ id: 20, balance: amount.toFixed(2) }], acctBalances: [{ id: 10, balance: (100 + amount).toFixed(2) }] } } }))
-    await cached.account.updateTransaction({ amountCents: inputMoneyCents(amount) })
+    await cached.account.updateTransaction({ amountCents: inputMoneyCents(String(amount)) })
     assert.equal(f.account.balanceCents, 10000 + Math.round(amount * 100)); assert.equal(f.category.balanceCents, Math.round(amount * 100))
-    assert.equal(cached.account.amountCents, inputMoneyCents(amount))
-    assert.equal(cached.category.amountCents, inputMoneyCents(amount))
+    assert.equal(cached.account.amountCents, inputMoneyCents(String(amount)))
+    assert.equal(cached.category.amountCents, inputMoneyCents(String(amount)))
     assert.equal(cached.category.version, 1)
   })
 
@@ -1200,7 +1200,7 @@ export * from ${source('common/ResponseTypes.ts')};
       return { body: { data: { transaction: returned, categories: [], acctBalances: [] } } }
     })
     const balances = [f.account.balanceCents, f.category.balanceCents]
-    await cached.account.updateTransaction({ taxCategories: submitted.map(({ amount, ...tax }) => ({ ...tax, amountCents: inputMoneyCents(amount) })) })
+    await cached.account.updateTransaction({ taxCategories: submitted.map(({ amount, ...tax }) => ({ ...tax, amountCents: inputMoneyCents(String(amount)) })) })
     for (const transaction of [cached.account, cached.category]) {
       assert.deepEqual(transaction.taxCategories.map(tax => tax.amountCents), [1235, -12])
       assert.isTrue(transaction.taxCategories.every(tax => Number.isSafeInteger(tax.amountCents)))
@@ -1263,8 +1263,8 @@ export * from ${source('common/ResponseTypes.ts')};
     [12.345, '12.35'], [-0.125, '-0.12'], [0.1 + 0.2, '0.30'], [-0, '0.00'],
   ]).run(async ({ assert }, [amount, expected]) => {
     const cached = transactions()
-    const categories = [{ categoryId: 20, amount: formatMoneyCents(inputMoneyCents(amount)), baseAmountCents: inputMoneyCents(amount), comment: 'keep',
-      fundingCategories: [{ categoryId: 21, amountCents: inputMoneyCents(amount), percentage: false },
+    const categories = [{ categoryId: 20, amount: formatMoneyCents(inputMoneyCents(String(amount))), baseAmountCents: inputMoneyCents(String(amount)), comment: 'keep',
+      fundingCategories: [{ categoryId: 21, amountCents: inputMoneyCents(String(amount)), percentage: false },
         { categoryId: 20, amount: 100, percentage: true }] }]
     const before = globalThis.structuredClone(categories)
     const wire = [{ categoryId: 20, comment: 'keep', amount: expected, baseAmount: expected,
@@ -1704,7 +1704,7 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.equal(f.account.transactions.transactions[1].statementId, null)
   })
   test('funding calculation reaches real State/cache boundaries unchanged').with([false, true]).run(async ({ assert }, rejected) => {
-    const allocations = calculateFunding(fundingCalculationInputs({ 21: { baseAmount: 2, includeFundingTransfers: false,
+    const allocations = calculateFunding(fundingCalculationInputs({ 21: { baseAmount: '2.00', includeFundingTransfers: false,
       fundingCategories: [{ categoryId: 20, amount: 100, percentage: true }] } }), 20)
     const rows = allocations.map(({ amountCents, ...row }) => ({ ...row, amount: formatMoneyCents(amountCents) }))
     const props = { ...f.transactionProps(), type: state.TransactionType.FUNDING_TRANSACTION,

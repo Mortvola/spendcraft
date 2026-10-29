@@ -1,5 +1,6 @@
 import { addMoneyCents, subtractMoneyCents, parseMoneyCents, moneyCentsFromInteger, type MoneyCents } from '../../common/moneyCents.js';
 import { inputMoneyCents } from '../monetary.js';
+import type { CategorySpreadInput } from '../CategorySpread/CategorySpread';
 import type { CentFundingRule } from '../monetary.js';
 
 const zero = parseMoneyCents('0.00');
@@ -20,24 +21,25 @@ export interface FundingAllocation {
 }
 
 export function fundingCalculationInputs(inputs: Readonly<Record<string, {
-  baseAmount: string | number;
-  fundingCategories: readonly { id?: number; categoryId: number; amount: string | number; percentage: boolean }[];
+  baseAmount: string;
+  fundingCategories: readonly CategorySpreadInput[];
   includeFundingTransfers: boolean;
 }>>): FundingInputs {
-  const cents = (value: string | number) => {
+  const cents = (value: string) => {
     if (typeof value === 'string' && value.trim() === '') throw new Error('Missing funding amount');
     return inputMoneyCents(value);
   };
   return Object.fromEntries(Object.entries(inputs).map(([id, { baseAmount, fundingCategories, ...input }]) => [id, {
     ...input,
     baseAmountCents: cents(baseAmount),
-    fundingCategories: fundingCategories.map(({ amount, ...rule }): CentFundingRule => {
+    fundingCategories: fundingCategories.map((rule): CentFundingRule => {
       if (rule.percentage) {
-        const percentage = typeof amount === 'string' && amount.trim() === '' ? NaN : Number(amount);
+        const percentage = rule.amount;
         if (!Number.isFinite(percentage)) throw new Error('Invalid funding percentage');
         return { ...rule, percentage: true, amount: percentage };
       }
-      return { ...rule, percentage: false, amountCents: cents(amount) };
+      const { amount, ...metadata } = rule;
+      return { ...metadata, percentage: false, amountCents: cents(amount) };
     }),
   }]));
 }

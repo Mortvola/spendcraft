@@ -70,10 +70,9 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
     }
 
     const fundingCategories: CentFundingRule[] = values.type === CategoryType.Bill ? values.fundingCategories.map(rule => {
+      if (rule.percentage) return rule;
       const { amount, ...metadata } = rule;
-      return rule.percentage
-        ? { ...metadata, percentage: true, amount: Number(amount) }
-        : { ...metadata, percentage: false, amountCents: inputMoneyCents(amount) };
+      return { ...metadata, amountCents: inputMoneyCents(amount) };
     }) : [];
 
     if (category) {
@@ -128,8 +127,14 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
     if (values.type === CategoryType.Bill) {
       const issue = validateFundingPercentages(values.fundingCategories)
       if (issue) errors.fundingCategories = issue.message
-      try { values.fundingCategories.filter(rule => !rule.percentage).forEach(rule => inputMoneyCents(rule.amount)); }
-      catch { errors.fundingCategories = 'Enter valid, safe fixed-dollar funding amounts.'; }
+      try {
+        values.fundingCategories.forEach(rule => {
+          if (rule.percentage) {
+            if (!Number.isFinite(rule.amount)) throw new Error('Invalid percentage');
+          } else inputMoneyCents(rule.amount);
+        });
+      }
+      catch { errors.fundingCategories = 'Enter valid, safe funding amounts and percentages.'; }
     }
 
     return errors;
@@ -224,16 +229,17 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
     return '';
   }
 
-  const initialCategories = (categories?: CentFundingRule[]) => {
+  const initialCategories = (categories?: CentFundingRule[]): CategorySpreadInput[] => {
     if (!categories || categories.length === 0) {
       return [{
         id: -1, categoryId: fundingPoolCat.id, amount: 100, percentage: true,
       }]
     }
 
-    return categories.map((c) => ({
-      id: c.id, categoryId: c.categoryId, amount: c.percentage ? c.amount : formatMoneyCents(c.amountCents), percentage: c.percentage,
-    }))
+    return categories.map(c => c.percentage
+      ? { id: c.id, categoryId: c.categoryId, amount: c.amount, percentage: true }
+      : { id: c.id, categoryId: c.categoryId, amount: formatMoneyCents(c.amountCents), percentage: false })
+
   }
 
   return (

@@ -65,7 +65,7 @@ const AutoAssignmentDialog: React.FC<PropsType & ModalProps> = observer(({
     try {
       for (const rule of values.categories) {
         if (rule.percentage) {
-          if (!Number.isFinite(Number(rule.amount))) throw new Error('Invalid percentage');
+          if (!Number.isFinite(rule.amount)) throw new Error('Invalid percentage');
         } else inputMoneyCents(rule.amount);
       }
     }
@@ -74,11 +74,11 @@ const AutoAssignmentDialog: React.FC<PropsType & ModalProps> = observer(({
   }
 
   const handleSubmit = async (values: ValueType) => {
-    const categories: AutoAssignmentRule[] = values.categories.map(({ amount, ...rule }) => (
-      rule.percentage
-        ? { ...rule, percentage: true, amount: Number(amount) }
-        : { ...rule, percentage: false, amountCents: inputMoneyCents(amount) }
-    ));
+    const categories: AutoAssignmentRule[] = values.categories.map(rule => {
+      if (rule.percentage) return rule;
+      const { amount, ...metadata } = rule;
+      return { ...metadata, amountCents: inputMoneyCents(amount) };
+    });
     if (autoAssignment) {
       await autoAssignment.update({
         name: values.name,
@@ -105,15 +105,16 @@ const AutoAssignmentDialog: React.FC<PropsType & ModalProps> = observer(({
     setShow(false)
   }
 
-  const initialCategories = (categories?: AutoAssignmentRule[]) => {
+  const initialCategories = (categories?: AutoAssignmentRule[]): (CategorySpreadInput & { id: number })[] => {
     if (!categories || categories.length === 0) {
       return [{
         id: -1, categoryId: unassignedCat.id, amount: 100, percentage: true,
       }]
     }
-    return categories.map((c) => ({
-      id: c.id, categoryId: c.categoryId, amount: c.percentage === true ? c.amount : formatMoneyCents(c.amountCents), percentage: c.percentage === true,
-    }))
+    return categories.map(c => c.percentage === true
+      ? { id: c.id, categoryId: c.categoryId, amount: c.amount, percentage: true }
+      : { id: c.id, categoryId: c.categoryId, amount: formatMoneyCents(c.amountCents), percentage: false })
+
   }
 
   return (

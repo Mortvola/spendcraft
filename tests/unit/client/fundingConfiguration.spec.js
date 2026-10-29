@@ -32,7 +32,7 @@ test.group('Funding configuration client regression', () => {
     const cases = [
       { percentages: [100], valid: true }, { percentages: [50, 50], valid: true },
       { percentages: [33.33, 33.33, 33.34], valid: true }, { percentages: [0.29, 99.71], valid: true },
-      { percentages: ['50', '50'], valid: true }, { percentages: [0, 100], valid: true },
+      { percentages: ['50', '50'], valid: false }, { percentages: [0, 100], valid: true },
       { percentages: [50, 50], fixed: 10, valid: true }, { percentages: [], fixed: 7, valid: true },
       { percentages: [], valid: true }, { percentages: [-1, 101], valid: false },
       { percentages: [99.99], valid: false }, { percentages: [100.01], valid: false },
@@ -42,7 +42,7 @@ test.group('Funding configuration client regression', () => {
     for (const scenario of cases) {
       const entries = scenario.percentages.map((amount) => ({ categoryId: 1, amount, percentage: true }))
       const fundingCategories = scenario.fixed === undefined ? entries
-        : [{ categoryId: 1, amount: scenario.fixed, percentage: false }, ...entries]
+        : [{ categoryId: 1, amount: String(scenario.fixed), percentage: false }, ...entries]
       const categoryErrors = category({ name: 'Category', fundingAmount: '0.00', type: CategoryType.Bill, fundingCategories })
       const fundingErrors = funding({ date: '2025-03-01', categories: { 1: { baseAmount: '-10.00', fundingCategories } } })
       if (scenario.valid) {
@@ -50,12 +50,23 @@ test.group('Funding configuration client regression', () => {
         assert.isEmpty(fundingErrors)
       } else {
         assert.isString(categoryErrors.fundingCategories)
-        assert.isString(fundingErrors.categories[1].fundingCategories)
+        assert.isString(fundingErrors.categories[1].fundingCategories ?? fundingErrors.categories[1].baseAmount)
       }
     }
     // Non-Bill Category submissions send [], so hidden legacy rules do not block them.
     assert.isEmpty(category({ name: 'Regular', fundingAmount: '0.00', type: CategoryType.Regular,
       fundingCategories: [{ categoryId: 1, amount: -100, percentage: true }] }))
+  })
+
+  test('funding calculation boundary rejects numeric dollars and string percentages', ({ assert }) => {
+    const category = { baseAmount: '1.00', includeFundingTransfers: false,
+      fundingCategories: [{ categoryId: 2, percentage: true, amount: 100 }] }
+    assert.strictEqual(fundingCalculationInputs({ 1: category })[1].baseAmountCents, 100)
+    assert.throws(() => fundingCalculationInputs({ 1: { ...category, baseAmount: 1 } }))
+    assert.throws(() => fundingCalculationInputs({ 1: { ...category,
+      fundingCategories: [{ categoryId: 2, percentage: false, amount: 1 }] } }))
+    assert.throws(() => fundingCalculationInputs({ 1: { ...category,
+      fundingCategories: [{ categoryId: 2, percentage: true, amount: '100' }] } }))
   })
 
   test('actual input formatting shows hundredth precision while binary scaling need not be integral', async ({ assert }) => {
@@ -129,7 +140,7 @@ test.group('Category fixed-dollar funding cents', () => {
       const field = find(body, element => element.type === 'field' && element.props.name === 'fundingAmount')
       assert.isTrue(field.props.children[0]({ field: { value: amount } }).props.exactCents)
       assert.notProperty(find(body, element => element.type === 'spread').props, 'centAmounts')
-      for (const invalid of ['bad', 'Infinity', '90071992547409.92']) {
+      for (const invalid of [1, 0, 'bad', 'Infinity', '90071992547409.92']) {
         assert.isString(modal.props.validate({ ...values, fundingAmount: invalid }).fundingAmount)
         assert.isString(modal.props.validate({ ...values, fundingCategories: [{ categoryId: 1, amount: invalid, percentage: false }] }).fundingCategories)
       }
@@ -156,7 +167,15 @@ test.group('Category fixed-dollar funding cents', () => {
       assert.strictEqual(updated.value.percentage, !percentage)
       assert.strictEqual(updated.value.id, 7)
       const field = find({ props: { children: rows } }, e => e.type === 'formField')
-      assert.strictEqual(field.props.children[0]({ field: { value: rule.amount } }).props.exactCents, !percentage)
+      const amountInput = field.props.children[0]({ field: { value: rule.amount, name: 'rules[0].amount' },
+        form: { setFieldValue: (name, value) => { updated = { name, value } } } })
+      assert.strictEqual(amountInput.props.exactCents === true, !percentage)
+      if (percentage) {
+        amountInput.props.onValueChange('33.33')
+        assert.strictEqual(updated.value, 33.33)
+        amountInput.props.onValueChange('')
+        assert.isNaN(updated.value)
+      }
     }
   })
 })
@@ -186,7 +205,7 @@ test.group('Auto-assignment fixed-dollar cents', () => {
       }
       const values = { name: 'Updated', searchStrings: ['Shop'], categories: [
         { id: -1, categoryId: 1, percentage: false, amount },
-        { id: 8, categoryId: 2, percentage: true, amount: '12.75' },
+        { id: 8, categoryId: 2, percentage: true, amount: 12.75 },
       ] }
       assert.isEmpty(modal.props.validate(values))
       await modal.props.onSubmit(values)
@@ -200,7 +219,7 @@ test.group('Auto-assignment fixed-dollar cents', () => {
       assert.strictEqual(values.categories[0].amount, amount)
       const body = modal.props.children[0]({ values })
       assert.notProperty(find(body, e => e.type === 'spread').props, 'centAmounts')
-      for (const invalid of ['bad', 'Infinity', '90071992547409.92']) {
+      for (const invalid of [1, 0, 'bad', 'Infinity', '90071992547409.92']) {
         assert.isString(modal.props.validate({ ...values, categories: [{ id: 1, categoryId: 1, percentage: false, amount: invalid }] }).categories)
       }
       assert.isString(modal.props.validate({ ...values, categories: [{ id: 1, categoryId: 1, percentage: true, amount: 'bad' }] }).categories)

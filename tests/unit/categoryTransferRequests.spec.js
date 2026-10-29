@@ -4,12 +4,12 @@ import { formatMoneyCents } from '../../common/moneyCents.ts'
 import { inputMoneyCents, encodeTransferCategories } from '../../client-src/monetary.ts'
 
 test.group('Category transfer monetary requests', () => {
-  const category = amount => ({ id: 5, categoryId: 1, amount: formatMoneyCents(inputMoneyCents(amount)), baseAmountCents: inputMoneyCents(amount), comment: 'keep', funder: true,
-    includeFundingTransfers: false, fundingCategories: [{ categoryId: 2, amountCents: inputMoneyCents(amount), percentage: false },
+  const category = amount => ({ id: 5, categoryId: 1, amount: formatMoneyCents(inputMoneyCents(String(amount))), baseAmountCents: inputMoneyCents(String(amount)), comment: 'keep', funder: true,
+    includeFundingTransfers: false, fundingCategories: [{ categoryId: 2, amountCents: inputMoneyCents(String(amount)), percentage: false },
       { categoryId: 3, amount: 12.344, percentage: true }, { categoryId: 4, amount: 87.656, percentage: true }] })
   const request = categories => ({ date: '2026-01-01', type: 2, categories })
   test('encodes only money and decodes to numeric calculation inputs').with([
-    [12.345, '12.35'], [-0.125, '-0.12'], [0.125, '0.13'], [1.005, '1.00'],
+    [12.345, '12.35'], [-0.125, '-0.12'], [0.125, '0.13'], [1.005, '1.01'],
     [0.1 + 0.2, '0.30'], [0, '0.00'], [-0, '0.00'], [-0.005, '0.00'],
   ]).run(async ({ assert }, [amount, expected]) => {
     const input = [category(amount)], before = globalThis.structuredClone(input)
