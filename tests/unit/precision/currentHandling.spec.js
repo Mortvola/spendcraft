@@ -4,7 +4,9 @@ import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
 import { addTransaction } from '../../../app/validation/Validators/transaction.ts'
 import { validateTransactionSplits } from '../../../app/validation/transactionSplits.ts'
-import { calculateFunding } from '../../../client-src/Funding/calculateFunding.ts'
+import { calculateFunding, computeSpread } from '../../../client-src/Funding/calculateFunding.ts'
+import { addMoneyCents, formatMoneyCents, parseMoneyCents } from '../../../common/moneyCents.ts'
+import { encodeTransferCategories } from '../../../client-src/monetary.ts'
 import parseEquation from '../../../client-src/EquationParser.ts'
 import { encodeFundingMetadata } from '../../../app/services/fundingAmountCodec.ts'
 import { encodeCategoryAllocations } from '../../../app/services/categoryAmountCodec.ts'
@@ -94,17 +96,37 @@ test.group('Current monetary handling without database', () => {
     assert.isNaN(parseEquation('0/0'))
     assert.throws(() => parseEquation('1.2.3'))
   })
-  test('funding calculations retain intermediate precision until canonical persistence encoding', ({ assert }) => {
-    const row = (baseAmount, from, includeFundingTransfers = false) => ({ baseAmount, includeFundingTransfers,
+  test('funding calculations retain exact cents through request and persistence encoding', ({ assert }) => {
+    const row = (baseAmount, from, includeFundingTransfers = false) => ({ baseAmountCents: parseMoneyCents(baseAmount), includeFundingTransfers,
       fundingCategories: [{ categoryId: from, amount: 100, percentage: true }] })
-    const rows = calculateFunding({ 10: row(0.1, 99, true), 20: row(0.2, 10) }, 99)
-    const transmitted = JSON.parse(JSON.stringify(rows))
-    assert.equal(transmitted[0].amount, 0.30000000000000004)
-    assert.equal(transmitted[0].baseAmount, 0.1)
+    const inputs = { 10: row('0.10', 99, true), 20: row('0.20', 10) }
+    const before = globalThis.structuredClone(inputs)
+    const rows = calculateFunding(inputs, 99)
+    assert.strictEqual(rows[0].amountCents, 30)
+    assert.strictEqual(rows[0].baseAmountCents, 10)
+    assert.strictEqual(addMoneyCents(...rows.map(row => row.amountCents)), 0)
+    assert.deepEqual(inputs, before)
+    const transmitted = JSON.parse(JSON.stringify(encodeTransferCategories(rows.map(({ amountCents, ...row }) => ({
+      ...row, amount: formatMoneyCents(amountCents),
+    })))))
+    assert.strictEqual(transmitted[0].amount, '0.30')
+    assert.strictEqual(transmitted[0].baseAmount, '0.10')
+    assert.strictEqual(transmitted[0].fundingCategories[0].amount, 100)
     const stored = encodeCategoryAllocations(encodeFundingMetadata(transmitted))
-    assert.equal(stored[0].amount, '0.30')
-    assert.equal(stored[0].baseAmount, '0.10')
-    assert.equal(stored[0].fundingCategories[0].amount, '100.00')
-    assert.equal(transmitted[0].amount, 0.30000000000000004)
+    assert.strictEqual(stored[0].amount, '0.30')
+    assert.strictEqual(stored[0].baseAmount, '0.10')
+    assert.strictEqual(stored[0].fundingCategories[0].amount, '100.00')
+    assert.strictEqual(rows[0].amountCents, 30)
+  })
+
+  test('percentage funding rounds to cents and assigns the residual to the last rule', ({ assert }) => {
+    const amountCents = parseMoneyCents('0.05')
+    const rules = [{ categoryId: 10, amount: 50, percentage: true },
+      { categoryId: 20, amount: 50, percentage: true }]
+    const before = globalThis.structuredClone(rules)
+    const spread = computeSpread(amountCents, rules)
+    assert.deepEqual([...spread], [[10, 3], [20, 2]])
+    assert.strictEqual(addMoneyCents(...spread.values()), amountCents)
+    assert.deepEqual(rules, before)
   })
 })
