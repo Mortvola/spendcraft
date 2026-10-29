@@ -1,4 +1,5 @@
-import { decodeAmount } from '../monetary';
+import { formatMoneyCents, type MoneyCents } from '../../common/moneyCents';
+import { decodeIncomeVsExpensesReport, type IncomeVsExpensesCentsRow } from '../monetary';
 import type { IncomeVsExpensesReportResponse } from '../../common/ResponseTypes';
 import Http from '@mortvola/http';
 import React, { useEffect, useState } from 'react';
@@ -6,7 +7,7 @@ import Chart from 'react-google-charts';
 
 const IncomeVsExpenses: React.FC = () => {
 
-  const [data, setData] = useState<(number | string)[][] | null>(null);
+  const [data, setData] = useState<IncomeVsExpensesCentsRow[] | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -15,13 +16,15 @@ const IncomeVsExpenses: React.FC = () => {
       if (response.ok) {
         const body = await response.body();
 
-        // Append the income/expense data to the end of each row of the table.
-        setData([['date', 'income', 'expenses', 'net'],
-          ...body.map(([month, income, expenses, net]) => [month, decodeAmount(income), decodeAmount(expenses), decodeAmount(net)]),
-        ]);
+        setData(decodeIncomeVsExpensesReport(body));
       }
     })();
   }, []);
+
+  const chartAmount = (cents: MoneyCents) => {
+    const formatted = formatMoneyCents(cents);
+    return { v: Number(formatted), f: formatted.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,') };
+  };
 
   return (
     <div className="chart-wrapper window window1">
@@ -30,7 +33,9 @@ const IncomeVsExpenses: React.FC = () => {
           ? (
             <Chart
               chartType="ComboChart"
-              data={data}
+              data={[['date', 'income', 'expenses', 'net'],
+                ...data.map(([month, ...amounts]) => [month, ...amounts.map(chartAmount)]),
+              ]}
               options={{
                 width: ('100%' as unknown) as number,
                 height: ('100%' as unknown) as number,
@@ -41,7 +46,7 @@ const IncomeVsExpenses: React.FC = () => {
                 },
                 seriesType: 'bars',
                 series: {
-                  [data[0].length - 2]: { type: 'line' },
+                  2: { type: 'line' },
                 },
                 focusTarget: 'datum',
               }}

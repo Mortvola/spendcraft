@@ -1,5 +1,5 @@
 import { addMoneyCents, formatMoneyCents, parseMoneyCents, subtractMoneyCents, type MoneyCents } from '../common/moneyCents.js';
-import type { CategoryReportRow, CategoryTransferProps, CategoryTransferRequest, DecimalMoneyString, FundingRuleResponse, FundingHistoryReportResponse, FundingHistoryReportRow, NetworthReportResponse, PayeeReportRow } from '../common/ResponseTypes.js';
+import type { CategoryReportRow, CategoryTransferProps, CategoryTransferRequest, DecimalMoneyString, FundingRuleResponse, FundingHistoryReportResponse, FundingHistoryReportRow, IncomeVsExpensesReportResponse, NetworthReportResponse, PayeeReportRow } from '../common/ResponseTypes.js';
 
 // Encode at the request boundary; client state and calculations remain numeric.
 export function encodeAmount(value: number): DecimalMoneyString {
@@ -98,6 +98,12 @@ export function fundingHistoryTotals(rows: readonly FundingHistoryCentsRow[]): F
     }
   }
   return totals;
+}
+
+export type IncomeVsExpensesCentsRow = [month: string, incomeCents: MoneyCents, expensesCents: MoneyCents, netCents: MoneyCents];
+
+export function decodeIncomeVsExpensesReport(rows: IncomeVsExpensesReportResponse): IncomeVsExpensesCentsRow[] {
+  return rows.map(([month, income, expenses, net]) => [month, parseMoneyCents(income), parseMoneyCents(expenses), parseMoneyCents(net)]);
 }
 
 export type CategoryCentsReportRow = Omit<CategoryReportRow, 'sum'> & { sumCents: MoneyCents };
