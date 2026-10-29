@@ -2,7 +2,7 @@ import { test } from '@japa/runner'
 import { BaseModel } from '@adonisjs/lucid/orm'
 import Category from '../../app/Models/Category.ts'
 import { encodeFundingRules, decodeFundingRules, encodeFundingMetadata,
-  decodeFundingMetadata } from '../../app/services/fundingAmountCodec.ts'
+  decodeFundingMetadata, serializeFundingMetadata } from '../../app/services/fundingAmountCodec.ts'
 import { consumeFundingStorage, requestFundingStorage, stageFundingStorage,
   prepareFundingStorage } from '../../app/services/fundingStorage.ts'
 import { bindResolvedCategoryStorage, prepareCategoryStorage, stageCategoryStorage,
@@ -11,7 +11,10 @@ import {
   validateCategoryConservation, encodeCategoryAllocations,
 } from '../../app/services/categoryAmountCodec.ts'
 import { updateCategoryTransfer } from '../../app/validation/Validators/categoryTransfer.ts'
-import { calculateFunding } from '../../client-src/Funding/calculateFunding.ts'
+import { calculateFunding, fundingCalculationInputs } from
+  '../../client-src/Funding/calculateFunding.ts'
+import { encodeTransferCategories } from '../../client-src/monetary.ts'
+import { formatMoneyCents } from '../../common/moneyCents.ts'
 import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
@@ -259,16 +262,28 @@ constraints', async ({ assert }) => {
   test(
     'actual funding functions preserve fixed, percentage, mixed and residual behavior after \
 roundtrip', ({ assert }) => {
-    for (const [base, rules] of [[1, [rule(100, true)]], [10, [rule(2), rule(100, true)]],
-      [0.01, [{ ...rule(50, true), categoryId: 98 }, rule(50, true)]], [-1, [rule(100, true)]]]) {
+    for (const [base, rules] of [['1.00', [rule(100, true)]],
+      ['10.00', [rule('2.00'), rule(100, true)]],
+      ['0.01', [{ ...rule(50, true), categoryId: 98 }, rule(50, true)]],
+      ['-1.00', [rule(100, true)]]]) {
       const inputs = { 10: { baseAmount: base, fundingCategories: rules,
         includeFundingTransfers: false } }
-      const before = calculateFunding(inputs, 99)
-      const decoded = decodeFundingMetadata(encodeFundingMetadata(before))
-      assert.deepEqual(calculateFunding({ 10: { ...decoded[0], includeFundingTransfers: false } },
-        99), before)
-      if (base === 0.01) {
-        assert.throws(() => validateCategoryConservation(2, before, undefined, 99),
+      const before = calculateFunding(fundingCalculationInputs(inputs), 99)
+      const submitted = encodeTransferCategories(before.map(({ amountCents, ...category }) => ({
+        ...category, amount: formatMoneyCents(amountCents),
+      })))
+      const stored = encodeFundingMetadata(submitted)
+      assert.equal(stored[0].baseAmount, base)
+      assert.isString(stored[0].fundingCategories[0].amount)
+      const decoded = decodeFundingMetadata(stored)
+      assert.strictEqual(decoded[0].baseAmount, Number(base))
+      assert.isNumber(decoded[0].fundingCategories[0].amount)
+      const response = serializeFundingMetadata(decoded)
+      assert.deepEqual(calculateFunding(fundingCalculationInputs({ 10: {
+        ...response[0], includeFundingTransfers: false,
+      } }), 99), before)
+      if (base === '0.01') {
+        assert.throws(() => validateCategoryConservation(2, submitted, undefined, 99),
           'Funding requires a Funding Pool allocation.')
         assert.throws(() => validateCategoryConservation(2, decoded, undefined, 99),
           'Funding requires a Funding Pool allocation.')
