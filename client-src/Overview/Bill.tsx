@@ -1,5 +1,6 @@
 import React from 'react';
 import Amount from '../Amount';
+import MoneyCentsAmount from '../MoneyCentsAmount';
 import Date from '../Date';
 import { BillInterface } from '../State/Types';
 import styles from './Bill.module.scss';
@@ -19,7 +20,7 @@ const Bill: React.FC<PropsType> = observer(({
     <>
       <div key={bill.category.id} className={styles.layout}>
         <div className={`${styles.name} ellipsis`} onClick={showCategoryDialog}>{bill.category.name}</div>
-        <Amount amount={bill.category.fundingAmount} />
+        <MoneyCentsAmount amount={bill.category.fundingAmountCents} />
         <Date date={bill.category.computedGoalDate()} />
         <Amount amount={bill.debits} noValue="" />
       </div>

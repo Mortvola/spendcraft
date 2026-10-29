@@ -1,5 +1,5 @@
-import { parseMoneyCents, addMoneyCents, type MoneyCents } from '../../common/moneyCents';
-import { decodeAmount, decodeFundingRules, encodeAmount, encodeFundingRules } from '../monetary';
+import { formatMoneyCents, parseMoneyCents, addMoneyCents, type MoneyCents } from '../../common/moneyCents';
+import { decodeCentFundingRules, encodeCentFundingRules, type CentFundingRule } from '../monetary';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import { DateTime } from 'luxon';
@@ -35,7 +35,7 @@ class Category implements CategoryInterface {
   @observable
   accessor suspended = false;
 
-  fundingAmount = 0;
+  fundingAmountCents = parseMoneyCents('0.00');
 
   includeFundingTransfers = true;
 
@@ -45,7 +45,7 @@ class Category implements CategoryInterface {
 
   recurrence = 1;
 
-  fundingCategories: { id: number, categoryId: number, amount: number, percentage: boolean }[];
+  fundingCategories: (CentFundingRule & { id: number })[];
 
   transactions: TransactionContainer;
 
@@ -67,12 +67,12 @@ class Category implements CategoryInterface {
     this.type = props.type;
     this.balanceCents = parseMoneyCents(props.balance);
     this.suspended = props.suspended;
-    this.fundingAmount = decodeAmount(props.fundingAmount);
+    this.fundingAmountCents = parseMoneyCents(props.fundingAmount);
     this.includeFundingTransfers = props.includeFundingTransfers;
     this.goalDate = props.goalDate ? DateTime.fromISO(props.goalDate) : null;
     this.useGoal = props.useGoal ?? false;
     this.recurrence = props.recurrence;
-    this.fundingCategories = decodeFundingRules(props.fundingCategories).map((c, index) => ({ id: index, ...c }));
+    this.fundingCategories = decodeCentFundingRules(props.fundingCategories).map((c, index) => ({ id: index, ...c }));
     this.hidden = props.hidden;
     this.store = store;
 
@@ -117,15 +117,15 @@ class Category implements CategoryInterface {
     params: CategoryParams,
   ): Promise<null | ErrorProps[]> {
     const {
-      group, goalDate, fundingCategories, ...p
+      group, goalDate, fundingCategories, fundingAmountCents, ...p
     } = params;
 
     const response = await Http.patch<CategoryWriteRequest, ApiResponse<UpdateCategoryResponse>>(`/api/v1/groups/${group.id}/categories/${this.id}`, {
       ...p,
-      fundingAmount: p.fundingAmount === undefined ? undefined : encodeAmount(p.fundingAmount),
+      fundingAmount: fundingAmountCents === undefined ? undefined : formatMoneyCents(fundingAmountCents),
       fundingCategories:
         p.type === CategoryType.Bill
-          ? encodeFundingRules(fundingCategories)
+          ? encodeCentFundingRules(fundingCategories)
           : [],
       goalDate: goalDate?.toISODate(),
     });
@@ -142,15 +142,15 @@ class Category implements CategoryInterface {
       }
     }
     else {
-      const fundingAmount = body.data ? decodeAmount(body.data.fundingAmount) : undefined;
-      const fundingCategories = body.data ? decodeFundingRules(body.data.fundingCategories) : undefined;
+      const fundingAmount = body.data ? parseMoneyCents(body.data.fundingAmount) : undefined;
+      const fundingCategories = body.data ? decodeCentFundingRules(body.data.fundingCategories) : undefined;
       runInAction(() => {
         if (body.data && fundingAmount !== undefined && fundingCategories !== undefined) {
           const nameChanged = this.name !== body.data.name;
           this.type = body.data.type;
           this.name = body.data.name;
           this.suspended = body.data.suspended;
-          this.fundingAmount = fundingAmount;
+          this.fundingAmountCents = fundingAmount;
           this.includeFundingTransfers = body.data.includeFundingTransfers;
           this.recurrence = body.data.recurrence;
           this.goalDate = DateTime.fromISO(body.data.goalDate);

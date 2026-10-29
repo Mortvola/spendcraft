@@ -51,6 +51,34 @@ export function decodeFundingRules<T extends FundingRuleResponse>(rules: readonl
   });
 }
 
+export type CentFundingRule = { id?: number; categoryId: number } & (
+  { percentage: true; amount: number } | { percentage: false; amountCents: MoneyCents }
+);
+
+export function decodeCentFundingRules(rules: readonly FundingRuleResponse[]): CentFundingRule[] {
+  return rules.map(({ amount, ...rule }) => {
+    if (rule.percentage === true) {
+      if (typeof amount !== 'number' || !Number.isFinite(amount)) throw new Error('Invalid percentage response');
+      return { ...rule, percentage: true, amount };
+    }
+    if (rule.percentage !== false) throw new Error('Invalid funding mode response');
+    return { ...rule, percentage: false, amountCents: parseMoneyCents(amount) };
+  });
+}
+
+export function encodeCentFundingRules(rules: readonly CentFundingRule[]): FundingRuleResponse[] {
+  return rules.map(rule => {
+    if (rule.percentage === true) {
+      const { amount, ...metadata } = rule;
+      if (!Number.isFinite(amount)) throw new Error('Invalid percentage request');
+      return { ...metadata, percentage: true, amount };
+    }
+    if (rule.percentage !== false) throw new Error('Invalid funding mode request');
+    const { amountCents, ...metadata } = rule;
+    return { ...metadata, percentage: false, amount: formatMoneyCents(amountCents) };
+  });
+}
+
 export function decodeNetworthReport(rows: NetworthReportResponse): (string | number)[][] {
   return rows.map((row, index) => row.map((cell, column) => index === 0 || column === 0 ? cell : decodeAmount(cell)));
 }

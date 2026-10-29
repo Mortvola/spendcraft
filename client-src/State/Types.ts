@@ -1,4 +1,4 @@
-import type { TransferCategoryInput } from '../monetary';
+import type { TransferCategoryInput, CentFundingRule } from '../monetary';
 import type { MoneyCents } from '../../common/moneyCents';
 import { DateTime } from 'luxon';
 import { PlaidLinkOnSuccessMetadata } from 'react-plaid-link';
@@ -212,7 +212,7 @@ export interface CategoryInterface {
 
   suspended: boolean;
 
-  fundingAmount: number;
+  fundingAmountCents: MoneyCents;
 
   includeFundingTransfers: boolean;
 
@@ -222,7 +222,7 @@ export interface CategoryInterface {
 
   recurrence: number;
 
-  fundingCategories: { id: number, categoryId: number, amount: number, percentage: boolean }[];
+  fundingCategories: (CentFundingRule & { id: number })[];
 
   transactions: TransactionContainerInterface;
 
@@ -610,14 +610,14 @@ export interface CategoryParams {
   type: CategoryType,
   name: string,
   suspended?: boolean,
-  fundingAmount?: number,
+  fundingAmountCents?: MoneyCents,
   includeFundingTransfers?: boolean,
   goalDate?: DateTime,
   recurrence?: number,
   categoryId?: number,
   group: GroupInterface,
   useGoal: boolean,
-  fundingCategories: { categoryId: number, amount: number, percentage: boolean }[],
+  fundingCategories: CentFundingRule[],
   hidden: boolean,
 }
 

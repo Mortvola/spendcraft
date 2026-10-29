@@ -19,7 +19,9 @@ import { CategoryInterface, GroupInterface } from '../../State/Types';
 import AmountInput from '../../AmountInput';
 import styles from './CategoryDialog.module.scss';
 import { CategoryType, GroupType } from '../../../common/ResponseTypes';
-import CategorySpread, { CategorySpreadEntry } from '../../CategorySpread/CategorySpread';
+import CategorySpread, { CategorySpreadInput } from '../../CategorySpread/CategorySpread';
+import { formatMoneyCents, parseMoneyCents } from '../../../common/moneyCents';
+import { inputMoneyCents, type CentFundingRule } from '../../monetary';
 import Select, { components, OptionProps } from 'react-select';
 
 interface Props {
@@ -52,7 +54,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
     recurrence: string,
     groupId: number,
     goalDate: string,
-    fundingCategories: CategorySpreadEntry[],
+    fundingCategories: CategorySpreadInput[],
     hidden: boolean,
   }
 
@@ -67,18 +69,25 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
       throw new Error(`group is not a group: ${selectedGroup}`);
     }
 
+    const fundingCategories: CentFundingRule[] = values.type === CategoryType.Bill ? values.fundingCategories.map(rule => {
+      const { amount, ...metadata } = rule;
+      return rule.percentage
+        ? { ...metadata, percentage: true, amount: Number(amount) }
+        : { ...metadata, percentage: false, amountCents: inputMoneyCents(amount) };
+    }) : [];
+
     if (category) {
       errors = await category.update({
         type: values.type,
         name: values.name,
         suspended: values.suspended,
-        fundingAmount: parseFloat(values.fundingAmount),
+        fundingAmountCents: inputMoneyCents(values.fundingAmount),
         includeFundingTransfers: values.includeFundingTransfers,
         group: selectedGroup,
         recurrence: parseInt(values.recurrence, 10),
         useGoal: values.type !== CategoryType.Regular,
         goalDate: DateTime.fromISO(values.goalDate),
-        fundingCategories: values.fundingCategories,
+        fundingCategories,
         hidden: values.hidden,
       });
     }
@@ -87,13 +96,13 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
         type: values.type,
         name: values.name,
         suspended: values.suspended,
-        fundingAmount: parseFloat(values.fundingAmount),
+        fundingAmountCents: inputMoneyCents(values.fundingAmount),
         includeFundingTransfers: values.includeFundingTransfers,
         group: selectedGroup,
         recurrence: parseInt(values.recurrence, 10),
         useGoal: values.type !== CategoryType.Regular,
         goalDate: DateTime.fromISO(values.goalDate),
-        fundingCategories: values.fundingCategories,
+        fundingCategories,
         hidden: values.hidden,
       });
     }
@@ -113,9 +122,14 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
       errors.name = 'The category name must not be blank.';
     }
 
+    try { inputMoneyCents(values.fundingAmount); }
+    catch { errors.fundingAmount = 'Enter a valid, safe funding amount.'; }
+
     if (values.type === CategoryType.Bill) {
       const issue = validateFundingPercentages(values.fundingCategories)
       if (issue) errors.fundingCategories = issue.message
+      try { values.fundingCategories.filter(rule => !rule.percentage).forEach(rule => inputMoneyCents(rule.amount)); }
+      catch { errors.fundingCategories = 'Enter valid, safe fixed-dollar funding amounts.'; }
     }
 
     return errors;
@@ -210,7 +224,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
     return '';
   }
 
-  const initialCategories = (categories?: { id: number, categoryId: number, amount: number, percentage: boolean}[]) => {
+  const initialCategories = (categories?: CentFundingRule[]) => {
     if (!categories || categories.length === 0) {
       return [{
         id: -1, categoryId: fundingPoolCat.id, amount: 100, percentage: true,
@@ -218,7 +232,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
     }
 
     return categories.map((c) => ({
-      id: c.id, categoryId: c.categoryId, amount: c.amount, percentage: c.percentage,
+      id: c.id, categoryId: c.categoryId, amount: c.percentage ? c.amount : formatMoneyCents(c.amountCents), percentage: c.percentage,
     }))
   }
 
@@ -230,7 +244,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
         name: category && category.name ? category.name : '',
         groupId: category?.group?.id ?? categoryTree.budget.id,
         suspended: category?.suspended ?? false,
-        fundingAmount: category?.fundingAmount.toString() ?? '0',
+        fundingAmount: formatMoneyCents(category?.fundingAmountCents ?? parseMoneyCents('0.00')),
         includeFundingTransfers: category?.includeFundingTransfers ?? true,
         recurrence: category?.recurrence.toString() ?? '1',
         goalDate: getGoalDate(category?.goalDate, category?.recurrence),
@@ -327,8 +341,9 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
                     type="text"
                     className="form-control"
                     name="fundingAmount"
-                    as={AmountInput}
-                  />
+                  >
+                    {({ field }: FieldProps<string>) => <AmountInput exactCents {...field} className="form-control" />}
+                  </Field>
                   <FormError name="fundingAmount" />
                 </label>
               </div>
@@ -371,6 +386,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
                   ? (
                     <>
                       <CategorySpread
+                        centAmounts
                         name="fundingCategories"
                         categories={formikProps.values.fundingCategories}
                         title="Funded from:"

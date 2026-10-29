@@ -447,7 +447,7 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.throws(() => f.store.categoryTree.updateBalances([{ id: 20, balance: '1.00' }, { id: 21, balance: 'bad' }]))
     assert.strictEqual(f.category.balanceCents, 10)
     assert.strictEqual(f.other.balanceCents, 20)
-    assert.strictEqual(f.category.fundingAmount, 0)
+    assert.strictEqual(f.category.fundingAmountCents, 0)
     f.category.updateBalance({ id: 20, balance: '90071992547409.91' })
     assert.strictEqual(f.category.balanceCents, Number.MAX_SAFE_INTEGER)
     assert.throws(() => f.category.getTotalBalanceCents(), 'Unsafe monetary cents')
@@ -500,37 +500,42 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.strictEqual(f.category.balanceCents, 0)
   })
 
-  test('Category CREATE/PATCH encode money while keeping percentages and model values numeric').with(['create', 'patch'])
-    .run(async ({ assert }, operation) => {
+  test('Category CREATE/PATCH format cents while keeping percentages numeric').with([
+    { operation: 'create', fundingAmountCents: 1235, expected: '12.35' },
+    { operation: 'patch', fundingAmountCents: 1235, expected: '12.35' },
+    { operation: 'create', fundingAmountCents: Number.MAX_SAFE_INTEGER, expected: '90071992547409.91' },
+    { operation: 'patch', fundingAmountCents: Number.MAX_SAFE_INTEGER, expected: '90071992547409.91' },
+  ]).run(async ({ assert }, { operation, fundingAmountCents, expected }) => {
       const group = f.category.group
-      const rules = [{ categoryId: 20, amount: -0.125, percentage: false },
+      const rules = [{ categoryId: 20, amountCents: -12, percentage: false },
         { categoryId: 20, amount: 12.75, percentage: true }, { categoryId: 21, amount: 87.25, percentage: true }]
       const path = `/api/v1/groups/${group.id}/categories${operation === 'patch' ? '/20' : ''}`
       routes.set(`${operation === 'patch' ? 'patch' : 'post'} ${path}`, async payload => {
-        assert.strictEqual(payload.fundingAmount, '12.35')
+        assert.strictEqual(payload.fundingAmount, expected)
+        assert.notProperty(payload, 'fundingAmountCents')
         assert.deepEqual(payload.fundingCategories, [{ categoryId: 20, amount: '-0.12', percentage: false },
           { categoryId: 20, amount: 12.75, percentage: true }, { categoryId: 21, amount: 87.25, percentage: true }])
         return { body: { data: { id: operation === 'patch' ? 20 : 25, groupId: group.id, name: 'Bill', type: state.CategoryType.Bill,
-          balance: '0.00', fundingAmount: '12.35', fundingCategories: payload.fundingCategories, goalDate: null,
+          balance: '0.00', fundingAmount: expected, fundingCategories: payload.fundingCategories, goalDate: null,
           useGoal: false, includeFundingTransfers: false, recurrence: 1, hidden: false, suspended: false } } }
       })
-      const input = { group, name: 'Bill', type: state.CategoryType.Bill, fundingAmount: 12.345,
+      const input = { group, name: 'Bill', type: state.CategoryType.Bill, fundingAmountCents,
         useGoal: false, hidden: false, fundingCategories: rules }
       if (operation === 'patch') await f.category.update(input)
       else await group.addCategory(input)
       const category = operation === 'patch' ? f.category : group.children.find(row => row.id === 25)
-      assert.strictEqual(category.fundingAmount, 12.35)
-      assert.deepEqual(category.fundingCategories.map(rule => rule.amount), [-0.12, 12.75, 87.25])
-      assert.strictEqual(rules[0].amount, -0.125)
+      assert.strictEqual(category.fundingAmountCents, fundingAmountCents)
+      assert.deepEqual(category.fundingCategories.map(rule => rule.percentage ? rule.amount : rule.amountCents), [-12, 12.75, 87.25])
+      assert.strictEqual(rules[0].amountCents, -12)
     })
 
-  test('funding metadata becomes numeric client state without changing requests or percentages', ({ assert }) => {
+  test('Category funding configuration uses cents while Transaction funding calculation metadata stays numeric', ({ assert }) => {
     const category = new state.Category({ ...({ id: 25, groupId: -1, name: "Funding", type: state.CategoryType.Regular, balance: "0.00", suspended: false, includeFundingTransfers: true, recurrence: 1, hidden: false }), fundingAmount: '12.50',
       fundingCategories: [{ categoryId: 20, amount: '-0.12', percentage: false },
         { categoryId: 21, amount: 12.75, percentage: true }],
     }, f.store)
-    assert.strictEqual(category.fundingAmount, 12.5)
-    assert.deepEqual(category.fundingCategories.map((row) => row.amount), [-0.12, 12.75])
+    assert.strictEqual(category.fundingAmountCents, 1250)
+    assert.deepEqual(category.fundingCategories.map((row) => row.percentage ? row.amount : row.amountCents), [-12, 12.75])
     const transaction = new state.Transaction(f.store, { ...f.transactionProps(), categories: [
       { categoryId: 20, amount: '1.00', baseAmount: '0.30',
         fundingCategories: [{ categoryId: 21, amount: '2.50', percentage: false },

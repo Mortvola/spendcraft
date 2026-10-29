@@ -1,5 +1,5 @@
-import { parseMoneyCents, addMoneyCents, type MoneyCents } from '../../common/moneyCents';
-import { encodeAmount, encodeFundingRules } from '../monetary';
+import { formatMoneyCents, parseMoneyCents, addMoneyCents, type MoneyCents } from '../../common/moneyCents';
+import { encodeCentFundingRules } from '../monetary';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import Category, { isCategory } from './Category';
@@ -103,15 +103,15 @@ class Group implements GroupInterface {
   async addCategory(params: CategoryParams): Promise<null| ErrorProps[]> {
     const {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      group, fundingCategories, goalDate, ...p
+      group, fundingCategories, goalDate, fundingAmountCents, ...p
     } = params;
 
     const response = await Http.post<CategoryCreateRequest, ApiResponse<CategoryProps>>(`/api/v1/groups/${this.id}/categories`, {
       ...p,
-      fundingAmount: p.fundingAmount === undefined ? undefined : encodeAmount(p.fundingAmount),
+      fundingAmount: fundingAmountCents === undefined ? undefined : formatMoneyCents(fundingAmountCents),
       fundingCategories:
       p.type === CategoryType.Bill
-        ? encodeFundingRules(fundingCategories)
+        ? encodeCentFundingRules(fundingCategories)
         : [],
       groupId: this.id,
       goalDate: goalDate?.toISODate(),
