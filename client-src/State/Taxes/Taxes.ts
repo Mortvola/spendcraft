@@ -62,10 +62,6 @@ export default class Taxes implements TaxesInterface {
     return amount < 0 ? parseMoneyCents("0.00") : amount;
   }
 
-  getTaxableIncome(period: number) {
-    return Number(formatMoneyCents(this.getTaxableIncomeCents(period)));
-  }
-
   constructor() {
     this.income = new Income(this);
 

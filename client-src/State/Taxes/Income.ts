@@ -8,8 +8,6 @@ import { getCurrentPeriod } from "./Estimated";
 class Income {
   get qualifiedDividends() { return Number(formatMoneyCents(this.qualifiedDividendsCents)); }
 
-  get longTermCapitalGains() { return Number(formatMoneyCents(this.longTermCapitalGainsCents)); }
-
   @observable
   accessor taxableInterestCents: MoneyCents = parseMoneyCents("0.00");
 

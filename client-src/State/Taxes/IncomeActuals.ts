@@ -4,8 +4,6 @@ import { observable } from "mobx";
 class IncomeActuals {
   get estimatedTaxPayments() { return Number(formatMoneyCents(this.estimatedTaxPaymentsCents)); }
 
-  get longTermCapitalGains() { return Number(formatMoneyCents(this.longTermCapitalGainsCents)); }
-
   @observable
   accessor taxableInterestCents: MoneyCents = parseMoneyCents("0.00");
 
