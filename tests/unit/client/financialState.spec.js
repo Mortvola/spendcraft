@@ -779,15 +779,35 @@ export * from ${source('common/ResponseTypes.ts')};
       assert.lengthOf(f.store.autoAssignments.autoAssignemnts, 1)
     })
 
-  test('bill debit strings become numeric client values and preserve null', ({ assert }) => {
-    for (const [debits, expected] of [['-12.50', -12.5], ['0.00', 0], ['0.30', 0.3], [null, null]]) {
+  test('bill debit strings retain exact cents and preserve null', ({ assert }) => {
+    for (const [debits, expected] of [['-12.50', -1250], ['0.00', 0], ['0.30', 30], ['0.01', 1], ['90071992547409.91', Number.MAX_SAFE_INTEGER], ['-90071992547409.91', -Number.MAX_SAFE_INTEGER], [null, null]]) {
       const bill = new state.Bill({ id: 20, debits }, f.category)
-      assert.strictEqual(bill.debits, expected)
+      assert.strictEqual(bill.debitsCents, expected)
       assert.strictEqual(bill.category, f.category)
     }
     for (const debits of [1, undefined, '', '1.2', '-0.00', 'Infinity', '90071992547409.92']) {
       assert.throws(() => new state.Bill({ id: 20, debits }, f.category))
     }
+  })
+
+  test('Overview bill reloads decode cents before replacing cached bills', async ({ assert }) => {
+    const response = [{ id: 20, debits: '-0.30' }]
+    routes.set('get /api/v1/bills', async () => ({ body: response }))
+    await f.store.overview.load()
+    assert.strictEqual(f.store.overview.bills[0].debitsCents, -30)
+    assert.strictEqual(f.store.overview.bills[0].category, f.category)
+    assert.strictEqual(response[0].debits, '-0.30')
+    assert.isTrue(f.store.overview.initialized)
+    routes.set('get /api/v1/bills', async () => ({ body: [{ id: 20, debits: '0.10' }] }))
+    await f.store.overview.load()
+    assert.strictEqual(f.store.overview.bills[0].debitsCents, 10)
+    routes.set('get /api/v1/bills', async () => ({ body: [{ id: 20, debits: '0.20' }, { id: 20, debits: '1.2' }] }))
+    await assert.rejects(() => f.store.overview.load())
+    assert.lengthOf(f.store.overview.bills, 1)
+    assert.strictEqual(f.store.overview.bills[0].debitsCents, 10)
+    routes.set('get /api/v1/bills', async () => ({ body: [{ id: 20, debits: null }] }))
+    await f.store.overview.load()
+    assert.isNull(f.store.overview.bills[0].debitsCents)
   })
 
   test('Category balance strings decode before updating cached balances', ({ assert }) => {

@@ -1,15 +1,15 @@
-import { decodeAmount } from '../monetary';
+import { parseMoneyCents, type MoneyCents } from '../../common/moneyCents';
 import { BillProps } from '../../common/ResponseTypes';
 import { BillInterface, CategoryInterface } from './Types';
 
 class Bill implements BillInterface {
-  debits: number | null;
+  debitsCents: MoneyCents | null;
 
   category: CategoryInterface;
 
   constructor(props: BillProps, category: CategoryInterface) {
     this.category = category;
-    this.debits = props.debits === null ? null : decodeAmount(props.debits);
+    this.debitsCents = props.debits === null ? null : parseMoneyCents(props.debits);
   }
 }
 

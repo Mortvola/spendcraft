@@ -345,3 +345,23 @@ test('bills endpoint encodes debit totals and preserves null without changing ag
   assert.deepEqual(Array.from(response, bill => bill.debits), ['-12.50', '0.00', '-0.12', '0.30', null])
   assert.deepEqual(bills.map(bill => bill.$extras.debits), totals)
 })
+
+
+test('Overview bill displays exact debit cents and leaves null blank', async ({ assert }) => {
+  const MoneyCentsAmount = ({ amount }) => React.createElement('div', { className: 'dollar-amount' }, formatMoneyCents(amount))
+  const Bill = runInNewContext(await expression('client-src/Overview/Bill.tsx', 'Bill'), {
+    React, observer: component => component, MoneyCentsAmount,
+    Date: () => null, styles: {},
+    useCategoryDialog: () => [() => null, () => undefined],
+  })
+  const category = { id: 20, name: 'Bill', fundingAmountCents: parseMoneyCents('12.50'), computedGoalDate: () => null }
+  for (const [debitsCents, expected] of [[30, '0.30'], [-1250, '-12.50'], [0, '0.00'],
+    [Number.MAX_SAFE_INTEGER, '90071992547409.91']]) {
+    const html = renderToStaticMarkup(React.createElement(Bill, { bill: { category, debitsCents } }))
+    assert.include(html, `>${expected}</div>`)
+    assert.include(html, '>12.50</div>')
+  }
+  const html = renderToStaticMarkup(React.createElement(Bill, { bill: { category, debitsCents: null } }))
+  assert.include(html, '<div class="dollar-amount"></div>')
+  assert.notInclude(html, '>0.00</div>')
+})

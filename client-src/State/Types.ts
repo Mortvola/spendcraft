@@ -736,7 +736,7 @@ export interface WebhookLogInterface {
 export type BillsResponse = BillProps[]
 
 export interface BillInterface {
-  debits: number | null;
+  debitsCents: MoneyCents | null;
 
   category: CategoryInterface;
 }
