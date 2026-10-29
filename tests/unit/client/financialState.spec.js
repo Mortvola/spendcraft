@@ -617,8 +617,17 @@ export * from ${source('common/ResponseTypes.ts')};
     const payee = [{ rowNumber: '1', name: 'Shop', paymentChannel: 'online', sum: '-12.50', count: 3 }]
     routes.set('get /api/v1/reports/payee', async () => ({ body: payee }))
     await f.store.reports.loadReport('payee')
-    assert.deepEqual(f.store.reports.data, [{ ...payee[0], sum: -12.5 }])
+    assert.deepEqual(f.store.reports.data, [{ rowNumber: '1', name: 'Shop', paymentChannel: 'online', sumCents: -1250, count: 3 }])
     assert.strictEqual(payee[0].sum, '-12.50')
+    routes.set('get /api/v1/reports/payee', async () => ({ body: [{ ...payee[0], sum: '90071992547409.91' }] }))
+    await f.store.reports.loadReport('payee')
+    assert.strictEqual(f.store.reports.data[0].sumCents, Number.MAX_SAFE_INTEGER)
+    routes.set('get /api/v1/reports/payee', async () => ({ body: [{ ...payee[0], sum: '1.2' }] }))
+    await assert.rejects(() => f.store.reports.loadReport('payee'))
+    assert.strictEqual(f.store.reports.data[0].sumCents, Number.MAX_SAFE_INTEGER)
+    routes.set('get /api/v1/reports/payee', async () => ({ body: [] }))
+    await f.store.reports.loadReport('payee')
+    assert.deepEqual(f.store.reports.data, [])
   })
 
   test('Transaction principal strings decode into cents and preserve null', ({ assert }) => {

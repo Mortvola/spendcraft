@@ -1,29 +1,20 @@
-import { decodeAmount } from '../monetary';
+import { decodePayeeReport, type PayeeCentsReportRow } from '../monetary';
 import React from 'react';
 import { Formik, FieldArray, FormikState } from 'formik';
 import { DateTime } from 'luxon';
 import { DropdownButton } from 'react-bootstrap';
 import { FormCheckbox, FormField, SubmitButton } from '@mortvola/forms';
 import Http from '@mortvola/http';
-import Amount from '../Amount';
+import MoneyCentsAmount from '../MoneyCentsAmount';
 import { useStores } from '../State/Store';
 import useSortableTable from './SortableTable';
 import ReportControls from './ReportControls';
 import styles from './Payee.module.scss';
 import { TrackingType, type PayeeReportRow } from '../../common/ResponseTypes';
 
-interface PayeeReport {
-  [key: string]: string | number,
-  rowNumber: string,
-  name: string,
-  sum: number,
-  paymentChannel: string,
-  count: number,
-}
-
 const Payee: React.FC = () => {
   const { accounts } = useStores();
-  const { setData, SortableTable } = useSortableTable<PayeeReport>(['name', 'paymentChannel', 'sum', 'count']);
+  const { setData, SortableTable } = useSortableTable<PayeeCentsReportRow>(['name', 'paymentChannel', 'sumCents', 'count']);
 
   interface FormValues {
     startDate: string,
@@ -73,7 +64,7 @@ const Payee: React.FC = () => {
       )
 
       if (isPayeeReport(body)) {
-        setData(body.map((row) => ({ ...row, sum: decodeAmount(row.sum) })));
+        setData(decodePayeeReport(body));
       }
     }
   }
@@ -160,7 +151,7 @@ const Payee: React.FC = () => {
           <SortableTable.Column column="paymentChannel">
             Payment Channel
           </SortableTable.Column>
-          <SortableTable.Column className="dollar-amount" column="sum">
+          <SortableTable.Column className="dollar-amount" column="sumCents">
             Amount
           </SortableTable.Column>
           <SortableTable.Column style={{ textAlign: 'right' }} column="count">
@@ -174,7 +165,7 @@ const Payee: React.FC = () => {
               <div key={d.rowNumber} className={styles.reportItem}>
                 <div className="ellipsis">{d.name}</div>
                 <div>{d.paymentChannel}</div>
-                <Amount amount={d.sum} />
+                <MoneyCentsAmount amount={d.sumCents} />
                 <div style={{ textAlign: 'right' }}>{d.count}</div>
               </div>
             )

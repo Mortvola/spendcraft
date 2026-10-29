@@ -1,5 +1,5 @@
 import { addMoneyCents, formatMoneyCents, parseMoneyCents, subtractMoneyCents, type MoneyCents } from '../common/moneyCents.js';
-import type { CategoryTransferProps, CategoryTransferRequest, DecimalMoneyString, FundingRuleResponse, NetworthReportResponse } from '../common/ResponseTypes.js';
+import type { CategoryTransferProps, CategoryTransferRequest, DecimalMoneyString, FundingRuleResponse, NetworthReportResponse, PayeeReportRow } from '../common/ResponseTypes.js';
 
 // Encode at the request boundary; client state and calculations remain numeric.
 export function encodeAmount(value: number): DecimalMoneyString {
@@ -77,6 +77,12 @@ export function encodeCentFundingRules(rules: readonly CentFundingRule[]): Fundi
     const { amountCents, ...metadata } = rule;
     return { ...metadata, percentage: false, amount: formatMoneyCents(amountCents) };
   });
+}
+
+export type PayeeCentsReportRow = Omit<PayeeReportRow, 'sum'> & { sumCents: MoneyCents };
+
+export function decodePayeeReport(rows: readonly PayeeReportRow[]): PayeeCentsReportRow[] {
+  return rows.map(({ sum, ...row }) => ({ ...row, sumCents: parseMoneyCents(sum) }));
 }
 
 export type NetworthCentsReport = (string | MoneyCents)[][];
