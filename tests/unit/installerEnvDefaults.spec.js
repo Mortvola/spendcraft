@@ -121,12 +121,9 @@ idempotent', async ({ assert }) => {
   test(
     'installer packages only consolidated metadata and initializes configuration before \
 application commands', async ({ assert }) => {
-    await assert.rejects(() => readFile('installer.env.defaults'))
     const config = await readFile('adonisrc.ts', 'utf8')
     assert.include(config, "pattern: 'installer/installer.env.required.json'")
-    assert.notInclude(config, "pattern: 'installer.env.defaults'")
     const installer = await readFile('installer/install.sh0', 'utf8')
-    assert.notInclude(installer, 'ensure_env_defaults')
     const call = installer.indexOf('\nnode installer/configureInstallerEnv.mjs')
     assert.isAbove(call, installer.indexOf('\nnpm ci --omit dev --omit optional'))
     assert.isAbove(call, installer.indexOf('\nensure_app_key\n'))

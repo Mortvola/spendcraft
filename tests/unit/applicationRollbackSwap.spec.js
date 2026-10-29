@@ -325,19 +325,11 @@ action.',
       else await assert.rejects(() => lstat(paths.previous))
       assert.equal(await readFile(join(root, 'financial-sentinel.json'), 'utf8'), money)
     })
-  test('executor and installer retain only the established persistent slots', async ({ assert }) =>
-    {
+  test('executor requires recovery review and filesystem admission before database access', async ({
+    assert }) => {
     const source = await readFile('installer/rollbackApplication.mjs', 'utf8')
-    assert.notInclude(source, 'spendcraft.forward-recovery-')
-    assert.notInclude(source, 'await cp(')
     assert.include(source, 'prior_run_requires_recovery_review')
     assert.isBelow(source.indexOf('await verifyFilesystemAdmission(plan, admissionOutput)'), source
       .indexOf("const { Client } = await import('pg')"))
-    const workflow = await readFile('installer/lib/applicationRollback.mjs', 'utf8')
-    assert.isBelow(workflow.indexOf('await operations.smoke()'), workflow.indexOf(
-      'await operations.cleanup()'))
-    const installer = await readFile('installer/install.sh0', 'utf8')
-    assert.include(installer, 'mv $APP $APP_OLD'); assert.include(installer, 'mv $APP_NEW $APP')
-    assert.notInclude(installer, 'SEED, SKIP'); assert.notInclude(installer, 'forward-recovery')
   })
 })

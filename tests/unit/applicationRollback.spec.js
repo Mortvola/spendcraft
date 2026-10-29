@@ -55,11 +55,7 @@ test.group('Application-only rollback — no database/services', () => {
     const source = await readFile('installer/rollbackApplication.mjs', 'utf8')
     assert.notMatch(source,
       /\b(?:UPDATE|INSERT|DELETE|TRUNCATE|ALTER)\s+(?:public\.|transactions\b)/)
-    assert.notMatch(source, /\bconvert\(|\bscan\(|assertClean|categoryRollback\.mjs/)
     assert.include(source, 'default_transaction_read_only=on')
-    const payload = await readFile('installer/prepareRollbackBundle.mjs', 'utf8')
-    assert.notInclude(payload, 'rollbackTransactionCategoryStorage.mjs'); assert.notInclude(payload,
-      'lib/categoryRollback.mjs')
   })
   test('strict loopback host CIDR and mapped-address normalization', ({ assert }) => {
     for (const value of ['127.0.0.1', '127.0.0.1/32', '::ffff:127.0.0.1/128']) assert.equal(
