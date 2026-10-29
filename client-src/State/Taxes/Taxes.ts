@@ -9,7 +9,7 @@ import Worksheet2_1 from "./Worksheet2_1";
 import Worksheet2_9 from "./Worksheet2_9";
 import { getCurrentPeriod } from "./Estimated";
 
-interface TaxBracketEntry { tax: number, amount: number }
+interface TaxBracketEntry { tax: number, amountCents: MoneyCents }
 
 export interface TaxResults {
   brackets: [number, { amountCents: MoneyCents; taxCents: MoneyCents }][],
@@ -272,12 +272,12 @@ export default class Taxes implements TaxesInterface {
 
         if (!record) {
           // Create the entry in the map with zero starting values.
-          record = { tax: 0, amount: 0 }
+          record = { tax: 0, amountCents: parseMoneyCents("0.00") }
           taxMap.set(taxBrackets[i].rate, record)
         }
 
         // Update the map entry by adding in the new amount and tax
-        record.amount += amount
+        record.amountCents = addMoneyCents(record.amountCents, amountCents)
         record.tax += tax
       }
     
@@ -320,32 +320,33 @@ export default class Taxes implements TaxesInterface {
     const sortedEntries = [...taxMap.entries()].sort((a, b) => (a[0] - b[0]))
 
     let totalTaxes = 0
-    let totalTaxedAmount = 0
-    let totalIncome = 0
+    let totalTaxedAmountCents = parseMoneyCents("0.00");
+    let totalIncomeCents = parseMoneyCents("0.00");
     let marginalTaxRate = 0
 
     for (const [rate, record] of sortedEntries) {
       totalTaxes += record.tax
 
       if (record.tax > 0) {
-        totalTaxedAmount += record.amount
+        totalTaxedAmountCents = addMoneyCents(totalTaxedAmountCents, record.amountCents);
       }
 
-      totalIncome += record.amount
+      totalIncomeCents = addMoneyCents(totalIncomeCents, record.amountCents);
 
       if (record.tax > 0) {
         marginalTaxRate = rate
       }
     }
 
-    const effectiveTaxRate = totalIncome == 0 ? 0 : totalTaxes / totalIncome * 100.0;
+    // Dollar conversion is only for the dimensionless effective-rate calculation.
+    const effectiveTaxRate = totalIncomeCents === 0 ? 0 : totalTaxes / Number(formatMoneyCents(totalIncomeCents)) * 100.0;
 
     return {
       brackets: sortedEntries.map(([rate, entry]) => [rate, {
-        amountCents: taxResultCents(entry.amount),
+        amountCents: entry.amountCents,
         taxCents: taxResultCents(entry.tax),
       }]),
-      totalTaxedAmountCents: taxResultCents(totalTaxedAmount),
+      totalTaxedAmountCents,
       totalTaxesCents: taxResultCents(totalTaxes),
       marginalTaxRate,
       effectiveTaxRate,
@@ -377,7 +378,7 @@ export default class Taxes implements TaxesInterface {
     const line9 = line9Difference > 0 ? line9Difference : zero;
 
     if (line9 > 0) {
-      taxBrackets.set(0, { amount: Number(formatMoneyCents(line9)), tax: 0 });
+      taxBrackets.set(0, { amountCents: line9, tax: 0 });
     }
 
     // Compute 15% taxes
@@ -395,7 +396,7 @@ export default class Taxes implements TaxesInterface {
     if (line17 > 0) {
       const amount = Number(formatMoneyCents(line17));
       line18 = amount * 0.15;
-      taxBrackets.set(15, { amount, tax: line18 });
+      taxBrackets.set(15, { amountCents: line17, tax: line18 });
     }
 
     // Compute 20% taxes
@@ -407,7 +408,7 @@ export default class Taxes implements TaxesInterface {
     if (line20 > 0) {
       const amount = Number(formatMoneyCents(line20));
       line21 = amount * 0.20;
-      taxBrackets.set(20, { amount, tax: line21 });
+      taxBrackets.set(20, { amountCents: line20, tax: line21 });
     }
 
     // Compute regular tax rate

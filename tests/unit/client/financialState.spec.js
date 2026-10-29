@@ -901,10 +901,10 @@ export * from ${source('common/ResponseTypes.ts')};
       assert.isTrue(brackets.every(bracket => Number.isSafeInteger(bracket.startAmountCents)))
       const map = new Map()
       assert.strictEqual(taxes.computeOrdinaryTax(parseMoneyCents(income), map), expected)
-      assert.deepEqual([...map], [[10, { amount: Number(income), tax: expected }]])
+      assert.deepEqual([...map], [[10, { amountCents: parseMoneyCents(income), tax: expected }]])
       const above = new Map()
       assert.strictEqual(taxes.computeOrdinaryTax(parseMoneyCents(income) + 1, above), expected + 0.01 * 0.12)
-      assert.strictEqual(above.get(12).amount, 0.01)
+      assert.strictEqual(above.get(12).amountCents, 1)
       assert.strictEqual(above.get(12).tax, 0.0012)
     }
     state.runInAction(() => { taxes.filingStatus = state.FilingStatus.Single })
@@ -981,7 +981,7 @@ export * from ${source('common/ResponseTypes.ts')};
 
   test('Tax result outputs round only after raw bracket totals and rates are calculated', ({ assert }) => {
     const printTaxes = f.store.taxes.constructor.printTaxes
-    const brackets = new Map([[10, { tax: 0.005, amount: 0.1 }], [20, { tax: 0.005, amount: 0.2 }]])
+    const brackets = new Map([[10, { tax: 0.005, amountCents: 10 }], [20, { tax: 0.005, amountCents: 20 }]])
     const before = globalThis.structuredClone([...brackets])
     const result = printTaxes(brackets)
     assert.deepEqual(result.brackets, [[10, { taxCents: 1, amountCents: 10 }], [20, { taxCents: 1, amountCents: 20 }]])
@@ -989,12 +989,31 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.strictEqual(result.totalTaxesCents, 1)
     assert.strictEqual(result.totalTaxedAmountCents, 30)
     assert.strictEqual(result.marginalTaxRate, 20)
-    assert.strictEqual(result.effectiveTaxRate, (0.005 + 0.005) / (0.1 + 0.2) * 100)
+    assert.strictEqual(result.effectiveTaxRate, (0.005 + 0.005) / 0.3 * 100)
     assert.deepEqual([...brackets], before)
     assert.deepEqual(printTaxes(new Map()), { brackets: [], totalTaxesCents: 0, totalTaxedAmountCents: 0,
       marginalTaxRate: 0, effectiveTaxRate: 0 })
-    assert.throws(() => printTaxes(new Map([[10, { tax: Infinity, amount: 1 }]])))
-    assert.throws(() => printTaxes(new Map([[10, { tax: 1, amount: Number.MAX_SAFE_INTEGER }]])))
+    assert.throws(() => printTaxes(new Map([[10, { tax: Infinity, amountCents: 100 }]])))
+    assert.throws(() => printTaxes(new Map([[10, { tax: 1, amountCents: Number.MAX_SAFE_INTEGER + 1 }]])))
+  })
+
+  test('taxable summary amounts preserve exact cents and reject overflow', ({ assert }) => {
+    const printTaxes = f.store.taxes.constructor.printTaxes
+    const brackets = new Map([[0, { tax: 0, amountCents: 10 }],
+      [15, { tax: 0.003, amountCents: 2 }], [20, { tax: 0.004, amountCents: 2 }]])
+    const before = globalThis.structuredClone([...brackets])
+    const result = printTaxes(brackets)
+    assert.strictEqual(result.totalTaxedAmountCents, 4)
+    assert.strictEqual(result.totalTaxesCents, 1)
+    assert.strictEqual(result.effectiveTaxRate, (0.003 + 0.004) / 0.14 * 100)
+    assert.deepEqual(result.brackets.map(([rate, entry]) => [rate, entry.amountCents]), [[0, 10], [15, 2], [20, 2]])
+    assert.deepEqual([...brackets], before)
+    assert.strictEqual(printTaxes(new Map([[0, { tax: 0, amountCents: Number.MAX_SAFE_INTEGER }]])).brackets[0][1].amountCents, Number.MAX_SAFE_INTEGER)
+    assert.throws(() => printTaxes(new Map([[10, { tax: 1, amountCents: Number.MAX_SAFE_INTEGER }],
+      [20, { tax: 1, amountCents: 1 }]])))
+    for (const amountCents of [NaN, Infinity, 0.1]) {
+      assert.throws(() => printTaxes(new Map([[0, { tax: 0, amountCents }]])))
+    }
   })
 
   test('auto-assignment load, CREATE and PATCH decode fixed dollars and encode fixed-dollar requests').with([
