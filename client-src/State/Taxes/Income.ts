@@ -1,3 +1,4 @@
+import { addMoneyCents, formatMoneyCents, parseMoneyCents, type MoneyCents } from "../../../common/moneyCents";
 import { observable } from "mobx";
 import { FilingStatus } from "../../../common/ResponseTypes";
 import { TaxesInterface } from "./Types";
@@ -5,32 +6,36 @@ import IncomeActuals from "./IncomeActuals";
 import { getCurrentPeriod } from "./Estimated";
 
 class Income {
-  @observable
-  accessor taxableInterest = 0;
+  get qualifiedDividends() { return Number(formatMoneyCents(this.qualifiedDividendsCents)); }
+
+  get longTermCapitalGains() { return Number(formatMoneyCents(this.longTermCapitalGainsCents)); }
 
   @observable
-  accessor taxablePensionAndAnnuities = 0;
+  accessor taxableInterestCents: MoneyCents = parseMoneyCents("0.00");
+
+  @observable
+  accessor taxablePensionAndAnnuitiesCents: MoneyCents = parseMoneyCents("0.00");
   
   @observable
-  accessor taxableSocialSecurityBenefits = 0;
+  accessor taxableSocialSecurityBenefitsCents: MoneyCents = parseMoneyCents("0.00");
 
   @observable
-  accessor additionalTaxableIncome = 0;
+  accessor additionalTaxableIncomeCents: MoneyCents = parseMoneyCents("0.00");
 
   @observable
-  accessor taxableIraDistributions = 0;
+  accessor taxableIraDistributionsCents: MoneyCents = parseMoneyCents("0.00");
 
   @observable
-  accessor qualifiedDividends = 0;
+  accessor qualifiedDividendsCents: MoneyCents = parseMoneyCents("0.00");
 
   @observable
-  accessor ordinaryDividends = 0;
+  accessor ordinaryDividendsCents: MoneyCents = parseMoneyCents("0.00");
 
   @observable
-  accessor shortTermCapitalGains = 0;
+  accessor shortTermCapitalGainsCents: MoneyCents = parseMoneyCents("0.00");
 
   @observable
-  accessor longTermCapitalGains = 0;
+  accessor longTermCapitalGainsCents: MoneyCents = parseMoneyCents("0.00");
 
   actuals = [new IncomeActuals(), new IncomeActuals(), new IncomeActuals, new IncomeActuals()];
 
@@ -40,45 +45,35 @@ class Income {
     this.taxes = taxes
   }
 
-  getCapitalGains(period: number) {
-    let gains = this.actuals[period].shortTermCapitalGains
-      + this.actuals[period].longTermCapitalGains
-
+  getCapitalGainsCents(period: number): MoneyCents {
+    let gains = addMoneyCents(this.actuals[period].shortTermCapitalGainsCents,
+      this.actuals[period].longTermCapitalGainsCents);
     if (getCurrentPeriod() === period) {
-      gains += this.shortTermCapitalGains + this.longTermCapitalGains
+      gains = addMoneyCents(gains, this.shortTermCapitalGainsCents, this.longTermCapitalGainsCents);
     }
-
-    if (gains < 0) {
-      return Math.max(gains, this.taxes.filingStatus === FilingStatus.MarriedFilingSeparate ? -1500 : -3000)
-    }
-
-    return gains;
+    const limit = parseMoneyCents(this.taxes.filingStatus === FilingStatus.MarriedFilingSeparate ? "-1500.00" : "-3000.00");
+    return gains < limit ? limit : gains;
   }
 
-  getTotalIncome(period: number) {
-    let totalIncome = this.getCapitalGains(period)
-      + this.actuals[period].taxableInterest
-      + this.actuals[period].oridinaryDividends
-      + this.actuals[period].taxableSocialSecurityBenefits;
-
-    if (getCurrentPeriod() === period) {
-      totalIncome += this.taxableInterest + this.ordinaryDividends + this.taxableIraDistributions
-        + this.taxablePensionAndAnnuities + this.taxableSocialSecurityBenefits
-        + this.additionalTaxableIncome
-      }
-
-    return totalIncome
+  getTotalIncomeCents(period: number): MoneyCents {
+    const actual = this.actuals[period];
+    const total = addMoneyCents(this.getCapitalGainsCents(period), actual.taxableInterestCents,
+      actual.oridinaryDividendsCents, actual.taxableSocialSecurityBenefitsCents);
+    return getCurrentPeriod() === period
+      ? addMoneyCents(total, this.taxableInterestCents, this.ordinaryDividendsCents,
+        this.taxableIraDistributionsCents, this.taxablePensionAndAnnuitiesCents,
+        this.taxableSocialSecurityBenefitsCents, this.additionalTaxableIncomeCents)
+      : total;
   }
 
-  getAdjustedGrossIncome(period: number) {
-    let adjustedGrossIncome = this.getTotalIncome(period);
-
-    if (getCurrentPeriod() === period) {
-      adjustedGrossIncome += 0;
-    }
-
-    return adjustedGrossIncome;
+  getAdjustedGrossIncomeCents(period: number): MoneyCents {
+    return this.getTotalIncomeCents(period);
   }
+
+  // Dollar adapters keep the existing tax worksheets and their intermediate precision unchanged.
+  getCapitalGains(period: number) { return Number(formatMoneyCents(this.getCapitalGainsCents(period))); }
+
+  getAdjustedGrossIncome(period: number) { return Number(formatMoneyCents(this.getAdjustedGrossIncomeCents(period))); }
 }
 
 export default Income;

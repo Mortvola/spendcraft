@@ -1,23 +1,28 @@
+import { formatMoneyCents, parseMoneyCents, type MoneyCents } from "../../../common/moneyCents";
 import { observable } from "mobx";
 
 class IncomeActuals {
-  @observable
-  accessor taxableInterest = 0;
+  get estimatedTaxPayments() { return Number(formatMoneyCents(this.estimatedTaxPaymentsCents)); }
+
+  get longTermCapitalGains() { return Number(formatMoneyCents(this.longTermCapitalGainsCents)); }
 
   @observable
-  accessor oridinaryDividends = 0;
+  accessor taxableInterestCents: MoneyCents = parseMoneyCents("0.00");
 
   @observable
-  accessor taxableSocialSecurityBenefits = 0;
+  accessor oridinaryDividendsCents: MoneyCents = parseMoneyCents("0.00");
 
   @observable
-  accessor estimatedTaxPayments = 0;
+  accessor taxableSocialSecurityBenefitsCents: MoneyCents = parseMoneyCents("0.00");
 
   @observable
-  accessor shortTermCapitalGains = 0;
+  accessor estimatedTaxPaymentsCents: MoneyCents = parseMoneyCents("0.00");
 
   @observable
-  accessor longTermCapitalGains = 0;
+  accessor shortTermCapitalGainsCents: MoneyCents = parseMoneyCents("0.00");
+
+  @observable
+  accessor longTermCapitalGainsCents: MoneyCents = parseMoneyCents("0.00");
 }
 
 export default IncomeActuals;

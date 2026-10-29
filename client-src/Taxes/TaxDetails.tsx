@@ -26,12 +26,13 @@ const TaxDetails: React.FC = observer(() => {
     })
   }
 
-  const handleSave = () => {
+  const handleSave: React.FormEventHandler<HTMLFormElement> = (event) => {
+    event.preventDefault();
     taxes.save();
   }
 
   return (
-    <div className={style.layout}>
+    <form className={style.layout} onSubmit={handleSave}>
       <div className={style.main}>
         <div>
           <TaxComputation taxes={taxes} />
@@ -80,8 +81,8 @@ const TaxDetails: React.FC = observer(() => {
         </div>
       </div>
 
-      <button onClick={handleSave}>Save</button>
-    </div>
+      <button type="submit">Save</button>
+    </form>
   )
 })
 

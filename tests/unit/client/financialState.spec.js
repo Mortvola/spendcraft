@@ -43,7 +43,7 @@ export { default as PostedRegister } from ${source('client-src/Transactions/Post
 export { default as PendingRegister } from ${source('client-src/Transactions/PendingRegister.tsx')};
 export { default as Transaction } from ${source('client-src/State/Transaction.ts')};
 export { decodeAmount, encodeAmount } from ${source('client-src/monetary.ts')};
-export { worksheet2_1_2026 } from ${source('client-src/State/Taxes/Estimated.ts')};
+export { worksheet2_1_2026, getCurrentPeriod } from ${source('client-src/State/Taxes/Estimated.ts')};
 export { default as TransactionRow } from ${source('client-src/Transactions/Transaction.tsx')};
 export { default as LoanTransaction } from ${source('client-src/State/LoanTransaction.ts')};
 export { default as Bill } from ${source('client-src/State/Bill.ts')};
@@ -672,7 +672,7 @@ export * from ${source('common/ResponseTypes.ts')};
       await assert.rejects(() => f.institution.addOfflineAccount('Offline', balance, '2025-03-01', 'depository', 'checking', state.TrackingType.Balances, 0))
     })
 
-  test('Tax responses decode forecasts and monthly actuals while requests and Worksheets remain numeric', async ({ assert }) => {
+  test('Tax forecasts and actuals retain cents while requests and worksheet calculations keep their formats', async ({ assert }) => {
     const forecast = { filingStatus: state.FilingStatus.Single,
       ...Object.fromEntries(taxForecastFields.map(field => [field, '0.30'])),
       estimated: { expectedAgi: '100000.00', priorYearAgi: '150000.00', priorYearTotalTax: '10000.01' } }
@@ -685,12 +685,12 @@ export * from ${source('common/ResponseTypes.ts')};
     routes.set('get /api/v1/taxes/2026', async () => ({ body: { data: response } }))
     const taxes = f.store.taxes
     await taxes.load()
-    assert.strictEqual(taxes.income.taxableInterest, 0.3)
-    assert.strictEqual(taxes.qualifiedBusinessIncomeDeduction, 0.3)
-    assert.strictEqual(taxes.income.actuals[0].oridinaryDividends, -0.12)
-    assert.strictEqual(taxes.income.actuals[0].estimatedTaxPayments, 12.5)
-    assert.strictEqual(taxes.income.actuals[1].estimatedTaxPayments, 12.5 + 0.05)
-    assert.strictEqual(taxes.income.actuals[0].taxableSocialSecurityBenefits, 0.3)
+    assert.strictEqual(taxes.income.taxableInterestCents, 30)
+    assert.strictEqual(taxes.qualifiedBusinessIncomeDeductionCents, 30)
+    assert.strictEqual(taxes.income.actuals[0].oridinaryDividendsCents, -12)
+    assert.strictEqual(taxes.income.actuals[0].estimatedTaxPaymentsCents, 1250)
+    assert.strictEqual(taxes.income.actuals[1].estimatedTaxPaymentsCents, 1255)
+    assert.strictEqual(taxes.income.actuals[0].taxableSocialSecurityBenefitsCents, 30)
     assert.strictEqual(taxes.worksheet2_1.result.firstInstallment, 2500.0025)
     const expected = state.worksheet2_1_2026({ filingStatus: state.FilingStatus.Single,
       adjustedGrossIncome: 100000, deductions: taxes.standardDeduction,
@@ -711,10 +711,76 @@ export * from ${source('common/ResponseTypes.ts')};
     for (const invalid of [1, '', '1.2', '-0.00', 'Infinity', '90071992547409.92']) {
       assert.throws(() => taxes.updateValues({ ...response, forecast: { ...forecast, taxableInterest: invalid } }))
       assert.throws(() => taxes.updateValues({ ...response, actuals: [{ month: 1, taxes: { estimated_tax_payments: invalid } }] }))
-      assert.strictEqual(taxes.income.taxableInterest, 0.3)
-      assert.strictEqual(taxes.income.actuals[0].estimatedTaxPayments, 12.5)
+      assert.strictEqual(taxes.income.taxableInterestCents, 30)
+      assert.strictEqual(taxes.income.actuals[0].estimatedTaxPaymentsCents, 1250)
       assert.strictEqual(taxes.worksheet2_1.priorYearAgi, 150000)
     }
+  })
+
+  test('Tax income totals and deductions use checked cents with existing period and loss rules', ({ assert }) => {
+    const taxes = f.store.taxes
+    taxes.updateValues({ year: 2026, forecast: { filingStatus: state.FilingStatus.Single,
+      taxableInterest: '0.10', ordinaryDividends: '0.20' }, actuals: [] })
+    const period = state.getCurrentPeriod()
+    assert.strictEqual(taxes.income.getTotalIncomeCents(period), 30)
+    assert.strictEqual(taxes.income.getAdjustedGrossIncomeCents(period), 30)
+    assert.strictEqual(taxes.income.getAdjustedGrossIncome(period), 0.3)
+    assert.strictEqual(taxes.income.getTotalIncomeCents((period + 1) % 4), 0)
+    taxes.income.shortTermCapitalGainsCents = parseMoneyCents('-4000.00')
+    taxes.income.longTermCapitalGainsCents = parseMoneyCents('0.20')
+    assert.strictEqual(taxes.income.getCapitalGainsCents(period), -300000)
+    taxes.filingStatus = state.FilingStatus.MarriedFilingSeparate
+    assert.strictEqual(taxes.income.getCapitalGainsCents(period), -150000)
+    taxes.income.shortTermCapitalGainsCents = parseMoneyCents('-0.30')
+    assert.strictEqual(taxes.income.getCapitalGainsCents(period), -10)
+    assert.strictEqual(taxes.income.getTotalIncomeCents(period), 20)
+    taxes.income.shortTermCapitalGainsCents = parseMoneyCents('0.00')
+    taxes.income.longTermCapitalGainsCents = parseMoneyCents('0.00')
+    taxes.income.additionalTaxableIncomeCents = parseMoneyCents('15000.00')
+    taxes.qualifiedBusinessIncomeDeductionCents = parseMoneyCents('0.20')
+    assert.strictEqual(taxes.getTaxableIncomeCents(period), 10)
+    taxes.qualifiedBusinessIncomeDeductionCents = parseMoneyCents('1.00')
+    assert.strictEqual(taxes.getTaxableIncomeCents(period), 0)
+    const totalIncome = Object.getPrototypeOf(taxes.income).getTotalIncomeCents
+    assert.throws(() => totalIncome.call({ ...taxes.income,
+      actuals: taxes.income.actuals, getCapitalGainsCents: () => 0,
+      taxableInterestCents: 10, ordinaryDividendsCents: 20, taxableIraDistributionsCents: 0,
+      taxablePensionAndAnnuitiesCents: 0, taxableSocialSecurityBenefitsCents: 0,
+      additionalTaxableIncomeCents: Number.MAX_SAFE_INTEGER }, period))
+  })
+
+  test('Tax period aggregation is exact and overflow cannot partially mutate cached state', ({ assert }) => {
+    const taxes = f.store.taxes
+    taxes.updateValues({ year: 2026, forecast: { taxableInterest: '0.10' }, actuals: [
+      { month: 1, taxableInterest: '0.10', taxes: { estimated_tax_payments: '0.10' } },
+      { month: 2, taxableInterest: '0.20', taxes: { estimated_tax_payments: '0.20' } },
+      { month: 4, taxableInterest: '-0.10', taxes: {} },
+    ] })
+    assert.deepEqual(taxes.income.actuals.map(p => p.taxableInterestCents), [30, 20, 20, 20])
+    assert.deepEqual(taxes.income.actuals.map(p => p.estimatedTaxPaymentsCents), [30, 30, 30, 30])
+    assert.throws(() => taxes.updateValues({ year: 2026, forecast: { taxableInterest: '9.99' }, actuals: [
+      { month: 1, taxableInterest: '90071992547409.91', taxes: {} },
+      { month: 2, taxableInterest: '0.01', taxes: {} },
+    ] }))
+    assert.strictEqual(taxes.income.taxableInterestCents, 10)
+    assert.strictEqual(taxes.income.actuals[0].taxableInterestCents, 30)
+  })
+
+  test('Tax requests format retained cents exactly before HTTP', async ({ assert }) => {
+    const taxes = f.store.taxes
+    taxes.updateValues({ year: 2026, forecast: { taxableInterest: '90071992547409.91',
+      additionalTaxableIncome: '-0.12', estimated: { expectedAgi: '0.00', priorYearAgi: '0.00', priorYearTotalTax: '0.00' } } })
+    routes.set('post /api/v1/taxes', async request => {
+      assert.strictEqual(request.forecast.taxableInterest, '90071992547409.91')
+      assert.strictEqual(request.forecast.additionalTaxableIncome, '-0.12')
+      assert.strictEqual(request.forecast.estimated.expectedAgi, '0.00')
+      return { ok: false }
+    })
+    await taxes.save()
+    routes.set('post /api/v1/taxes', () => assert.fail('Unsafe cents reached HTTP'))
+    const save = Object.getPrototypeOf(taxes).save
+    await assert.rejects(() => save.call({ year: 2026, filingStatus: taxes.filingStatus,
+      income: { taxableInterestCents: Number.MAX_SAFE_INTEGER + 1 } }))
   })
 
   test('auto-assignment load, CREATE and PATCH decode fixed dollars and encode fixed-dollar requests').with([

@@ -1,7 +1,8 @@
+import type { MoneyCents } from '../../common/moneyCents';
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import Amount from '../Amount';
-import AmountInput from '../AmountInput';
+import MoneyCentsAmount from '../MoneyCentsAmount';
+import TaxAmountInput from './TaxAmountInput';
 import Taxes from '../State/Taxes/Taxes';
 import { runInAction } from 'mobx';
 import style from './TaxDetails.module.scss';
@@ -14,9 +15,9 @@ interface PropsType {
 const TaxAndCredits: React.FC<PropsType> = observer(({
   taxes
 }) => {
-  const handleQualifiedBusinessIncomeDeduction: React.ChangeEventHandler<HTMLInputElement> = (event) => {
+  const handleQualifiedBusinessIncomeDeduction: (value: MoneyCents) => void = (value) => {
     runInAction(() => {
-      taxes.qualifiedBusinessIncomeDeduction = parseFloat(event.target.value);
+      taxes.qualifiedBusinessIncomeDeductionCents = value;
     })
   }
 
@@ -25,25 +26,25 @@ const TaxAndCredits: React.FC<PropsType> = observer(({
       <label>
         Total Income:
       </label>
-      <Amount amount={taxes.income.getAdjustedGrossIncome(getCurrentPeriod())} />
+      <MoneyCentsAmount amount={taxes.income.getAdjustedGrossIncomeCents(getCurrentPeriod())} />
       <div />
 
       <label>
         Standard Deduction:
       </label>
-      <Amount amount={taxes.standardDeduction} />
+      <MoneyCentsAmount amount={taxes.standardDeductionCents} />
       <div />
 
       <label>
         Qualified Business Income Deduction:
       </label>
-      <AmountInput value={taxes.qualifiedBusinessIncomeDeduction} onChange={handleQualifiedBusinessIncomeDeduction} />
+      <TaxAmountInput value={taxes.qualifiedBusinessIncomeDeductionCents} onChange={handleQualifiedBusinessIncomeDeduction} />
       <div />
 
       <label>
         Taxable Income:
       </label>
-      <Amount amount={taxes.getTaxableIncome(getCurrentPeriod())} />
+      <MoneyCentsAmount amount={taxes.getTaxableIncomeCents(getCurrentPeriod())} />
       <div />
     </div>
   )

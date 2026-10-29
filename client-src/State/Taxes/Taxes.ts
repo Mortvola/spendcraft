@@ -1,4 +1,4 @@
-import { decodeAmount, encodeAmount } from '../../monetary';
+import { addMoneyCents, subtractMoneyCents, formatMoneyCents, parseMoneyCents, type MoneyCents } from "../../../common/moneyCents";
 import Http from "@mortvola/http";
 import { computed, observable, runInAction } from "mobx";
 import { ApiResponse, FilingStatus, TaxProps, TaxUpdateProps } from "../../../common/ResponseTypes";
@@ -30,7 +30,7 @@ export default class Taxes implements TaxesInterface {
   income: Income;
 
   @observable
-  accessor qualifiedBusinessIncomeDeduction = 0;
+  accessor qualifiedBusinessIncomeDeductionCents: MoneyCents = parseMoneyCents("0.00");
 
   worksheet2_1: Worksheet2_1;
 
@@ -51,9 +51,18 @@ export default class Taxes implements TaxesInterface {
     }
   }
 
+  get standardDeductionCents(): MoneyCents {
+    return parseMoneyCents(this.standardDeduction.toFixed(2));
+  }
+
+  getTaxableIncomeCents(period: number): MoneyCents {
+    const amount = subtractMoneyCents(this.income.getAdjustedGrossIncomeCents(period),
+      addMoneyCents(this.standardDeductionCents, this.qualifiedBusinessIncomeDeductionCents));
+    return amount < 0 ? parseMoneyCents("0.00") : amount;
+  }
+
   getTaxableIncome(period: number) {
-    return Math.max(this.income.getAdjustedGrossIncome(period)
-      - (this.standardDeduction + this.qualifiedBusinessIncomeDeduction), 0);
+    return Number(formatMoneyCents(this.getTaxableIncomeCents(period)));
   }
 
   constructor() {
@@ -65,7 +74,7 @@ export default class Taxes implements TaxesInterface {
   }
 
   updateValues(data: TaxProps) {
-    const amount = (value: string | null | undefined) => value == null ? 0 : decodeAmount(value);
+    const amount = (value: string | null | undefined) => value == null ? parseMoneyCents("0.00") : parseMoneyCents(value);
     const forecast = data.forecast && {
       ...data.forecast,
       taxableInterest: amount(data.forecast.taxableInterest),
@@ -96,50 +105,53 @@ export default class Taxes implements TaxesInterface {
         estimated_tax_payments: amount(actual.taxes.estimated_tax_payments),
       },
     });
-    runInAction(() => {
-      this.filingStatus = forecast?.filingStatus ?? FilingStatus.Single;
-      this.income.taxableInterest = forecast?.taxableInterest ?? 0;
-      this.income.qualifiedDividends = forecast?.qualifiedDividends ?? 0;
-      this.income.ordinaryDividends = forecast?.ordinaryDividends ?? 0;
-      this.income.taxableIraDistributions = forecast?.taxableIraDistributions ?? 0;
-      this.income.taxablePensionAndAnnuities = forecast?.taxablePensionAndAnnuities ?? 0;
-      this.income.taxableSocialSecurityBenefits = forecast?.taxableSocialSecurityBenefits ?? 0;
-      this.income.additionalTaxableIncome = forecast?.additionalTaxableIncome ?? 0;
-      this.income.shortTermCapitalGains = forecast?.shortTermCapitalGains ?? 0;
-      this.income.longTermCapitalGains = forecast?.longTermCapitalGains ?? 0;
-      this.qualifiedBusinessIncomeDeduction = forecast?.qualifiedBusinessIncomeDeduction ?? 0;
+    const periodActuals = Array.from({ length: 4 }, () => ({
+      taxableInterestCents: parseMoneyCents("0.00"),
+      oridinaryDividendsCents: parseMoneyCents("0.00"),
+      shortTermCapitalGainsCents: parseMoneyCents("0.00"),
+      longTermCapitalGainsCents: parseMoneyCents("0.00"),
+      taxableSocialSecurityBenefitsCents: parseMoneyCents("0.00"),
+      estimatedTaxPaymentsCents: parseMoneyCents("0.00"),
+    }));
 
-      for (let i = 0; i < 4; i += 1) {
-        this.income.actuals[i].taxableInterest = 0;
-        this.income.actuals[i].oridinaryDividends = 0;
-        this.income.actuals[i].shortTermCapitalGains = 0;
-        this.income.actuals[i].longTermCapitalGains = 0;
-        this.income.actuals[i].taxableSocialSecurityBenefits = 0;
-        this.income.actuals[i].estimatedTaxPayments = 0;
-      }
-    
-      if (decodedActuals) {
-        const periodMonthEnd = [3, 5, 8, 12];
+    if (decodedActuals) {
+      const periodMonthEnd = [3, 5, 8, 12];
 
-        for (const actuals of decodedActuals) {
-          if (actuals == null) continue;
-          for (let period = 0; period < 4; period += 1) {
-            if (actuals.month <= periodMonthEnd[period]) {
-              this.income.actuals[period].taxableInterest += actuals.taxableInterest ?? 0;
-              this.income.actuals[period].oridinaryDividends += actuals.ordinaryDividends ?? 0;
-              this.income.actuals[period].shortTermCapitalGains += actuals.shortTermCapitalGains ?? 0;
-              this.income.actuals[period].longTermCapitalGains += actuals.longTermCapitalGains ?? 0;
-              this.income.actuals[period].taxableSocialSecurityBenefits += actuals.taxes.taxable_social_security_benefits ?? 0;
-              this.income.actuals[period].estimatedTaxPayments += actuals.taxes.estimated_tax_payments ?? 0;
-            }
+      for (const actuals of decodedActuals) {
+        if (actuals == null) continue;
+        for (let period = 0; period < 4; period += 1) {
+          if (actuals.month <= periodMonthEnd[period]) {
+            periodActuals[period].taxableInterestCents = addMoneyCents(periodActuals[period].taxableInterestCents, actuals.taxableInterest ?? parseMoneyCents("0.00"));
+            periodActuals[period].oridinaryDividendsCents = addMoneyCents(periodActuals[period].oridinaryDividendsCents, actuals.ordinaryDividends ?? parseMoneyCents("0.00"));
+            periodActuals[period].shortTermCapitalGainsCents = addMoneyCents(periodActuals[period].shortTermCapitalGainsCents, actuals.shortTermCapitalGains ?? parseMoneyCents("0.00"));
+            periodActuals[period].longTermCapitalGainsCents = addMoneyCents(periodActuals[period].longTermCapitalGainsCents, actuals.longTermCapitalGains ?? parseMoneyCents("0.00"));
+            periodActuals[period].taxableSocialSecurityBenefitsCents = addMoneyCents(periodActuals[period].taxableSocialSecurityBenefitsCents, actuals.taxes.taxable_social_security_benefits ?? parseMoneyCents("0.00"));
+            periodActuals[period].estimatedTaxPaymentsCents = addMoneyCents(periodActuals[period].estimatedTaxPaymentsCents, actuals.taxes.estimated_tax_payments ?? parseMoneyCents("0.00"));
           }
         }
       }
+    }
+    runInAction(() => {
+      this.filingStatus = forecast?.filingStatus ?? FilingStatus.Single;
+      this.income.taxableInterestCents = forecast?.taxableInterest ?? parseMoneyCents("0.00");
+      this.income.qualifiedDividendsCents = forecast?.qualifiedDividends ?? parseMoneyCents("0.00");
+      this.income.ordinaryDividendsCents = forecast?.ordinaryDividends ?? parseMoneyCents("0.00");
+      this.income.taxableIraDistributionsCents = forecast?.taxableIraDistributions ?? parseMoneyCents("0.00");
+      this.income.taxablePensionAndAnnuitiesCents = forecast?.taxablePensionAndAnnuities ?? parseMoneyCents("0.00");
+      this.income.taxableSocialSecurityBenefitsCents = forecast?.taxableSocialSecurityBenefits ?? parseMoneyCents("0.00");
+      this.income.additionalTaxableIncomeCents = forecast?.additionalTaxableIncome ?? parseMoneyCents("0.00");
+      this.income.shortTermCapitalGainsCents = forecast?.shortTermCapitalGains ?? parseMoneyCents("0.00");
+      this.income.longTermCapitalGainsCents = forecast?.longTermCapitalGains ?? parseMoneyCents("0.00");
+      this.qualifiedBusinessIncomeDeductionCents = forecast?.qualifiedBusinessIncomeDeduction ?? parseMoneyCents("0.00");
+
+      for (let i = 0; i < 4; i += 1) {
+        Object.assign(this.income.actuals[i], periodActuals[i]);
+      }
 
       if (forecast?.estimated) {
-        this.worksheet2_1.expectedAgi = forecast.estimated.expectedAgi
-        this.worksheet2_1.priorYearAgi = forecast.estimated.priorYearAgi
-        this.worksheet2_1.priorYearTotalTax = forecast.estimated.priorYearTotalTax
+        this.worksheet2_1.expectedAgiCents = forecast.estimated.expectedAgi
+        this.worksheet2_1.priorYearAgiCents = forecast.estimated.priorYearAgi
+        this.worksheet2_1.priorYearTotalTaxCents = forecast.estimated.priorYearTotalTax
       }
     })
   }
@@ -161,20 +173,20 @@ export default class Taxes implements TaxesInterface {
       year: this.year,
       forecast: {
         filingStatus: this.filingStatus,
-        taxableInterest: encodeAmount(this.income.taxableInterest),
-        qualifiedDividends: encodeAmount(this.income.qualifiedDividends),
-        ordinaryDividends: encodeAmount(this.income.ordinaryDividends),
-        taxableIraDistributions: encodeAmount(this.income.taxableIraDistributions),
-        taxablePensionAndAnnuities: encodeAmount(this.income.taxablePensionAndAnnuities),
-        taxableSocialSecurityBenefits: encodeAmount(this.income.taxableSocialSecurityBenefits),
-        additionalTaxableIncome: encodeAmount(this.income.additionalTaxableIncome),
-        shortTermCapitalGains: encodeAmount(this.income.shortTermCapitalGains),
-        longTermCapitalGains: encodeAmount(this.income.longTermCapitalGains),
-        qualifiedBusinessIncomeDeduction: encodeAmount(this.qualifiedBusinessIncomeDeduction),
+        taxableInterest: formatMoneyCents(this.income.taxableInterestCents),
+        qualifiedDividends: formatMoneyCents(this.income.qualifiedDividendsCents),
+        ordinaryDividends: formatMoneyCents(this.income.ordinaryDividendsCents),
+        taxableIraDistributions: formatMoneyCents(this.income.taxableIraDistributionsCents),
+        taxablePensionAndAnnuities: formatMoneyCents(this.income.taxablePensionAndAnnuitiesCents),
+        taxableSocialSecurityBenefits: formatMoneyCents(this.income.taxableSocialSecurityBenefitsCents),
+        additionalTaxableIncome: formatMoneyCents(this.income.additionalTaxableIncomeCents),
+        shortTermCapitalGains: formatMoneyCents(this.income.shortTermCapitalGainsCents),
+        longTermCapitalGains: formatMoneyCents(this.income.longTermCapitalGainsCents),
+        qualifiedBusinessIncomeDeduction: formatMoneyCents(this.qualifiedBusinessIncomeDeductionCents),
         estimated: {
-          expectedAgi: encodeAmount(this.worksheet2_1.expectedAgi),
-          priorYearAgi: encodeAmount(this.worksheet2_1.priorYearAgi),
-          priorYearTotalTax: encodeAmount(this.worksheet2_1.priorYearTotalTax),
+          expectedAgi: formatMoneyCents(this.worksheet2_1.expectedAgiCents),
+          priorYearAgi: formatMoneyCents(this.worksheet2_1.priorYearAgiCents),
+          priorYearTotalTax: formatMoneyCents(this.worksheet2_1.priorYearTotalTaxCents),
         } 
       },
     })

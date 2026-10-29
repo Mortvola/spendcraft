@@ -1,10 +1,11 @@
+import type { MoneyCents } from '../../common/moneyCents';
 import React from 'react'
 import { runInAction } from 'mobx'
 import { observer } from 'mobx-react-lite'
-import AmountInput from '../AmountInput'
+import TaxAmountInput from './TaxAmountInput'
 import Taxes from '../State/Taxes/Taxes'
 import style from './TaxDetails.module.scss'
-import Amount from '../Amount'
+import MoneyCentsAmount from '../MoneyCentsAmount'
 import { getCurrentPeriod } from '../State/Taxes/Estimated'
 
 interface PropsType {
@@ -14,15 +15,15 @@ interface PropsType {
 const CapitalGains: React.FC<PropsType> = observer(({
   taxes,
 }) => {
-  const handleShorttermCapitalGains: React.ChangeEventHandler<HTMLInputElement> = (event) => {
+  const handleShorttermCapitalGains: (value: MoneyCents) => void = (value) => {
     runInAction(() => {
-      taxes.income.shortTermCapitalGains = parseFloat(event.target.value);
+      taxes.income.shortTermCapitalGainsCents = value;
     })
   }
 
-  const handleLongtermCapitalGains: React.ChangeEventHandler<HTMLInputElement> = (event) => {
+  const handleLongtermCapitalGains: (value: MoneyCents) => void = (value) => {
     runInAction(() => {
-      taxes.income.longTermCapitalGains = parseFloat(event.target.value);
+      taxes.income.longTermCapitalGainsCents = value;
     })
   }
 
@@ -31,14 +32,14 @@ const CapitalGains: React.FC<PropsType> = observer(({
       <label>
         Short-term Capital Gains:
       </label>
-      <Amount amount={taxes.income.actuals[getCurrentPeriod()].shortTermCapitalGains} />
-      <AmountInput value={taxes.income.shortTermCapitalGains} onChange={handleShorttermCapitalGains} />
+      <MoneyCentsAmount amount={taxes.income.actuals[getCurrentPeriod()].shortTermCapitalGainsCents} />
+      <TaxAmountInput value={taxes.income.shortTermCapitalGainsCents} onChange={handleShorttermCapitalGains} />
 
       <label>
         Long-term Capital Gains:
       </label>
-      <Amount amount={taxes.income.actuals[getCurrentPeriod()].longTermCapitalGains} />
-      <AmountInput value={taxes.income.longTermCapitalGains} onChange={handleLongtermCapitalGains} />
+      <MoneyCentsAmount amount={taxes.income.actuals[getCurrentPeriod()].longTermCapitalGainsCents} />
+      <TaxAmountInput value={taxes.income.longTermCapitalGainsCents} onChange={handleLongtermCapitalGains} />
     </div>
   )
 })
