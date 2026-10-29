@@ -529,7 +529,7 @@ export * from ${source('common/ResponseTypes.ts')};
       assert.strictEqual(rules[0].amountCents, -12)
     })
 
-  test('Category funding configuration uses cents while Transaction funding calculation metadata stays numeric', ({ assert }) => {
+  test('Category and Transaction funding metadata retain cents with numeric percentages', ({ assert }) => {
     const category = new state.Category({ ...({ id: 25, groupId: -1, name: "Funding", type: state.CategoryType.Regular, balance: "0.00", suspended: false, includeFundingTransfers: true, recurrence: 1, hidden: false }), fundingAmount: '12.50',
       fundingCategories: [{ categoryId: 20, amount: '-0.12', percentage: false },
         { categoryId: 21, amount: 12.75, percentage: true }],
@@ -541,13 +541,73 @@ export * from ${source('common/ResponseTypes.ts')};
         fundingCategories: [{ categoryId: 21, amount: '2.50', percentage: false },
           { categoryId: 22, amount: 100, percentage: true }] },
     ] })
-    assert.strictEqual(transaction.categories[0].baseAmount, 0.3)
-    assert.deepEqual(transaction.categories[0].fundingCategories.map((row) => row.amount), [2.5, 100])
+    assert.strictEqual(transaction.categories[0].baseAmountCents, 30)
+    assert.deepEqual(transaction.categories[0].fundingCategories.map((row) => row.percentage ? row.amount : row.amountCents), [250, 100])
     for (const amount of [1, '', '1.2', '-0.00', 'Infinity']) {
       assert.throws(() => new state.Transaction(f.store, { ...f.transactionProps(), categories: [
         { categoryId: 20, amount: '1.00', baseAmount: amount },
       ] }))
     }
+  })
+
+  test('Transaction funding metadata preserves exact cents, missing/null values and refresh atomicity', ({ assert }) => {
+    const props = { ...f.transactionProps(), categories: [
+      { categoryId: 20, amount: '0.30', baseAmount: '90071992547409.91', comment: 'keep', funder: false,
+        includeFundingTransfers: true, fundingCategories: [{ id: 7, categoryId: 21, percentage: false, amount: '-0.12', note: 'keep' },
+          { categoryId: 22, percentage: true, amount: 12.75 }] },
+      { categoryId: 21, amount: '0.00' },
+      { categoryId: 22, amount: '0.00', baseAmount: null, fundingCategories: null },
+    ] }
+    const before = globalThis.structuredClone(props)
+    const transaction = new state.Transaction(f.store, props)
+    assert.strictEqual(transaction.categories[0].baseAmountCents, Number.MAX_SAFE_INTEGER)
+    assert.deepEqual(transaction.categories[0].fundingCategories[0], { id: 7, categoryId: 21, percentage: false, amountCents: -12, note: 'keep' })
+    assert.strictEqual(transaction.categories[0].fundingCategories[1].amount, 12.75)
+    assert.strictEqual(transaction.categories[0].comment, 'keep')
+    assert.isTrue(transaction.categories[0].includeFundingTransfers)
+    assert.isUndefined(transaction.categories[1].baseAmountCents)
+    assert.isUndefined(transaction.categories[1].fundingCategories)
+    assert.isNull(transaction.categories[2].baseAmountCents)
+    assert.isNull(transaction.categories[2].fundingCategories)
+    assert.notProperty(transaction.categories[0], 'baseAmount')
+    assert.notProperty(transaction.categories[0].fundingCategories[0], 'amount')
+    assert.deepEqual(props, before)
+    for (const amount of [1, '1.2', '-0.00', 'Infinity', '90071992547409.92']) {
+      assert.throws(() => transaction.refresh({ ...props, categories: [props.categories[0],
+        { categoryId: 21, amount: '1.00', fundingCategories: [{ categoryId: 22, percentage: false, amount }] }] }))
+      assert.strictEqual(transaction.categories[0].baseAmountCents, Number.MAX_SAFE_INTEGER)
+      assert.strictEqual(transaction.categories[0].fundingCategories[0].amountCents, -12)
+    }
+  })
+
+  test('Transaction PATCH and transfer CREATE/PATCH encode retained cent metadata without leaking cent fields', async ({ assert }) => {
+    const transaction = new state.Transaction(f.store, f.transactionProps())
+    const category = { categoryId: 20, amountCents: 30, baseAmountCents: Number.MAX_SAFE_INTEGER,
+      comment: 'keep', fundingCategories: [{ categoryId: 21, percentage: false, amountCents: -12 },
+        { categoryId: 22, percentage: true, amount: 12.75 }] }
+    const expected = { categoryId: 20, amount: '0.30', baseAmount: '90071992547409.91', comment: 'keep',
+      fundingCategories: [{ categoryId: 21, percentage: false, amount: '-0.12' },
+        { categoryId: 22, percentage: true, amount: 12.75 }] }
+    routes.set('patch /api/v1/transaction/40', async payload => {
+      assert.deepEqual(payload.categories, [expected])
+      return { body: { errors: [{ field: 'name', message: 'Test rejection' }] } }
+    })
+    await transaction.updateTransaction({ categories: [category] })
+    const { amountCents, ...metadata } = category
+    const transfer = { ...metadata, amount: '0.30' }
+    assert.strictEqual(amountCents, 30)
+    routes.set('patch /api/v1/category-transfer/40', async payload => {
+      assert.deepEqual(payload.categories, [expected])
+      return { ok: false }
+    })
+    routes.set('post /api/v1/category-transfer', async payload => {
+      assert.deepEqual(payload.categories, [expected])
+      return { ok: false }
+    })
+    await assert.rejects(() => transaction.updateCategoryTransfer({ date: '2026-10-01', categories: [transfer] }))
+    await assert.rejects(() => f.store.register.addCategoryTransfer({ date: '2026-10-01', categories: [transfer] }, state.TransactionType.FUNDING_TRANSACTION))
+    assert.strictEqual(category.baseAmountCents, Number.MAX_SAFE_INTEGER)
+    assert.strictEqual(category.fundingCategories[0].amountCents, -12)
   })
 
   test('Loan transaction responses retain cents before interest calculations', ({ assert }) => {
@@ -1471,8 +1531,10 @@ export * from ${source('common/ResponseTypes.ts')};
       await submit()
       assert.equal(f.category.balanceCents, -200)
       assert.equal(f.other.balanceCents, 200)
-      assert.deepEqual(f.category.transactions.transactions[0].categories, rows.map(({ amount, ...row }, id) => ({
+      assert.deepEqual(f.category.transactions.transactions[0].categories, rows.map(({ amount, baseAmount, fundingCategories, ...row }, id) => ({
         id, comment: undefined, funder: row.funder, ...row, amountCents: inputMoneyCents(amount),
+        baseAmountCents: inputMoneyCents(baseAmount), fundingCategories: fundingCategories.map(rule => rule.percentage ? rule
+          : { categoryId: rule.categoryId, percentage: false, amountCents: inputMoneyCents(rule.amount) }),
       })))
     }
   })

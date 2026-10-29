@@ -334,9 +334,9 @@ export interface TransactionCategoryInterface {
   amountCents: MoneyCents;
   comment?: string;
   funder?: boolean;
-  fundingCategories?: { categoryId: number, amount: number, percentage: boolean }[],
+  fundingCategories?: CentFundingRule[],
   includeFundingTransfers?: boolean,
-  baseAmount?: number;
+  baseAmountCents?: MoneyCents;
 }
 
 export interface NewTransactionCategoryInterface {

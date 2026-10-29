@@ -171,8 +171,12 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
 
           obj[c.categoryId] = {
             // The funding algorithm still uses dollar numbers at its calculation boundary.
-            baseAmount: c.baseAmount ?? Number(formatMoneyCents(c.amountCents)),
-            fundingCategories,
+            baseAmount: Number(formatMoneyCents(c.baseAmountCents ?? c.amountCents)),
+            fundingCategories: fundingCategories?.map(rule => {
+              if (rule.percentage) return rule;
+              const { amountCents, ...metadata } = rule;
+              return { ...metadata, amount: Number(formatMoneyCents(amountCents)) };
+            }) ?? [],
             includeFundingTransfers: c.includeFundingTransfers ?? false,
           }
         }

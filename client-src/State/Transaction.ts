@@ -2,7 +2,7 @@ import { formatMoneyCents, parseMoneyCents, addMoneyCents, type MoneyCents } fro
 import { DateTime } from 'luxon';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
-import { decodeAmount, decodeFundingRules, encodeTransferCategories, type TransferCategoryInput } from '../monetary';
+import { decodeCentFundingRules, encodeCentFundingRules, encodeTransferCategories, type TransferCategoryInput } from '../monetary';
 import {
   ErrorProps,
   TransactionType,
@@ -167,9 +167,9 @@ class Transaction implements TransactionInterface {
         amountCents: parseMoneyCents(c.amount),
         comment: c.comment,
         funder: c.funder,
-        fundingCategories: c.fundingCategories == null ? c.fundingCategories : decodeFundingRules(c.fundingCategories),
+        fundingCategories: c.fundingCategories == null ? c.fundingCategories : decodeCentFundingRules(c.fundingCategories),
         includeFundingTransfers: c.includeFundingTransfers,
-        baseAmount: c.baseAmount == null ? c.baseAmount : decodeAmount(c.baseAmount),
+        baseAmountCents: c.baseAmount == null ? c.baseAmount : parseMoneyCents(c.baseAmount),
       }));
     }
 
@@ -233,7 +233,12 @@ class Transaction implements TransactionInterface {
         ...metadata,
         amount: amountCents === undefined ? undefined : formatMoneyCents(amountCents),
         principle: principleCents === undefined ? undefined : formatMoneyCents(principleCents),
-        categories: categories?.map(({ amountCents: amount, ...category }) => ({ ...category, amount: formatMoneyCents(amount) })),
+        categories: categories?.map(({ amountCents: amount, baseAmountCents, fundingCategories, ...category }: TransactionCategoryInterface) => ({
+          ...category,
+          amount: formatMoneyCents(amount),
+          ...(baseAmountCents === undefined ? {} : { baseAmount: baseAmountCents === null ? null : formatMoneyCents(baseAmountCents) }),
+          ...(fundingCategories === undefined ? {} : { fundingCategories: fundingCategories === null ? null : encodeCentFundingRules(fundingCategories) }),
+        })),
         taxCategories: taxCategories?.map(({ amountCents: amount, ...tax }) => ({ ...tax, amount: formatMoneyCents(amount) })),
       },
     );

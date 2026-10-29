@@ -478,7 +478,7 @@ test.group('Transaction split cents', group => {
         assert.strictEqual(modal.props.initialValues.fromCategories[0].amount, '0.30')
         assert.strictEqual(modal.props.initialValues.toCategories[0].amount, '0.30')
       }
-      const values = { date: '2025-01-01', fromCategories: [{ ...split('0.125'), id: -1, baseAmount: 0.13,
+      const values = { date: '2025-01-01', fromCategories: [{ ...split('0.125'), id: -1, baseAmountCents: 13,
         fundingCategories: [{ categoryId: 30, amount: 12.75, percentage: true }] }], toCategories: [split('0.13', 21)] }
       await modal.props.onSubmit(values)
       assert.strictEqual(sent.url, editing ? '/api/v1/category-transfer/7' : '/api/v1/category-transfer')

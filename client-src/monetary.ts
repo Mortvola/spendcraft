@@ -105,15 +105,22 @@ export function networthChartData(rows: NetworthCentsReport) {
   }));
 }
 
-// Funding metadata stays numeric in editors; only fixed-dollar values cross as strings.
-export type TransferCategoryInput = Omit<CategoryTransferProps, 'amount'> & { amount: number | DecimalMoneyString };
+// Accept retained cent metadata and the existing funding algorithm's dollar outputs.
+export type TransferCategoryInput = Omit<CategoryTransferProps, 'amount' | 'baseAmount' | 'fundingCategories'> & {
+  amount: number | DecimalMoneyString;
+  fundingCategories?: (CentFundingRule | NonNullable<CategoryTransferProps['fundingCategories']>[number])[];
+} & ({ baseAmount?: number; baseAmountCents?: never } | { baseAmount?: never; baseAmountCents?: MoneyCents });
 
 export function encodeTransferCategories(categories: readonly TransferCategoryInput[]): CategoryTransferRequest['categories'] {
-  return categories.map(({ amount, baseAmount, fundingCategories, ...category }) => ({
+  return categories.map(({ amount, baseAmount, baseAmountCents, fundingCategories, ...category }) => ({
     ...category,
     amount: typeof amount === 'string' ? formatMoneyCents(parseMoneyCents(amount)) : encodeAmount(amount),
-    ...(baseAmount === undefined ? {} : { baseAmount: encodeAmount(baseAmount) }),
-    ...(fundingCategories === undefined ? {} : { fundingCategories: encodeFundingRules(fundingCategories) }),
+    ...(baseAmountCents === undefined
+      ? (baseAmount === undefined ? {} : { baseAmount: encodeAmount(baseAmount) })
+      : { baseAmount: formatMoneyCents(baseAmountCents) }),
+    ...(fundingCategories === undefined ? {} : { fundingCategories: fundingCategories.map(rule => (
+      'amountCents' in rule ? encodeCentFundingRules([rule])[0] : encodeFundingRules([rule])[0]
+    )) }),
   }));
 }
 

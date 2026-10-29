@@ -48,12 +48,14 @@ async function dialog(values, { balance = 10, reject = false, editing = false, p
     bills: { forEachCatgory: () => false }, getCategory: () => ({ getFundingPool: () => pool }) },
   register: { addCategoryTransfer: submit } }
   const transaction = editing ? { date: DateTime.fromISO(previousDate ?? values.date),
-    categories: (previousCategories ?? calculateFunding(values.categories, 99)).map(({ amount, ...category }) => ({ ...category, amountCents: inputMoneyCents(amount) })),
+    categories: (previousCategories ?? calculateFunding(values.categories, 99)).map(({ amount, baseAmount, fundingCategories, ...category }) => ({ ...category, amountCents: inputMoneyCents(amount),
+      baseAmountCents: inputMoneyCents(baseAmount), fundingCategories: fundingCategories.map(rule => rule.percentage ? rule
+        : { categoryId: rule.categoryId, percentage: false, amountCents: inputMoneyCents(rule.amount) }) })),
     getCategoryAmountCents: index => inputMoneyCents((previousCategories ?? calculateFunding(values.categories, 99))[index].amount),
     updateCategoryTransfer: (request) => submit(request, 2) } : undefined
   const MoneyCentsAmount = ({ amount }) => React.createElement('output', { 'data-amount': formatMoneyCents(amount) }, formatMoneyCents(amount))
   const Field = ({ children }) => children({ field: { value: values.date }, form: { values } })
-  const context = { ...effect, parseMoneyCents, addMoneyCents, subtractMoneyCents, React: { ...React, useState: () => [stateIndex++ === 0 ? false : values.categories, () => false],
+  const context = { ...effect, formatMoneyCents, parseMoneyCents, addMoneyCents, subtractMoneyCents, React: { ...React, useState: () => [stateIndex++ === 0 ? false : values.categories, () => false],
     useCallback: (callback) => callback, useEffect: () => false }, DateTime, useStores: () => stores,
     Field, MoneyCentsAmount, FormModal: (props) => { modal = props; return props.children },
     FormError: () => null, Funding: (props) => { fundingDate = props.date; return null }, styles: {}, CategoryType: {}, TransactionType: { FUNDING_TRANSACTION: 2 } }
@@ -364,4 +366,36 @@ test('Overview bill displays exact debit cents and leaves null blank', async ({ 
   const html = renderToStaticMarkup(React.createElement(Bill, { bill: { category, debitsCents: null } }))
   assert.include(html, '<div class="dollar-amount"></div>')
   assert.notInclude(html, '>0.00</div>')
+})
+
+
+test('Funding edit converts retained cent metadata only at the unchanged calculation boundary', async ({ assert }) => {
+  const initialFunding = runInNewContext(await expression('client-src/Funding/FundingDialog.tsx', 'initialFunding'), {
+    formatMoneyCents,
+    transaction: { categories: [
+      { categoryId: 10, amountCents: 1000, baseAmountCents: 1000, fundingCategories: [
+        { categoryId: 99, percentage: false, amountCents: 250, id: 1 },
+        { categoryId: 98, percentage: true, amount: 33.33 },
+        { categoryId: 97, percentage: true, amount: 66.67 }], includeFundingTransfers: true },
+      { categoryId: 20, amountCents: 30 },
+      { categoryId: 30, amountCents: 10, baseAmountCents: 0, fundingCategories: [] },
+      { categoryId: 99, amountCents: -1000, funder: true },
+    ] },
+    categoryTree: { getCategory: () => ({ getFundingPool: () => ({ id: 99 }) }),
+      budget: { forEachCatgory: () => undefined }, bills: { forEachCatgory: () => undefined } },
+  })
+  const inputs = initialFunding()
+  assert.strictEqual(inputs[10].baseAmount, 10)
+  assert.deepEqual(Array.from(inputs[10].fundingCategories, rule => rule.amount), [2.5, 33.33, 66.67])
+  assert.strictEqual(inputs[10].fundingCategories[0].id, 1)
+  assert.notProperty(inputs[10].fundingCategories[0], 'amountCents')
+  assert.strictEqual(inputs[20].baseAmount, 0.3)
+  assert.strictEqual(inputs[20].fundingCategories[0].amount, 100)
+  assert.strictEqual(inputs[30].baseAmount, 0)
+  assert.notProperty(inputs, '99')
+  const legacy = { 10: { baseAmount: 10, fundingCategories: [
+    { categoryId: 99, percentage: false, amount: 2.5, id: 1 },
+    { categoryId: 98, percentage: true, amount: 33.33 }, { categoryId: 97, percentage: true, amount: 66.67 }], includeFundingTransfers: true },
+  20: row(0.3), 30: { baseAmount: 0, fundingCategories: [], includeFundingTransfers: false } }
+  assert.deepEqual(calculateFunding(inputs, 99), calculateFunding(legacy, 99))
 })
