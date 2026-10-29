@@ -1,4 +1,4 @@
-import { formatMoneyCents, parseMoneyCents, subtractMoneyCents, type MoneyCents } from '../common/moneyCents.js';
+import { addMoneyCents, formatMoneyCents, parseMoneyCents, subtractMoneyCents, type MoneyCents } from '../common/moneyCents.js';
 import type { CategoryTransferProps, CategoryTransferRequest, DecimalMoneyString, FundingRuleResponse, NetworthReportResponse } from '../common/ResponseTypes.js';
 
 // Encode at the request boundary; client state and calculations remain numeric.
@@ -79,8 +79,24 @@ export function encodeCentFundingRules(rules: readonly CentFundingRule[]): Fundi
   });
 }
 
-export function decodeNetworthReport(rows: NetworthReportResponse): (string | number)[][] {
-  return rows.map((row, index) => row.map((cell, column) => index === 0 || column === 0 ? cell : decodeAmount(cell)));
+export type NetworthCentsReport = (string | MoneyCents)[][];
+
+export function decodeNetworthReport(rows: NetworthReportResponse): NetworthCentsReport {
+  return rows.map((row, index) => row.map((cell, column) => index === 0 || column === 0 ? cell : parseMoneyCents(cell)));
+}
+
+export function networthTotals(rows: NetworthCentsReport): NetworthCentsReport {
+  return rows.map((row, index) => index === 0
+    ? [...row, 'Net Worth']
+    : [...row, addMoneyCents(...row.filter((cell): cell is MoneyCents => typeof cell === 'number'))]);
+}
+
+// Google Charts requires numeric coordinates; formatted labels retain the exact cents.
+export function networthChartData(rows: NetworthCentsReport) {
+  return rows.map(row => row.map(cell => typeof cell === 'string' ? cell : {
+    v: Number(formatMoneyCents(cell)),
+    f: formatMoneyCents(cell).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,'),
+  }));
 }
 
 // Funding metadata stays numeric in editors; only fixed-dollar values cross as strings.

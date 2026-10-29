@@ -606,8 +606,14 @@ export * from ${source('common/ResponseTypes.ts')};
     const networth = [['date', 'Cash', 'Credit'], ['2026-10-01', '12.50', '-0.30']]
     routes.set('get /api/v1/reports/networth', async () => ({ body: networth }))
     await f.store.reports.loadReport('netWorth')
-    assert.deepEqual(f.store.reports.data, [['date', 'Cash', 'Credit'], ['2026-10-01', 12.5, -0.3]])
+    assert.deepEqual(f.store.reports.data, [['date', 'Cash', 'Credit'], ['2026-10-01', 1250, -30]])
     assert.strictEqual(networth[1][1], '12.50')
+    routes.set('get /api/v1/reports/networth', async () => ({ body: [['date', 'Cash'], ['2026-10-02', '0.10']] }))
+    await f.store.reports.loadReport('netWorth')
+    assert.deepEqual(f.store.reports.data, [['date', 'Cash'], ['2026-10-02', 10]])
+    routes.set('get /api/v1/reports/networth', async () => ({ body: [['date', 'Cash'], ['2026-10-03', '1.2']] }))
+    await assert.rejects(() => f.store.reports.loadReport('netWorth'))
+    assert.deepEqual(f.store.reports.data, [['date', 'Cash'], ['2026-10-02', 10]])
     const payee = [{ rowNumber: '1', name: 'Shop', paymentChannel: 'online', sum: '-12.50', count: 3 }]
     routes.set('get /api/v1/reports/payee', async () => ({ body: payee }))
     await f.store.reports.loadReport('payee')

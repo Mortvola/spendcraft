@@ -1,7 +1,8 @@
+import { networthChartData, type NetworthCentsReport } from '../monetary.js';
 import React from 'react';
 import Chart from 'react-google-charts';
 
-const NetworthContent: React.FC<{ data: (number | string)[][] | null }> = ({ data }) => (
+const NetworthContent: React.FC<{ data: NetworthCentsReport | null }> = ({ data }) => (
     <div className="chart-wrapper window window1">
       {
         data !== null && data.length <= 1
@@ -10,7 +11,7 @@ const NetworthContent: React.FC<{ data: (number | string)[][] | null }> = ({ dat
           ? (
             <Chart
               chartType="ComboChart"
-              data={data}
+              data={networthChartData(data)}
               options={{
                 width: ('100%' as unknown) as number,
                 height: ('100%' as unknown) as number,

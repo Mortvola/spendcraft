@@ -1,4 +1,4 @@
-import { decodeAmount, decodeNetworthReport } from '../monetary';
+import { decodeAmount, decodeNetworthReport, type NetworthCentsReport } from '../monetary';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 
@@ -16,7 +16,7 @@ class Reports {
   accessor reportType: string | null = null;
 
   @observable
-  accessor data: (string | number)[][] | Record<string, string | number>[] | null = null;
+  accessor data: NetworthCentsReport | Record<string, string | number>[] | null = null;
 
   store: unknown;
 
@@ -34,12 +34,13 @@ class Reports {
         if (response.ok) {
           const body = await response.body();
 
-          runInAction(() => {
-            this.reportType = reportType;
-            if (isNetworthReport(body)) {
-              this.data = decodeNetworthReport(body);
-            }
-          });
+          if (isNetworthReport(body)) {
+            const decoded = decodeNetworthReport(body);
+            runInAction(() => {
+              this.reportType = reportType;
+              this.data = decoded;
+            });
+          }
         }
 
         break;
