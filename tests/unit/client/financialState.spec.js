@@ -702,7 +702,10 @@ export * from ${source('common/ResponseTypes.ts')};
     }
   })
 
-  test('auto-assignment load, CREATE and PATCH decode fixed dollars and encode fixed-dollar requests', async ({ assert }) => {
+  test('auto-assignment load, CREATE and PATCH decode fixed dollars and encode fixed-dollar requests').with([
+    { fixedCents: 250, fixedWire: '2.50' },
+    { fixedCents: Number.MAX_SAFE_INTEGER, fixedWire: '90071992547409.91' },
+  ]).run(async ({ assert }, { fixedCents, fixedWire }) => {
     const props = { id: 1, name: 'Rule', searchStrings: ['Shop'], categories: [
       { id: 1, categoryId: 20, amount: '-0.12', percentage: false },
       { id: 2, categoryId: 21, amount: 12.75, percentage: true },
@@ -711,39 +714,55 @@ export * from ${source('common/ResponseTypes.ts')};
     routes.set('get /api/v1/auto-assignments', async () => ({ body: [props] }))
     await f.store.autoAssignments.load()
     const rule = f.store.autoAssignments.autoAssignemnts[0]
-    assert.deepEqual(rule.categories.map(row => row.amount), [-0.12, 12.75, 0])
+    assert.deepEqual(rule.categories.map(row => row.percentage ? row.amount : row.amountCents), [-12, 12.75, 0])
     assert.isNull(rule.categories[2].percentage)
     const input = { name: 'Updated', searchStrings: ['Shop'], categories: [
-      { id: 1, categoryId: 20, amount: 2.5, percentage: false },
+      { id: 1, categoryId: 20, amountCents: fixedCents, percentage: false },
       { id: 2, categoryId: 21, amount: 12.75, percentage: true },
     ] }
     routes.set('patch /api/v1/auto-assignments/1', async payload => {
       assert.deepEqual(payload, { ...input, categories: [
-        { id: 1, categoryId: 20, amount: '2.50', percentage: false },
+        { id: 1, categoryId: 20, amount: fixedWire, percentage: false },
         { id: 2, categoryId: 21, amount: 12.75, percentage: true },
       ] })
-      return { body: { ...props, name: 'Updated', categories: [{ ...input.categories[0], amount: '2.50' }] } }
+      return { body: { ...props, name: 'Updated', categories: [{ id: 1, categoryId: 20, percentage: false, amount: fixedWire }] } }
     })
     await rule.update(input)
-    assert.strictEqual(rule.categories[0].amount, 2.5)
+    assert.strictEqual(rule.categories[0].amountCents, fixedCents)
     assert.strictEqual(rule.categories[0].id, 1)
     routes.set('post /api/v1/auto-assignments', async payload => {
       assert.deepEqual(payload, { ...input, categories: [
-        { id: 1, categoryId: 20, amount: '2.50', percentage: false },
+        { id: 1, categoryId: 20, amount: fixedWire, percentage: false },
         { id: 2, categoryId: 21, amount: 12.75, percentage: true },
       ] })
       return { body: { ...props, id: 2 } }
     })
     await f.store.autoAssignments.add(input)
-    assert.strictEqual(f.store.autoAssignments.autoAssignemnts.find(row => row.id === 2).categories[0].amount, -0.12)
+    assert.strictEqual(f.store.autoAssignments.autoAssignemnts.find(row => row.id === 2).categories[0].amountCents, -12)
     for (const amount of [1, '', '1.2', '-0.00', 'Infinity', '90071992547409.92']) {
       routes.set('patch /api/v1/auto-assignments/1', async () => ({ body: { ...props, name: 'Invalid',
         categories: [{ ...props.categories[0], amount }] } }))
       await assert.rejects(() => rule.update(input))
       assert.strictEqual(rule.name, 'Updated')
-      assert.strictEqual(rule.categories[0].amount, 2.5)
+      assert.strictEqual(rule.categories[0].amountCents, fixedCents)
     }
   })
+
+  test('invalid fixed-dollar auto-assignment cents reject before HTTP').with([NaN, Infinity, 0.1, Number.MAX_SAFE_INTEGER + 1])
+    .run(async ({ assert }, amountCents) => {
+      routes.set('get /api/v1/auto-assignments', async () => ({ body: [{ id: 1, name: 'Rule', searchStrings: [],
+        categories: [{ id: 1, categoryId: 20, amount: '0.10', percentage: false }] }] }))
+      await f.store.autoAssignments.load()
+      routes.set('post /api/v1/auto-assignments', () => assert.fail('Invalid rule reached HTTP'))
+      routes.set('patch /api/v1/auto-assignments/1', () => assert.fail('Invalid rule reached HTTP'))
+      const input = { name: 'Changed', searchStrings: [], categories: [{ id: 1, categoryId: 20, percentage: false, amountCents }] }
+      const rule = f.store.autoAssignments.autoAssignemnts[0]
+      await assert.rejects(() => rule.update(input))
+      await assert.rejects(() => f.store.autoAssignments.add(input))
+      assert.strictEqual(rule.categories[0].amountCents, 10)
+      assert.strictEqual(rule.name, 'Rule')
+      assert.lengthOf(f.store.autoAssignments.autoAssignemnts, 1)
+    })
 
   test('bill debit strings become numeric client values and preserve null', ({ assert }) => {
     for (const [debits, expected] of [['-12.50', -12.5], ['0.00', 0], ['0.30', 0.3], [null, null]]) {

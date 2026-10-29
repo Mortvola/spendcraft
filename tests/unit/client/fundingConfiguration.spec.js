@@ -166,3 +166,50 @@ test.group('Category fixed-dollar funding cents', () => {
     }
   })
 })
+
+test.group('Auto-assignment fixed-dollar cents', () => {
+  test('CREATE/edit dialogs retain fixed cents, round text and keep percentages numeric').with([
+    ['0.125', 13], ['-0.125', -12], ['0.00', 0], ['-0.00', 0], ['90071992547409.91', Number.MAX_SAFE_INTEGER],
+  ]).run(async ({ assert }, [amount, expected]) => {
+    for (const editing of [false, true]) {
+      let saved
+      const save = async values => { saved = values }
+      const autoAssignment = editing ? { name: 'Rule', searchStrings: ['Shop'], categories: [
+        { id: 7, categoryId: 1, percentage: null, amountCents: -12 },
+        { id: 8, categoryId: 2, percentage: true, amount: 12.75 },
+      ], update: save } : undefined
+      const view = await initializer('../../../client-src/AutoAssignment/AutoAssignmentDialog.tsx', 'AutoAssignmentDialog', {
+        observer: component => component, React: { createElement, Fragment: 'fragment' },
+        useStores: () => ({ autoAssignments: { add: save }, categoryTree: { unassignedCat: { id: 0 } } }),
+        FormModal: 'modal', FormField: 'field', FieldArray: 'array', CategorySpread: 'spread', LucideButton: 'button',
+        Plus: 'plus', Minus: 'minus', styles: {},
+      })
+      const modal = view({ autoAssignment, setShow: () => undefined })
+      if (editing) {
+        assert.strictEqual(modal.props.initialValues.categories[0].amount, '-0.12')
+        assert.isFalse(modal.props.initialValues.categories[0].percentage)
+        assert.strictEqual(modal.props.initialValues.categories[1].amount, 12.75)
+      }
+      const values = { name: 'Updated', searchStrings: ['Shop'], categories: [
+        { id: -1, categoryId: 1, percentage: false, amount },
+        { id: 8, categoryId: 2, percentage: true, amount: '12.75' },
+      ] }
+      assert.isEmpty(modal.props.validate(values))
+      await modal.props.onSubmit(values)
+      assert.strictEqual(saved.categories[0].amountCents, expected)
+      assert.notProperty(saved.categories[0], 'amount')
+      assert.strictEqual(saved.categories[0].id, -1)
+      assert.strictEqual(saved.categories[1].amount, 12.75)
+      assert.notProperty(saved.categories[1], 'amountCents')
+      assert.strictEqual(saved.name, 'Updated')
+      assert.deepEqual(Array.from(saved.searchStrings), ['Shop'])
+      assert.strictEqual(values.categories[0].amount, amount)
+      const body = modal.props.children[0]({ values })
+      assert.isTrue(find(body, e => e.type === 'spread').props.centAmounts)
+      for (const invalid of ['bad', 'Infinity', '90071992547409.92']) {
+        assert.isString(modal.props.validate({ ...values, categories: [{ id: 1, categoryId: 1, percentage: false, amount: invalid }] }).categories)
+      }
+      assert.isString(modal.props.validate({ ...values, categories: [{ id: 1, categoryId: 1, percentage: true, amount: 'bad' }] }).categories)
+    }
+  })
+})

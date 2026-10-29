@@ -1,8 +1,25 @@
 import type { AutoAssignmentWriteRequest } from '../../common/ResponseTypes';
-import { decodeFundingRules, encodeFundingRules } from '../monetary';
+import { decodeCentFundingRules, encodeCentFundingRules, type CentFundingRule } from '../monetary';
 import Http from '@mortvola/http';
 import { observable, runInAction } from 'mobx';
-import { AutoAssignmentInterface, AutoAssignmentProps, StoreInterface } from './Types';
+import { AutoAssignmentInterface, AutoAssignmentProps, AutoAssignmentRule, StoreInterface } from './Types';
+
+// Null remains the legacy fixed-dollar mode on reads; requests use boolean modes.
+export const decodeAutoAssignmentRules = (rules: AutoAssignmentProps['categories']): AutoAssignmentRule[] => rules.map(rule => {
+  if (rule.percentage !== true && rule.percentage !== false && rule.percentage !== null) throw new Error('Invalid auto-assignment mode');
+  const [decoded] = decodeCentFundingRules([rule.percentage === true ? rule : { ...rule, percentage: false }]);
+  return decoded.percentage
+    ? { ...decoded, id: rule.id }
+    : { ...decoded, id: rule.id, percentage: rule.percentage === null ? null : false };
+});
+
+export const encodeAutoAssignmentRules = (rules: readonly AutoAssignmentRule[]): AutoAssignmentWriteRequest['categories'] => {
+  const normalized = rules.map<CentFundingRule>(rule => {
+    if (rule.percentage !== true && rule.percentage !== false && rule.percentage !== null) throw new Error('Invalid auto-assignment mode');
+    return rule.percentage === true ? rule : { ...rule, percentage: false };
+  });
+  return encodeCentFundingRules(normalized).map((rule, index) => ({ ...rule, id: rules[index].id }));
+};
 
 class AutoAssignment implements AutoAssignmentInterface {
   id: number;
@@ -14,7 +31,7 @@ class AutoAssignment implements AutoAssignmentInterface {
   accessor searchStrings: string[] = [];
 
   @observable
-  accessor categories: { id: number, categoryId: number, amount: number, percentage: boolean }[] = []
+  accessor categories: AutoAssignmentRule[] = []
 
   store: StoreInterface;
 
@@ -23,7 +40,7 @@ class AutoAssignment implements AutoAssignmentInterface {
     this.name = props.name
 
     this.searchStrings = props.searchStrings
-    this.categories = decodeFundingRules(props.categories)
+    this.categories = decodeAutoAssignmentRules(props.categories)
 
     this.store = store;
   }
@@ -31,23 +48,18 @@ class AutoAssignment implements AutoAssignmentInterface {
   async update(props: {
     name: string,
     searchStrings: string[],
-    categories: {
-      id: number,
-      categoryId: number,
-      amount: number,
-      percentage: boolean,
-    }[],
+    categories: AutoAssignmentRule[],
   }) {
     const response = await Http.patch<AutoAssignmentWriteRequest, AutoAssignmentProps>(`/api/v1/auto-assignments/${this.id}`, {
       name: props.name,
       searchStrings: props.searchStrings,
-      categories: encodeFundingRules(props.categories),
+      categories: encodeAutoAssignmentRules(props.categories),
     })
 
     if (response.ok) {
       const body = await response.body();
 
-      const categories = decodeFundingRules(body.categories);
+      const categories = decodeAutoAssignmentRules(body.categories);
       runInAction(() => {
         this.name = body.name;
         this.searchStrings = body.searchStrings;

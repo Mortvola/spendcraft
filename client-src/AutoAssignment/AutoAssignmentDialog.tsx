@@ -6,10 +6,12 @@ import {
 } from 'formik';
 import { observer } from 'mobx-react-lite';
 import { Minus, Plus } from 'lucide-react';
-import { AutoAssignmentInterface } from '../State/Types';
+import { AutoAssignmentInterface, AutoAssignmentRule } from '../State/Types';
 import { useStores } from '../State/Store';
 import styles from './AutoAssignmentDialog.module.scss'
-import CategorySpread from '../CategorySpread/CategorySpread';
+import CategorySpread, { type CategorySpreadInput } from '../CategorySpread/CategorySpread';
+import { formatMoneyCents } from '../../common/moneyCents';
+import { inputMoneyCents } from '../monetary';
 import LucideButton from '../LucideButton';
 
 // let tempId = -1;
@@ -55,28 +57,40 @@ const AutoAssignmentDialog: React.FC<PropsType & ModalProps> = observer(({
   interface ValueType {
     name: string,
     searchStrings: string[],
-    categories: { id: number, categoryId: number, amount: number, percentage: boolean }[],
+    categories: (CategorySpreadInput & { id: number })[],
   }
 
-  const handleValidate = (_values: ValueType) => {
+  const handleValidate = (values: ValueType) => {
     const errors: FormikErrors<ValueType> = {};
-
+    try {
+      for (const rule of values.categories) {
+        if (rule.percentage) {
+          if (!Number.isFinite(Number(rule.amount))) throw new Error('Invalid percentage');
+        } else inputMoneyCents(rule.amount);
+      }
+    }
+    catch { errors.categories = 'Enter valid, safe assignment amounts.'; }
     return errors;
   }
 
   const handleSubmit = async (values: ValueType) => {
+    const categories: AutoAssignmentRule[] = values.categories.map(({ amount, ...rule }) => (
+      rule.percentage
+        ? { ...rule, percentage: true, amount: Number(amount) }
+        : { ...rule, percentage: false, amountCents: inputMoneyCents(amount) }
+    ));
     if (autoAssignment) {
       await autoAssignment.update({
         name: values.name,
         searchStrings: values.searchStrings,
-        categories: values.categories,
+        categories,
       })
     }
     else {
       await autoAssignments.add({
         name: values.name,
         searchStrings: values.searchStrings,
-        categories: values.categories,
+        categories,
       })
     }
 
@@ -91,14 +105,14 @@ const AutoAssignmentDialog: React.FC<PropsType & ModalProps> = observer(({
     setShow(false)
   }
 
-  const initialCategories = (categories?: { id: number, categoryId: number, amount: number, percentage: boolean}[]) => {
+  const initialCategories = (categories?: AutoAssignmentRule[]) => {
     if (!categories || categories.length === 0) {
       return [{
         id: -1, categoryId: unassignedCat.id, amount: 100, percentage: true,
       }]
     }
     return categories.map((c) => ({
-      id: c.id, categoryId: c.categoryId, amount: c.amount, percentage: c.percentage,
+      id: c.id, categoryId: c.categoryId, amount: c.percentage === true ? c.amount : formatMoneyCents(c.amountCents), percentage: c.percentage === true,
     }))
   }
 
@@ -156,6 +170,7 @@ const AutoAssignmentDialog: React.FC<PropsType & ModalProps> = observer(({
             </label>
 
             <CategorySpread
+              centAmounts
               name="categories"
               categories={formikProps.values.categories}
               title="Categories:"

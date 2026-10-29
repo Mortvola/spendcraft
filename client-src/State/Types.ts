@@ -12,7 +12,7 @@ import {
   CategoryBalanceProps,
   AccountProps,
   BillProps,
-  FundingRuleResponse,
+  DecimalMoneyString,
   StatementProps,
   GroupType,
   UpdateStatementProps,
@@ -625,8 +625,14 @@ export interface AutoAssignmentProps {
   id: number;
   name: string;
   searchStrings: string[],
-  categories: ({ id: number } & FundingRuleResponse)[],
+  categories: ({ id: number; categoryId: number } & (
+    { percentage: true; amount: number } | { percentage: false | null; amount: DecimalMoneyString }
+  ))[],
 }
+
+export type AutoAssignmentRule = { id: number; categoryId: number } & (
+  { percentage: true; amount: number } | { percentage: false | null; amountCents: MoneyCents }
+);
 
 export type AutoAssignmentsResponse = AutoAssignmentProps[]
 
@@ -637,12 +643,12 @@ export interface AutoAssignmentInterface {
 
   searchStrings: string[],
 
-  categories: { id: number, categoryId: number, amount: number, percentage: boolean }[],
+  categories: AutoAssignmentRule[],
 
   update(props: {
     name: string,
     searchStrings: string[],
-    categories: { id: number, categoryId: number, amount: number, percentage: boolean }[],
+    categories: AutoAssignmentRule[],
   }): Promise<void>;
 
   delete(): Promise<void>;
