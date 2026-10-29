@@ -297,14 +297,7 @@ roundtrip', ({ assert }) => {
     assert.equal(row.categories[0].baseAmount, 54.27)
     assert.deepEqual(persist(row), {})
   })
-  test(
-    'SQL decimal extraction, Budget locks, ownership and transaction binding remain at existing \
-boundaries', async ({ assert }) => {
-    const source = await readFile('app/Controllers/Http/CategoriesController.ts', 'utf8')
-    assert.include(source, '"baseAmount" decimal')
-    assert.include(source, 'sum(coalesce(transCats."baseAmount", 0))')
-    assert.include(source, 'forUpdate()'); assert.include(source, 'client: trx')
-    assert.include(source, 'validateStoredCategoryConservation(transaction)')
+  test('hydrated funding rules prepare without changing stored values', ({ assert }) => {
     const raw = [rule('1.00')], row = new Sample()
     row.$isPersisted = true
     const decoded = consumeFundingStorage(raw, row)

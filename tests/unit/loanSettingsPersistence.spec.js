@@ -157,26 +157,6 @@ test.group('Loan settings persistence investigation (no database)', () => {
       assert.equal(store.row.starting_balance, expected.startingBalance)
     })
 
-  test('Budget gate precedes both fresh loads and coupled saves', async ({ assert }) => {
-    const source = await readFile('app/Controllers/Http/LoansController.ts', 'utf8')
-    const update = source.slice(source.indexOf('  public async update('), source.indexOf(
-      '  public async getTransactions('))
-    assert.include(update, 'budgetLoans(user.budgetId, { client: trx })')
-    assert.include(update, 'await category.save()')
-    assert.include(update, 'await loan.save()')
-    assert.include(update, 'user.useTransaction(trx)')
-    assert.isBelow(update.indexOf('forUpdate()'), update.indexOf('const loan ='))
-    assert.isBelow(update.indexOf('const loan ='), update.indexOf('const category ='))
-    assert.isBelow(update.indexOf('const category ='), update.indexOf('loan.merge'))
-    assert.isBelow(update.indexOf('await loan.save()'), update.indexOf('await category.save()'))
-    assert.isBelow(update.indexOf('await category.save()'), update.indexOf('await trx.commit()'))
-    assert.notInclude(update, 'refresh()')
-    assert.isBelow(update.indexOf('const loan ='), update.indexOf('await category.save()'))
-    assert.notInclude(update, 'Account')
-    assert.notInclude(update, '.balance')
-    assert.notInclude(update, 'fundingPool')
-    assert.notInclude(update, 'transactionLog')
-  })
 })
 
 

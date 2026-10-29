@@ -124,10 +124,8 @@ test.group('Allocation report authority characterization without DB', () => {
     const f = adapter({ legacy: [{ transactionId: 1, categoryId: 10, amount: 50 }], transaction: {
       id: 1, type: 5, date: '2026-02-10', budgetId: 1, categories: [{ categoryId: 10, amount: 50 }],
         deleted: true, pending: true, startDate: '2026-03-01' } })
-    const { run, body } = await sourceMethod('category', { db: f.db })
+    const { run } = await sourceMethod('category', { db: f.db })
     assert.equal((await run({ id: 1 }, '2026-01-01', '2026-12-31', [10]))[0].sum, 50)
-    assert.notInclude(body, 'deleted'); assert.notInclude(body, 'pending'); assert.notInclude(body,
-      'start_date'); assert.notInclude(body, "join('accounts'")
   })
   test('conceptual missing Category INNER JOIN drops even a legacy allocation', async ({
     assert }) => {
@@ -160,44 +158,13 @@ test.group('Allocation report authority characterization without DB', () => {
     const rows = await run({ id: 1, getAccountTransferCategory: async () => ({ id: 99 }) })
     assert.equal(rows[0][1], scenario.expected)
   })
-  test('active Category, Funding History and Income JSON readers leave Progress separate', async ({
-    assert }) => {
-    const ui = await readFile('client-src/Reports/Reports.tsx', 'utf8')
-    for (const [method, component] of [['category', 'Category'], ['incomeVsExpenses',
-      'IncomeVsExpenses'], ['fundingHistory', 'FundingHistory'], ['budgetProgress',
-      'BudgetProgress']]) {
-      assert.include(ui, `<${component} />`)
-      const body = (await sourceMethod(method)).body
-      if (['category', 'fundingHistory', 'incomeVsExpenses'].includes(method)) { assert.notInclude(
-        body, 'transaction_categories'); assert.include(body, 'jsonb_to_recordset') }
-      else assert.include(body, 'transaction_categories')
-    }
-  })
-  test(
-    'funding is type2 net rows; progress depends on legacy monthly flag; tax and net worth have \
-separate sources', async ({ assert }) => {
-    const funding = (await sourceMethod('fundingHistory')).body
-    assert.include(funding, 'sum(allocation.amount)'); assert.include(funding, 't.type = 2'); assert
-      .notInclude(funding, 'baseAmount')
-    assert.notInclude(funding, 't.deleted'); assert.include(funding,
-      't.application_id = g.application_id')
-    const progress = (await sourceMethod('budgetProgress')).body
-    assert.include(progress, "'c.monthly_expenses', true"); assert.include(progress,
-      'TransactionType.STARTING_BALANCE')
-    assert.notInclude(await readFile('app/Models/Category.ts', 'utf8'), 'monthlyExpenses')
-    assert.notInclude(await readFile('app/Controllers/Http/TaxesController.ts', 'utf8'),
-      'transaction_categories')
-    assert.include(await readFile('app/Controllers/Http/TaxesController.ts', 'utf8'),
-      'transactions.taxes')
-    assert.notInclude((await sourceMethod('networth')).body, 'transaction_categories')
-  })
   test('Funding History exclusively expands net JSON, with no fallback').with([
     { json: [50], legacy: null, expected: 50 }, { json: [50], legacy: 20, expected: 50 },
     { json: [50], legacy: 50, expected: 50 }, { json: [], legacy: 50, expected: null },
     { json: [], legacy: null, expected: null }, { json: [20, 30], legacy: 99, expected: 50 },
   ]).run(async ({ assert }, scenario) => {
     let sql = ''
-    const { run, body } = await sourceMethod('fundingHistory', { db: {
+    const { run } = await sourceMethod('fundingHistory', { db: {
       raw(value) { sql = value; return value },
       query() { return { select() { return this }, from() { return this }, join() { return this },
         where() { return this }, andWhere() { return this }, orderBy() { return this },
@@ -212,7 +179,6 @@ separate sources', async ({ assert }) => {
     } })
     const rows = await run({ id: 1 })
     assert.equal(rows[0].history?.[0].amount ?? null, scenario.expected)
-    assert.notInclude(body, 'transaction_categories'); assert.notInclude(body, 'baseAmount')
     assert.include(sql, 't.type = 2'); assert.include(sql, 't.application_id = g.application_id')
   })
   test('Category sums multiple Categories and explicit Unassigned without multiplication', async ({

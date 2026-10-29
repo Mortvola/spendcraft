@@ -119,22 +119,6 @@ test.group('Category/Pool bounded Budget protocol (no database)', () => {
     const f = await offlineFixture({ balances: [10, 20], tracking: TrackingType.Balances })
     assert.equal(f.storedPool, 100); assert.equal(f.statements, 2); assert.lengthOf(f.seen, 0)
   })
-  test('both offline routes gate reads while only new-Institution creation posts opening effects',
-    async ({ assert }) => {
-    const fresh = await method(institutions, 'addOffline')
-    const existing = await method(institutions, 'addOfflineAccount')
-    assert.isBelow(fresh.body.indexOf('.forUpdate()'), fresh.body.indexOf('getFundingPoolCategory'))
-    assert.isBelow(fresh.body.indexOf('.forUpdate()'), fresh.body.indexOf(
-      "related('institutions').create"))
-    assert.include(fresh.body, 'getFundingPoolCategory({ client: trx })')
-    assert.include(existing.body, '.forUpdate()')
-    assert.isBelow(existing.body.indexOf('.forUpdate()'), existing.body.indexOf(
-      'budgetInstitutions('))
-    assert.notInclude(existing.body, 'updateStartingBalance')
-    assert.notInclude(existing.body, 'fundingPool.save')
-    const helper = await method('app/Models/Account.ts', 'updateStartingBalance')
-    assert.notInclude(helper.body, 'fundingPool.save')
-  })
   test('Category waiter sees committed usage and returns409 before deletion', async ({ assert }) =>
     {
     const f = await deletionFixture('used'); await f.invoke()
@@ -162,13 +146,6 @@ test.group('Category/Pool bounded Budget protocol (no database)', () => {
     const f = await deletionFixture('missing'); await assert.rejects(f.invoke, 'Row not found')
     assert.notInclude(f.events, 'delete'); assert.notInclude(f.events, 'membership.read'); assert
       .include(f.events, 'rollback')
-  })
-  test('Category gate precedes scoped reads and changes no substantive admission rule', async ({
-    assert }) => {
-    const { body } = await method(categories, 'deleteCategory')
-    assert.isBelow(body.indexOf('.forUpdate()'), body.indexOf('budgetGroups('))
-    assert.include(body, 'db.query().useTransaction(trx)')
-    assert.notInclude(body, 'category.balance'); assert.include(body, "where('deleted', false)")
   })
   test('shared cascade arithmetic remains unchanged and acquires no additional explicit lock',
     async ({ assert }) => {

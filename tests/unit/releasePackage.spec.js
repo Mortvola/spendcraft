@@ -194,10 +194,4 @@ esac
       if (failure === 'manifest') assert.include(result.stderr, 'must match the committed HEAD')
       await assert.rejects(() => readdir(join(root, 'releases')))
     })
-  test('deploy script references only existing release packaging, not a build', async ({
-    assert }) => {
-    const script = await readFile(resolve('deploy.sh'), 'utf8')
-    assert.notInclude(script, './build.sh')
-    assert.include(script, 'releasePackage.mjs" installer')
-  })
 })

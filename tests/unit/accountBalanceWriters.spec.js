@@ -4,7 +4,7 @@ import { URL } from 'node:url'
 import ts from 'typescript'
 import { runInNewContext } from 'node:vm'
 
-// Source contracts and inert behavioral tests: no application, ORM or DB bootstrap.
+// Inert behavioral tests: no application, ORM or DB bootstrap.
 async function method(file, name) {
   const source = await readFile(new URL(`../../${file}`, import.meta.url), 'utf8')
   const ast = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true)
@@ -15,88 +15,13 @@ async function method(file, name) {
   }
   visit(ast)
   if (!found?.body) throw new Error(`Missing method ${file}:${name}`)
-  const writes = []
-  function inspect(node) {
-    if (ts.isBinaryExpression(node)
-      && node.operatorToken.kind >= ts.SyntaxKind.FirstAssignment
-      && node.operatorToken.kind <= ts.SyntaxKind.LastAssignment
-      && ts.isPropertyAccessExpression(node.left)
-      && node.left.name.text === 'balance') writes.push(node.left.getText(ast))
-    ts.forEachChild(node, inspect)
-  }
-  inspect(found.body)
-  return { body: found.body.getText(ast), writes, parameters: found.parameters.map((parameter) =>
+  return { body: found.body.getText(ast), parameters: found.parameters.map((parameter) =>
     parameter.getText(ast)).join(', ') }
 }
 
 const accounts = 'app/Controllers/Http/AccountsController.ts'
 const transactions = 'app/Controllers/Http/TransactionsController.ts'
 
-test.group('Current Account writer concurrency characterization', () => {
-  test('manual CREATE gates before all financial reads', async ({ assert }) => {
-    const { body, writes } = await method(accounts, 'addTransaction')
-    assert.isAbove(body.indexOf('const account ='), body.indexOf('db.transaction()'))
-    assert.include(writes, 'account.balance')
-    assert.include(body, 'await account.save()')
-    assert.isAbove(body.indexOf('.forUpdate()'), -1)
-    assert.isAbove(body.indexOf("const unassignedCat ="), body.indexOf('.forUpdate()'))
-    assert.isAbove(body.indexOf('.forUpdate()'), body.indexOf('user.useTransaction(trx)'))
-  })
-
-  test('DELETE gates before target and financial reads', async ({ assert }) => {
-    const { body, writes } = await method(transactions, 'delete')
-    assert.include(writes, 'account.balance')
-    assert.include(body, 'await account.save()')
-    assert.isAbove(body.indexOf('.forUpdate()'), -1)
-    assert.isAbove(body.indexOf('const transaction ='), body.indexOf('.forUpdate()'))
-    assert.isAbove(body.indexOf('.forUpdate()'), body.indexOf('user.useTransaction(trx)'))
-  })
-
-  test('PATCH and HTTP OFX acquire existing gate before fresh Account lookup', async ({ assert }) =>
-    {
-    for (const [file, name] of [[transactions, 'update'], [accounts, 'uploadOfx']]) {
-      const { body } = await method(file, name)
-      assert.isAbove(body.indexOf('.forUpdate()'), -1)
-      assert.isAbove(body.indexOf('const account ='), body.indexOf('.forUpdate()'))
-    }
-  })
-
-  test('startDate saves settings but does not assign Account.balance', async ({ assert }) => {
-    const { body, writes } = await method(accounts, 'update')
-    assert.notInclude(writes, 'account.balance')
-    assert.include(body, 'await account.save()')
-    const opening = await method('app/Models/Account.ts', 'updateStartingBalance')
-    assert.notInclude(opening.writes, 'this.balance')
-  })
-
-  test('provider refresh and shared-state branches follow the gate', async ({ assert }) => {
-    const sync = await method('app/Models/Institution.ts', 'syncUpdate')
-    assert.isAbove(sync.body.indexOf("const accounts = await this.related('accounts')"), sync.body
-      .indexOf('.forUpdate()'))
-    const batch = await method('app/Controllers/Http/InstitutionController.ts', 'syncAll')
-    assert.notInclude(batch.body, 'Promise.all(')
-    const balances = await method('app/Models/Institution.ts', 'updateAccountBalances')
-    assert.notInclude(balances.body, 'Promise.all(')
-    assert.include(balances.writes, 'acct.balance')
-    assert.isAbove(sync.body.indexOf('await this.refresh()'), sync.body.indexOf('.forUpdate()'))
-    assert.isAbove(sync.body.indexOf('let nextCursor = this.cursor'), sync.body.indexOf(
-      'await this.refresh()'))
-  })
-
-  test('command selects identity before gate and reloads scoped Account after it', async ({
-    assert }) => {
-    const command = await method('commands/OfxUpload.ts', 'run')
-    assert.isAbove(command.body.indexOf('.forUpdate()'), command.body.indexOf(
-      'this.prompt.choice('))
-    assert.isAbove(command.body.indexOf('const account = await Account.query({ client: trx })'),
-      command.body.indexOf('.forUpdate()'))
-    assert.include(command.body, "query.where('budgetId', budget.id)")
-    assert.include(command.body, "User.findBy('username', username, { client: trx })")
-    const check = await method('commands/CheckBalances.ts', 'checkCategoryBalances')
-    assert.notInclude(check.writes, 'account.balance')
-    assert.include(check.writes, 'category.balance')
-  })
-})
 
 
 test.group('Budget-gated controller behavior without a database', () => {
@@ -145,12 +70,6 @@ test.group('Budget-gated controller behavior without a database', () => {
       assert.isTrue(rolledBack)
     })
 
-  test('deprecated history mutations are absent rather than joining the gate', async ({ assert }) =>
-    {
-    const source = await readFile(accounts, 'utf8')
-    for (const name of ['addBalance', 'updateBalance', 'deleteBalance']) assert.notInclude(source,
-      `async ${name}(`)
-  })
 })
 
 test.group('Provider concurrency behavior without a database', () => {

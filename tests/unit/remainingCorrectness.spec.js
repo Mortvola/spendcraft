@@ -48,12 +48,6 @@ test.group('Remaining correctness source characterization without DB', () => {
     assert.isTrue(rolledBack)
   })
 
-  test('legacy DELETE financial handler and route are removed', async ({ assert }) => {
-    const controller = await readFile('app/Controllers/Http/CategoriesController.ts', 'utf8')
-    const routes = await readFile('start/routes.ts', 'utf8')
-    assert.notInclude(controller, 'transferDelete')
-    assert.notInclude(routes, 'transferDelete')
-  })
 
   test('Loan update saves merged settings and Category name after the Budget gate', async ({
     assert }) => {

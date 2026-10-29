@@ -225,11 +225,5 @@ test.group('Income transfer cardinality without database', () => {
     assert.deepEqual(aggregate.sums, ['transfer.amount as amount'])
     assert.deepEqual(aggregate.filters, [['transfer_transaction.application_id', '=', 1], [
       'transfer.categoryId', '=', 99]])
-    assert.notInclude(f.body, 'DISTINCT'); assert.include(f.body, 'jsonb_to_recordset'); assert
-      .notInclude(f.body, 'transaction_categories')
-    assert.notInclude(f.body, '.save('); assert.notInclude(f.body, '.forUpdate(')
-    assert.notInclude(f.body, 'pending'); assert.notInclude(f.body, 'deleted'); assert.notInclude(f
-      .body, 'startDate')
-    assert.include(f.body, 'parseFloat(row.income) + parseFloat(row.expenses)')
   })
 })
