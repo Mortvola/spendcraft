@@ -923,6 +923,62 @@ export * from ${source('common/ResponseTypes.ts')};
     }
   })
 
+  test('capital-gains allocations cross each filing-status threshold in exact cents', ({ assert }) => {
+    const taxes = f.store.taxes
+    const printTaxes = taxes.constructor.printTaxes
+    let captured
+    taxes.constructor.printTaxes = map => {
+      captured = new Map(map)
+      return printTaxes(map)
+    }
+    try {
+      const statuses = [
+        [state.FilingStatus.Single, '48350.00', '533400.00'],
+        [state.FilingStatus.MarriedFilingSeparate, '48350.00', '300000.00'],
+        [state.FilingStatus.MarriedFilingJointly, '96700.00', '600050.00'],
+        [state.FilingStatus.QualifyingSurvivingSpouse, '96700.00', '600050.00'],
+        [state.FilingStatus.HeadOfHousehold, '64750.00', '566700.00'],
+      ]
+      for (const [filingStatus, zeroLimit, fifteenLimit] of statuses) {
+        state.runInAction(() => { taxes.filingStatus = filingStatus })
+        assert.strictEqual(taxes.maxZeroPctTaxableIncomeCents(), parseMoneyCents(zeroLimit))
+        assert.strictEqual(taxes.maxFifteenPctTaxableIncomeCents(), parseMoneyCents(fifteenLimit))
+        for (const [ordinary, gains, expected] of [
+          [parseMoneyCents(zeroLimit) - 1, 3, [[0, 1], [15, 2]]],
+          [parseMoneyCents(fifteenLimit) - 1, 3, [[15, 1], [20, 2]]],
+        ]) {
+          for (const useGains of [false, true]) {
+            taxes.updateValues({ year: 2026, forecast: { filingStatus,
+              taxableInterest: formatMoneyCents(ordinary + parseMoneyCents(taxes.standardDeduction.toFixed(2))),
+              ordinaryDividends: useGains ? '0.00' : formatMoneyCents(gains),
+              qualifiedDividends: useGains ? '0.00' : formatMoneyCents(gains),
+              longTermCapitalGains: useGains ? formatMoneyCents(gains) : '0.00',
+            }, actuals: [] })
+            const result = taxes.run
+            const allocations = result.brackets.filter(([rate]) => [0, 15, 20].includes(rate))
+            assert.deepEqual(allocations.map(([rate, entry]) => [rate, entry.amountCents]), expected)
+            assert.strictEqual(allocations.reduce((sum, [, entry]) => sum + entry.amountCents, 0), gains)
+            for (const [rate, cents] of expected) {
+              assert.strictEqual(captured.get(rate).tax, (cents / 100) * (rate / 100))
+            }
+            const rawTotal = [...captured.values()].reduce((sum, entry) => sum + entry.tax, 0)
+            assert.strictEqual(result.totalTaxesCents, inputMoneyCents(rawTotal.toFixed(2)))
+          }
+        }
+      }
+      taxes.updateValues({ year: 2026, forecast: { filingStatus: state.FilingStatus.Single,
+        taxableInterest: '15750.00', ordinaryDividends: '0.10', qualifiedDividends: '0.10',
+      }, actuals: [] })
+      assert.deepEqual(taxes.run.brackets, [[0, { amountCents: 10, taxCents: 0 }]])
+      taxes.updateValues({ year: 2026, forecast: { filingStatus: state.FilingStatus.Single,
+        taxableInterest: '15750.00', longTermCapitalGains: '-0.01',
+      }, actuals: [] })
+      assert.deepEqual(taxes.run.brackets, [])
+    } finally {
+      taxes.constructor.printTaxes = printTaxes
+    }
+  })
+
   test('Tax result outputs round only after raw bracket totals and rates are calculated', ({ assert }) => {
     const printTaxes = f.store.taxes.constructor.printTaxes
     const brackets = new Map([[10, { tax: 0.005, amount: 0.1 }], [20, { tax: 0.005, amount: 0.2 }]])

@@ -289,30 +289,30 @@ export default class Taxes implements TaxesInterface {
     return taxes;
   }
 
-  maxZeroPctTaxableIncome(): number {
+  maxZeroPctTaxableIncomeCents(): MoneyCents {
     switch (this.filingStatus) {
       case FilingStatus.Single:
       case FilingStatus.MarriedFilingSeparate:
-        return 48350;
+        return parseMoneyCents("48350.00");
       case FilingStatus.QualifyingSurvivingSpouse:
       case FilingStatus.MarriedFilingJointly:
-        return 96700;
+        return parseMoneyCents("96700.00");
       case FilingStatus.HeadOfHousehold:
-        return 64750;
+        return parseMoneyCents("64750.00");
     }
   }
 
-  maxFifteenPctTaxableIncome(): number {
+  maxFifteenPctTaxableIncomeCents(): MoneyCents {
     switch (this.filingStatus) {
       case FilingStatus.Single:
-        return 533400;
+        return parseMoneyCents("533400.00");
       case FilingStatus.MarriedFilingSeparate:
-        return 300000;
+        return parseMoneyCents("300000.00");
       case FilingStatus.QualifyingSurvivingSpouse:
       case FilingStatus.MarriedFilingJointly:
-        return 600050;
+        return parseMoneyCents("600050.00");
       case FilingStatus.HeadOfHousehold:
-        return 566700;
+        return parseMoneyCents("566700.00");
     }
   }
 
@@ -368,56 +368,46 @@ export default class Taxes implements TaxesInterface {
     const ordinaryIncomeDifference = subtractMoneyCents(taxableIncomeCents, dividendsAndGainsCents);
     const ordinaryIncomeCents = ordinaryIncomeDifference < 0 ? zero : ordinaryIncomeDifference;
 
-    const line1 = Number(formatMoneyCents(taxableIncomeCents));
-    const line4 = Number(formatMoneyCents(dividendsAndGainsCents));
-    const line5 = Number(formatMoneyCents(ordinaryIncomeCents));
-
-    // Compute 0% taxes
-    const line6 = this.maxZeroPctTaxableIncome();
-
-    const line7 = Math.min(line1, line6);
-
-    const line8 = Math.min(line5, line7);
-
-    // line 9
-    const line9 = Math.max(line7 - line8, 0);
+    // Allocate taxable amounts entirely in cents. Only percentage-tax results
+    // cross into the existing unrounded dollar-number tax map.
+    const line6 = this.maxZeroPctTaxableIncomeCents();
+    const line7 = taxableIncomeCents < line6 ? taxableIncomeCents : line6;
+    const line8 = ordinaryIncomeCents < line7 ? ordinaryIncomeCents : line7;
+    const line9Difference = subtractMoneyCents(line7, line8);
+    const line9 = line9Difference > 0 ? line9Difference : zero;
 
     if (line9 > 0) {
-      taxBrackets.set(0, { amount: line9, tax: 0 })
+      taxBrackets.set(0, { amount: Number(formatMoneyCents(line9)), tax: 0 });
     }
 
     // Compute 15% taxes
-    const line10 = Math.min(line1, line4)
+    const line10 = taxableIncomeCents < dividendsAndGainsCents ? taxableIncomeCents : dividendsAndGainsCents;
+    const line12Difference = subtractMoneyCents(line10, line9);
+    const line12 = line12Difference > 0 ? line12Difference : zero;
+    const line13 = this.maxFifteenPctTaxableIncomeCents();
+    const line14 = taxableIncomeCents < line13 ? taxableIncomeCents : line13;
+    const line15 = addMoneyCents(ordinaryIncomeCents, line9);
+    const line16Difference = subtractMoneyCents(line14, line15);
+    const line16 = line16Difference > 0 ? line16Difference : zero;
+    const line17 = line12 < line16 ? line12 : line16;
 
-    const line11 = line9
-
-    const line12 = Math.max(line10 - line11, 0)
-
-    const line13 = this.maxFifteenPctTaxableIncome();
-
-    const line14 = Math.min(line1, line13)
-
-    const line15 = line5 + line9
-
-    const line16 = Math.max(line14 - line15, 0);
-
-    const line17 = Math.min(line12, line16)
-
-    let line18 = 0
-    if (Math.round(line17 * 100)> 0) {
-      line18 = line17 * 0.15;
-      taxBrackets.set(15, { amount: line17, tax: line18 })
+    let line18 = 0;
+    if (line17 > 0) {
+      const amount = Number(formatMoneyCents(line17));
+      line18 = amount * 0.15;
+      taxBrackets.set(15, { amount, tax: line18 });
     }
 
-    const line19 = line9 + line17
-
     // Compute 20% taxes
-    const line20 = Math.max(line10 - line19, 0);
+    const line19 = addMoneyCents(line9, line17);
+    const line20Difference = subtractMoneyCents(line10, line19);
+    const line20 = line20Difference > 0 ? line20Difference : zero;
 
-    let line21 = 0
-    if (Math.round(line20 * 100)> 0) {
-      line21 = line20 * 0.20;
-      taxBrackets.set(20, { amount: line20, tax: line21 })
+    let line21 = 0;
+    if (line20 > 0) {
+      const amount = Number(formatMoneyCents(line20));
+      line21 = amount * 0.20;
+      taxBrackets.set(20, { amount, tax: line21 });
     }
 
     // Compute regular tax rate
