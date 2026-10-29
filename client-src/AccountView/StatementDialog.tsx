@@ -29,17 +29,23 @@ const StatementDialog: React.FC<PropsType & ModalProps> = ({
   interface ValueType {
     startDate: string,
     endDate: string,
-    startingBalance: string | number,
-    endingBalance: string | number,
-    shortTermGains: number,
-    longTermGains: number,
-    dividends: number,
-    taxableInterest: number,
+    startingBalance: string,
+    endingBalance: string,
+    shortTermGains: string,
+    longTermGains: string,
+    dividends: string,
+    taxableInterest: string,
   }
 
-  const handleValidate = (_values: ValueType) => {
+  const handleValidate = (values: ValueType) => {
     const errors: FormikErrors<ValueType> = {};
-
+    for (const field of ['startingBalance', 'endingBalance', 'shortTermGains', 'longTermGains', 'dividends', 'taxableInterest'] as const) {
+      try {
+        if (values[field].trim() === '') throw new Error('Missing amount');
+        inputMoneyCents(values[field]);
+      }
+      catch { errors[field] = 'Enter a valid, safe monetary amount.'; }
+    }
     return errors;
   };
 
@@ -52,10 +58,10 @@ const StatementDialog: React.FC<PropsType & ModalProps> = ({
         startingBalanceCents: inputMoneyCents(values.startingBalance, account.sign),
         endingBalanceCents: inputMoneyCents(values.endingBalance, account.sign),
         data: {
-          shortTermCapitalGains: typeof values.shortTermGains == 'string' ? parseFloat(values.shortTermGains) : values.shortTermGains,
-          longTermCapitalGains: typeof values.longTermGains === 'string' ? parseFloat(values.longTermGains) : values.longTermGains,
-          dividends: typeof values.dividends === 'string' ? parseFloat(values.dividends) : values.dividends,
-          taxableInterest: typeof values.taxableInterest === 'string' ? parseFloat(values.taxableInterest) : values.taxableInterest,
+          shortTermCapitalGainsCents: inputMoneyCents(values.shortTermGains),
+          longTermCapitalGainsCents: inputMoneyCents(values.longTermGains),
+          dividendsCents: inputMoneyCents(values.dividends),
+          taxableInterestCents: inputMoneyCents(values.taxableInterest),
         }
       });
     }
@@ -65,10 +71,10 @@ const StatementDialog: React.FC<PropsType & ModalProps> = ({
         values.endDate,
         inputMoneyCents(values.startingBalance, account.sign),
         inputMoneyCents(values.endingBalance, account.sign),
-        typeof values.shortTermGains == 'string' ? parseFloat(values.shortTermGains) : values.shortTermGains,
-        typeof values.longTermGains === 'string' ? parseFloat(values.longTermGains) : values.longTermGains,
-        typeof values.dividends === 'string' ? parseFloat(values.dividends) : values.dividends,
-        typeof values.taxableInterest === 'string' ? parseFloat(values.taxableInterest) : values.taxableInterest,
+        inputMoneyCents(values.shortTermGains),
+        inputMoneyCents(values.longTermGains),
+        inputMoneyCents(values.dividends),
+        inputMoneyCents(values.taxableInterest),
       );
     }
 
@@ -114,10 +120,10 @@ const StatementDialog: React.FC<PropsType & ModalProps> = ({
         endDate: statement ? (statement.endDate.toISODate() ?? '') : '',
         startingBalance: statement ? displayedBalance(statement.startingBalanceCents) : '0.00',
         endingBalance: statement ? displayedBalance(statement.endingBalanceCents) : '0.00',
-        shortTermGains: statement?.shortTermGains ?? 0,
-        longTermGains: statement?.longTermGains ?? 0,
-        dividends: statement?.dividends ?? 0,
-        taxableInterest: statement?.taxableInterest ?? 0,
+        shortTermGains: formatMoneyCents(statement?.shortTermGainsCents ?? parseMoneyCents('0.00')),
+        longTermGains: formatMoneyCents(statement?.longTermGainsCents ?? parseMoneyCents('0.00')),
+        dividends: formatMoneyCents(statement?.dividendsCents ?? parseMoneyCents('0.00')),
+        taxableInterest: formatMoneyCents(statement?.taxableInterestCents ?? parseMoneyCents('0.00')),
       }}
       setShow={setShow}
       title={statement ? 'Edit Statement' : 'Add Statement'}

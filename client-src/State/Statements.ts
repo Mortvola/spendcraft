@@ -2,7 +2,6 @@ import { formatMoneyCents, type MoneyCents } from '../../common/moneyCents';
 import { observable, runInAction } from "mobx";
 import { AccountInterface, AddStatementRequest, StatementsInterface, StoreInterface } from "./Types";
 import Statement from "./Statement";
-import { encodeAmount } from "../monetary";
 import Http from "@mortvola/http";
 import { AddStatementResponse, ApiError, StatementProps, StatementsResponse, TrackingType } from "../../common/ResponseTypes";
 
@@ -60,18 +59,18 @@ class Statements implements StatementsInterface {
     endDate: string,
     startingBalanceCents: MoneyCents,
     endingBalanceCents: MoneyCents,
-    shortTermCapitalGains: number,
-    longTermCapitalGains: number,
-    dividends: number,
-    taxableInterest: number,
+    shortTermCapitalGainsCents: MoneyCents,
+    longTermCapitalGainsCents: MoneyCents,
+    dividendsCents: MoneyCents,
+    taxableInterestCents: MoneyCents,
   ): Promise<ApiError[] | null> {
     const response = await Http.post<AddStatementRequest, AddStatementResponse>(`/api/v1/account/${this.account.id}/statements`, {
       startDate, endDate, startingBalance: formatMoneyCents(startingBalanceCents), endingBalance: formatMoneyCents(endingBalanceCents),
       data: {
-        shortTermCapitalGains: encodeAmount(shortTermCapitalGains),
-        longTermCapitalGains: encodeAmount(longTermCapitalGains),
-        dividends: encodeAmount(dividends),
-        taxableInterest: encodeAmount(taxableInterest),
+        shortTermCapitalGains: formatMoneyCents(shortTermCapitalGainsCents),
+        longTermCapitalGains: formatMoneyCents(longTermCapitalGainsCents),
+        dividends: formatMoneyCents(dividendsCents),
+        taxableInterest: formatMoneyCents(taxableInterestCents),
       }
     });
 

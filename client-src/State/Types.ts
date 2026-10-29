@@ -521,13 +521,13 @@ export interface StatementInterface {
 
   endingBalanceCents: MoneyCents;
 
-  shortTermGains: number;
+  shortTermGainsCents: MoneyCents;
 
-  longTermGains: number;
+  longTermGainsCents: MoneyCents;
 
-  dividends: number;
+  dividendsCents: MoneyCents;
 
-  taxableInterest: number;
+  taxableInterestCents: MoneyCents;
 
   delete(): Promise<null | ApiError[]>;
 
@@ -550,10 +550,10 @@ export interface StatementsInterface {
     endDate: string,
     startingBalanceCents: MoneyCents,
     endingBalanceCents: MoneyCents,
-    shortTermCapitalGains: number,
-    longTermCapitalGains: number,
-    dividends: number,
-    taxableInterest: number,
+    shortTermCapitalGainsCents: MoneyCents,
+    longTermCapitalGainsCents: MoneyCents,
+    dividendsCents: MoneyCents,
+    taxableInterestCents: MoneyCents,
   ): Promise<ApiError[] | null>;
 
   updateStatement(props: StatementProps): void;
@@ -599,10 +599,10 @@ export type StatementUpdateValues = Omit<UpdateStatementProps, 'startingBalance'
   creditsCents?: MoneyCents,
   debitsCents?: MoneyCents,
   data?: {
-    shortTermCapitalGains: number,
-    longTermCapitalGains: number,
-    dividends: number,
-    taxableInterest: number,
+    shortTermCapitalGainsCents: MoneyCents,
+    longTermCapitalGainsCents: MoneyCents,
+    dividendsCents: MoneyCents,
+    taxableInterestCents: MoneyCents,
   }
 };
 

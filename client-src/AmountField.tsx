@@ -19,6 +19,7 @@ const AmountField: React.FC<PropsType> = ({
     {
       ({ field }: FieldProps<string | number>) => (
         <AmountInput
+          exactCents
           className="form-control"
           {...field}
         />

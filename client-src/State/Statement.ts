@@ -4,7 +4,6 @@ import { observable, runInAction } from 'mobx';
 import { ApiError, StatementProps, UpdateStatementProps, TrackingType } from '../../common/ResponseTypes';
 import { StatementInterface, StatementsInterface, StatementUpdateValues } from './Types';
 
-import { decodeAmount, encodeAmount } from '../monetary';
 import { parseMoneyCents, addMoneyCents, subtractMoneyCents, formatMoneyCents, type MoneyCents } from '../../common/moneyCents';
 
 function decodeStatementTotals(props: Pick<StatementProps, 'credits' | 'debits'>) {
@@ -23,10 +22,10 @@ function decodeStatementAmounts(props: StatementProps) {
     ...decodeStatementTotals(props),
     startingBalanceCents: parseMoneyCents(props.startingBalance),
     endingBalanceCents: parseMoneyCents(props.endingBalance),
-    shortTermGains: income?.shortTermCapitalGains == null ? 0 : decodeAmount(income.shortTermCapitalGains),
-    longTermGains: income?.longTermCapitalGains == null ? 0 : decodeAmount(income.longTermCapitalGains),
-    dividends: income?.dividends == null ? 0 : decodeAmount(income.dividends),
-    taxableInterest: income?.taxableInterest == null ? 0 : decodeAmount(income.taxableInterest),
+    shortTermGainsCents: income?.shortTermCapitalGains == null ? parseMoneyCents('0.00') : parseMoneyCents(income.shortTermCapitalGains),
+    longTermGainsCents: income?.longTermCapitalGains == null ? parseMoneyCents('0.00') : parseMoneyCents(income.longTermCapitalGains),
+    dividendsCents: income?.dividends == null ? parseMoneyCents('0.00') : parseMoneyCents(income.dividends),
+    taxableInterestCents: income?.taxableInterest == null ? parseMoneyCents('0.00') : parseMoneyCents(income.taxableInterest),
   };
 }
 
@@ -61,16 +60,16 @@ class Statement implements StatementInterface {
   }
 
   @observable
-  accessor shortTermGains: number
+  accessor shortTermGainsCents: MoneyCents
 
   @observable
-  accessor longTermGains: number
+  accessor longTermGainsCents: MoneyCents
 
   @observable
-  accessor dividends: number
+  accessor dividendsCents: MoneyCents
 
   @observable
-  accessor taxableInterest: number
+  accessor taxableInterestCents: MoneyCents
 
   statements: StatementsInterface
 
@@ -88,10 +87,10 @@ class Statement implements StatementInterface {
     this.creditsCents = amounts.creditsCents
     this.debitsCents = amounts.debitsCents
 
-    this.shortTermGains = amounts.shortTermGains
-    this.longTermGains = amounts.longTermGains
-    this.dividends = amounts.dividends
-    this.taxableInterest = amounts.taxableInterest
+    this.shortTermGainsCents = amounts.shortTermGainsCents
+    this.longTermGainsCents = amounts.longTermGainsCents
+    this.dividendsCents = amounts.dividendsCents
+    this.taxableInterestCents = amounts.taxableInterestCents
 
     this.statements = statements
   }
@@ -111,10 +110,10 @@ class Statement implements StatementInterface {
       this.startDate = DateTime.fromISO(props.startDate);
       this.endDate = DateTime.fromISO(props.endDate);
 
-      this.shortTermGains = amounts.shortTermGains
-      this.longTermGains = amounts.longTermGains
-      this.dividends = amounts.dividends
-      this.taxableInterest = amounts.taxableInterest
+      this.shortTermGainsCents = amounts.shortTermGainsCents
+      this.longTermGainsCents = amounts.longTermGainsCents
+      this.dividendsCents = amounts.dividendsCents
+      this.taxableInterestCents = amounts.taxableInterestCents
     })
   }
 
@@ -136,10 +135,10 @@ class Statement implements StatementInterface {
       credits: creditsCents === undefined ? undefined : formatMoneyCents(creditsCents),
       debits: debitsCents === undefined ? undefined : formatMoneyCents(debitsCents),
       data: update.data === undefined ? undefined : {
-        shortTermCapitalGains: encodeAmount(update.data.shortTermCapitalGains),
-        longTermCapitalGains: encodeAmount(update.data.longTermCapitalGains),
-        dividends: encodeAmount(update.data.dividends),
-        taxableInterest: encodeAmount(update.data.taxableInterest),
+        shortTermCapitalGains: formatMoneyCents(update.data.shortTermCapitalGainsCents),
+        longTermCapitalGains: formatMoneyCents(update.data.longTermCapitalGainsCents),
+        dividends: formatMoneyCents(update.data.dividendsCents),
+        taxableInterest: formatMoneyCents(update.data.taxableInterestCents),
       },
     };
     const response = await Http.patch<UpdateStatementProps, StatementProps>(`/api/v1/statements/${this.id}`, payload)

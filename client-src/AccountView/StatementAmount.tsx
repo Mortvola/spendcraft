@@ -27,13 +27,22 @@ const StatementAmount: React.FC<PropsType> = ({
 
   const handleAmountChange: React.ChangeEventHandler<HTMLInputElement> = (event) => {
     setAmountValue(event.target.value)
+    event.currentTarget.setCustomValidity('')
   }
 
-  const handleAmountKeyDown: React.KeyboardEventHandler = (event) => {
+  const handleAmountKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (event) => {
     if (event.code === 'Enter') {
+      let value: MoneyCents;
+      try {
+        if (amountValue.trim() === '') throw new Error('Missing amount');
+        value = inputMoneyCents(amountValue, sign);
+      }
+      catch {
+        event.currentTarget.setCustomValidity('Enter a valid, safe monetary amount.');
+        event.currentTarget.reportValidity();
+        return;
+      }
       setEditAmount(false)
-
-      const value = inputMoneyCents(amountValue, sign);
 
       if (value !== amount) {
         onUpdate(value)
@@ -48,6 +57,7 @@ const StatementAmount: React.FC<PropsType> = ({
     editAmount
       ? (
         <AmountInput
+          exactCents
           value={amountValue}
           onChange={handleAmountChange}
           onKeyDown={handleAmountKeyDown}

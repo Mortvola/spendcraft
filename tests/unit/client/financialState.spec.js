@@ -195,7 +195,7 @@ export * from ${source('common/ResponseTypes.ts')};
       await assert.rejects(() => f.account.statements.addStatement('2025-02-01', '2025-02-28', value === Number.MAX_SAFE_INTEGER ? value + 1 : value, parseMoneyCents('90.00'), 0, 0, 0, 0))
     })
 
-  test('Statement requests and responses use strings while balance state uses cents', async ({ assert }) => {
+  test('Statement requests and responses use strings while balance and income state use cents', async ({ assert }) => {
     const response = { ...f.statementProps, startingBalance: '0.10', endingBalance: '0.30', credits: '0.20', debits: '-0.01',
       data: { shortTermCapitalGains: '-0.12', longTermCapitalGains: null, dividends: '0.30', taxableInterest: '12.35' } }
     routes.set('patch /api/v1/statements/30', async payload => {
@@ -203,17 +203,60 @@ export * from ${source('common/ResponseTypes.ts')};
       assert.strictEqual(payload.data.dividends, '0.30')
       return { body: response }
     })
-    await f.statement.update({ endingBalanceCents: parseMoneyCents('0.30'), data: { shortTermCapitalGains: -0.12, longTermCapitalGains: 0, dividends: 0.3, taxableInterest: 12.35 } })
+    await f.statement.update({ endingBalanceCents: parseMoneyCents('0.30'), data: { shortTermCapitalGainsCents: -12, longTermCapitalGainsCents: 0, dividendsCents: 30, taxableInterestCents: 1235 } })
     assert.strictEqual(f.statement.startingBalanceCents, 10)
     assert.strictEqual(f.statement.endingBalanceCents, 30)
     assert.strictEqual(f.statement.creditsCents, 20)
     assert.strictEqual(f.statement.debitsCents, -1)
-    assert.strictEqual(f.statement.shortTermGains, -0.12)
-    assert.strictEqual(f.statement.longTermGains, 0)
-    assert.strictEqual(f.statement.dividends, 0.3)
-    assert.strictEqual(f.statement.taxableInterest, 12.35)
+    assert.strictEqual(f.statement.shortTermGainsCents, -12)
+    assert.strictEqual(f.statement.longTermGainsCents, 0)
+    assert.strictEqual(f.statement.dividendsCents, 30)
+    assert.strictEqual(f.statement.taxableInterestCents, 1235)
     for (const field of ['startingBalance', 'endingBalance', 'credits', 'debits']) assert.notProperty(f.statement, field)
   })
+
+  test('Statement income CREATE/PATCH requests preserve every cent').with([
+    '90071992547409.91', '-90071992547409.91', '0.00',
+  ]).run(async ({ assert }, wire) => {
+    const cents = parseMoneyCents(wire)
+    const data = { shortTermCapitalGains: wire, longTermCapitalGains: wire, dividends: wire, taxableInterest: wire }
+    const input = { shortTermCapitalGainsCents: cents, longTermCapitalGainsCents: cents, dividendsCents: cents, taxableInterestCents: cents }
+    routes.set('patch /api/v1/statements/30', async payload => {
+      assert.deepEqual(payload.data, data)
+      return { body: { ...f.statementProps, data } }
+    })
+    await f.statement.update({ data: input })
+    assert.strictEqual(f.statement.shortTermGainsCents, cents)
+    assert.strictEqual(f.statement.longTermGainsCents, cents)
+    assert.strictEqual(f.statement.dividendsCents, cents)
+    assert.strictEqual(f.statement.taxableInterestCents, cents)
+    for (const field of ['shortTermGains', 'longTermGains', 'dividends', 'taxableInterest']) assert.notProperty(f.statement, field)
+    routes.set('post /api/v1/account/10/statements', async payload => {
+      assert.deepEqual(payload.data, data)
+      return { ok: false }
+    })
+    await assert.rejects(() => f.account.statements.addStatement('2025-02-01', '2025-02-28',
+      parseMoneyCents('0.00'), parseMoneyCents('0.00'), cents, cents, cents, cents))
+  })
+
+  test('Statement missing and null income values retain the existing zero defaults', ({ assert }) => {
+    for (const data of [undefined, null, {}, { shortTermCapitalGains: null, longTermCapitalGains: null, dividends: null, taxableInterest: null }]) {
+      const statement = new state.Statement({ ...f.statementProps, data }, f.account.statements)
+      assert.deepEqual([statement.shortTermGainsCents, statement.longTermGainsCents, statement.dividendsCents, statement.taxableInterestCents], [0, 0, 0, 0])
+    }
+  })
+
+  test('Statement unsafe income cents reject before HTTP').with([NaN, Infinity, 0.1, Number.MAX_SAFE_INTEGER + 1])
+    .run(async ({ assert }, value) => {
+      routes.set('patch /api/v1/statements/30', () => assert.fail('Invalid cents reached HTTP'))
+      routes.set('post /api/v1/account/10/statements', () => assert.fail('Invalid cents reached HTTP'))
+      for (const field of ['shortTermCapitalGainsCents', 'longTermCapitalGainsCents', 'dividendsCents', 'taxableInterestCents']) {
+        const data = { shortTermCapitalGainsCents: 0, longTermCapitalGainsCents: 0, dividendsCents: 0, taxableInterestCents: 0, [field]: value }
+        await assert.rejects(() => f.statement.update({ data }))
+      }
+      await assert.rejects(() => f.account.statements.addStatement('2025-02-01', '2025-02-28',
+        parseMoneyCents('0.00'), parseMoneyCents('0.00'), 0, 0, 0, value))
+    })
 
   test('invalid Statement monetary responses cannot partially update the client').with([
     1, '', '1.2', '1e2', '01.00', '-0.00', 'NaN', 'Infinity', '90071992547409.92',

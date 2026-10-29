@@ -36,6 +36,7 @@ test.group('Statement cent consumers', () => {
       const view = await component('client-src/AccountView/StatementDialog.tsx', 'StatementDialog', { createElement })
       const statement = { startDate: DateTime.fromISO('2025-01-01'), endDate: DateTime.fromISO('2025-01-31'),
         startingBalanceCents: parseMoneyCents('90071992547409.91'), endingBalanceCents: parseMoneyCents('0.30'),
+        shortTermGainsCents: -12, longTermGainsCents: Number.MAX_SAFE_INTEGER, dividendsCents: 30, taxableInterestCents: 1250,
         update: async values => { saved = values; return null } }
       const account = { sign, type: AccountType.Depository, statements: { addStatement: async (...values) => { created = values; return null } } }
       const modal = view({ account, statement, setShow: value => closed.push(value) })
@@ -44,11 +45,24 @@ test.group('Statement cent consumers', () => {
       assert.strictEqual(saved.startingBalanceCents, Number.MAX_SAFE_INTEGER)
       assert.strictEqual(saved.endingBalanceCents, 30)
       assert.notProperty(saved, 'startingBalance')
+      assert.strictEqual(modal.props.initialValues.shortTermGains, '-0.12')
+      assert.strictEqual(modal.props.initialValues.longTermGains, '90071992547409.91')
+      assert.strictEqual(saved.data.shortTermCapitalGainsCents, -12)
+      assert.strictEqual(saved.data.longTermCapitalGainsCents, Number.MAX_SAFE_INTEGER)
+      assert.strictEqual(saved.data.dividendsCents, 30)
+      assert.strictEqual(saved.data.taxableInterestCents, 1250)
       const add = view({ account, setShow: value => closed.push(value) })
       await add.props.onSubmit({ ...add.props.initialValues, startDate: '2025-01-01', endDate: '2025-01-31',
-        startingBalance: '0.125', endingBalance: '0.30' })
+        startingBalance: '0.125', endingBalance: '0.30', shortTermGains: '-0.125', longTermGains: '0.125',
+        dividends: '1.005', taxableInterest: '-0.00' })
       assert.strictEqual(created[2], sign === -1 ? -12 : 13)
       assert.strictEqual(created[3], sign * 30)
+      assert.deepEqual(created.slice(4), [-12, 13, 100, 0])
+      for (const field of ['startingBalance', 'endingBalance', 'shortTermGains', 'longTermGains', 'dividends', 'taxableInterest']) {
+        for (const value of ['', 'garbage', 'Infinity', '90071992547409.92']) {
+          assert.isString(modal.props.validate({ ...modal.props.initialValues, [field]: value })[field])
+        }
+      }
       assert.deepEqual(closed, [false, false])
     })
 
@@ -66,12 +80,45 @@ test.group('Statement cent consumers', () => {
       render().props.onClick()
       let input = render()
       assert.strictEqual(input.props.value, sign === -1 ? '-0.30' : '0.30')
+      assert.isTrue(input.props.exactCents)
       input.props.onKeyDown({ code: 'Enter' })
       assert.lengthOf(updates, 0)
       render().props.onClick()
-      render().props.onChange({ target: { value: '0.125' } })
+      render().props.onChange({ target: { value: '0.125' }, currentTarget: { setCustomValidity: () => undefined } })
       input = render()
       input.props.onKeyDown({ code: 'Enter' })
       assert.deepEqual(updates, [sign === -1 ? -12 : 13])
     })
+})
+
+
+test('Statement amount fields enable exact-cent formatting', async ({ assert }) => {
+  const view = await component('client-src/AmountField.tsx', 'AmountField', { createElement })
+  const field = view({ name: 'dividends', label: 'Dividends' })
+  const input = field.props.children[0]({ field: { value: '90071992547409.91', name: 'dividends' } })
+  assert.isTrue(input.props.exactCents)
+  assert.strictEqual(input.props.value, '90071992547409.91')
+})
+
+test('inline Statement editor keeps invalid text open without updating cents', async ({ assert }) => {
+  const slots = []
+  let cursor = 0
+  let validity = ''
+  const target = { setCustomValidity: value => { validity = value }, reportValidity: () => false }
+  const React = { createElement, useState(initial) {
+    const index = cursor++
+    if (!(index in slots)) slots[index] = initial
+    return [slots[index], value => { slots[index] = value }]
+  } }
+  const view = await component('client-src/AccountView/StatementAmount.tsx', 'StatementAmount', React)
+  const render = () => { cursor = 0; return view({ amount: parseMoneyCents('0.30'), onUpdate: () => assert.fail('Invalid edit updated state') }) }
+  render().props.onClick()
+  for (const value of ['', 'garbage', 'Infinity', '90071992547409.92']) {
+    render().props.onChange({ target: { value }, currentTarget: target })
+    render().props.onKeyDown({ code: 'Enter', currentTarget: target })
+    assert.strictEqual(render().type, 'input')
+    assert.isNotEmpty(validity)
+  }
+  render().props.onKeyDown({ code: 'Escape', currentTarget: target })
+  assert.strictEqual(render().type, 'display')
 })
