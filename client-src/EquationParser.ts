@@ -1,3 +1,5 @@
+import { moneyCentsFromInteger, type MoneyCents } from '../common/moneyCents.js';
+
 enum TokenType {
   NUMBER,
   OPERATOR,
@@ -67,7 +69,7 @@ class Tokenizer {
 
           return {
             type: TokenType.NUMBER,
-            value: parseFloat(value),
+            value,
           };
         }
 
@@ -111,9 +113,15 @@ class Tokenizer {
   }
 }
 
-const parseEquation = (equation: string): number => {
+interface Arithmetic<T> {
+  literal: (value: string) => T;
+  negate: (value: T) => T;
+  binary: (operator: string, left: T, right: T) => T;
+}
+
+const evaluate = <T,>(equation: string, arithmetic: Arithmetic<T>): T => {
   const stack: string[] = [];
-  const output: number[] = [];
+  const output: T[] = [];
 
   const applyOperator = (operator: string) => {
     if (typeof operator !== 'string') {
@@ -130,7 +138,7 @@ const parseEquation = (equation: string): number => {
         throw new Error('output stack is empty');
       }
 
-      output.push(value * -1);
+      output.push(arithmetic.negate(value));
     }
     else {
       if (output.length < 2) {
@@ -144,26 +152,7 @@ const parseEquation = (equation: string): number => {
         throw new Error('output stack is empty');
       }
 
-      switch (operator) {
-        case '*':
-          output.push(value1 * value2);
-          break;
-
-        case '/':
-          output.push(value1 / value2);
-          break;
-
-        case '+':
-          output.push(value1 + value2);
-          break;
-
-        case '-':
-          output.push(value1 - value2);
-          break;
-
-        default:
-          throw new Error('parsing error');
-      }
+      output.push(arithmetic.binary(operator, value1, value2));
     }
   };
 
@@ -180,11 +169,11 @@ const parseEquation = (equation: string): number => {
 
     switch (token.type) {
       case TokenType.NUMBER: {
-        if (typeof token.value !== 'number') {
+        if (typeof token.value !== 'string') {
           throw new Error('non-numeric with token type of NUMBER');
         }
 
-        output.push(token.value);
+        output.push(arithmetic.literal(token.value));
 
         if (stack[stack.length - 1] === 'UM') {
           const value = stack.pop();
@@ -289,5 +278,55 @@ const parseEquation = (equation: string): number => {
 
   return output[0];
 };
+
+// Non-monetary inputs retain their existing numeric calculator behavior.
+const parseEquation = (equation: string): number => evaluate(equation, {
+  literal: value => parseFloat(value),
+  negate: value => -value,
+  binary: (operator, left, right) => {
+    switch (operator) {
+      case '+': return left + right;
+      case '-': return left - right;
+      case '*': return left * right;
+      case '/': return left / right;
+      default: throw new Error('parsing error');
+    }
+  },
+});
+
+interface Fraction { numerator: bigint; denominator: bigint }
+
+// Keep exact subcent intermediates for scalar multiplication/division; round only
+// the completed monetary expression, with half ties toward positive infinity.
+export function parseEquationCents(equation: string): MoneyCents {
+  const result = evaluate<Fraction>(equation, {
+    literal: value => {
+      if (!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(value)) throw new Error('parsing error');
+      const [whole, fraction = ''] = value.split('.');
+      return { numerator: BigInt(whole + fraction), denominator: 10n ** BigInt(fraction.length) };
+    },
+    negate: value => ({ ...value, numerator: -value.numerator }),
+    binary: (operator, left, right) => {
+      switch (operator) {
+        case '+': return { numerator: left.numerator * right.denominator + right.numerator * left.denominator, denominator: left.denominator * right.denominator };
+        case '-': return { numerator: left.numerator * right.denominator - right.numerator * left.denominator, denominator: left.denominator * right.denominator };
+        case '*': return { numerator: left.numerator * right.numerator, denominator: left.denominator * right.denominator };
+        case '/': {
+          if (right.numerator === 0n) throw new Error('Division by zero');
+          const sign = right.numerator < 0n ? -1n : 1n;
+          return { numerator: sign * left.numerator * right.denominator, denominator: sign * left.denominator * right.numerator };
+        }
+        default: throw new Error('parsing error');
+      }
+    },
+  });
+  const scaled = result.numerator * 100n;
+  let cents = scaled / result.denominator;
+  const remainder = scaled % result.denominator;
+  if (remainder > 0n && remainder * 2n >= result.denominator) cents += 1n;
+  if (remainder < 0n && -remainder * 2n > result.denominator) cents -= 1n;
+  if (cents > BigInt(Number.MAX_SAFE_INTEGER) || cents < -BigInt(Number.MAX_SAFE_INTEGER)) throw new Error('Unsafe monetary cents');
+  return moneyCentsFromInteger(Number(cents));
+}
 
 export default parseEquation;

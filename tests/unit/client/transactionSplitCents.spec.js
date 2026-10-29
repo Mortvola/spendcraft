@@ -4,7 +4,7 @@ import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
 import * as cents from '../../../common/moneyCents.ts'
 import { inputMoneyCents, decodeAmount, encodeTransferCategories } from '../../../client-src/monetary.ts'
-import parseEquation from '../../../client-src/EquationParser.ts'
+import parseEquation, { parseEquationCents } from '../../../client-src/EquationParser.ts'
 import { DateTime } from 'luxon'
 import { setImmediate } from 'node:timers'
 import { URL, URLSearchParams } from 'node:url'
@@ -497,7 +497,7 @@ test.group('Transaction split cents', group => {
     const render = await expression('client-src/AmountInput.tsx', 'AmountInput', {
       React: { createElement, Fragment: 'fragment', useRef: () => ({ current: null }) },
       useState: initial => { const index = cursor++; if (!(index in slots)) slots[index] = initial; return [slots[index], value => { slots[index] = value }] },
-      useRef: () => ({ current: null }), parseEquation, Console: { log: error => { throw error } }, Overlay: 'overlay', Popover: 'popover', PopoverHeader: 'header', PopoverBody: 'body',
+      useRef: () => ({ current: null }), parseEquation, parseEquationCents, Console: { log: error => { throw error } }, Overlay: 'overlay', Popover: 'popover', PopoverHeader: 'header', PopoverBody: 'body',
     })
     for (const value of ['90071992547409.91', '0.30', '-0.12', 'bad']) {
       slots = []; cursor = 0

@@ -3,7 +3,7 @@ import { Overlay } from 'react-bootstrap';
 import Popover from 'react-bootstrap/Popover';
 import PopoverHeader from 'react-bootstrap/PopoverHeader';
 import PopoverBody from 'react-bootstrap/PopoverBody';
-import parseEquation from './EquationParser';
+import parseEquation, { parseEquationCents } from './EquationParser';
 import styles from './AmountInput.module.scss';
 import * as Console from './Console';
 import { formatMoneyCents } from '../common/moneyCents';
@@ -86,9 +86,11 @@ const AmountInput: React.FC<PropsType> = ({
         onValueChange?.('');
       }
       else {
-        const val = parseEquation(event.target.value);
-        setInputAmount(val.toFixed(2));
-        onValueChange?.(val.toFixed(2));
+        const result = exactCents
+          ? formatMoneyCents(parseEquationCents(event.target.value))
+          : parseEquation(event.target.value).toFixed(2);
+        setInputAmount(result);
+        onValueChange?.(result);
       }
     }
     catch (error) {
