@@ -1,5 +1,5 @@
 import { addMoneyCents, formatMoneyCents, parseMoneyCents, subtractMoneyCents, type MoneyCents } from '../common/moneyCents.js';
-import type { CategoryTransferProps, CategoryTransferRequest, DecimalMoneyString, FundingRuleResponse, NetworthReportResponse, PayeeReportRow } from '../common/ResponseTypes.js';
+import type { CategoryTransferProps, CategoryTransferRequest, DecimalMoneyString, FundingRuleResponse, FundingHistoryReportResponse, FundingHistoryReportRow, NetworthReportResponse, PayeeReportRow } from '../common/ResponseTypes.js';
 
 // Encode at the request boundary; client state and calculations remain numeric.
 export function encodeAmount(value: number): DecimalMoneyString {
@@ -77,6 +77,27 @@ export function encodeCentFundingRules(rules: readonly CentFundingRule[]): Fundi
     const { amountCents, ...metadata } = rule;
     return { ...metadata, percentage: false, amount: formatMoneyCents(amountCents) };
   });
+}
+
+export interface FundingHistoryCentsItem { year: number; month: number; amountCents: MoneyCents }
+export type FundingHistoryCentsRow = Omit<FundingHistoryReportRow, 'history'> & { history: FundingHistoryCentsItem[] | null };
+
+export function decodeFundingHistoryReport(rows: FundingHistoryReportResponse): FundingHistoryCentsRow[] {
+  return rows.map(row => ({ ...row, history: row.history === null ? null : row.history.map(({ amount, ...entry }) => ({
+    ...entry, amountCents: parseMoneyCents(amount),
+  })) }));
+}
+
+export function fundingHistoryTotals(rows: readonly FundingHistoryCentsRow[]): FundingHistoryCentsItem[] {
+  const totals: FundingHistoryCentsItem[] = [];
+  for (const row of rows) {
+    for (const entry of row.history ?? []) {
+      const total = totals.find(t => t.year === entry.year && t.month === entry.month);
+      if (total) total.amountCents = addMoneyCents(total.amountCents, entry.amountCents);
+      else totals.push({ ...entry });
+    }
+  }
+  return totals;
 }
 
 export type PayeeCentsReportRow = Omit<PayeeReportRow, 'sum'> & { sumCents: MoneyCents };

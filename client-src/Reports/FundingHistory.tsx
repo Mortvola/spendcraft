@@ -1,24 +1,14 @@
-import { decodeAmount } from '../monetary';
+import { decodeFundingHistoryReport, fundingHistoryTotals, type FundingHistoryCentsItem, type FundingHistoryCentsRow } from '../monetary';
 import Http from '@mortvola/http';
 import { DateTime, MonthNumbers } from 'luxon';
 import React, { useEffect, useState } from 'react';
 import { GroupType, type FundingHistoryReportResponse } from '../../common/ResponseTypes';
-import Amount from '../Amount';
+import MoneyCentsAmount from '../MoneyCentsAmount';
 import styles from './FundingHistory.module.scss';
 
 const FundingHistory: React.FC = () => {
-  interface FundingHistoryItem { year: number, month: number, amount: number}
-  interface FundingHistoryCategory {
-    groupId: number,
-    groupName: string,
-    groupType: GroupType,
-    categoryId: number,
-    categoryName: string,
-    history: FundingHistoryItem[] | null,
-  }
-
-  const [data, setData] = useState<FundingHistoryCategory[] | null>(null);
-  const [totals, setTotals] = useState<FundingHistoryItem[] | null>(null);
+  const [data, setData] = useState<FundingHistoryCentsRow[] | null>(null);
+  const [totals, setTotals] = useState<FundingHistoryCentsItem[] | null>(null);
   const maxDisplayedMonths = 12;
 
   useEffect(() => {
@@ -27,9 +17,7 @@ const FundingHistory: React.FC = () => {
 
       if (response.ok) {
         const responseRows = await response.body();
-        const body = responseRows.map((row) => ({ ...row,
-          history: row.history === null ? null : row.history.map((entry) => ({ ...entry, amount: decodeAmount(entry.amount) })),
-        }));
+        const body = decodeFundingHistoryReport(responseRows);
         body.sort((a, b) => {
           if (a.groupType === GroupType.NoGroup) {
             if (b.groupType === GroupType.NoGroup) {
@@ -50,20 +38,7 @@ const FundingHistory: React.FC = () => {
           return a.groupName.localeCompare(b.groupName);
         });
 
-        const newTotals: FundingHistoryItem[] = [];
-
-        body.forEach((g) => {
-          g.history?.forEach((h) => {
-            const total = newTotals.find((t) => t.year === h.year && t.month === h.month);
-
-            if (total) {
-              total.amount += h.amount;
-            }
-            else {
-              newTotals.push({ year: h.year, month: h.month, amount: h.amount });
-            }
-          })
-        });
+        const newTotals = fundingHistoryTotals(body);
 
         setData(body);
         setTotals(newTotals);
@@ -97,11 +72,7 @@ const FundingHistory: React.FC = () => {
     return elements;
   }
 
-  const amountsMatch = (a: number, b: number) => (
-    a.toFixed(2) === b.toFixed(2)
-  );
-
-  const renderHistory = (history: FundingHistoryItem[] | null): React.ReactElement[] | null => {
+  const renderHistory = (history: FundingHistoryCentsItem[] | null): React.ReactElement[] | null => {
     if (history) {
       let [year, month] = [DateTime.now().year, DateTime.now().month];
       const elements: React.ReactElement[] = [];
@@ -116,12 +87,12 @@ const FundingHistory: React.FC = () => {
         if (entry) {
           let className = styles.historyItem;
           if (i !== maxDisplayedMonths - 1
-            && (!prevEntry || (prevEntry && !amountsMatch(prevEntry.amount, entry.amount)))
+            && (!prevEntry || (prevEntry && prevEntry.amountCents !== entry.amountCents))
           ) {
             className += ` ${styles.change}`;
           }
 
-          elements.push(<Amount key={i} className={className} amount={entry.amount} />)
+          elements.push(<MoneyCentsAmount key={i} className={className} amount={entry.amountCents} />)
         }
         else {
           let className = styles.historyItem;
@@ -143,7 +114,7 @@ const FundingHistory: React.FC = () => {
 
   let currentGroup: null | string = null;
 
-  const renderRow = (d: FundingHistoryCategory, indent: string) => (
+  const renderRow = (d: FundingHistoryCentsRow, indent: string) => (
     <div className={styles.row} key={d.categoryId}>
       <div className={`${styles.category} ${indent} ellipsis`}>{d.categoryName}</div>
       {
