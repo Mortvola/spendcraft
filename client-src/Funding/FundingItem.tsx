@@ -22,7 +22,6 @@ interface PropsType {
   groupName: string | null,
   category: CategoryInterface,
   date: DateTime,
-  onDeltaChange?: (amount: number, delta: number) => void,
   diffOnly: boolean,
 }
 
@@ -31,7 +30,6 @@ const FundingItem: React.FC<PropsType> = ({
   groupName,
   category,
   date,
-  onDeltaChange,
   diffOnly,
 }) => {
   const { values } = useFormikContext<ValueType>();
@@ -74,7 +72,7 @@ const FundingItem: React.FC<PropsType> = ({
                   <MoneyCentsAmount amount={fundingInfo?.initialAmountCents ?? zero} />
                 </VerticalTitled>
                 <VerticalTitled title="Requested" underscored={false}>
-                  <AmountInput exactCents onDeltaChange={onDeltaChange} {...fieldProps} />
+                  <AmountInput exactCents {...fieldProps} />
                   <FormError name={name} />
                 </VerticalTitled>
                 <VerticalTitled title="Balance">

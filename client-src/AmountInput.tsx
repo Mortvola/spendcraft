@@ -14,7 +14,6 @@ interface PropsType {
   id?: string,
   value?: number | string;
   onValueChange?: (amount: string) => void;
-  onDeltaChange?: (amount: number, delta: number) => void;
   onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onBlur?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void;
@@ -29,7 +28,6 @@ const AmountInput: React.FC<PropsType> = ({
   id,
   value = 0,
   onValueChange,
-  onDeltaChange,
   onChange,
   onBlur,
   onKeyDown,
@@ -50,7 +48,6 @@ const AmountInput: React.FC<PropsType> = ({
   );
 
   const [inputAmount, setInputAmount] = useState<string>(convertAmount(value));
-  const [initialValue, setInitialValue] = useState<string>(convertAmount(value));
   const [showPopover, setShowPopover] = useState(false);
   const ref = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -98,8 +95,7 @@ const AmountInput: React.FC<PropsType> = ({
     }
   };
 
-  const handleFocus = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setInitialValue(convertAmount(event.target.value));
+  const handleFocus = () => {
     setFocus(true);
   };
 
@@ -115,11 +111,6 @@ const AmountInput: React.FC<PropsType> = ({
 
     if (Number.isNaN(newAmount)) {
       newAmount = 0;
-    }
-
-    const delta = newAmount - parseFloat(initialValue);
-    if (onDeltaChange && delta !== 0) {
-      onDeltaChange(newAmount, delta);
     }
 
     setInputAmount(newAmount.toFixed(2));

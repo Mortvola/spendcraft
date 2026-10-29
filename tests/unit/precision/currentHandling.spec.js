@@ -53,13 +53,13 @@ test.group('Current monetary handling without database', () => {
     assert.equal(changed, '1.239'); assert.equal(blurred, '1.239')
     assert.equal(f.state[0], '1.24')
   })
-  test('delta input rounds locally, emits number delta with binary arithmetic', async ({ assert }) => {
-    let result
-    const f = await input({ value: 0.1, onDeltaChange: (...values) => { result = values } })
+  test('numeric input retains local rounding and forwards raw blur values', async ({ assert }) => {
+    let blurred
+    const f = await input({ value: 0.1, onBlur: event => { blurred = event.target.value } })
     f.render().onFocus({ target: { value: '0.10' } })
     f.render().onBlur({ target: { value: '0.30' } })
-    assert.equal(result[0], 0.3); assert.equal(result[1], 0.3 - 0.1)
-    assert.notEqual(result[1], 0.2)
+    assert.strictEqual(f.state[0], '0.30')
+    assert.strictEqual(blurred, '0.30')
   })
   test('invalid blur silently becomes local zero; Infinity is not rejected locally', async ({ assert }) => {
     const f = await input({ value: 1 })
@@ -67,10 +67,9 @@ test.group('Current monetary handling without database', () => {
     f.render().onBlur({ target: { value: 'Infinity' } }); assert.equal(f.state[0], 'Infinity')
   })
   test('actual input blur differs from toFixed at a negative half tie', async ({ assert }) => {
-    let value
-    const f = await input({ value: 1, onDeltaChange: (amount) => { value = amount } })
+    const f = await input({ value: 1 })
     f.render().onBlur({ target: { value: '-0.125' } })
-    assert.equal(value, -0.12); assert.equal((-0.125).toFixed(2), '-0.13')
+    assert.equal(f.state[0], '-0.12'); assert.equal((-0.125).toFixed(2), '-0.13')
     assert.isTrue(Object.is(Math.round(-0.005 * 100) / 100, -0))
     assert.equal(Math.round(1.005 * 100) / 100, 1)
   })
