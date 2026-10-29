@@ -1,5 +1,4 @@
-import { parseMoneyCents } from '../../common/moneyCents';
-import { decodeAmount } from '../monetary';
+import { parseMoneyCents, formatMoneyCents, type MoneyCents } from '../../common/moneyCents';
 import Http from '@mortvola/http';
 import { Formik } from 'formik';
 import { DateTime } from 'luxon';
@@ -17,8 +16,7 @@ import ReportControls from './ReportControls';
 
 const BudgetProgress: React.FC = observer(() => {
   const store = useStores();
-  const [data, setData] = useState<(number | string)[][] | null>(null);
-  const [days, setDays] = useState<[number, number[]][]>([]);
+  const [days, setDays] = useState<[MoneyCents, number[]][] | null>(null);
   const [value, setValue] = React.useState<string>(() => {
     const n = DateTime.now();
     return `${n.month}-${n.year}`;
@@ -47,10 +45,10 @@ const BudgetProgress: React.FC = observer(() => {
             throw new Error('daysInMonth is undefined')
           }
 
-          const newDays = new Array<[number, number[]]>(daysInMonth);
+          const newDays = new Array<[MoneyCents, number[]]>(daysInMonth);
 
           body.forEach((m) => {
-            newDays[DateTime.fromISO(m[0]).day - 1] = [decodeAmount(m[1]), m[2]];
+            newDays[DateTime.fromISO(m[0]).day - 1] = [parseMoneyCents(m[1]), m[2]];
           });
 
           for (let d = 0; d < newDays.length; d += 1) {
@@ -59,20 +57,13 @@ const BudgetProgress: React.FC = observer(() => {
                 newDays[d] = newDays[d - 1];
               }
               else {
-                newDays[d] = [0, []];
+                newDays[d] = [parseMoneyCents('0.00'), []];
               }
             }
           }
 
           setDays(newDays);
 
-          setData([
-            ['date', 'amount'],
-            ...newDays.map((d, index) => ([
-              index + 1,
-              d[0],
-            ])),
-          ]);
         }
       }
       catch (error) {
@@ -111,7 +102,7 @@ const BudgetProgress: React.FC = observer(() => {
   const selectCallback = React.useCallback(({ chartWrapper }: { chartWrapper: GoogleChartWrapper | null}) => {
     if (chartWrapper) {
       const selection = chartWrapper.getChart().getSelection();
-      if (selection.length > 0) {
+      if (selection.length > 0 && days) {
         const transactionIds = days[selection[0].row][1];
         fetchTransactions(transactionIds);
       }
@@ -132,11 +123,17 @@ const BudgetProgress: React.FC = observer(() => {
             <>
               <div className="chart-wrapper">
                 {
-                  data !== null && data.length > 1
+                  days !== null && days.length > 0
                     ? (
                       <Chart
                         chartType="ColumnChart"
-                        data={data}
+                        data={[
+                          ['date', 'amount'],
+                          ...days.map(([amountCents], index) => {
+                            const formatted = formatMoneyCents(amountCents);
+                            return [index + 1, { v: Number(formatted), f: formatted.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,') }];
+                          }),
+                        ]}
                         width="100%"
                         height="100%"
                         chartEvents={[{
