@@ -19,10 +19,11 @@ import { CategoryInterface, GroupInterface } from '../../State/Types';
 import AmountInput from '../../AmountInput';
 import styles from './CategoryDialog.module.scss';
 import { CategoryType, GroupType } from '../../../common/ResponseTypes';
-import CategorySpread, { CategorySpreadInput } from '../../CategorySpread/CategorySpread';
+import CategorySpread from '../../CategorySpread/CategorySpread';
 import { formatMoneyCents, parseMoneyCents } from '../../../common/moneyCents';
 import { inputMoneyCents, type CentFundingRule } from '../../monetary';
 import Select, { components, OptionProps } from 'react-select';
+import { CategorySpreadInput } from '../../Funding/Types';
 
 interface Props {
   category?: CategoryInterface | null,

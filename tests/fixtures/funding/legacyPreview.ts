@@ -1,4 +1,5 @@
 import { calculateFunding, fundingCalculationInputs } from '../../../client-src/Funding/calculateFunding.js';
+import type { CategorySpreadInput } from '../../../client-src/Funding/Types.js';
 import { formatMoneyCents } from '../../../common/moneyCents.js';
 // Historical test-only preview from 7ebc714; never used by production.
 import type { CategoryFundingProps } from '../../../common/ResponseTypes.js';
@@ -164,7 +165,14 @@ export const legacyCalculateFunding = (inputs: FundingInputs, fundingPoolId: num
 
 // Execute the real cent engine, then adapt its results to the server's existing dollar interface.
 export function fundingForServer(inputs: FundingInputs, fundingPoolId: number): CategoryFundingProps[] {
-  return calculateFunding(fundingCalculationInputs(inputs), fundingPoolId).map(({ amountCents, baseAmountCents, fundingCategories, ...row }) => ({
+  const drafts = Object.fromEntries(Object.entries(inputs).map(([id, input]) => [id, {
+    ...input,
+    baseAmount: String(input.baseAmount),
+    fundingCategories: input.fundingCategories.map((rule): CategorySpreadInput => rule.percentage
+      ? { ...rule, percentage: true }
+      : { ...rule, percentage: false, amount: String(rule.amount) }),
+  }]));
+  return calculateFunding(fundingCalculationInputs(drafts), fundingPoolId).map(({ amountCents, baseAmountCents, fundingCategories, ...row }) => ({
     ...row,
     amount: Number(formatMoneyCents(amountCents)),
     baseAmount: Number(formatMoneyCents(baseAmountCents)),

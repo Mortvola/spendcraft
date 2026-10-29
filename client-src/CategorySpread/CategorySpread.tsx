@@ -14,6 +14,7 @@ import { CategoryType } from '../../common/ResponseTypes';
 import LucideButton from '../LucideButton';
 import { formatMoneyCents } from '../../common/moneyCents';
 import { inputMoneyCents } from '../monetary';
+import { CategorySpreadInput } from '../Funding/Types';
 
 const FormCategoryInput = ({ name, types }: { name: string, types?: CategoryType[] }) => {
   const [field, , helpers] = useField(name);
@@ -32,10 +33,6 @@ const FormCategoryInput = ({ name, types }: { name: string, types?: CategoryType
     />
   )
 }
-
-export type CategorySpreadInput = { id?: number; categoryId: number } & (
-  { percentage: true; amount: number } | { percentage: false; amount: string }
-);
 
 interface PropsType {
   name: string,

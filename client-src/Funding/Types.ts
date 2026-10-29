@@ -1,5 +1,4 @@
-import type { MoneyCents } from '../../common/moneyCents';
-import { CategorySpreadInput } from '../CategorySpread/CategorySpread';
+import type { MoneyCents } from '../../common/moneyCents.js';
 
 export interface FundingInfoType {
   categoryId: number,
@@ -9,6 +8,10 @@ export interface FundingInfoType {
   previousExpensesCents: MoneyCents,
   previousCatTransfersCents: MoneyCents,
 }
+
+export type CategorySpreadInput = { id?: number; categoryId: number } & (
+  { percentage: true; amount: number } | { percentage: false; amount: string }
+);
 
 export type CategoriesValueType = Record<
   string,

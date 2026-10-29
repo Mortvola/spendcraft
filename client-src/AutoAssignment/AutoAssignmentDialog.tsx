@@ -9,10 +9,11 @@ import { Minus, Plus } from 'lucide-react';
 import { AutoAssignmentInterface, AutoAssignmentRule } from '../State/Types';
 import { useStores } from '../State/Store';
 import styles from './AutoAssignmentDialog.module.scss'
-import CategorySpread, { type CategorySpreadInput } from '../CategorySpread/CategorySpread';
+import CategorySpread from '../CategorySpread/CategorySpread';
 import { formatMoneyCents } from '../../common/moneyCents';
 import { inputMoneyCents } from '../monetary';
 import LucideButton from '../LucideButton';
+import { CategorySpreadInput } from '../Funding/Types';
 
 // let tempId = -1;
 

@@ -1,7 +1,6 @@
 import { addMoneyCents, subtractMoneyCents, parseMoneyCents, moneyCentsFromInteger, type MoneyCents } from '../../common/moneyCents.js';
-import { inputMoneyCents } from '../monetary.js';
-import type { CategorySpreadInput } from '../CategorySpread/CategorySpread';
-import type { CentFundingRule } from '../monetary.js';
+import { inputMoneyCents, CentFundingRule } from '../monetary.js';
+import { CategorySpreadInput } from './Types.js';
 
 const zero = parseMoneyCents('0.00');
 

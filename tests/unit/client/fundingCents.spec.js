@@ -2,7 +2,7 @@ import { test } from '@japa/runner'
 import { parseMoneyCents, formatMoneyCents, addMoneyCents, moneyCentsFromInteger } from '../../../common/moneyCents.ts'
 import { encodeTransferCategories } from '../../../client-src/monetary.ts'
 import { calculateFunding, computeSpread, fundingCalculationInputs, fundingCategoryEffectCents } from '../../../client-src/Funding/calculateFunding.ts'
-import { legacyCalculateFunding } from '../../fixtures/funding/legacyPreview.ts'
+import { fundingForServer, legacyCalculateFunding } from '../../fixtures/funding/legacyPreview.ts'
 
 const rule = (categoryId, amount = 100) => ({ categoryId, percentage: true, amount })
 const row = (baseAmount, fundingCategories = [rule(99)], includeFundingTransfers = false) => ({ baseAmount, fundingCategories, includeFundingTransfers })
@@ -66,4 +66,23 @@ test('cent engine rejects invalid operands, unsafe percentages and accumulated o
   assert.throws(() => calculateFunding(fundingCalculationInputs({
     10: row('90071992547409.91'), 20: row('0.01'),
   }), 99))
+})
+
+test('server fixture adapter converts legacy money inputs and preserves numeric percentages and results', ({ assert }) => {
+  for (const baseAmount of [10.125, '10.125']) {
+    const inputs = { 10: { baseAmount, includeFundingTransfers: false,
+      fundingCategories: [{ categoryId: 99, percentage: false, amount: 2.505, id: 7 },
+        { categoryId: 98, percentage: true, amount: 100 }] } }
+    const before = globalThis.structuredClone(inputs)
+    const rows = fundingForServer(inputs, 99)
+    assert.strictEqual(rows[0].amount, 10.13)
+    assert.strictEqual(rows[0].baseAmount, 10.13)
+    assert.deepEqual(rows[0].fundingCategories, [{ categoryId: 99, percentage: false, amount: 2.51, id: 7 },
+      { categoryId: 98, percentage: true, amount: 100 }])
+    assert.strictEqual(rows.find(row => row.categoryId === 99).amount, -2.51)
+    assert.strictEqual(rows.find(row => row.categoryId === 98).amount, -7.62)
+    assert.isTrue(rows.every(row => typeof row.amount === 'number'))
+    assert.strictEqual(rows.reduce((total, row) => total + Math.round(row.amount * 100), 0), 0)
+    assert.deepEqual(inputs, before)
+  }
 })
