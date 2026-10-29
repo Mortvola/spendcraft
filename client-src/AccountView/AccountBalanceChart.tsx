@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { formatMoneyCents } from '../../common/moneyCents';
+import { formatMoneyCents, parseMoneyCents, subtractMoneyCents, type MoneyCents } from '../../common/moneyCents';
 import { observer } from 'mobx-react-lite';
 import Chart from 'react-google-charts';
 import { useStores } from '../State/Store';
@@ -25,49 +25,56 @@ const AccountBalanceChart: React.FC = observer(() => {
     }
   }, [accountBalanceSeries, selectedAccount]);
 
-  let data: [string | null, string | number][] = [];
+  const chartBalance = (balance: MoneyCents) => {
+    const formatted = formatMoneyCents(balance);
+    return { v: Number(formatted), f: formatted.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,') };
+  };
+  const signedBalance = (balance: MoneyCents) => selectedAccount?.sign === -1
+    ? subtractMoneyCents(parseMoneyCents('0.00'), balance) : balance;
+
+  let data: [string | null, string | { v: number; f: string }][] = [];
 
   if (selectedAccount?.tracking === TrackingType.Balances || selectedAccount?.type === AccountType.Investment) {
-    const t: { balance: number, date: DateTime }[] = []
+    const t: { balanceCents: MoneyCents, date: DateTime }[] = []
     const statements = selectedAccount?.statements.statements
 
     if (statements.length > 0) {
       t.push({
-        balance: Number(formatMoneyCents(statements[0].endingBalanceCents)),
+        balanceCents: statements[0].endingBalanceCents,
         date: statements[0].endDate,
       })
 
       let d = t[0].date.minus({ days: 1 })
       for (const b2 of statements) {
         const d2 = b2.endDate;
-        const balance = Number(formatMoneyCents(b2.endingBalanceCents));
+        const balance = b2.endingBalanceCents;
 
         while (d.toSeconds() > d2.toSeconds()) {
           t.push({
-            balance: balance, date: d,
+            balanceCents: balance, date: d,
           })
           d = d.minus({ day : 1 })
         }
 
-        t.push({ balance: balance, date: d2 })
+        t.push({ balanceCents: balance, date: d2 })
         d = d2.minus({ days: 1})
       }
 
       t.push({
-        balance: Number(formatMoneyCents(statements[statements.length - 1].startingBalanceCents)),
+        balanceCents: statements[statements.length - 1].startingBalanceCents,
         date: statements[statements.length - 1].startDate,
       })
 
       data = t.reverse()
-        .map((b) => [b.date.toISODate(), b.balance]);
+        .map((b) => [b.date.toISODate(), chartBalance(b.balanceCents)]);
     }
   } else {
-    const t: { balance: number, date: DateTime }[] = []
+    const t: { balanceCents: MoneyCents, date: DateTime }[] = []
     const b = accountBalanceSeries.points
 
     if (b.length > 0) {
       t.push({
-        balance: b[0].balance * (selectedAccount?.sign ?? 1),
+        balanceCents: signedBalance(b[0].balanceCents),
         date: b[0].date,
       })
 
@@ -75,21 +82,21 @@ const AccountBalanceChart: React.FC = observer(() => {
       for (let i = 1; i < b.length; i += 1) {
         const b2 = b[i]
         const d2 = b2.date;
-        const balance = b2.balance * (selectedAccount?.sign ?? 1);
+        const balance = signedBalance(b2.balanceCents);
 
         while (d.toSeconds() > d2.toSeconds()) {
           t.push({
-            balance: balance, date: d,
+            balanceCents: balance, date: d,
           })
           d = d.minus({ day : 1 })
         }
 
-        t.push({ balance: balance, date: d2 })
+        t.push({ balanceCents: balance, date: d2 })
         d = d2.minus({ days: 1})
       }
 
       data = t.reverse()
-        .map((b) => [b.date.toISODate(), b.balance]);
+        .map((b) => [b.date.toISODate(), chartBalance(b.balanceCents)]);
     }
   }
 

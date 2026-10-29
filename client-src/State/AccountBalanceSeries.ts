@@ -1,6 +1,6 @@
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
-import { decodeAmount } from '../monetary';
+import { parseMoneyCents, type MoneyCents } from '../../common/moneyCents';
 import { DateTime } from 'luxon';
 import { isAccountBalanceSeries } from '../../common/ResponseTypes';
 import { AccountBalanceSeriesInterface, AccountInterface } from './Types';
@@ -12,7 +12,7 @@ class AccountBalanceSeries implements AccountBalanceSeriesInterface {
   accessor account: AccountInterface | null = null;
 
   @observable
-  accessor points: { date: DateTime, balance: number }[] = [];
+  accessor points: { date: DateTime, balanceCents: MoneyCents }[] = [];
 
   async load(account: AccountInterface): Promise<void> {
     if (account === this.account) return;
@@ -20,7 +20,7 @@ class AccountBalanceSeries implements AccountBalanceSeriesInterface {
     if (!response.ok) throw new Error('Unable to load account chart');
     const body = await response.body();
     if (!isAccountBalanceSeries(body)) throw new Error('Invalid account chart response');
-    const points = body.map((point) => ({ date: DateTime.fromISO(point.date), balance: decodeAmount(point.balance) }));
+    const points = body.map((point) => ({ date: DateTime.fromISO(point.date), balanceCents: parseMoneyCents(point.balance) }));
     runInAction(() => {
       this.points = points;
       this.account = account;

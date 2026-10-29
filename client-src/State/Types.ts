@@ -508,7 +508,7 @@ export interface AccountInterface {
 
 export interface AccountBalanceSeriesInterface {
   account: AccountInterface | null;
-  points: { date: DateTime, balance: number }[];
+  points: { date: DateTime, balanceCents: MoneyCents }[];
   load(account: AccountInterface): Promise<void>;
 }
 

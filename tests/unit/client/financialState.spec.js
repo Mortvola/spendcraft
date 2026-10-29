@@ -1354,8 +1354,8 @@ export * from ${source('common/ResponseTypes.ts')};
       f.store.accountBalanceSeries.load = async () => { historyReads++ }
       const history = render(state.AccountBalanceChart)
       assert.include(history, '02/28/25')
-      assert.include(history, '&quot;2025-02-28&quot;,90')
-      assert.include(history, '&quot;2025-02-01&quot;,100')
+      assert.include(history, '&quot;2025-02-28&quot;,{&quot;v&quot;:90,&quot;f&quot;:&quot;90.00&quot;}')
+      assert.include(history, '&quot;2025-02-01&quot;,{&quot;v&quot;:100,&quot;f&quot;:&quot;100.00&quot;}')
       assert.include(history, '>90.00<')
       assert.notInclude(history, 'Add Balance')
       assert.equal(historyReads, 0)
@@ -1365,11 +1365,33 @@ export * from ${source('common/ResponseTypes.ts')};
     routes.set('get /api/v1/account/10/balances', async () => ({ body: [{ date: '2025-02-10', balance: '95.00' }] }))
     await f.store.accountBalanceSeries.load(f.account)
     const point = f.store.accountBalanceSeries.points[0]
-    assert.equal(point.balance, 95); assert.equal(point.date.toISODate(), '2025-02-10')
+    assert.equal(point.balanceCents, 9500); assert.equal(point.date.toISODate(), '2025-02-10')
     assert.equal(f.account.balanceCents, 10000); assert.equal(f.account.plaidBalanceCents, null)
     assert.notProperty(point, 'id')
     for (const method of ['addBalance', 'insertBalance', 'removeBalance']) assert.notProperty(f.store.accountBalanceSeries, method)
     assert.notProperty(f.store, 'balances')
+  })
+
+  test('account chart cache retains exact cents and rejects malformed replacement points atomically', async ({ assert }) => {
+    const source = [{ date: '2025-02-10', balance: '90071992547409.91' }, { date: '2025-02-09', balance: '-0.30' }]
+    routes.set('get /api/v1/account/10/balances', async () => ({ body: source }))
+    await f.store.accountBalanceSeries.load(f.account)
+    assert.deepEqual(f.store.accountBalanceSeries.points.map(p => p.balanceCents), [Number.MAX_SAFE_INTEGER, -30])
+    assert.strictEqual(source[0].balance, '90071992547409.91')
+    assert.notProperty(f.store.accountBalanceSeries.points[0], 'balance')
+    const account = new f.account.constructor(f.store, f.institution, { id: 11, plaidId: null, name: 'Other', closed: false,
+      type: state.AccountType.Depository, subtype: 'checking', tracking: state.TrackingType.Transactions,
+      balance: '0.00', pendingBalance: '0.00', plaidBalance: null, startDate: '2025-01-01', rate: 0 })
+    for (const balance of [1, '1.2', '-0.00', 'Infinity', '90071992547409.92']) {
+      routes.set('get /api/v1/account/11/balances', async () => ({ body: [{ date: '2025-02-10', balance: '0.10' }, { date: '2025-02-09', balance }] }))
+      await assert.rejects(() => f.store.accountBalanceSeries.load(account))
+      assert.strictEqual(f.store.accountBalanceSeries.points[0].balanceCents, Number.MAX_SAFE_INTEGER)
+      assert.strictEqual(f.store.accountBalanceSeries.account, f.account)
+    }
+    routes.set('get /api/v1/account/11/balances', async () => ({ body: [] }))
+    await f.store.accountBalanceSeries.load(account)
+    assert.lengthOf(f.store.accountBalanceSeries.points, 0)
+    assert.strictEqual(f.store.accountBalanceSeries.account, account)
   })
 
   test('rejected or malformed chart request leaves cache and Account unchanged')
