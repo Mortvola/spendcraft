@@ -3,6 +3,8 @@ import { test } from '@japa/runner'
 import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
+import { fundingCategoryEffectCents } from '../../client-src/Funding/calculateFunding.ts'
+import { parseMoneyCents } from '../../common/moneyCents.ts'
 
 async function current(file, name, context = {}) {
   const source = await readFile(file, 'utf8')
@@ -26,14 +28,21 @@ async function current(file, name, context = {}) {
 }
 
 test.group('Current Transaction Category string compatibility — no DB', () => {
-  test('funding effect concatenates raw strings and mixed values')
-    .with([[10, 20, 30], ['10.00', '20.00', '010.0020.00'], [10, '20.00', '1020.00']])
+  test('funding effect sums integer cents for the selected category')
+    .with([['0.10', '0.20', '0.30'], ['-0.10', '-0.20', '-0.30'], ['0.10', '-0.10', '0.00']])
     .run(async ({ assert }, [a, b, expected]) => {
-      const effect = await current('client-src/Funding/calculateFunding.ts',
-        'fundingCategoryEffect')
-      assert.strictEqual(effect([{ categoryId: 1, amount: a }, { categoryId: 1, amount: b }], 1),
-        expected)
+      const rows = [{ categoryId: 1, amountCents: parseMoneyCents(a) },
+        { categoryId: 2, amountCents: parseMoneyCents('99.00') },
+        { categoryId: 1, amountCents: parseMoneyCents(b) }]
+      assert.strictEqual(fundingCategoryEffectCents(rows, 1), parseMoneyCents(expected))
+      assert.strictEqual(fundingCategoryEffectCents(rows, 3), parseMoneyCents('0.00'))
     })
+  test('funding effect rejects storage strings and invalid cent values', ({ assert }) => {
+    for (const amountCents of ['10.00', 0.1, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
+      assert.throws(() => fundingCategoryEffectCents([{ categoryId: 1, amountCents }], 1),
+        'Invalid monetary cents')
+    }
+  })
   test('duplicate effect aggregation fails if strings reach current posting helper')
     .with([[10, 20, 30], ['10.00', '20.00', NaN], [10, '20.00', 1020]])
     .run(async ({ assert }, [a, b, expected]) => {
