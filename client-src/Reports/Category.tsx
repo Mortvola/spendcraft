@@ -1,11 +1,11 @@
-import { decodeAmount } from '../monetary';
+import { decodeCategoryReport, type CategoryCentsReportRow } from '../monetary';
 import React from 'react';
 import { Formik, FieldArray, FormikState } from 'formik';
 import { DateTime } from 'luxon';
 import { DropdownButton } from 'react-bootstrap';
 import { FormCheckbox, FormField, SubmitButton } from '@mortvola/forms';
 import Http from '@mortvola/http';
-import Amount from '../Amount';
+import MoneyCentsAmount from '../MoneyCentsAmount';
 import { useStores } from '../State/Store';
 import useSortableTable from './SortableTable';
 import { isGroup } from '../State/Group';
@@ -13,17 +13,9 @@ import ReportControls from './ReportControls';
 import styles from './Category.module.scss';
 import { CategoryType, type CategoryReportRow } from '../../common/ResponseTypes';
 
-interface CategoryReport {
-  rowNumber: string,
-  groupName: string,
-  categoryName: string,
-  sum: number,
-  count: number,
-}
-
 const Category: React.FC = () => {
   const { categoryTree: { budget } } = useStores();
-  const { setData, SortableTable } = useSortableTable<CategoryReport>(['groupName', 'categoryName', 'sum', 'count']);
+  const { setData, SortableTable } = useSortableTable<CategoryCentsReportRow>(['groupName', 'categoryName', 'sumCents', 'count']);
 
   interface FormValues {
     startDate: string,
@@ -54,7 +46,7 @@ const Category: React.FC = () => {
       )
 
       if (isCategoryReport(body)) {
-        setData(body.map((row) => ({ ...row, sum: decodeAmount(row.sum) })));
+        setData(decodeCategoryReport(body));
       }
     }
   }
@@ -145,7 +137,7 @@ const Category: React.FC = () => {
           <SortableTable.Column column="categoryName">
             Category
           </SortableTable.Column>
-          <SortableTable.Column className="dollar-amount" column="sum">
+          <SortableTable.Column className="dollar-amount" column="sumCents">
             Amount
           </SortableTable.Column>
           <SortableTable.Column style={{ textAlign: 'right' }} column="count">
@@ -159,7 +151,7 @@ const Category: React.FC = () => {
               <div key={d.rowNumber} className={styles.reportItem}>
                 <div className="ellipsis">{d.groupName}</div>
                 <div className="ellipsis">{d.categoryName}</div>
-                <Amount amount={d.sum} />
+                <MoneyCentsAmount amount={d.sumCents} />
                 <div style={{ textAlign: 'right' }}>{d.count}</div>
               </div>
             )
