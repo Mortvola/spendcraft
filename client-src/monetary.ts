@@ -1,4 +1,4 @@
-import { addMoneyCents, formatMoneyCents, parseMoneyCents, subtractMoneyCents, type MoneyCents } from '../common/moneyCents.js';
+import { addMoneyCents, moneyCentsFromInteger, formatMoneyCents, parseMoneyCents, type MoneyCents } from '../common/moneyCents.js';
 import type { CategoryReportRow, CategoryTransferProps, CategoryTransferRequest, DecimalMoneyString, FundingRuleResponse, FundingHistoryReportResponse, FundingHistoryReportRow, IncomeVsExpensesReportResponse, NetworthReportResponse, PayeeReportRow } from '../common/ResponseTypes.js';
 
 // Encode at the request boundary; client state and calculations remain numeric.
@@ -133,11 +133,25 @@ export function encodeTransferCategories(categories: readonly TransferCategoryIn
   });
 }
 
-// UI fields may contain unrounded input; canonical strings retain every original cent.
+// Parse decimal input text exactly; apply account signs before rounding half ties
+// toward positive infinity. Numeric callers retain their existing rounding policy.
 export function inputMoneyCents(value: string | number, sign = 1): MoneyCents {
-  if (typeof value === 'string' && value !== '-0.00' && /^-?(?:0|[1-9]\d*)\.\d{2}$/.test(value)) {
-    const cents = parseMoneyCents(value);
-    return sign === -1 ? subtractMoneyCents(parseMoneyCents('0.00'), cents) : cents;
-  }
-  return parseMoneyCents(encodeAmount(Number(value) * sign));
+  if (sign !== 1 && sign !== -1) throw new Error('Invalid monetary sign');
+  if (typeof value === 'number') return parseMoneyCents(encodeAmount(value * sign));
+
+  const text = value.trim();
+  if (text === '') return parseMoneyCents('0.00');
+  const match = /^([+-]?)(?:(\d+)(?:\.(\d*))?|\.(\d+))$/.exec(text);
+  if (!match) throw new Error('Invalid monetary input');
+  const negative = (match[1] === '-') !== (sign === -1);
+  const whole = match[2] ?? '0';
+  const fraction = match[3] ?? match[4] ?? '';
+  let magnitude = BigInt(whole) * 100n + BigInt((fraction + '00').slice(0, 2));
+  const discarded = fraction.slice(2);
+  const half = discarded[0] === '5' && !/[1-9]/.test(discarded.slice(1));
+  const aboveHalf = discarded[0] > '5' || (discarded[0] === '5' && !half);
+  if (aboveHalf || (half && !negative)) magnitude += 1n;
+  const cents = negative ? -magnitude : magnitude;
+  if (cents > BigInt(Number.MAX_SAFE_INTEGER) || cents < -BigInt(Number.MAX_SAFE_INTEGER)) throw new Error('Unsafe monetary input');
+  return moneyCentsFromInteger(Number(cents));
 }
