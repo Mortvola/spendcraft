@@ -12,7 +12,7 @@ import { inside, readProcessManifest, processDefinitions, replaceProcesses,
   matchesDefinition } from './lib/pm2Processes.mjs'
 import { verifyPm2Runtime } from './rollbackApplication.mjs'
 const execute = promisify(execFile)
-const actions = ['stop', 'verify', 'prepared', 'start', 'complete']
+const actions = ['stop', 'verify', 'prepared', 'start', 'complete', 'resume']
 const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex')
 const schedule = env => [undefined, null, false, 0, '0', ''].includes(env
   ?.cron_restart) ? null : env.cron_restart
@@ -30,6 +30,9 @@ function validateState(state, root, incoming) {
       && (typeof item.cron !== 'string' || item.cron.trim().split(/\s+/)
         .length !== 5))) throw new Error('invalid_saved_pm2_schedule')
   }
+  if (state.installation !== undefined && (!/^[a-f0-9]{64}$/.test(state.installation?.installer)
+    || !/^[a-f0-9]{64}$/.test(state.installation?.source))) throw new Error(
+      'invalid_installer_resume_identity')
   return state
 }
 
@@ -116,7 +119,7 @@ async function savedState(run, dumps, check) {
 }
 
 export async function installerMaintenance({ action, root, incoming, previous, run, store, dumps,
-  print = message => console.log(message) }) {
+  installation, print = message => console.log(message) }) {
   // PM2's stopped status confirms shutdown of managed writers and their children.
   // Cron registrations and both startup dumps are fenced separately below.
   const list = async () => JSON.parse((await run(['jlist'])).stdout)
@@ -131,6 +134,7 @@ export async function installerMaintenance({ action, root, incoming, previous, r
     const desired = processDefinitions(incoming, join(root, 'spendcraft'))
     state = validateState({ format: 1, id: randomUUID(), root, manifest: digest(incoming), phase:
       'captured',
+      ...(installation ? { installation } : {}),
       processes: targets.map(entry => ({ name: entry.name, cron: schedule(entry.pm2_env) })) },
         root, incoming)
     for (const item of state.processes) {
@@ -158,6 +162,24 @@ export async function installerMaintenance({ action, root, incoming, previous, r
     return
   }
   state = validateState(await store.read(), root, incoming)
+  if (action === 'resume') {
+    if (!installation || !state.installation
+      || installation.installer !== state.installation.installer
+      || installation.source !== state.installation.source) throw new Error(
+        'installer_resume_release_mismatch')
+    if (!['prepared', 'restored'].includes(state.phase)) throw new Error(
+      'installer_resume_requires_recovery_review')
+    const check = entries => state.phase === 'prepared' ? assertFence(entries, state)
+      : assertOnline(entries, root, incoming)
+    check(await list())
+    for (const name of ['dump.pm2', 'dump.pm2.bak']) {
+      const entries = await dumps(name)
+      if (!Array.isArray(entries)) throw new Error('invalid_pm2_startup_dump')
+      check(entries.map(env => ({ name: env.name, pid: env.status === 'online' ? 1 : 0,
+        pm2_env: env })))
+    }
+    return state.phase
+  }
   if (action === 'verify' || action === 'prepared') {
     if (state.phase !== 'fenced' && !(action === 'verify' && state.phase ===
       'prepared')) throw new Error('installer_pm2_fence_not_ready')
@@ -259,13 +281,22 @@ export async function manageProcesses({ action, root, incoming, entries, run, pr
 
 export async function main(args = process.argv.slice(2)) {
   const { values } = parseArgs({ args, strict: true, options: { root: { type: 'string' }, action: {
-    type: 'string' }, release: { type: 'string' } } })
+    type: 'string' }, release: { type: 'string' }, 'installer-sha': { type: 'string' } } })
   if (!values.root || !values.release || !actions.includes(values.action)) throw new Error(
     'explicit_process_action_required')
   const root = resolve(values.root), release = resolve(values.release)
   if (await realpath(root) !== root || ![join(root, 'spendcraft.new'), join(root, 'spendcraft')]
     .includes(release)) throw new Error('unsafe_process_root')
   const incoming = await readProcessManifest(release)
+  if (values.action === 'resume' && release !== join(root, 'spendcraft')) throw new Error(
+    'installer_resume_requires_installed_release')
+  let installation
+  if (values['installer-sha']) {
+    if (!/^[a-f0-9]{64}$/.test(values['installer-sha'])) throw new Error(
+      'invalid_installer_resume_identity')
+    installation = { installer: values['installer-sha'], source: createHash('sha256').update(
+      await readFile(join(release, 'release-source.json'))).digest('hex') }
+  }
   let previous
   if (values.action === 'stop' || values.action === 'start') {
     try { previous = await readProcessManifest(join(root, values.action === 'stop' ? 'spendcraft' :
@@ -288,8 +319,10 @@ export async function main(args = process.argv.slice(2)) {
     try { await directory.sync() } finally { await directory.close() }
     return entries
   }
-  await installerMaintenance({ action: values.action, root, incoming, previous, run, dumps,
+  const phase = await installerMaintenance({ action: values.action, root, incoming, previous,
+    installation, run, dumps,
     store: await maintenanceStore(root) })
+  if (values.action === 'resume') console.log(phase)
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   main().catch((error) => {

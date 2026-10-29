@@ -84,15 +84,61 @@ function maintenanceFixture(cron = '0 0 * * *') {
       }
       return { stdout: '' }
     },
-    async act(action) {
+    async act(action, installation) {
       return installerMaintenance({ action, root, incoming, previous: f.previous,
-        run: f.run, store: f.store, dumps: f.dumps, print: () => undefined })
+        installation, run: f.run, store: f.store, dumps: f.dumps, print: () => undefined })
     },
   }
   return f
 }
 
 test.group('Installer durable PM2 maintenance fence (inert daemon and files)', () => {
+  const installation = { installer: 'a'.repeat(64), source: 'b'.repeat(64) }
+  test('same installer resumes prepared or restored maintenance without changing processes')
+    .with(['prepared', 'restored']).run(async ({ assert }, phase) => {
+      const f = maintenanceFixture()
+      await f.act('stop', installation); await f.act('prepared')
+      if (phase === 'restored') await f.act('start')
+      const state = clone(f.state), before = f.calls.length
+      assert.equal(await f.act('resume', installation), phase)
+      assert.deepEqual(f.state, state)
+      assert.deepEqual(f.calls.slice(before), [['jlist']])
+    })
+  test('resume rejects another installer, another release or an unpinned old record').with([
+    undefined, { ...installation, installer: 'c'.repeat(64) },
+    { ...installation, source: 'c'.repeat(64) },
+  ]).run(async ({ assert }, supplied) => {
+    const f = maintenanceFixture()
+    await f.act('stop', installation); await f.act('prepared')
+    await assert.rejects(() => f.act('resume', supplied), 'installer_resume_release_mismatch')
+  })
+  test('legacy maintenance without installer identity cannot automatically resume', async ({
+    assert }) => {
+    const f = maintenanceFixture()
+    await f.act('stop'); await f.act('prepared')
+    await assert.rejects(() => f.act('resume', installation), 'installer_resume_release_mismatch')
+  })
+  test('uncertain maintenance phases still require recovery review').with([
+    'captured', 'fenced', 'resuming', 'resume-failed', 'complete',
+  ]).run(async ({ assert }, phase) => {
+    const f = maintenanceFixture()
+    await f.act('stop', installation)
+    f.state.phase = phase
+    await assert.rejects(() => f.act('resume', installation),
+      'installer_resume_requires_recovery_review')
+  })
+  test('resume verifies live and both saved PM2 configurations').with([
+    'live', 'saved', 'malformed identity',
+  ]).run(async ({ assert }, failure) => {
+    const f = maintenanceFixture()
+    await f.act('stop', installation); await f.act('prepared')
+    if (failure === 'live') f.entries[0].pm2_env.status = 'online'
+    if (failure === 'saved') f.corruptDump = true
+    if (failure === 'malformed identity') f.state.installation.source = 'invalid'
+    await assert.rejects(() => f.act('resume', installation))
+    assert.equal(f.state.phase, 'prepared')
+    assert.isFalse(f.calls.some(args => args[0] === 'start'))
+  })
   test('PM2 stop alone can be restarted by its retained cron', async ({ assert }) => {
     const f = maintenanceFixture()
     await f.run(['stop', 'prod-server'])

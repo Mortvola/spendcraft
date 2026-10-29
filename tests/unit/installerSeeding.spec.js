@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process'
 async function runSeeding(seedStatus = 0) {
   const source = await readFile('installer/install.sh0', 'utf8')
   const start = source.indexOf('seed_database() {')
-  const end = source.indexOf('\nconfirm_deployment DEPLOY', start)
+  const end = source.indexOf('\nINSTALLER_SHA256=', start)
   if (start < 0 || end < 0) throw new Error('Missing installer seeding function')
   // Execute only the actual seeding function with an inert node substitute.
   // No installer setup, filesystem operations, PM2 or database client runs.

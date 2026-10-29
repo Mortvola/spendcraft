@@ -54,9 +54,10 @@ load_spendcraft_environment() {
 
 load_spendcraft_environment
 INSTALL_TARGET="$SPENDCRAFT_ENV"
+RESUMING=0
 if [ -e "$SPENDCRAFT_ROOT/maintenance/installer-pm2.json" ] || [ -L "$SPENDCRAFT_ROOT/maintenance/installer-pm2.json" ]; then
-  echo 'Unfinished PM2 maintenance exists. Preserve its state and inspect the interrupted installation; do not rerun the installer or resume writers without verifying database safety.' >&2
-  exit 1
+  echo 'Unfinished PM2 maintenance exists. Checking whether installation can resume safely.'
+  RESUMING=1
 fi
 if [ ! -d "$SPENDCRAFT_ROOT" ]; then
   echo 'Deployment directory does not exist' >&2
@@ -67,11 +68,17 @@ confirm_deployment() {
   local expected="$1"
   local answer
   echo "$2"
-  printf 'Type %s to continue: ' "$expected"
-  if ! read -r answer || [ "$answer" != "$expected" ]; then
-    echo 'Deployment gate declined. Keep onboarding maintenance enabled; no automatic rollback or traffic resume.' >&2
-    exit 1
-  fi
+  while true; do
+    printf 'Type %s to continue, or ABORT to stop: ' "$expected"
+    if ! read -r answer || [ "$answer" = ABORT ]; then
+      echo 'Installation paused. Maintenance state is preserved; rerun this installer to resume supported phases.' >&2
+      exit 1
+    fi
+    if [ "$answer" = "$expected" ]; then
+      return 0
+    fi
+    printf 'Confirmation did not match. Please enter %s or ABORT.\n' "$expected" >&2
+  done
 }
 
 configure_nginx() {
@@ -149,6 +156,24 @@ seed_database() {
   node ace db:seed
 }
 
+INSTALLER_SHA256=$(node --input-type=module - "$0" <<'INSTALLER_HASH'
+import { createHash } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
+console.log(createHash('sha256').update(await readFile(process.argv[2])).digest('hex'))
+INSTALLER_HASH
+)
+ZIP_FILE="$SPENDCRAFT_ROOT/build.zip"
+RESUME_PHASE=''
+if [ "$RESUMING" -eq 1 ]; then
+  if [ -e "$SPENDCRAFT_ROOT/spendcraft.new" ] || [ -L "$SPENDCRAFT_ROOT/spendcraft.new" ]; then
+    echo 'Installation stopped before the release swap completed. Preserve maintenance state; database and filesystem recovery review is required.' >&2
+    exit 1
+  fi
+  RESUME_PHASE=$(node "$SPENDCRAFT_ROOT/spendcraft/installer/managePm2.mjs" \
+    --root "$SPENDCRAFT_ROOT" --release "$SPENDCRAFT_ROOT/spendcraft" \
+    --action resume --installer-sha "$INSTALLER_SHA256")
+  echo "Resuming installation finalization from PM2 phase: $RESUME_PHASE"
+else
 confirm_deployment DEPLOY "Confirm $INSTALL_TARGET installation: onboarding maintenance is enabled externally and will remain enabled until final verification; the selected DB target and experimental-record disposition are reviewed; cleanup keys/provider configuration are provisioned; PM2 startup recovery is installed."
 
 SCRIPT_END=$( awk '
@@ -156,8 +181,6 @@ SCRIPT_END=$( awk '
   /^\w*___END_OF_SHELL_SCRIPT___\w*$/ { print NR+1; err=0; exit 0; } 
   END { if (err==1) print "?"; }
 ' "$0" )
-
-ZIP_FILE="$SPENDCRAFT_ROOT/build.zip"
 
 echo "Checking for embedded file..."
 
@@ -184,7 +207,8 @@ APP_OLD=$APP.old
 unzip "$ZIP_FILE" > /dev/null
 rm -fr $APP_NEW
 mv build $APP_NEW
-node "$PWD/$APP_NEW/installer/managePm2.mjs" --root "$PWD" --release "$PWD/$APP_NEW" --action stop
+node "$PWD/$APP_NEW/installer/managePm2.mjs" --root "$PWD" --release "$PWD/$APP_NEW" \
+  --action stop --installer-sha "$INSTALLER_SHA256"
 
 pushd $APP_NEW
 
@@ -233,21 +257,28 @@ if [ -e $APP ]; then
   mv $APP $APP_OLD
 fi
 mv $APP_NEW $APP
+fi
 
+cd "$SPENDCRAFT_ROOT"
+APP=spendcraft
+
+if [ "$RESUME_PHASE" != restored ]; then
 confirm_deployment RESUME 'In another session, verify deployed cleanup configuration/readiness without contacting Plaid, PostgreSQL and Redis access, complete-ledger due/expiry counts, and PM2 reboot recovery. All deployment-managed processes remain stopped. Confirm these checks passed before starting them; keep external maintenance enabled until server and listener health checks pass after startup.'
 
 node "$PWD/$APP/installer/managePm2.mjs" --root "$PWD" --release "$PWD/$APP" --action start
+fi
 pm2 save
 node "$PWD/$APP/installer/generateRollbackPlan.mjs" --root "$PWD" --target "$INSTALL_TARGET"
 sudo nginx -t
 sudo systemctl reload nginx
-node "$PWD/$APP/installer/managePm2.mjs" --root "$PWD" --release "$PWD/$APP" --action complete
-echo 'Verify server health before manually disabling external onboarding maintenance. This installer does not resume traffic.'
 
 # Clean up
-if [ -e "$ZIP_FILE" ]; then
+if [ -n "${ZIP_FILE:-}" ] && [ -e "$ZIP_FILE" ]; then
   rm "$ZIP_FILE"
 fi
+
+node "$PWD/$APP/installer/managePm2.mjs" --root "$PWD" --release "$PWD/$APP" --action complete
+echo 'Verify server health before manually disabling external onboarding maintenance. This installer does not resume traffic.'
 
 exit 0
 

@@ -234,6 +234,23 @@ the RESUME confirmation and application-process startup. An unsuccessful install
 before that point does not reload Nginx. If initial validation fails, only a newly
 created enabled link is removed; the shared file remains for inspection.
 
+Mistyped `DEPLOY` or `RESUME` confirmations prompt again. Enter `ABORT` or close
+standard input to stop while preserving maintenance state.
+
+If installation stops after database preparation and the release swap, rerun the
+same generated `install.sh` without arguments. The installer verifies its SHA-256,
+the installed build identity, and live/saved PM2 state using the existing durable
+maintenance record. It returns to `RESUME` if writers are still fenced, or finishes
+the remaining steps if PM2 restoration already succeeded. It does not repeat the
+backup, migrations, seeders or release swap. The prompts do not replace readiness
+review or automatically disable external maintenance.
+
+Automatic continuation is unavailable for earlier interruptions, incomplete
+process restoration, different installers/builds, or maintenance records created
+by older installers without resume identity. Preserve the record and establish
+database/filesystem safety before manual recovery; do not delete the record or
+rerun migrations merely to bypass it.
+
 Ensure DNS points to the intended server and HTTP port 80 is accessible before
 using Certbot. The installer does not request certificates, add TLS configuration,
 or change firewalls. Run Certbot separately after installation for the selected

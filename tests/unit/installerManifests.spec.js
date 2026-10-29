@@ -112,7 +112,7 @@ test.group('Installer release manifests (temporary packages, no services or data
     assert }) => {
     const source = await readFile('installer/install.sh0', 'utf8')
     const call = source.indexOf('node "$PWD/$APP_NEW/installer/captureDeploymentManifests.mjs"')
-    const end = source.indexOf('\nconfirm_deployment RESUME', call)
+    const end = source.indexOf('\nfi\n\ncd "$SPENDCRAFT_ROOT"', call)
     assert.isAbove(call, source.indexOf('\nseed_database\n'))
     assert.isAbove(call, source.indexOf('--action stop'))
     assert.isAbove(call, source.indexOf('npm ci --omit dev --omit optional'))

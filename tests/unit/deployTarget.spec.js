@@ -196,3 +196,78 @@ p=process.argv.at(-1);process.stdout.write((process.env.TEST_BAD_OWNER ? "1000" 
     assert.notMatch(source, /\bssh\b|SPENDCRAFT_ENV=|SPENDCRAFT_ROOT=|\/etc\/spendcraft/)
   })
 })
+
+test.group('Installer confirmations and interrupted finalization (inert commands)', () => {
+  async function confirmationFunction() {
+    const source = await readFile('installer/install.sh0', 'utf8')
+    return source.slice(source.indexOf('confirm_deployment() {'),
+      source.indexOf('\nconfigure_nginx() {'))
+  }
+  test('mistyped confirmations retry until accepted').with(['DEPLOY', 'RESUME'])
+    .run(async ({ assert }, expected) => {
+      const result = spawnSync('bash', ['-c', `set -e
+${await confirmationFunction()}
+confirm_deployment ${expected} 'Operator gate'
+printf 'CONTINUED\\n'
+`], { input: `typo\n\n${expected}\n`, encoding: 'utf8' })
+      assert.equal(result.status, 0, result.stderr)
+      assert.include(result.stdout, 'CONTINUED')
+      assert.include(result.stderr, 'Confirmation did not match')
+    })
+  test('ABORT or EOF stops without continuing').with(['ABORT\n', '', 'typo\n'])
+    .run(async ({ assert }, input) => {
+      const result = spawnSync('bash', ['-c', `set -e
+${await confirmationFunction()}
+confirm_deployment RESUME 'Operator gate'
+printf 'CONTINUED\\n'
+`], { input, encoding: 'utf8' })
+      assert.equal(result.status, 1)
+      assert.notInclude(result.stdout, 'CONTINUED')
+    })
+  test('rerun finishes the same installation without repeating database preparation').with([
+    'prepared', 'restored', 'rejected', 'incoming remains',
+  ]).run(async ({ assert }, scenario) => {
+    const directory = await realpath(await mkdtemp(join(tmpdir(), 'installer-resume-')))
+    try {
+      await mkdir(join(directory, 'spendcraft'))
+      if (scenario === 'incoming remains') await mkdir(join(directory, 'spendcraft.new'))
+      const source = await readFile('installer/install.sh0', 'utf8')
+      const body = source.slice(source.indexOf("RESUME_PHASE=''"), source.indexOf('\nexit 0\n'))
+      const result = spawnSync('bash', ['-c', `set -e
+SPENDCRAFT_ROOT="$1"
+RESUMING=1
+INSTALLER_SHA256=fixture
+node() {
+  case "$*" in
+    *'--action resume'*)
+      printf 'RESUME_CHECK\\n' >&2
+      ${scenario === 'rejected' ? 'return 17' : `printf '${scenario}\\n'`}
+      ;;
+    *) printf 'NODE:%s\\n' "$*" ;;
+  esac
+}
+pm2() { printf 'PM2:%s\\n' "$*"; }
+sudo() { printf 'SUDO:%s\\n' "$*"; }
+unzip() { printf 'UNEXPECTED_UNZIP\\n'; return 99; }
+${await confirmationFunction()}
+${body}
+`, 'resume-test', directory], { input: 'typo\nRESUME\n', encoding: 'utf8' })
+      assert.equal(result.status, scenario === 'rejected' ? 17
+        : scenario === 'incoming remains' ? 1 : 0, result.stderr)
+      for (const command of ['UNEXPECTED_UNZIP', 'migration:run', 'db:seed', 'backup.sh',
+        'captureDeploymentManifests']) assert.notInclude(result.stdout, command)
+      if (scenario === 'prepared' || scenario === 'restored') {
+        assert.include(result.stdout, '--action complete')
+        assert.include(result.stdout, 'PM2:save')
+        assert.include(result.stdout, 'SUDO:systemctl reload nginx')
+        assert.equal(result.stdout.includes('--action start'), scenario === 'prepared')
+        assert.equal(result.stdout.includes('Type RESUME'), scenario === 'prepared')
+      } else {
+        assert.notInclude(result.stdout, '--action start')
+        assert.notInclude(result.stdout, '--action complete')
+        assert.notInclude(result.stdout, 'PM2:')
+        assert.notInclude(result.stdout, 'SUDO:')
+      }
+    } finally { await rm(directory, { recursive: true, force: true }) }
+  })
+})
