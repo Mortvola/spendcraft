@@ -1,5 +1,5 @@
 import { test } from '@japa/runner'
-import { parseMoneyCents, addMoneyCents, subtractMoneyCents, formatMoneyCents } from '../../common/moneyCents.ts'
+import { moneyCentsFromInteger, parseMoneyCents, addMoneyCents, subtractMoneyCents, formatMoneyCents } from '../../common/moneyCents.ts'
 
 test.group('Checked integer monetary cents', () => {
   test('canonical strings parse and format exactly').with([
@@ -36,4 +36,14 @@ test.group('Checked integer monetary cents', () => {
       assert.throws(() => subtractMoneyCents(parseMoneyCents('0.00'), value))
       assert.throws(() => formatMoneyCents(value))
     })
+})
+
+
+test('already-rounded integers become checked cents without dollar conversion', ({ assert }) => {
+  for (const value of [0, -0, 1, -1, Number.MAX_SAFE_INTEGER, -Number.MAX_SAFE_INTEGER]) {
+    assert.strictEqual(moneyCentsFromInteger(value), value === 0 ? 0 : value)
+  }
+  for (const value of [0.1, NaN, Infinity, -Infinity, Number.MAX_SAFE_INTEGER + 1, -Number.MAX_SAFE_INTEGER - 1]) {
+    assert.throws(() => moneyCentsFromInteger(value))
+  }
 })

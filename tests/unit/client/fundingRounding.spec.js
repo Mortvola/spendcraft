@@ -1,3 +1,5 @@
+import * as money from '../../../common/moneyCents.ts'
+import { inputMoneyCents } from '../../../client-src/monetary.ts'
 import { fundingCalculationInputs } from '../../../client-src/Funding/calculateFunding.ts'
 import { test } from '@japa/runner'
 import { readFile } from 'node:fs/promises'
@@ -25,7 +27,7 @@ async function productionExpressions() {
 function evaluate(source, context = {}) {
   return runInNewContext(ts.transpileModule(source, {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None },
-  }).outputText, context)
+  }).outputText, { ...money, zero: money.parseMoneyCents('0.00'), ...context })
 }
 
 // Valid nonnegative percentages total 100%; negative source amounts remain valid.
@@ -46,10 +48,10 @@ test.group('Funding residual correction regression', () => {
     .run(async ({ assert }, scenario) => {
       const expressions = await productionExpressions()
       let order
-      const observed = expressions.get('computeSpread').replace('const funders = new Map<number, number>();',
-        'observeOrder(sortedCategories.map((entry) => entry.categoryId)); const funders = new Map<number, number>();')
+      const observed = expressions.get('computeSpread').replace('const funders = new Map<number, MoneyCents>();',
+        'observeOrder(sortedCategories.map((entry) => entry.categoryId)); const funders = new Map<number, MoneyCents>();')
       const spread = evaluate(`const computeSpread = ${observed}; computeSpread;`, { observeOrder: (ids) => { order = [...ids] } })
-      const result = spread(scenario.amount, [
+      const result = spread(inputMoneyCents(scenario.amount), [
         { categoryId: 1, amount: 33.33, percentage: true },
         { categoryId: 2, amount: 33.33, percentage: true },
         { categoryId: 3, amount: 33.34, percentage: true },
@@ -67,8 +69,8 @@ test.group('Funding residual correction regression', () => {
     let submitted
     let shown = true
     let order
-    const observed = expressions.get('computeSpread').replace('const funders = new Map<number, number>();',
-      'observeOrder(sortedCategories.map((entry) => entry.categoryId)); const funders = new Map<number, number>();')
+    const observed = expressions.get('computeSpread').replace('const funders = new Map<number, MoneyCents>();',
+      'observeOrder(sortedCategories.map((entry) => entry.categoryId)); const funders = new Map<number, MoneyCents>();')
     const submit = evaluate(`const computeSpread = ${observed}; const calculateFunding = ${expressions.get('calculateFunding')}; const handleSubmit = ${expressions.get('handleSubmit')}; handleSubmit;`, {
       fundingCalculationInputs, observeOrder: (ids) => { order = [...ids] },
       fundingPoolCat: { id: 99 }, transaction: undefined, TransactionType: { FUNDING_TRANSACTION: 2 },
@@ -81,8 +83,8 @@ test.group('Funding residual correction regression', () => {
     assert.equal(submitted.type, 2)
     assert.isFalse(shown)
     assert.deepEqual(submitted.request.categories.map(({ categoryId, amount }) => ({ categoryId, amount })),
-      [{ categoryId: 10, amount: 0.01 }, { categoryId: order.at(-1), amount: -0.01 }])
-    assert.equal(submitted.request.categories.reduce((sum, row) => sum + Math.round(row.amount * 100), 0), 0)
+      [{ categoryId: 10, amount: '0.01' }, { categoryId: order.at(-1), amount: '-0.01' }])
+    assert.equal(submitted.request.categories.reduce((sum, row) => sum + money.parseMoneyCents(row.amount), 0), 0)
   })
 })
 
@@ -102,7 +104,7 @@ test.group('Funding allocation rounding characterization', () => {
       visit(ast)
       assert.lengthOf(matches, 1)
       // Execute the actual closure-free allocation function, rather than copying its algorithm.
-      const correction = 'fundingAmount += categoryAmount - percentSum;'
+      const correction = 'fundingAmount = addMoneyCents(fundingAmount, subtractMoneyCents(categoryAmount, percentSum));'
       assert.include(matches[0], correction)
       const observedSource = matches[0].replace(correction,
         `trace.push({ categoryAmount, percentSum, before: fundingAmount }); ${correction} trace.push({ after: fundingAmount });`)
@@ -110,8 +112,8 @@ test.group('Funding allocation rounding characterization', () => {
         compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None },
       }).outputText
       const trace = []
-      const computeSpread = runInNewContext(compiled, { trace })
-      const allocations = [...computeSpread(amount, [
+      const computeSpread = runInNewContext(compiled, { ...money, zero: money.parseMoneyCents('0.00'), trace })
+      const allocations = [...computeSpread(inputMoneyCents(amount), [
         { categoryId: 1, amount: 33.33, percentage: true },
         { categoryId: 2, amount: 33.33, percentage: true },
         { categoryId: 3, amount: 33.34, percentage: true },

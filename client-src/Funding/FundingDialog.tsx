@@ -1,5 +1,5 @@
 import { formatMoneyCents, addMoneyCents, parseMoneyCents, subtractMoneyCents } from '../../common/moneyCents';
-import { decodeCentFundingRules, inputMoneyCents } from '../monetary';
+import { decodeCentFundingRules, inputMoneyCents, type TransferCategoryInput } from '../monetary';
 import { validateFundingPercentages } from '../../common/fundingPercentages'
 import React from 'react';
 import {
@@ -13,7 +13,7 @@ import Http from '@mortvola/http';
 import MoneyCentsAmount from '../MoneyCentsAmount';
 import { useStores } from '../State/Store';
 import {
-  TransactionType, type CategoryFundingProps,
+  TransactionType,
   ApiResponse,
   ProposedFundingCategoryProps,
   CategoryType,
@@ -67,10 +67,11 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
   const handleSubmit = async (values: ValueType) => {
     interface Request {
       date: string,
-      categories: CategoryFundingProps[],
+      categories: TransferCategoryInput[],
     }
 
-    const categories = calculateFunding(fundingCalculationInputs(values.categories), fundingPoolCat.id);
+    const categories = calculateFunding(fundingCalculationInputs(values.categories), fundingPoolCat.id)
+      .map(({ amountCents, ...category }) => ({ ...category, amount: formatMoneyCents(amountCents) }));
 
     const request: Request = {
       date: transaction ? transaction.date.toISODate() ?? values.date : values.date,

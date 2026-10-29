@@ -9,7 +9,7 @@ import Budget from '#models/Budget'
 import Category from '#models/Category'
 import Transaction from '#models/Transaction'
 import { CategoryType } from '#common/ResponseTypes'
-import { calculateFunding } from '../../../client-src/Funding/calculateFunding.js'
+import { fundingForServer as calculateFunding } from '../../fixtures/funding/legacyPreview.js'
 
 let sequence = 0
 async function fixture() {

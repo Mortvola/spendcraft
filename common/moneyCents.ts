@@ -16,6 +16,12 @@ function integerCents(value: MoneyCents): bigint {
   return BigInt(value);
 }
 
+// Construct cents from an already-rounded integer, without dollar conversion.
+export function moneyCentsFromInteger(value: number): MoneyCents {
+  if (!Number.isSafeInteger(value)) throw new Error('Invalid monetary cents');
+  return checkedCents(BigInt(value));
+}
+
 // Match the canonical API format, parsing decimal digits without floating-point scaling.
 export function parseMoneyCents(value: unknown): MoneyCents {
   if (typeof value !== 'string' || value.length > 24 || !/^-?(?:0|[1-9]\d*)\.\d{2}$/.test(value) || value === '-0.00') {

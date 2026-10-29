@@ -1,9 +1,9 @@
 import { taxForecastFields, taxEstimatedFields } from '../../../app/services/taxMonetaryCodec.ts'
 import { encodeTaxAttributions } from '../../../app/services/taxAmountCodec.ts'
-import { calculateFunding } from '../../../client-src/Funding/calculateFunding.ts'
+import { calculateFunding, fundingCalculationInputs } from '../../../client-src/Funding/calculateFunding.ts'
 import { test } from '@japa/runner'
-import { parseMoneyCents } from '../../../common/moneyCents.ts'
-import { inputMoneyCents } from '../../../client-src/monetary.ts'
+import { parseMoneyCents, formatMoneyCents } from '../../../common/moneyCents.ts'
+import { inputMoneyCents, encodeTransferCategories } from '../../../client-src/monetary.ts'
 import { File } from 'node:buffer'
 import NetworthContent from '../../../client-src/Reports/NetworthContent.js'
 import { build } from 'vite'
@@ -1509,13 +1509,12 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.equal(f.account.transactions.transactions[1].statementId, null)
   })
   test('funding calculation reaches real State/cache boundaries unchanged').with([false, true]).run(async ({ assert }, rejected) => {
-    const rows = calculateFunding({ 21: { baseAmount: 2, includeFundingTransfers: false,
-      fundingCategories: [{ categoryId: 20, amount: 100, percentage: true }] } }, 20)
+    const allocations = calculateFunding(fundingCalculationInputs({ 21: { baseAmount: 2, includeFundingTransfers: false,
+      fundingCategories: [{ categoryId: 20, amount: 100, percentage: true }] } }), 20)
+    const rows = allocations.map(({ amountCents, ...row }) => ({ ...row, amount: formatMoneyCents(amountCents) }))
     const props = { ...f.transactionProps(), type: state.TransactionType.FUNDING_TRANSACTION,
-      accountTransaction: undefined, categories: rows.map(row => ({ ...row, amount: row.amount.toFixed(2),
-        ...(row.baseAmount == null ? {} : { baseAmount: row.baseAmount.toFixed(2) }),
-        ...(row.fundingCategories == null ? {} : { fundingCategories: row.fundingCategories.map(rule => ({ ...rule, amount: rule.percentage ? rule.amount : rule.amount.toFixed(2) })) }),
-      })) }
+      accountTransaction: undefined, categories: encodeTransferCategories(rows) }
+
     routes.set('post /api/v1/category-transfer', async (payload) => {
       assert.deepEqual(payload.categories, props.categories)
       return rejected ? { ok: false, body: {} }
@@ -1531,11 +1530,7 @@ export * from ${source('common/ResponseTypes.ts')};
       await submit()
       assert.equal(f.category.balanceCents, -200)
       assert.equal(f.other.balanceCents, 200)
-      assert.deepEqual(f.category.transactions.transactions[0].categories, rows.map(({ amount, baseAmount, fundingCategories, ...row }, id) => ({
-        id, comment: undefined, funder: row.funder, ...row, amountCents: inputMoneyCents(amount),
-        baseAmountCents: inputMoneyCents(baseAmount), fundingCategories: fundingCategories.map(rule => rule.percentage ? rule
-          : { categoryId: rule.categoryId, percentage: false, amountCents: inputMoneyCents(rule.amount) }),
-      })))
+      assert.deepEqual(f.category.transactions.transactions[0].categories, allocations.map((row, id) => ({ id, comment: undefined, funder: row.funder, ...row })))
     }
   })
 

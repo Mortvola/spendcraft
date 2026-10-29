@@ -12,8 +12,23 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
-import { calculateFunding, fundingCalculationInputs, computeSpread, fundingCategoryEffect, fundingCategoryEffectCents } from '../../../client-src/Funding/calculateFunding.ts'
+import { calculateFunding as calculateFundingCents, fundingCalculationInputs, computeSpread as computeSpreadCents, fundingCategoryEffectCents as sumFundingCents } from '../../../client-src/Funding/calculateFunding.ts'
 import { legacyPreview } from '../../fixtures/funding/legacyPreview.ts'
+
+// Legacy-shaped assertions below exercise the same UI/API dollars; the engine runs only in cents.
+const numericRules = rules => rules.map(rule => rule.percentage ? rule : (() => {
+  const { amountCents, ...metadata } = rule
+  return { ...metadata, amount: Number(formatMoneyCents(amountCents)) }
+})())
+const numericRows = rows => rows.map(({ amountCents, baseAmountCents, fundingCategories, ...row }) => ({ ...row,
+  amount: Number(formatMoneyCents(amountCents)), baseAmount: Number(formatMoneyCents(baseAmountCents)),
+  fundingCategories: numericRules(fundingCategories) }))
+const calculateFunding = (inputs, id) => numericRows(calculateFundingCents(fundingCalculationInputs(inputs), id))
+const computeSpread = (amount, rules) => computeSpreadCents(inputMoneyCents(amount), fundingCalculationInputs({
+  1: { baseAmount: '0.00', fundingCategories: rules, includeFundingTransfers: false } })[1].fundingCategories)
+const fundingCategoryEffect = (rows, id) => rows.filter(row => row.categoryId === id).reduce((sum, row) => sum + row.amount, 0)
+const fundingCategoryEffectCents = (rows, id) => sumFundingCents(rows.map(row => ({ categoryId: row.categoryId,
+  amountCents: row.amountCents ?? inputMoneyCents(row.amount) })), id)
 
 const row = (baseAmount, from = 99, includeFundingTransfers = false) => ({ baseAmount,
   includeFundingTransfers, fundingCategories: [{ categoryId: from, amount: 100, percentage: true }] })
@@ -38,9 +53,10 @@ async function dialog(values, { balance = 10, reject = false, editing = false, p
   let modal
   let fundingDate
   let stateIndex = 0
-  const effect = { calculateFunding, fundingCalculationInputs, fundingCategoryEffectCents }
+  const effect = { calculateFunding: calculateFundingCents, fundingCalculationInputs, fundingCategoryEffectCents: sumFundingCents }
   const submit = async (request, type) => {
-    submitted = { request, type }
+    submitted = { request: { ...request, categories: request.categories.map(({ amount, baseAmountCents, fundingCategories, ...row }) => ({ ...row,
+      amount: Number(amount), baseAmount: Number(formatMoneyCents(baseAmountCents)), fundingCategories: numericRules(fundingCategories) })) }, type }
     if (reject) throw new Error('Rejected funding')
     return null
   }
@@ -159,15 +175,14 @@ test.group('Funding same-state preview and submission without DB', () => {
     await f.submit()
     assert.equal(fundingCategoryEffect(f.submitted.request.categories, 99), -2)
   })
-  test('final row cents preserve posting rounding before summation', ({ assert }) => {
-    assert.strictEqual(fundingCategoryEffectCents([{ categoryId: 10, amount: 0.1 }, { categoryId: 10, amount: 0.2 }], 10), 30)
-    assert.strictEqual(fundingCategoryEffectCents([{ categoryId: 10, amount: 0.005 }, { categoryId: 10, amount: 0.005 }], 10), 2)
-    assert.strictEqual(fundingCategoryEffectCents([{ categoryId: 10, amount: -0.005 }], 10), 0)
-    assert.strictEqual(fundingCategoryEffectCents([], 10), 0)
-    for (const amount of [NaN, Infinity, -Infinity, Number.MAX_SAFE_INTEGER]) {
-      assert.throws(() => fundingCategoryEffectCents([{ categoryId: 10, amount }], 10))
+  test('posted row totals stay in checked integer cents', ({ assert }) => {
+    assert.strictEqual(sumFundingCents([{ categoryId: 10, amountCents: 10 }, { categoryId: 10, amountCents: 20 }], 10), 30)
+    assert.strictEqual(sumFundingCents([{ categoryId: 10, amountCents: -1 }, { categoryId: 10, amountCents: 1 }], 10), 0)
+    assert.strictEqual(sumFundingCents([], 10), 0)
+    for (const amountCents of [NaN, Infinity, -Infinity, 0.1, Number.MAX_SAFE_INTEGER + 1]) {
+      assert.throws(() => sumFundingCents([{ categoryId: 10, amountCents }], 10))
     }
-    assert.throws(() => fundingCategoryEffectCents([{ categoryId: 10, amount: 90071992547409.9 }, { categoryId: 10, amount: 0.02 }], 10))
+    assert.throws(() => sumFundingCents([{ categoryId: 10, amountCents: Number.MAX_SAFE_INTEGER }, { categoryId: 10, amountCents: 1 }], 10))
   })
 
   test('Pool preview keeps exact cents for fractional totals and large existing balances', async ({ assert }) => {
@@ -188,10 +203,10 @@ test.group('Funding same-state preview and submission without DB', () => {
     }
   })
 
-  test('binary transfer artifact remains request evidence, with base snapshot preserved', ({ assert }) => {
+  test('transfer additions stay in exact cents with base snapshot preserved', ({ assert }) => {
     const inputs = { 10: row(0.1, 99, true), 20: row(0.2, 10) }
     const calculated = calculateFunding(inputs, 99)
-    assert.equal(calculated[0].amount, 0.30000000000000004)
+    assert.equal(calculated[0].amount, 0.3)
     assert.equal(calculated[0].baseAmount, 0.1)
     assert.equal(fundingCategoryEffect(calculated, 99), -0.3)
   })
@@ -226,7 +241,7 @@ test.group('Funding same-state preview and submission without DB', () => {
   ]).run(async ({ assert }, [categories, initialCents, expected, diffOnly, hidden]) => {
     const values = { date: '2025-03-01', categories }
     const component = runInNewContext(await expression('client-src/Funding/FundingItem.tsx', 'FundingItem'), {
-      React, DateTime, calculateFunding, fundingCalculationInputs, fundingCategoryEffectCents, addMoneyCents, parseMoneyCents, inputMoneyCents,
+      React, DateTime, calculateFunding: calculateFundingCents, fundingCalculationInputs, fundingCategoryEffectCents: sumFundingCents, addMoneyCents, parseMoneyCents, inputMoneyCents,
       useStores: () => ({ categoryTree: { budget: { fundingPoolCat: { id: 99 } } } }),
       useFormikContext: () => ({ values }), useField: () => [{ value: 1 }], styles: { hide: 'hide' },
       Field: ({ children }) => children({ field: { value: categories[10].baseAmount } }),
@@ -399,7 +414,7 @@ test('Funding edit converts retained cent metadata only at the unchanged calcula
     { categoryId: 99, percentage: false, amount: 2.5, id: 1 },
     { categoryId: 98, percentage: true, amount: 33.33 }, { categoryId: 97, percentage: true, amount: 66.67 }], includeFundingTransfers: true },
   20: row(0.3), 30: { baseAmount: 0, fundingCategories: [], includeFundingTransfers: false } }
-  assert.deepEqual(calculateFunding(fundingCalculationInputs(inputs), 99), calculateFunding(legacy, 99))
+  assert.deepEqual(numericRows(calculateFundingCents(fundingCalculationInputs(inputs), 99)), calculateFunding(legacy, 99))
 })
 
 
@@ -410,11 +425,11 @@ test('Funding editor parses money into cents before invoking unchanged allocatio
   ], includeFundingTransfers: false } }
   const before = globalThis.structuredClone(categories)
   const inputs = fundingCalculationInputs(categories)
-  assert.strictEqual(inputs[10].baseAmount, 10.13)
-  assert.deepEqual(inputs[10].fundingCategories.map(rule => rule.amount), [-0.12, 33.33, 66.67])
+  assert.strictEqual(inputs[10].baseAmountCents, 1013)
+  assert.deepEqual(inputs[10].fundingCategories.map(rule => rule.percentage ? rule.amount : rule.amountCents), [-12, 33.33, 66.67])
   const f = await dialog({ date: '2026-10-01', categories })
   await f.submit()
-  assert.deepEqual(f.submitted.request.categories, calculateFunding(inputs, 99))
+  assert.deepEqual(f.submitted.request.categories, numericRows(calculateFundingCents(inputs, 99)))
   assert.deepEqual(categories, before)
 })
 
@@ -438,7 +453,7 @@ test('Funding editor applies approved cent rounding without changing percentage 
   const inputs = fundingCalculationInputs({ 10: { baseAmount: text, includeFundingTransfers: false,
     fundingCategories: [{ categoryId: 99, amount: text, percentage: false },
       { categoryId: 98, amount: 12.75, percentage: true }] } })
-  assert.strictEqual(inputs[10].baseAmount, expected)
-  assert.strictEqual(inputs[10].fundingCategories[0].amount, expected)
+  assert.strictEqual(inputs[10].baseAmountCents, inputMoneyCents(expected))
+  assert.strictEqual(inputs[10].fundingCategories[0].amountCents, inputMoneyCents(expected))
   assert.strictEqual(inputs[10].fundingCategories[1].amount, 12.75)
 })

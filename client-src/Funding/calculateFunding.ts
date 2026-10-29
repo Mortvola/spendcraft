@@ -1,107 +1,116 @@
-import { addMoneyCents, formatMoneyCents, type MoneyCents } from '../../common/moneyCents.js';
-import { decodeAmount, inputMoneyCents } from '../monetary.js';
-import type { CategoriesValueType } from './Types.js';
-import type { CategoryFundingProps } from '../../common/ResponseTypes.js';
+import { addMoneyCents, subtractMoneyCents, parseMoneyCents, moneyCentsFromInteger, type MoneyCents } from '../../common/moneyCents.js';
+import { inputMoneyCents } from '../monetary.js';
+import type { CentFundingRule } from '../monetary.js';
+
+const zero = parseMoneyCents('0.00');
 
 export type FundingInputs = Readonly<Record<string, {
-  baseAmount: number | string,
-  fundingCategories: CategoryFundingProps['fundingCategories'],
+  baseAmountCents: MoneyCents,
+  fundingCategories: CentFundingRule[],
   includeFundingTransfers: boolean,
 }>>;
 
-// Validate cent-scale editor values before entering the unchanged dollar-based algorithm.
-export function fundingCalculationInputs(inputs: CategoriesValueType): FundingInputs {
-  const dollars = (value: string | number) => {
+export interface FundingAllocation {
+  categoryId: number;
+  amountCents: MoneyCents;
+  baseAmountCents: MoneyCents;
+  fundingCategories: CentFundingRule[];
+  includeFundingTransfers: boolean;
+  funder?: boolean;
+}
+
+export function fundingCalculationInputs(inputs: Readonly<Record<string, {
+  baseAmount: string | number;
+  fundingCategories: readonly { id?: number; categoryId: number; amount: string | number; percentage: boolean }[];
+  includeFundingTransfers: boolean;
+}>>): FundingInputs {
+  const cents = (value: string | number) => {
     if (typeof value === 'string' && value.trim() === '') throw new Error('Missing funding amount');
-    return decodeAmount(formatMoneyCents(inputMoneyCents(value)));
+    return inputMoneyCents(value);
   };
-  return Object.fromEntries(Object.entries(inputs).map(([id, input]) => [id, {
+  return Object.fromEntries(Object.entries(inputs).map(([id, { baseAmount, fundingCategories, ...input }]) => [id, {
     ...input,
-    baseAmount: dollars(input.baseAmount),
-    fundingCategories: input.fundingCategories.map(rule => {
+    baseAmountCents: cents(baseAmount),
+    fundingCategories: fundingCategories.map(({ amount, ...rule }): CentFundingRule => {
       if (rule.percentage) {
-        const amount = typeof rule.amount === 'string' && rule.amount.trim() === '' ? NaN : Number(rule.amount);
-        if (!Number.isFinite(amount)) throw new Error('Invalid funding percentage');
-        return { ...rule, amount };
+        const percentage = typeof amount === 'string' && amount.trim() === '' ? NaN : Number(amount);
+        if (!Number.isFinite(percentage)) throw new Error('Invalid funding percentage');
+        return { ...rule, percentage: true, amount: percentage };
       }
-      return { ...rule, amount: dollars(rule.amount) };
+      return { ...rule, percentage: false, amountCents: cents(amount) };
     }),
   }]));
 }
 
-// Existing number arithmetic, rounding, comparator and residual recipient are deliberate.
-export const computeSpread = (amount: number, fundingCategories: CategoryFundingProps['fundingCategories']): Map<number, number> => {
-  let categoryAmount = Math.round(amount * 100);
-  let percentSum = 0;
+// Preserve the existing comparator, percentage rounding and last-rule residual recipient.
+export const computeSpread = (amount: MoneyCents, fundingCategories: readonly CentFundingRule[]): Map<number, MoneyCents> => {
+  let categoryAmount = addMoneyCents(amount);
+  let percentSum = zero;
 
   // Sort the funding categories by percentage so that fixed amounts are applied before percentage amounts.
   const sortedCategories = (fundingCategories ?? []).slice().sort((a) => (a.percentage ? 1 : -1))
 
-  const funders = new Map<number, number>();
+  const funders = new Map<number, MoneyCents>();
 
   for (let i = 0; i < sortedCategories.length; i += 1) {
     const fundingCategory = sortedCategories[i];
-    const funding = funders.get(fundingCategory.categoryId) ?? 0;
-    let fundingAmount: number;
+    const funding = funders.get(fundingCategory.categoryId) ?? zero;
+    let fundingAmount: MoneyCents;
 
     if (fundingCategory.percentage) {
-      fundingAmount = Math.round((fundingCategory.amount / 100.0) * categoryAmount);
-      percentSum += fundingAmount;
+      if (!Number.isFinite(fundingCategory.amount)) throw new Error('Invalid funding percentage');
+      fundingAmount = moneyCentsFromInteger(Math.round((fundingCategory.amount / 100.0) * categoryAmount));
+      percentSum = addMoneyCents(percentSum, fundingAmount);
 
       // If we are on the last item and there is a remaing amount (due to rounding error)
       // then add it to the last funding amount.
       if (i === sortedCategories.length - 1 && percentSum !== categoryAmount) {
-        fundingAmount += categoryAmount - percentSum;
+        fundingAmount = addMoneyCents(fundingAmount, subtractMoneyCents(categoryAmount, percentSum));
       }
     }
     else {
-      fundingAmount = Math.round(fundingCategory.amount * 100);
+      fundingAmount = addMoneyCents(fundingCategory.amountCents);
 
       // Don't take more than what is left in the category amount
       if (categoryAmount < fundingAmount) {
         fundingAmount = categoryAmount
       }
 
-      categoryAmount -= fundingAmount;
+      categoryAmount = subtractMoneyCents(categoryAmount, fundingAmount);
     }
 
     if (fundingAmount !== 0) {
-      funders.set(fundingCategory.categoryId, funding + fundingAmount)
+      funders.set(fundingCategory.categoryId, addMoneyCents(funding, fundingAmount))
     }
   }
 
   return funders;
 };
 
-export const calculateFunding = (inputs: FundingInputs, fundingPoolId: number): CategoryFundingProps[] => {
-  const categories: CategoryFundingProps[] = Object.keys(inputs)
+export const calculateFunding = (inputs: FundingInputs, fundingPoolId: number): FundingAllocation[] => {
+  const categories: FundingAllocation[] = Object.keys(inputs)
     .filter((k) => parseInt(k, 10) !== fundingPoolId)
     .map((k) => {
       const categoryId = parseInt(k, 10);
 
-      const baseAmount = typeof inputs[k].baseAmount === 'string'
-        ? parseFloat(inputs[k].baseAmount)
-        : inputs[k].baseAmount;
-
-      const amount = baseAmount
-
+      const baseAmountCents = addMoneyCents(inputs[k].baseAmountCents);
       return {
         categoryId,
-        amount,
+        amountCents: baseAmountCents,
         fundingCategories: inputs[k].fundingCategories,
         includeFundingTransfers: inputs[k].includeFundingTransfers,
-        baseAmount,
+        baseAmountCents,
       }
     })
 
-  const funders = new Map<number, number>();
+  const funders = new Map<number, MoneyCents>();
 
   for (const category of categories) {
-    const categoryFunders = computeSpread(category.amount, category.fundingCategories);
+    const categoryFunders = computeSpread(category.amountCents, category.fundingCategories);
 
     for (const [categoryId, amount] of categoryFunders) {
-      const funding = funders.get(categoryId) ?? 0;
-      funders.set(categoryId, funding + amount)
+      const funding = funders.get(categoryId) ?? zero;
+      funders.set(categoryId, addMoneyCents(funding, amount))
     }
   }
 
@@ -109,29 +118,29 @@ export const calculateFunding = (inputs: FundingInputs, fundingPoolId: number): 
 
   for (const category of categories) {
     if (category.includeFundingTransfers) {
-      const previousFundingAmount = computeSpread(category.amount, category.fundingCategories);
+      const previousFundingAmount = computeSpread(category.amountCents, category.fundingCategories);
 
       for (const [categoryId, amount] of previousFundingAmount) {
-        const funding = funders.get(categoryId) ?? 0;
-        funders.set(categoryId, funding - amount)
+        const funding = funders.get(categoryId) ?? zero;
+        funders.set(categoryId, subtractMoneyCents(funding, amount))
       }
 
       // Find funder that matches this category and add the amount.
-      let sum = 0;
+      let sum = zero;
 
       for (const [categoryId, amount] of funders) {
         if (categoryId === category.categoryId) {
-          sum += amount;
+          sum = addMoneyCents(sum, amount);
         }
       }
 
-      category.amount += sum / 100.0;
+      category.amountCents = addMoneyCents(category.amountCents, sum);
 
-      const newFundingAmount = computeSpread(category.amount, category.fundingCategories);
+      const newFundingAmount = computeSpread(category.amountCents, category.fundingCategories);
 
       for (const [categoryId, amount] of newFundingAmount) {
-        const funding = funders.get(categoryId) ?? 0;
-        funders.set(categoryId, funding + amount)
+        const funding = funders.get(categoryId) ?? zero;
+        funders.set(categoryId, addMoneyCents(funding, amount))
       }
     }
   }
@@ -139,8 +148,8 @@ export const calculateFunding = (inputs: FundingInputs, fundingPoolId: number): 
   for (const [categoryId, amount] of funders) {
     categories.push({
       categoryId,
-      amount: -amount / 100.0,
-      baseAmount: 0,
+      amountCents: subtractMoneyCents(zero, amount),
+      baseAmountCents: zero,
       funder: true,
       fundingCategories: [],
       includeFundingTransfers: false,
@@ -150,13 +159,7 @@ export const calculateFunding = (inputs: FundingInputs, fundingPoolId: number): 
   return categories;
 };
 
-// Sum posted rows in their posting order, including destination and funder rows.
-export const fundingCategoryEffect = (rows: readonly Pick<CategoryFundingProps, 'categoryId' | 'amount'>[], categoryId: number): number => (
-  rows.filter((row) => row.categoryId === categoryId).reduce((sum, row) => sum + row.amount, 0)
-);
-
-// Preview the final posted rows: round each row at the existing persistence boundary,
-// then sum cents without changing spread calculations or intermediate precision.
-export const fundingCategoryEffectCents = (rows: readonly Pick<CategoryFundingProps, 'categoryId' | 'amount'>[], categoryId: number): MoneyCents => (
-  addMoneyCents(...rows.filter(row => row.categoryId === categoryId).map(row => inputMoneyCents(row.amount)))
+// Sum posted destination and funder rows without converting to dollars.
+export const fundingCategoryEffectCents = (rows: readonly Pick<FundingAllocation, 'categoryId' | 'amountCents'>[], categoryId: number): MoneyCents => (
+  addMoneyCents(...rows.filter(row => row.categoryId === categoryId).map(row => row.amountCents))
 );

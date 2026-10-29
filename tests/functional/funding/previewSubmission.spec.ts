@@ -11,7 +11,7 @@ import Budget from '#models/Budget'
 import Category from '#models/Category'
 import Transaction from '#models/Transaction'
 import { CategoryType, TransactionType } from '#common/ResponseTypes'
-import { calculateFunding, fundingCategoryEffect, type FundingInputs } from '../../../client-src/Funding/calculateFunding.js'
+import { fundingForServer as calculateFunding, fundingCategoryEffect, type FundingInputs } from '../../fixtures/funding/legacyPreview.js'
 
 let sequence = 0
 async function fixture() {
