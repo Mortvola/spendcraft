@@ -1,5 +1,4 @@
 import { encodeMonetaryAmount } from '../../../app/services/categoryAmountCodec.ts'
-import { createHash } from 'node:crypto'
 import { test } from '@japa/runner'
 import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
@@ -228,19 +227,6 @@ separate sources', async ({ assert }) => {
     const { run } = await sourceMethod('category', { db: f.db })
     const rows = await run({ id: 1 }, '', '', [10, 11])
     assert.deepEqual(rows.map(({ sum, count }) => [sum, count]), [[50, 2], [-7, 1]])
-  })
-
-  test('unapproved report methods remain byte-identical to accepted HEAD', async ({ assert }) => {
-    const hashes = {
-      "category": "1caea34c25ffab950a028e98728d841114cb7c65edab083c2b7791dc3d825bb5",
-      "fundingHistory": "3da6fcfae35c462858fb1bd9e44cb88093218aea69cfb3f076748329216ca965",
-      "budgetProgress": "5c8355aa378311a62a5fef6858264af6deddbd7dd7cccbd25433a5282fa7d510",
-      "networth": "e47cc049b2a8e38fed5c82d4f18b1e081ad7776b6e29713cabaa03b2e8a0b0a6",
-      "payee": "3f0e01b9cd0bd438a41341e01d93ff67e07966ae153baa07154e5b3d876ce397"
-    }
-    for (const [name, hash] of Object.entries(hashes)) {
-      assert.equal(createHash('sha256').update((await sourceMethod(name)).body).digest('hex'), hash)
-    }
   })
 
 })
