@@ -12,7 +12,7 @@ import { inputMoneyCents } from '../monetary';
 import styles from './Funding.module.scss'
 import { FundingInfoType, ValueType } from './Types';
 import VerticalTitled from './VerticalTitled';
-import { calculateFunding, fundingCategoryEffectCents } from './calculateFunding';
+import { calculateFunding, fundingCalculationInputs, fundingCategoryEffectCents } from './calculateFunding';
 import { useStores } from '../State/Store';
 import { CategoryInterface } from '../State/Types';
 import CategorySpread from '../CategorySpread/CategorySpread';
@@ -44,7 +44,7 @@ const FundingItem: React.FC<PropsType> = ({
   let balance: MoneyCents | null = null;
   try {
     balance = addMoneyCents(fundingInfo?.initialAmountCents ?? zero,
-      fundingCategoryEffectCents(calculateFunding(values.categories, fundingPoolCat.id), category.id));
+      fundingCategoryEffectCents(calculateFunding(fundingCalculationInputs(values.categories), fundingPoolCat.id), category.id));
   }
   catch { /* Keep incomplete or unsafe edits visible without displaying a false balance. */ }
 
@@ -74,7 +74,8 @@ const FundingItem: React.FC<PropsType> = ({
                   <MoneyCentsAmount amount={fundingInfo?.initialAmountCents ?? zero} />
                 </VerticalTitled>
                 <VerticalTitled title="Requested" underscored={false}>
-                  <AmountInput onDeltaChange={onDeltaChange} {...fieldProps} />
+                  <AmountInput exactCents onDeltaChange={onDeltaChange} {...fieldProps} />
+                  <FormError name={name} />
                 </VerticalTitled>
                 <VerticalTitled title="Balance">
                   {balance === null ? <div>Invalid amount</div> : <MoneyCentsAmount amount={balance} />}
@@ -101,6 +102,7 @@ const FundingItem: React.FC<PropsType> = ({
               />
 
               <CategorySpread
+                centAmounts
                 name={`categories.${category.id}.fundingCategories`}
                 categories={values.categories[category.id].fundingCategories}
                 title="Funding Categories:"

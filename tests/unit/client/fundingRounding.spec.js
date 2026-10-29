@@ -1,3 +1,4 @@
+import { fundingCalculationInputs } from '../../../client-src/Funding/calculateFunding.ts'
 import { test } from '@japa/runner'
 import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
@@ -69,12 +70,12 @@ test.group('Funding residual correction regression', () => {
     const observed = expressions.get('computeSpread').replace('const funders = new Map<number, number>();',
       'observeOrder(sortedCategories.map((entry) => entry.categoryId)); const funders = new Map<number, number>();')
     const submit = evaluate(`const computeSpread = ${observed}; const calculateFunding = ${expressions.get('calculateFunding')}; const handleSubmit = ${expressions.get('handleSubmit')}; handleSubmit;`, {
-      observeOrder: (ids) => { order = [...ids] },
+      fundingCalculationInputs, observeOrder: (ids) => { order = [...ids] },
       fundingPoolCat: { id: 99 }, transaction: undefined, TransactionType: { FUNDING_TRANSACTION: 2 },
       register: { addCategoryTransfer: async (request, type) => { submitted = { request, type }; return null } },
       setShow: (value) => { shown = value },
     })
-    await submit({ date: '2025-03-01', categories: { 10: { baseAmount: 0.01, includeFundingTransfers: false,
+    await submit({ date: '2025-03-01', categories: { 10: { baseAmount: '0.01', includeFundingTransfers: false,
       fundingCategories: [{ categoryId: 1, amount: 33.33, percentage: true },
         { categoryId: 2, amount: 33.33, percentage: true }, { categoryId: 3, amount: 33.34, percentage: true }] } } })
     assert.equal(submitted.type, 2)

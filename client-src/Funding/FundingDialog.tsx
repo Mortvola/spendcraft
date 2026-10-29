@@ -1,5 +1,5 @@
 import { formatMoneyCents, addMoneyCents, parseMoneyCents, subtractMoneyCents } from '../../common/moneyCents';
-import { decodeAmount, decodeFundingRules } from '../monetary';
+import { decodeCentFundingRules, inputMoneyCents } from '../monetary';
 import { validateFundingPercentages } from '../../common/fundingPercentages'
 import React from 'react';
 import {
@@ -25,7 +25,7 @@ import {
 } from './Types'
 import styles from './Funding.module.scss'
 import { CategoryInterface, TransactionInterface } from '../State/Types';
-import { calculateFunding, fundingCategoryEffectCents } from './calculateFunding';
+import { calculateFunding, fundingCalculationInputs, fundingCategoryEffectCents } from './calculateFunding';
 
 interface PropsType {
   transaction?: TransactionInterface;
@@ -47,7 +47,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
     category.categoryId === fundingPoolCat.id ? [transaction.getCategoryAmountCents(index)] : []
   ))) : zero;
   const poolEffectCents = (categories: CategoriesValueType) => (
-    fundingCategoryEffectCents(calculateFunding(categories, fundingPoolCat.id), fundingPoolCat.id)
+    fundingCategoryEffectCents(calculateFunding(fundingCalculationInputs(categories), fundingPoolCat.id), fundingPoolCat.id)
   );
 
   const poolPreview = (categories: CategoriesValueType) => {
@@ -70,7 +70,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
       categories: CategoryFundingProps[],
     }
 
-    const categories = calculateFunding(values.categories, fundingPoolCat.id);
+    const categories = calculateFunding(fundingCalculationInputs(values.categories), fundingPoolCat.id);
 
     const request: Request = {
       date: transaction ? transaction.date.toISODate() ?? values.date : values.date,
@@ -98,6 +98,11 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
     }
 
     for (const [id, category] of Object.entries(values.categories)) {
+      try { fundingCalculationInputs({ [id]: category }); }
+      catch {
+        errors.categories ??= {};
+        errors.categories[id] = { baseAmount: 'Enter valid, safe funding amounts and percentages.' };
+      }
       const issue = validateFundingPercentages(category.fundingCategories)
       if (issue) {
         errors.categories ??= {}
@@ -110,11 +115,10 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
 
     Object.keys(values.categories).forEach((k) => {
       const value = values.categories[k];
-      const newValue = typeof value === 'string' ? parseFloat(value) : value;
-
-      if (newValue !== 0) {
-        count += 1;
+      try {
+        if (inputMoneyCents(value.baseAmount) !== 0) count += 1;
       }
+      catch { /* Invalid input is reported above. */ }
     });
 
     if (count === 0) { //  && errors.funding) {
@@ -170,12 +174,12 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
           }
 
           obj[c.categoryId] = {
-            // The funding algorithm still uses dollar numbers at its calculation boundary.
-            baseAmount: Number(formatMoneyCents(c.baseAmountCents ?? c.amountCents)),
+            // Retain decimal text until the funding calculation boundary.
+            baseAmount: formatMoneyCents(c.baseAmountCents ?? c.amountCents),
             fundingCategories: fundingCategories?.map(rule => {
               if (rule.percentage) return rule;
               const { amountCents, ...metadata } = rule;
-              return { ...metadata, amount: Number(formatMoneyCents(amountCents)) };
+              return { ...metadata, amount: formatMoneyCents(amountCents) };
             }) ?? [],
             includeFundingTransfers: c.includeFundingTransfers ?? false,
           }
@@ -186,7 +190,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
       categoryTree.budget.forEachCatgory((node: CategoryInterface) => {
         if (obj[node.id] === undefined) {
           obj[node.id] = {
-            baseAmount: 0,
+            baseAmount: '0.00',
             fundingCategories: [{
               categoryId: node.getFundingPool().id,
               amount: 100,
@@ -201,7 +205,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
       categoryTree.bills.forEachCatgory((node: CategoryInterface) => {
         if (obj[node.id] === undefined) {
           obj[node.id] = {
-            baseAmount: 0,
+            baseAmount: '0.00',
             fundingCategories: [{
               categoryId: node.getFundingPool().id,
               amount: 100,
@@ -240,12 +244,16 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
 
           if (category && ![CategoryType.AccountTransfer, CategoryType.Unassigned].includes(category.type)) {
             obj[cat.categoryId] = {
-              baseAmount: decodeAmount(cat.amount),
+              baseAmount: formatMoneyCents(parseMoneyCents(cat.amount)),
               fundingCategories: [],
               includeFundingTransfers: cat.includeFundingTransfers,
             }
 
-            let fundingCats = decodeFundingRules(cat.fundingCategories);
+            let fundingCats = decodeCentFundingRules(cat.fundingCategories).map(rule => {
+              if (rule.percentage) return rule;
+              const { amountCents, ...metadata } = rule;
+              return { ...metadata, amount: formatMoneyCents(amountCents) };
+            });
 
             if (fundingCats.length === 0) {
               const fundingPool = category.getFundingPool()

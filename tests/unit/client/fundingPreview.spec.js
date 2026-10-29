@@ -1,7 +1,8 @@
+import { validateFundingPercentages } from '../../../common/fundingPercentages.ts'
 import { parseMoneyCents, formatMoneyCents, addMoneyCents, subtractMoneyCents } from '../../../common/moneyCents.ts'
 import { setImmediate } from 'node:timers'
 import { encodeMonetaryAmount } from '../../../app/services/categoryAmountCodec.ts'
-import { decodeAmount, decodeFundingRules, inputMoneyCents } from '../../../client-src/monetary.ts'
+import { decodeAmount, decodeCentFundingRules, inputMoneyCents } from '../../../client-src/monetary.ts'
 import { CategoryType, TransactionType } from '../../../common/ResponseTypes.ts'
 import { validateTransactionSplits } from '../../../app/validation/transactionSplits.ts'
 import { test } from '@japa/runner'
@@ -11,7 +12,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
-import { calculateFunding, computeSpread, fundingCategoryEffect, fundingCategoryEffectCents } from '../../../client-src/Funding/calculateFunding.ts'
+import { calculateFunding, fundingCalculationInputs, computeSpread, fundingCategoryEffect, fundingCategoryEffectCents } from '../../../client-src/Funding/calculateFunding.ts'
 import { legacyPreview } from '../../fixtures/funding/legacyPreview.ts'
 
 const row = (baseAmount, from = 99, includeFundingTransfers = false) => ({ baseAmount,
@@ -37,7 +38,7 @@ async function dialog(values, { balance = 10, reject = false, editing = false, p
   let modal
   let fundingDate
   let stateIndex = 0
-  const effect = { calculateFunding, fundingCategoryEffectCents }
+  const effect = { calculateFunding, fundingCalculationInputs, fundingCategoryEffectCents }
   const submit = async (request, type) => {
     submitted = { request, type }
     if (reject) throw new Error('Rejected funding')
@@ -55,7 +56,7 @@ async function dialog(values, { balance = 10, reject = false, editing = false, p
     updateCategoryTransfer: (request) => submit(request, 2) } : undefined
   const MoneyCentsAmount = ({ amount }) => React.createElement('output', { 'data-amount': formatMoneyCents(amount) }, formatMoneyCents(amount))
   const Field = ({ children }) => children({ field: { value: values.date }, form: { values } })
-  const context = { ...effect, formatMoneyCents, parseMoneyCents, addMoneyCents, subtractMoneyCents, React: { ...React, useState: () => [stateIndex++ === 0 ? false : values.categories, () => false],
+  const context = { ...effect, inputMoneyCents, validateFundingPercentages, formatMoneyCents, parseMoneyCents, addMoneyCents, subtractMoneyCents, React: { ...React, useState: () => [stateIndex++ === 0 ? false : values.categories, () => false],
     useCallback: (callback) => callback, useEffect: () => false }, DateTime, useStores: () => stores,
     Field, MoneyCentsAmount, FormModal: (props) => { modal = props; return props.children },
     FormError: () => null, Funding: (props) => { fundingDate = props.date; return null }, styles: {}, CategoryType: {}, TransactionType: { FUNDING_TRANSACTION: 2 } }
@@ -225,13 +226,14 @@ test.group('Funding same-state preview and submission without DB', () => {
   ]).run(async ({ assert }, [categories, initialCents, expected, diffOnly, hidden]) => {
     const values = { date: '2025-03-01', categories }
     const component = runInNewContext(await expression('client-src/Funding/FundingItem.tsx', 'FundingItem'), {
-      React, DateTime, calculateFunding, fundingCategoryEffectCents, addMoneyCents, parseMoneyCents, inputMoneyCents,
+      React, DateTime, calculateFunding, fundingCalculationInputs, fundingCategoryEffectCents, addMoneyCents, parseMoneyCents, inputMoneyCents,
       useStores: () => ({ categoryTree: { budget: { fundingPoolCat: { id: 99 } } } }),
       useFormikContext: () => ({ values }), useField: () => [{ value: 1 }], styles: { hide: 'hide' },
       Field: ({ children }) => children({ field: { value: categories[10].baseAmount } }),
       VerticalTitled: ({ title, children }) => React.createElement('section', { 'data-title': title }, children),
       MoneyCentsAmount: ({ amount }) => React.createElement('output', {}, formatMoneyCents(amount)),
-      AmountInput: () => null, FormCheckbox: () => null, CategorySpread: () => null, FormError: () => null,
+      AmountInput: props => { assert.isTrue(props.exactCents); return null }, FormCheckbox: () => null,
+      CategorySpread: props => { assert.isTrue(props.centAmounts); return null }, FormError: () => null,
     })
     const html = renderToStaticMarkup(component({ fundingInfo: { initialAmountCents: initialCents, previousBaseAmountCents: 30 }, groupName: null,
       category: { id: 10, name: 'A' }, date: DateTime.fromISO(values.date), diffOnly }))
@@ -293,13 +295,13 @@ test.group('Funding preview API decimal strings', () => {
     assert.strictEqual(response.data[0].adjustedReason, 'keep')
     assert.deepEqual(proposed, before)
     const getProposed = runInNewContext(await expression('client-src/Funding/FundingDialog.tsx', 'getProposed'), {
-      React: { useCallback: callback => callback }, decodeAmount, decodeFundingRules, CategoryType,
+      React: { useCallback: callback => callback }, decodeAmount, decodeCentFundingRules, formatMoneyCents, parseMoneyCents, CategoryType,
       categoryTree: { getCategory: () => ({ type: CategoryType.Regular }) },
       Http: { get: async () => ({ ok: true, body: async () => response }) },
     })
     const inputs = await getProposed('2025-03-01')
-    assert.strictEqual(inputs[10].baseAmount, 0.3)
-    assert.deepEqual(Array.from(inputs[10].fundingCategories, rule => rule.amount), [-0.12, 12.75])
+    assert.strictEqual(inputs[10].baseAmount, '0.30')
+    assert.deepEqual(Array.from(inputs[10].fundingCategories, rule => rule.amount), ['-0.12', 12.75])
   })
 
   test('prior-period context encodes totals, defaults empty aggregates, and decodes for the screen', async ({ assert }) => {
@@ -385,17 +387,58 @@ test('Funding edit converts retained cent metadata only at the unchanged calcula
       budget: { forEachCatgory: () => undefined }, bills: { forEachCatgory: () => undefined } },
   })
   const inputs = initialFunding()
-  assert.strictEqual(inputs[10].baseAmount, 10)
-  assert.deepEqual(Array.from(inputs[10].fundingCategories, rule => rule.amount), [2.5, 33.33, 66.67])
+  assert.strictEqual(inputs[10].baseAmount, '10.00')
+  assert.deepEqual(Array.from(inputs[10].fundingCategories, rule => rule.amount), ['2.50', 33.33, 66.67])
   assert.strictEqual(inputs[10].fundingCategories[0].id, 1)
   assert.notProperty(inputs[10].fundingCategories[0], 'amountCents')
-  assert.strictEqual(inputs[20].baseAmount, 0.3)
+  assert.strictEqual(inputs[20].baseAmount, '0.30')
   assert.strictEqual(inputs[20].fundingCategories[0].amount, 100)
-  assert.strictEqual(inputs[30].baseAmount, 0)
+  assert.strictEqual(inputs[30].baseAmount, '0.00')
   assert.notProperty(inputs, '99')
   const legacy = { 10: { baseAmount: 10, fundingCategories: [
     { categoryId: 99, percentage: false, amount: 2.5, id: 1 },
     { categoryId: 98, percentage: true, amount: 33.33 }, { categoryId: 97, percentage: true, amount: 66.67 }], includeFundingTransfers: true },
   20: row(0.3), 30: { baseAmount: 0, fundingCategories: [], includeFundingTransfers: false } }
-  assert.deepEqual(calculateFunding(inputs, 99), calculateFunding(legacy, 99))
+  assert.deepEqual(calculateFunding(fundingCalculationInputs(inputs), 99), calculateFunding(legacy, 99))
+})
+
+
+test('Funding editor parses money into cents before invoking unchanged allocation math', async ({ assert }) => {
+  const categories = { 10: { baseAmount: '10.125', fundingCategories: [
+    { categoryId: 99, amount: '-0.125', percentage: false },
+    { categoryId: 98, amount: 33.33, percentage: true }, { categoryId: 97, amount: 66.67, percentage: true },
+  ], includeFundingTransfers: false } }
+  const before = globalThis.structuredClone(categories)
+  const inputs = fundingCalculationInputs(categories)
+  assert.strictEqual(inputs[10].baseAmount, 10.13)
+  assert.deepEqual(inputs[10].fundingCategories.map(rule => rule.amount), [-0.12, 33.33, 66.67])
+  const f = await dialog({ date: '2026-10-01', categories })
+  await f.submit()
+  assert.deepEqual(f.submitted.request.categories, calculateFunding(inputs, 99))
+  assert.deepEqual(categories, before)
+})
+
+test('Funding editor rejects invalid and unsafe amounts before submission').with([
+  '', 'garbage', 'Infinity', '90071992547409.92',
+]).run(async ({ assert }, value) => {
+  const invalidBase = { 10: { baseAmount: value, fundingCategories: [], includeFundingTransfers: false } }
+  assert.throws(() => fundingCalculationInputs(invalidBase))
+  const invalidFixed = { 10: { baseAmount: '1.00', fundingCategories: [
+    { categoryId: 99, amount: value, percentage: false }], includeFundingTransfers: false } }
+  assert.throws(() => fundingCalculationInputs(invalidFixed))
+  const f = await dialog({ date: '2026-10-01', categories: invalidFixed })
+  await assert.rejects(() => f.submit())
+  assert.isUndefined(f.submitted)
+})
+
+
+test('Funding editor applies approved cent rounding without changing percentage inputs').with([
+  ['0.10', 0.1], ['0.20', 0.2], ['-0.125', -0.12], ['0.125', 0.13], ['1.005', 1], ['-0.00', 0],
+]).run(({ assert }, [text, expected]) => {
+  const inputs = fundingCalculationInputs({ 10: { baseAmount: text, includeFundingTransfers: false,
+    fundingCategories: [{ categoryId: 99, amount: text, percentage: false },
+      { categoryId: 98, amount: 12.75, percentage: true }] } })
+  assert.strictEqual(inputs[10].baseAmount, expected)
+  assert.strictEqual(inputs[10].fundingCategories[0].amount, expected)
+  assert.strictEqual(inputs[10].fundingCategories[1].amount, 12.75)
 })

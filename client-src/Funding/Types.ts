@@ -1,5 +1,5 @@
 import type { MoneyCents } from '../../common/moneyCents';
-import { CategorySpreadEntry } from '../CategorySpread/CategorySpread';
+import { CategorySpreadInput } from '../CategorySpread/CategorySpread';
 
 export interface FundingType {
   id?: number,
@@ -19,8 +19,8 @@ export interface FundingInfoType {
 export type CategoriesValueType = Record<
   string,
   {
-    baseAmount: number,
-    fundingCategories: CategorySpreadEntry[],
+    baseAmount: string,
+    fundingCategories: CategorySpreadInput[],
     includeFundingTransfers: boolean,
   }
 >;

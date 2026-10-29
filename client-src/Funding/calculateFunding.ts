@@ -1,5 +1,6 @@
-import { addMoneyCents, type MoneyCents } from '../../common/moneyCents.js';
-import { inputMoneyCents } from '../monetary.js';
+import { addMoneyCents, formatMoneyCents, type MoneyCents } from '../../common/moneyCents.js';
+import { decodeAmount, inputMoneyCents } from '../monetary.js';
+import type { CategoriesValueType } from './Types.js';
 import type { CategoryFundingProps } from '../../common/ResponseTypes.js';
 
 export type FundingInputs = Readonly<Record<string, {
@@ -7,6 +8,26 @@ export type FundingInputs = Readonly<Record<string, {
   fundingCategories: CategoryFundingProps['fundingCategories'],
   includeFundingTransfers: boolean,
 }>>;
+
+// Validate cent-scale editor values before entering the unchanged dollar-based algorithm.
+export function fundingCalculationInputs(inputs: CategoriesValueType): FundingInputs {
+  const dollars = (value: string | number) => {
+    if (typeof value === 'string' && value.trim() === '') throw new Error('Missing funding amount');
+    return decodeAmount(formatMoneyCents(inputMoneyCents(value)));
+  };
+  return Object.fromEntries(Object.entries(inputs).map(([id, input]) => [id, {
+    ...input,
+    baseAmount: dollars(input.baseAmount),
+    fundingCategories: input.fundingCategories.map(rule => {
+      if (rule.percentage) {
+        const amount = typeof rule.amount === 'string' && rule.amount.trim() === '' ? NaN : Number(rule.amount);
+        if (!Number.isFinite(amount)) throw new Error('Invalid funding percentage');
+        return { ...rule, amount };
+      }
+      return { ...rule, amount: dollars(rule.amount) };
+    }),
+  }]));
+}
 
 // Existing number arithmetic, rounding, comparator and residual recipient are deliberate.
 export const computeSpread = (amount: number, fundingCategories: CategoryFundingProps['fundingCategories']): Map<number, number> => {

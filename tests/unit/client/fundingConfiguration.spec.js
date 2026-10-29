@@ -1,3 +1,4 @@
+import { fundingCalculationInputs } from '../../../client-src/Funding/calculateFunding.ts'
 import { validateFundingPercentages } from '../../../common/fundingPercentages.js'
 import * as cents from '../../../common/moneyCents.ts'
 import { inputMoneyCents, encodeCentFundingRules, decodeCentFundingRules } from '../../../client-src/monetary.ts'
@@ -21,7 +22,7 @@ async function initializer(path, name, context = {}) {
   if (matches.length !== 1) throw new Error(`Expected one ${name}`)
   return runInNewContext(ts.transpileModule(`(${matches[0]})`, {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None, jsx: ts.JsxEmit.React },
-  }).outputText, { validateFundingPercentages, CategoryType, ...cents, inputMoneyCents, exactCents: false, ...context })
+  }).outputText, { fundingCalculationInputs, validateFundingPercentages, CategoryType, ...cents, inputMoneyCents, exactCents: false, ...context })
 }
 
 test.group('Funding configuration client regression', () => {
@@ -43,7 +44,7 @@ test.group('Funding configuration client regression', () => {
       const fundingCategories = scenario.fixed === undefined ? entries
         : [{ categoryId: 1, amount: scenario.fixed, percentage: false }, ...entries]
       const categoryErrors = category({ name: 'Category', fundingAmount: '0.00', type: CategoryType.Bill, fundingCategories })
-      const fundingErrors = funding({ date: '2025-03-01', categories: { 1: { baseAmount: -10, fundingCategories } } })
+      const fundingErrors = funding({ date: '2025-03-01', categories: { 1: { baseAmount: '-10.00', fundingCategories } } })
       if (scenario.valid) {
         assert.isEmpty(categoryErrors)
         assert.isEmpty(fundingErrors)
