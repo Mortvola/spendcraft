@@ -1,12 +1,6 @@
 import type { MoneyCents } from '../../common/moneyCents';
 import { CategorySpreadInput } from '../CategorySpread/CategorySpread';
 
-export interface FundingType {
-  id?: number,
-  amount: number,
-  categoryId: number,
-}
-
 export interface FundingInfoType {
   categoryId: number,
   initialAmountCents: MoneyCents,

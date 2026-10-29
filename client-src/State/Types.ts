@@ -19,7 +19,6 @@ import {
   TransactionProps,
   TransactionLogChanges,
 } from '../../common/ResponseTypes'
-import LoanTransaction from './LoanTransaction';
 import SystemIds from './SystemIds';
 import type Statement from './Statement';
 import { ObservableMap } from 'mobx';
@@ -227,11 +226,6 @@ export interface CategoryInterface {
   transactions: TransactionContainerInterface;
 
   pendingTransactions: TransactionContainerInterface;
-
-  loan: {
-    balance: number;
-    transactions: LoanTransaction[];
-  };
 
   hidden: boolean;
 

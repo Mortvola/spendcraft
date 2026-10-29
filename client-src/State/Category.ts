@@ -11,7 +11,6 @@ import {
   UpdateCategoryResponse,
   CategoryWriteRequest,
 } from '../../common/ResponseTypes';
-import LoanTransaction from './LoanTransaction';
 import {
   CategoryInterface, CategoryParams, GroupInterface, StoreInterface,
 } from './Types';
@@ -50,11 +49,6 @@ class Category implements CategoryInterface {
   transactions: TransactionContainer;
 
   pendingTransactions: TransactionContainer;
-
-  loan: {
-    balance: number;
-    transactions: LoanTransaction[];
-  } = { balance: 0, transactions: [] };
 
   @observable
   accessor hidden = false;

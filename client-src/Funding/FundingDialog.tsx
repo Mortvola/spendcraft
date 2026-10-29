@@ -21,7 +21,7 @@ import {
 import Funding from './Funding';
 import {
   type CategoriesValueType,
-  type FundingType, ValueType,
+  type ValueType,
 } from './Types'
 import styles from './Funding.module.scss'
 import { CategoryInterface, TransactionInterface } from '../State/Types';
@@ -353,7 +353,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
             Available Funds:
             <Field>
               {
-                ({ form: { values } }: FieldProps<FundingType[]>) => {
+                ({ form: { values } }: FieldProps<unknown, ValueType>) => {
                   const preview = poolPreview(values.categories);
                   return preview ? <MoneyCentsAmount className="form-control" amount={preview.available} /> : <div>Invalid amount</div>;
                 }
@@ -371,7 +371,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
               form: {
                 values,
               },
-            }: FieldProps<FundingType[]>) => (
+            }: FieldProps<unknown, ValueType>) => (
               <Funding
                 date={DateTime.fromISO(values.date).startOf('month').toISODate() ?? ''}
                 diffOnly={diffOnly}
@@ -386,7 +386,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
             Total
             <Field>
               {
-                ({ form: { values } }: FieldProps<FundingType[]>) => {
+                ({ form: { values } }: FieldProps<unknown, ValueType>) => {
                   const preview = poolPreview(values.categories);
                   return preview ? <MoneyCentsAmount style={{ minWidth: '6rem' }} amount={preview.total} /> : <div>Invalid amount</div>;
                 }
@@ -397,7 +397,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
             <label>
               Additional Pool withdrawal:
               <Field>
-                {({ form: { values } }: FieldProps<FundingType[]>) => {
+                {({ form: { values } }: FieldProps<unknown, ValueType>) => {
                   const preview = poolPreview(values.categories);
                   return preview ? <MoneyCentsAmount amount={preview.additional} /> : <div>Invalid amount</div>;
                 }}

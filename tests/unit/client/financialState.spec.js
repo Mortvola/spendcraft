@@ -886,6 +886,43 @@ export * from ${source('common/ResponseTypes.ts')};
       income: { taxableInterestCents: Number.MAX_SAFE_INTEGER + 1 } }))
   })
 
+  test('ordinary income tax uses cent thresholds without per-bracket rounding', ({ assert }) => {
+    const taxes = f.store.taxes
+    const cases = [
+      [state.FilingStatus.Single, '11925.00', 1192.5],
+      [state.FilingStatus.MarriedFilingSeparate, '11925.00', 1192.5],
+      [state.FilingStatus.MarriedFilingJointly, '23850.00', 2385],
+      [state.FilingStatus.QualifyingSurvivingSpouse, '23850.00', 2385],
+      [state.FilingStatus.HeadOfHousehold, '17000.00', 1700],
+    ]
+    for (const [filingStatus, income, expected] of cases) {
+      state.runInAction(() => { taxes.filingStatus = filingStatus })
+      const brackets = taxes.taxBrackets()
+      assert.isTrue(brackets.every(bracket => Number.isSafeInteger(bracket.startAmountCents)))
+      const map = new Map()
+      assert.strictEqual(taxes.computeOrdinaryTax(parseMoneyCents(income), map), expected)
+      assert.deepEqual([...map], [[10, { amount: Number(income), tax: expected }]])
+      const above = new Map()
+      assert.strictEqual(taxes.computeOrdinaryTax(parseMoneyCents(income) + 1, above), expected + 0.01 * 0.12)
+      assert.strictEqual(above.get(12).amount, 0.01)
+      assert.strictEqual(above.get(12).tax, 0.0012)
+    }
+    state.runInAction(() => { taxes.filingStatus = state.FilingStatus.Single })
+    const fractions = new Map()
+    assert.strictEqual(taxes.computeOrdinaryTax(parseMoneyCents('0.05'), fractions), 0.05 * 0.10)
+    assert.strictEqual(fractions.get(10).tax, 0.05 * 0.10)
+    for (const income of ['0.00', '-0.01']) {
+      const map = new Map()
+      assert.strictEqual(taxes.computeOrdinaryTax(parseMoneyCents(income), map), 0)
+      assert.strictEqual(map.size, 0)
+    }
+    for (const invalid of [NaN, Infinity, 0.5, Number.MAX_SAFE_INTEGER + 1]) {
+      const map = new Map()
+      assert.throws(() => taxes.computeOrdinaryTax(invalid, map))
+      assert.strictEqual(map.size, 0)
+    }
+  })
+
   test('Tax result outputs round only after raw bracket totals and rates are calculated', ({ assert }) => {
     const printTaxes = f.store.taxes.constructor.printTaxes
     const brackets = new Map([[10, { tax: 0.005, amount: 0.1 }], [20, { tax: 0.005, amount: 0.2 }]])

@@ -100,7 +100,6 @@ const FundingItem: React.FC<PropsType> = ({
               />
 
               <CategorySpread
-                centAmounts
                 name={`categories.${category.id}.fundingCategories`}
                 categories={values.categories[category.id].fundingCategories}
                 title="Funding Categories:"

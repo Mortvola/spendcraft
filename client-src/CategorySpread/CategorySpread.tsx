@@ -33,20 +33,16 @@ const FormCategoryInput = ({ name, types }: { name: string, types?: CategoryType
   )
 }
 
-export interface CategorySpreadEntry {
+export interface CategorySpreadInput {
   id?: number,
   categoryId: number,
-  amount: number,
+  amount: number | string,
   percentage: boolean,
-  // fundedAmount?: number,
 }
-
-export type CategorySpreadInput = Omit<CategorySpreadEntry, 'amount'> & { amount: number | string };
 
 interface PropsType {
   name: string,
   categories: CategorySpreadInput[],
-  centAmounts?: boolean,
   title: string,
   types?: CategoryType[]
 }
@@ -54,7 +50,7 @@ interface PropsType {
 const CategorySpread: React.FC<PropsType> = ({
   name,
   categories,
-  centAmounts = false,  title,
+  title,
   types,
 }) => {
   const { categoryTree: { unassignedCat } } = useStores();
@@ -81,7 +77,7 @@ const CategorySpread: React.FC<PropsType> = ({
                 />
                 <FormField name={`${name}[${i}].amount`}>
                   {({ field }: FieldProps<string | number>) => (
-                    <AmountInput {...field} exactCents={centAmounts && !c.percentage} style={{ marginTop: 0 }} />
+                    <AmountInput {...field} exactCents={!c.percentage} style={{ marginTop: 0 }} />
                   )}
                 </FormField>
                 <Field name={`${name}[${i}].percentage`}>
@@ -92,10 +88,6 @@ const CategorySpread: React.FC<PropsType> = ({
                         value={field.value.toString()}
                         className={styles.categoryPercentageToggle}
                         onClick={() => {
-                          if (!centAmounts) {
-                            form.setFieldValue(field.name, !field.value);
-                            return;
-                          }
                           const percentage = !field.value;
                           let amount: string | number = c.amount;
                           if (percentage) {

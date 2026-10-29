@@ -128,7 +128,7 @@ test.group('Category fixed-dollar funding cents', () => {
       const body = modal.props.children[0]({ values })
       const field = find(body, element => element.type === 'field' && element.props.name === 'fundingAmount')
       assert.isTrue(field.props.children[0]({ field: { value: amount } }).props.exactCents)
-      assert.isTrue(find(body, element => element.type === 'spread').props.centAmounts)
+      assert.notProperty(find(body, element => element.type === 'spread').props, 'centAmounts')
       for (const invalid of ['bad', 'Infinity', '90071992547409.92']) {
         assert.isString(modal.props.validate({ ...values, fundingAmount: invalid }).fundingAmount)
         assert.isString(modal.props.validate({ ...values, fundingCategories: [{ categoryId: 1, amount: invalid, percentage: false }] }).fundingCategories)
@@ -136,34 +136,27 @@ test.group('Category fixed-dollar funding cents', () => {
     }
   })
 
-  test('shared spread editor toggles money text and numeric percentages without changing other callers', async ({ assert }) => {
+  test('shared spread editor always uses exact money text and numeric percentages', async ({ assert }) => {
     const view = await initializer('../../../client-src/CategorySpread/CategorySpread.tsx', 'CategorySpread', {
       React: { createElement }, useStores: () => ({ categoryTree: { unassignedCat: { id: 0 } } }),
       FieldArray: 'array', Field: 'field', FormField: 'formField', FormCategoryInput: 'category', AmountInput: 'input',
       Button: 'button', LucideButton: 'lucide', Plus: 'plus', Minus: 'minus', styles: {},
     })
-    for (const centAmounts of [false, true]) {
-      for (const percentage of [false, true]) {
-        const rule = { id: 7, categoryId: 1, percentage, amount: percentage || !centAmounts ? 12.75 : '12.75' }
-        const element = view({ name: 'rules', categories: [rule], title: 'Rules', centAmounts })
-        const rows = find(element, e => e.type === 'array').props.children[0]({})
-        let updated
-        const percentField = find({ props: { children: rows } }, e => e.type === 'field' && e.props.name.endsWith('.percentage'))
-        const button = percentField.props.children[0]({ field: { name: 'rules[0].percentage', value: percentage },
-          form: { setFieldValue: (name, value) => { updated = { name, value } } } })
-        button.props.onClick()
-        if (centAmounts) {
-          assert.strictEqual(updated.name, 'rules[0]')
-          assert.strictEqual(updated.value.amount, percentage ? '12.75' : 12.75)
-          assert.strictEqual(updated.value.percentage, !percentage)
-          assert.strictEqual(updated.value.id, 7)
-        } else {
-          assert.strictEqual(updated.name, 'rules[0].percentage')
-          assert.strictEqual(updated.value, !percentage)
-        }
-        const field = find({ props: { children: rows } }, e => e.type === 'formField')
-        assert.strictEqual(field.props.children[0]({ field: { value: rule.amount } }).props.exactCents, centAmounts && !percentage)
-      }
+    for (const percentage of [false, true]) {
+      const rule = { id: 7, categoryId: 1, percentage, amount: percentage ? 12.75 : '12.75' }
+      const element = view({ name: 'rules', categories: [rule], title: 'Rules' })
+      const rows = find(element, e => e.type === 'array').props.children[0]({})
+      let updated
+      const percentField = find({ props: { children: rows } }, e => e.type === 'field' && e.props.name.endsWith('.percentage'))
+      const button = percentField.props.children[0]({ field: { name: 'rules[0].percentage', value: percentage },
+        form: { setFieldValue: (name, value) => { updated = { name, value } } } })
+      button.props.onClick()
+      assert.strictEqual(updated.name, 'rules[0]')
+      assert.strictEqual(updated.value.amount, percentage ? '12.75' : 12.75)
+      assert.strictEqual(updated.value.percentage, !percentage)
+      assert.strictEqual(updated.value.id, 7)
+      const field = find({ props: { children: rows } }, e => e.type === 'formField')
+      assert.strictEqual(field.props.children[0]({ field: { value: rule.amount } }).props.exactCents, !percentage)
     }
   })
 })
@@ -206,7 +199,7 @@ test.group('Auto-assignment fixed-dollar cents', () => {
       assert.deepEqual(Array.from(saved.searchStrings), ['Shop'])
       assert.strictEqual(values.categories[0].amount, amount)
       const body = modal.props.children[0]({ values })
-      assert.isTrue(find(body, e => e.type === 'spread').props.centAmounts)
+      assert.notProperty(find(body, e => e.type === 'spread').props, 'centAmounts')
       for (const invalid of ['bad', 'Infinity', '90071992547409.92']) {
         assert.isString(modal.props.validate({ ...values, categories: [{ id: 1, categoryId: 1, percentage: false, amount: invalid }] }).categories)
       }

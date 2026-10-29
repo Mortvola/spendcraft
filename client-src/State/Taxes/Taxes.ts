@@ -201,64 +201,68 @@ export default class Taxes implements TaxesInterface {
     }
   }
 
-  taxBrackets(): { rate: number, startAmount: number }[] {
+  taxBrackets(): { rate: number, startAmountCents: MoneyCents }[] {
     switch (this.filingStatus) {
       case FilingStatus.Single:
         return [
-            { rate : 10, startAmount : 0 },
-            { rate : 12, startAmount : 11925 },
-            { rate : 22, startAmount : 48475 },
-            { rate : 24, startAmount : 103350 },
-            { rate : 32, startAmount : 197300 },
-            { rate : 35, startAmount : 250525 },
-            { rate : 37, startAmount : 626350 }
+            { rate : 10, startAmountCents : parseMoneyCents("0.00") },
+            { rate : 12, startAmountCents : parseMoneyCents("11925.00") },
+            { rate : 22, startAmountCents : parseMoneyCents("48475.00") },
+            { rate : 24, startAmountCents : parseMoneyCents("103350.00") },
+            { rate : 32, startAmountCents : parseMoneyCents("197300.00") },
+            { rate : 35, startAmountCents : parseMoneyCents("250525.00") },
+            { rate : 37, startAmountCents : parseMoneyCents("626350.00") }
         ]
 
       case FilingStatus.MarriedFilingSeparate:
         return [
-            { rate : 10, startAmount : 0 },
-            { rate : 12, startAmount : 11925 },
-            { rate : 22, startAmount : 48475 },
-            { rate : 24, startAmount : 103350 },
-            { rate : 32, startAmount : 197300 },
-            { rate : 35, startAmount : 250525 },
-            { rate : 37, startAmount : 375800 }
+            { rate : 10, startAmountCents : parseMoneyCents("0.00") },
+            { rate : 12, startAmountCents : parseMoneyCents("11925.00") },
+            { rate : 22, startAmountCents : parseMoneyCents("48475.00") },
+            { rate : 24, startAmountCents : parseMoneyCents("103350.00") },
+            { rate : 32, startAmountCents : parseMoneyCents("197300.00") },
+            { rate : 35, startAmountCents : parseMoneyCents("250525.00") },
+            { rate : 37, startAmountCents : parseMoneyCents("375800.00") }
         ]
 
       case FilingStatus.QualifyingSurvivingSpouse:
       case FilingStatus.MarriedFilingJointly:
         return [
-          { rate : 10, startAmount : 0 },
-          { rate : 12, startAmount : 23850 },
-          { rate : 22, startAmount : 96950 },
-          { rate : 24, startAmount : 206700 },
-          { rate : 32, startAmount : 394600 },
-          { rate : 35, startAmount : 501050 },
-          { rate : 37, startAmount : 751600 }
+          { rate : 10, startAmountCents : parseMoneyCents("0.00") },
+          { rate : 12, startAmountCents : parseMoneyCents("23850.00") },
+          { rate : 22, startAmountCents : parseMoneyCents("96950.00") },
+          { rate : 24, startAmountCents : parseMoneyCents("206700.00") },
+          { rate : 32, startAmountCents : parseMoneyCents("394600.00") },
+          { rate : 35, startAmountCents : parseMoneyCents("501050.00") },
+          { rate : 37, startAmountCents : parseMoneyCents("751600.00") }
         ]
 
       case FilingStatus.HeadOfHousehold:
         return [
-            { rate : 10, startAmount : 0 },
-            { rate : 12, startAmount : 17000 },
-            { rate : 22, startAmount : 64850 },
-            { rate : 24, startAmount : 103350 },
-            { rate : 32, startAmount : 197300 },
-            { rate : 35, startAmount : 250525 },
-            { rate : 37, startAmount : 626350 }
+            { rate : 10, startAmountCents : parseMoneyCents("0.00") },
+            { rate : 12, startAmountCents : parseMoneyCents("17000.00") },
+            { rate : 22, startAmountCents : parseMoneyCents("64850.00") },
+            { rate : 24, startAmountCents : parseMoneyCents("103350.00") },
+            { rate : 32, startAmountCents : parseMoneyCents("197300.00") },
+            { rate : 35, startAmountCents : parseMoneyCents("250525.00") },
+            { rate : 37, startAmountCents : parseMoneyCents("626350.00") }
         ]
     }
   }
 
-  computeOrdinaryTax(income: number, taxMap: TaxMap): number {
+  computeOrdinaryTax(income: MoneyCents, taxMap: TaxMap): number {
     let taxes = 0;
+    addMoneyCents(income); // Reject invalid cent inputs before updating the tax map.
 
     const taxBrackets = this.taxBrackets();
 
     for (let i = 0; i < taxBrackets.length; i += 1) {
-      const upperBound = i < taxBrackets.length - 1 ? taxBrackets[i + 1].startAmount : Infinity;
-
-      const amount = Math.min(income, upperBound) - taxBrackets[i].startAmount
+      const upperBound = taxBrackets[i + 1]?.startAmountCents;
+      const cappedIncome = upperBound !== undefined && income > upperBound ? upperBound : income;
+      const amountCents = subtractMoneyCents(cappedIncome, taxBrackets[i].startAmountCents);
+      // The remaining worksheet uses dollar-number tax results. Preserve its
+      // fractional-cent tax accumulation; do not round each bracket.
+      const amount = Number(formatMoneyCents(amountCents));
       const tax = amount * (taxBrackets[i].rate / 100.0)
 
       if (tax > 0) {
@@ -277,7 +281,7 @@ export default class Taxes implements TaxesInterface {
         record.tax += tax
       }
     
-      if (income < upperBound) {
+      if (upperBound === undefined || income < upperBound) {
         break;
       }
     }
@@ -352,19 +356,21 @@ export default class Taxes implements TaxesInterface {
   get run(): TaxResults {
     const taxBrackets = new Map<number, TaxBracketEntry>()
 
-    const line1 = this.getTaxableIncome(getCurrentPeriod());
-    const line2 = this.income.qualifiedDividends;
-    const line3 = (((this.income.longTermCapitalGains + this.income.actuals[getCurrentPeriod()].longTermCapitalGains) <= 0 || this.income.getCapitalGains(getCurrentPeriod()) <= 0)
-        ? 0
-        : Math.min((this.income.longTermCapitalGains + this.income.actuals[getCurrentPeriod()].longTermCapitalGains), this.income.getCapitalGains(getCurrentPeriod())
-      )
-    )
+    const zero = parseMoneyCents("0.00");
+    const period = getCurrentPeriod();
+    const taxableIncomeCents = this.getTaxableIncomeCents(period);
+    const longTermGainsCents = addMoneyCents(this.income.longTermCapitalGainsCents,
+      this.income.actuals[period].longTermCapitalGainsCents);
+    const capitalGainsCents = this.income.getCapitalGainsCents(period);
+    const eligibleGainsCents = longTermGainsCents <= 0 || capitalGainsCents <= 0
+      ? zero : longTermGainsCents < capitalGainsCents ? longTermGainsCents : capitalGainsCents;
+    const dividendsAndGainsCents = addMoneyCents(this.income.qualifiedDividendsCents, eligibleGainsCents);
+    const ordinaryIncomeDifference = subtractMoneyCents(taxableIncomeCents, dividendsAndGainsCents);
+    const ordinaryIncomeCents = ordinaryIncomeDifference < 0 ? zero : ordinaryIncomeDifference;
 
-    // line4 - dividends and gains
-    const line4 = line2 + line3
-
-    // line 5 - ordinary income
-    const line5 = Math.max(line1 - line4, 0);
+    const line1 = Number(formatMoneyCents(taxableIncomeCents));
+    const line4 = Number(formatMoneyCents(dividendsAndGainsCents));
+    const line5 = Number(formatMoneyCents(ordinaryIncomeCents));
 
     // Compute 0% taxes
     const line6 = this.maxZeroPctTaxableIncome();
@@ -415,13 +421,13 @@ export default class Taxes implements TaxesInterface {
     }
 
     // Compute regular tax rate
-    const line22 = this.computeOrdinaryTax(line5, taxBrackets)
+    const line22 = this.computeOrdinaryTax(ordinaryIncomeCents, taxBrackets)
 
     const line23 = line18 + line21 + line22;
 
     // Compute taxes on taxable income amount
     const taxableIncomeTaxBrackets = new Map<number, TaxBracketEntry>();
-    const line24 = this.computeOrdinaryTax(line1, taxableIncomeTaxBrackets)
+    const line24 = this.computeOrdinaryTax(taxableIncomeCents, taxableIncomeTaxBrackets)
 
     // const line25 = Math.min(line23, line24)
     // console.log(line25)

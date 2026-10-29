@@ -52,7 +52,7 @@ test('Tax monetary controls receive cents and update cents without dollar decodi
 })
 
 test('Tax amount editing retains decimal text and applies approved rounding').with([
-  ['0.10', 10], ['0.20', 20], ['0.125', 13], ['-0.125', -12], ['1.005', 100],
+  ['0.10', 10], ['0.20', 20], ['0.125', 13], ['-0.125', -12], ['1.005', 101],
   ['-0.00', 0], ['0.00', 0], ['90071992547409.91', Number.MAX_SAFE_INTEGER],
 ]).run(async ({ assert }, [text, expected]) => {
   let draft = { value: 0, text: '0.00' }

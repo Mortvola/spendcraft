@@ -170,7 +170,6 @@ const AutoAssignmentDialog: React.FC<PropsType & ModalProps> = observer(({
             </label>
 
             <CategorySpread
-              centAmounts
               name="categories"
               categories={formikProps.values.categories}
               title="Categories:"
