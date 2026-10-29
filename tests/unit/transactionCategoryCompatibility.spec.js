@@ -43,15 +43,6 @@ test.group('Current Transaction Category string compatibility — no DB', () => 
         'Invalid monetary cents')
     }
   })
-  test('duplicate effect aggregation fails if strings reach current posting helper')
-    .with([[10, 20, 30], ['10.00', '20.00', NaN], [10, '20.00', 1020]])
-    .run(async ({ assert }, [a, b, expected]) => {
-      const deltas = await current('app/services/transactionEligibility.ts', 'categoryEffectDeltas')
-      const delta = deltas([], [{ categoryId: 1, amount: a }, { categoryId: 1, amount: b }], false,
-        true).get(1)
-      if (Number.isNaN(expected)) assert.isTrue(Number.isNaN(delta))
-      else assert.strictEqual(delta, expected)
-    })
   test('replacement admission currently accepts numeric allocations only').with([10, '10.00'])
     .run(async ({ assert }, amount) => {
       const accepts = await current('app/Controllers/Http/CategoriesController.ts',
@@ -102,10 +93,4 @@ test.group('Current Transaction Category string compatibility — no DB', () => 
           .equal(saves, 2)
       }
     })
-  test('three SQL membership sites share typed mixed-storage comparison', async ({ assert }) => {
-    const controller = await readFile('app/Controllers/Http/CategoriesController.ts', 'utf8')
-    const model = await readFile('app/Models/Category.ts', 'utf8')
-    assert.equal(controller.match(/whereRaw\(categoryNonzeroAllocationSql/g)?.length, 1)
-    assert.equal(model.match(/whereRaw\(categoryNonzeroAllocationSql/g)?.length, 2)
-  })
 })

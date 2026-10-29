@@ -274,14 +274,6 @@ test.group('Statement income production controllers (no database)', () => {
     assert.equal(JSON.parse(f.writes[0].data).note, 'committed while waiting')
     assert.isTrue(f.events.indexOf('budget.acquired') < f.events.indexOf('statement.read'))
   })
-  test('report SQL retains existing extraction, real aggregation and date grouping', async ({
-    assert }) => {
-    const source = await readFile('app/Controllers/Http/TaxesController.ts', 'utf8')
-    for (const field of statementIncomeFields) assert.include(source, `(data->>'${field}')::real`)
-    assert.include(source, "groupByRaw('EXTRACT(MONTH from end_date)')")
-    assert.include(source, ".whereBetween('startDate'")
-    assert.include(source, ".whereNotIn('subtype', ['401k', 'Roth 401k', 'Roth', 'ira'])")
-  })
 })
 
 test('Statement storage decoding and numeric serialization are separate boundaries', async ({

@@ -112,6 +112,41 @@ test.group('Statement income decimal-string PostgreSQL acceptance', group => {
       ...income(1.25), dividends: 2.5 }); await model.save()
     assert.deepEqual(await TaxesController.getActuals(2026, f.budget.id), mixed)
   })
+  test('Tax actuals aggregate canonical income by end month with date and account exclusions',
+    async ({ assert }) => {
+    replaceStatementIncome(f.statement, income(0.1))
+    await f.statement.save()
+    assert.deepEqual((await raw()).data, encodeStatementIncome(income(0.1)))
+    const createIncome = async (account: typeof f.account, start: string, end: string,
+      amount: number) => {
+      const statement = await account.related('statements').create({
+        startDate: DateTime.fromISO(start), endDate: DateTime.fromISO(end),
+        startingBalance: 0, endingBalance: 0, data: income(amount),
+      })
+      const stored = await db.from('statements').where('id', statement.id).firstOrFail()
+      assert.deepEqual(stored.data, encodeStatementIncome(income(amount)))
+    }
+    await createIncome(f.account, '2026-01-15', '2026-01-31', 0.2)
+    await createIncome(f.account, '2026-02-01', '2026-03-01', 0.4)
+    await createIncome(f.account, '2025-12-31', '2026-01-01', 100)
+    await createIncome(f.account, '2027-01-01', '2027-01-31', 100)
+    const institution = await f.budget.related('institutions').query().firstOrFail()
+    for (const subtype of ['401k', 'Roth 401k', 'Roth', 'ira']) {
+      const account = await institution.related('accounts').create({
+        name: `Excluded ${subtype}`, subtype, type: AccountType.Investment,
+        tracking: TrackingType.Transactions, balance: 0,
+        startDate: DateTime.fromISO('2026-01-01'), rate: 0, closed: false,
+      })
+      await createIncome(account, '2026-01-01', '2026-01-31', 100)
+    }
+    const actuals = await TaxesController.getActuals(2026, f.budget.id)
+    assert.deepEqual(actuals.filter(row => row !== undefined), [
+      { month: 1, taxableInterest: '0.30', ordinaryDividends: '0.30',
+        shortTermCapitalGains: '0.30', longTermCapitalGains: '0.30', taxes: {} },
+      { month: 3, taxableInterest: '0.40', ordinaryDividends: '0.40',
+        shortTermCapitalGains: '0.40', longTermCapitalGains: '0.40', taxes: {} },
+    ])
+  })
   test('SQL-null data and omitted income remain unchanged on unrelated PATCH', async ({ client,
     assert }) => {
     await db.from('statements').where('id', f.statement.id).update({ data: null })
