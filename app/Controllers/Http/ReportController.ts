@@ -499,14 +499,18 @@ amount decimal)
 
     const fundingQuery = await db.query()
       .select(
-        db.raw('sum(tc.amount) AS amount'),
+        db.raw('sum(allocation.amount) AS amount'),
       )
-      .from('transaction_categories AS tc')
-      .join('transactions AS t', 't.id', 'tc.transaction_id')
-      .join('categories AS c', 'c.id', 'tc.category_id')
+      .from('transactions AS t')
+      .joinRaw(
+        'cross join lateral jsonb_to_recordset(t.categories) as allocation("categoryId" int, ' +
+        'amount decimal)')
+      .join('categories AS c', 'c.id', 'allocation.categoryId')
+      .join('groups AS g', 'g.id', 'c.group_id')
       .where('t.application_id', budget.id)
+      .andWhere('g.application_id', budget.id)
       .whereBetween('t.date', [startDate.toISODate() ?? '', endDate.toISODate() ?? ''])
-      .andWhere('tc.category_id', '!=', acctTransfer.id)
+      .andWhere('allocation.categoryId', '!=', acctTransfer.id)
       .andWhere('t.type', '=', TransactionType.FUNDING_TRANSACTION)
       .andWhere('c.monthly_expenses', true);
 
@@ -515,15 +519,19 @@ amount decimal)
     const query = await db.query()
       .select(
         db.raw('to_char(t.date, \'YYYY-MM-DD\') as date'),
-        db.raw('sum(tc.amount) AS amount'),
-        db.raw('array_agg(t.id) as transactions'),
+        db.raw('sum(allocation.amount) AS amount'),
+        db.raw('array_agg(DISTINCT t.id ORDER BY t.id) as transactions'),
       )
-      .from('transaction_categories AS tc')
-      .join('transactions AS t', 't.id', 'tc.transaction_id')
-      .join('categories AS c', 'c.id', 'tc.category_id')
+      .from('transactions AS t')
+      .joinRaw(
+        'cross join lateral jsonb_to_recordset(t.categories) as allocation("categoryId" int, ' +
+        'amount decimal)')
+      .join('categories AS c', 'c.id', 'allocation.categoryId')
+      .join('groups AS g', 'g.id', 'c.group_id')
       .where('t.application_id', budget.id)
+      .andWhere('g.application_id', budget.id)
       .whereBetween('t.date', [startDate.toISODate() ?? '', endDate.toISODate() ?? ''])
-      .andWhere('tc.category_id', '!=', acctTransfer.id)
+      .andWhere('allocation.categoryId', '!=', acctTransfer.id)
       .andWhereNotIn('t.type', [
         TransactionType.FUNDING_TRANSACTION,
         TransactionType.REBALANCE_TRANSACTION,

@@ -45,36 +45,64 @@ async function createDomain(label: string, existingBudget?: Budget) {
 
 
 test.group('Exclusive Category and Funding History JSON authority', () => {
-  test('Budget Progress keeps exact running totals, selection, dates and transaction IDs',
+  test('Budget Progress uses JSON only, deduplicates IDs and preserves exact scoped totals',
     async ({ client, assert }) => {
       const own = await createDomain('progress'), foreign = await createDomain('progress-other')
       await db.from('categories').whereIn('id', [own.category.id, foreign.category.id])
         .update({ monthly_expenses: true })
+      await writeHistoricalTransactionFixture(own.transaction, { categories: [] })
       const empty = await client.get('/api/v1/reports/budget-progress').qs({ m: '2-2025' })
         .loginAs(own.user)
       empty.assertStatus(200)
       assert.deepEqual(empty.body(), [])
-      const add = async (domain: typeof own, amount: number, type: number, date: string) => {
+      const add = async (domain: typeof own, amount: number, type: number, date: string,
+        categories = [{ categoryId: domain.category.id, amount: encodeMonetaryAmount(amount) }]) =>
+        {
         const transaction = await domain.budget.related('transactions').create({
           date: DateTime.fromISO(date), type, categories: [], taxes: [], deleted: false })
-        await db.table('transaction_categories').insert({ transaction_id: transaction.id,
-          category_id: domain.category.id, amount })
+        await writeHistoricalTransactionFixture(transaction, { categories })
         return transaction.id
       }
-      await add(own, 0.1, TransactionType.FUNDING_TRANSACTION, '2025-02-01')
-      const first = await add(own, 0.2, TransactionType.MANUAL_TRANSACTION, '2025-02-02')
+      const funding = await add(own, 0.1, TransactionType.FUNDING_TRANSACTION, '2025-02-01')
+      const first = await add(own, 0.2, TransactionType.MANUAL_TRANSACTION, '2025-02-02', [
+        { categoryId: own.category.id, amount: '0.10' },
+        { categoryId: own.category.id, amount: '0.10' }])
+      const zero = await add(own, 0, TransactionType.MANUAL_TRANSACTION, '2025-02-02')
       const second = await add(own, -0.4, TransactionType.MANUAL_TRANSACTION, '2025-02-03')
       const third = await add(own, 0.1, TransactionType.MANUAL_TRANSACTION, '2025-02-04')
+      const legacyOnly = await add(own, 0, TransactionType.MANUAL_TRANSACTION, '2025-02-02', [])
+      // Stale legacy rows must neither supply amounts nor add transaction IDs.
+      for (const id of [funding, first, legacyOnly]) {
+        await db.table('transaction_categories').insert({ transaction_id: id,
+          category_id: own.category.id, amount: 99 })
+      }
       await add(own, 99, TransactionType.REBALANCE_TRANSACTION, '2025-02-02')
       await add(own, 99, TransactionType.STARTING_BALANCE, '2025-02-02')
       await add(own, 99, TransactionType.MANUAL_TRANSACTION, '2025-03-01')
-      await add(foreign, 99, TransactionType.FUNDING_TRANSACTION, '2025-02-01')
-      await add(foreign, 99, TransactionType.MANUAL_TRANSACTION, '2025-02-02')
+      await add(own, 99, TransactionType.FUNDING_TRANSACTION, '2025-01-31')
+      await add(foreign, 99, TransactionType.FUNDING_TRANSACTION, '2025-02-01', [
+        { categoryId: own.category.id, amount: '99.00' }])
+      await add(own, 99, TransactionType.FUNDING_TRANSACTION, '2025-02-01', [
+        { categoryId: foreign.category.id, amount: '99.00' }])
+      await add(foreign, 99, TransactionType.MANUAL_TRANSACTION, '2025-02-02', [
+        { categoryId: own.category.id, amount: '99.00' }])
+      await add(own, 99, TransactionType.MANUAL_TRANSACTION, '2025-02-02', [
+        { categoryId: foreign.category.id, amount: '99.00' }])
+      const transfer = await own.budget.getAccountTransferCategory()
+      await db.from('categories').where('id', transfer.id).update({ monthly_expenses: true })
+      for (const type of [TransactionType.FUNDING_TRANSACTION, TransactionType.MANUAL_TRANSACTION])
+        {
+        await add(own, 99, type, '2025-02-02', [
+          { categoryId: transfer.id, amount: '99.00' }])
+      }
+      const pool = await own.budget.getFundingPoolCategory()
+      await add(own, 99, TransactionType.MANUAL_TRANSACTION, '2025-02-02', [
+        { categoryId: pool.id, amount: '99.00' }])
       const before = await snapshot(own.budget.id)
       const response = await client.get('/api/v1/reports/budget-progress').qs({ m: '2-2025' })
         .loginAs(own.user)
       response.assertStatus(200)
-      assert.deepEqual(response.body(), [['2025-02-02', '0.30', [first]],
+      assert.deepEqual(response.body(), [['2025-02-02', '0.30', [first, zero]],
         ['2025-02-03', '-0.10', [second]], ['2025-02-04', '0.00', [third]]])
       assert.deepEqual(await snapshot(own.budget.id), before)
     })

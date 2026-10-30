@@ -309,6 +309,7 @@ test('Budget Progress accumulates exact cents and preserves daily dates and tran
     const query = () => {
       const fundingQuery = queryIndex++ % 2 === 0
       return { select() { return this }, from() { return this }, join() { return this },
+        joinRaw() { return this },
         where() { return this }, whereBetween() { return this }, andWhere() { return this },
         andWhereNotIn() { return this }, groupBy() { return this }, orderBy() { return this },
         then(resolve, reject) { return Promise.resolve(fundingQuery ? [{ amount: funding }]
