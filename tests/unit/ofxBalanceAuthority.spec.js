@@ -111,8 +111,10 @@ async function fixture() {
 
 test.group('OFX accounting and provider balance independence', () => {
   test('fractional imports, replay and replacement keep checked cents exact')
-    .with([1, -1]).run(async ({ assert }, sign) => {
+    .with([false, true].flatMap(loan => [1, -1].map(sign => ({ loan, sign }))))
+    .run(async ({ assert }, { loan, sign }) => {
       const f = await fixture()
+      if (loan) f.account.type = 'loan'
       f.account.balance = sign * 0.1
       f.categories.get(1).balance = sign * 0.1
       await f.run([{ amount: sign * 0.2 }], '')
@@ -125,12 +127,15 @@ test.group('OFX accounting and provider balance independence', () => {
       assert.strictEqual(f.categories.get(1).balance, sign * 0.5)
     })
 
-  test('Loan imports retain their excluded numeric balance behavior', async ({ assert }) => {
+  test('Loan imports round balance effects without altering provider values', async ({ assert }) =>
+    {
     const f = await fixture()
     f.account.type = 'loan'
     f.account.balance = 0.1
     await f.run([{ amount: 0.005 }], '')
-    assert.strictEqual(f.account.balance, 0.1 + 0.005)
+    assert.strictEqual(f.account.balance, 0.11)
+    assert.strictEqual(f.links[0].amount, 0.005)
+    assert.strictEqual(f.links[0].transaction.categories[0].amount, 0.005)
   })
 
   test('ledger-only observation never replaces accounting balance or writes history')

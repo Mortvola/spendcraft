@@ -432,10 +432,9 @@ class Account extends BaseModel {
       // transactions before the account start date do not affect its balance.
       const oldAppliedAmount = oldApplicable && !acctTrans.pending ? acctTrans.amount : 0;
       const newAppliedAmount = newApplicable && !plaidTransaction.pending ? newAmount : 0;
-      transactionAmount = this.type === AccountType.Loan ? newAppliedAmount - oldAppliedAmount
-        : Number(formatMoneyCents(subtractMoneyCents(
-          parseMoneyCents(encodeMonetaryAmount(newAppliedAmount)),
-          parseMoneyCents(encodeMonetaryAmount(oldAppliedAmount)))));
+      transactionAmount = Number(formatMoneyCents(subtractMoneyCents(
+        parseMoneyCents(encodeMonetaryAmount(newAppliedAmount)),
+        parseMoneyCents(encodeMonetaryAmount(oldAppliedAmount)))));
 
       // todo: check to see if any of these attributes have changed
       const accountTransactionChanges: ModelObject = {
@@ -672,11 +671,9 @@ class Account extends BaseModel {
       }
 
       if (!acctTran.pending && transaction.date >= this.startDate) {
-        this.$extras.addedSum = this.type === AccountType.Loan
-          ? (this.$extras.addedSum ?? 0) - acctTran.amount
-          : Number(formatMoneyCents(subtractMoneyCents(
-            parseMoneyCents(encodeMonetaryAmount(this.$extras.addedSum ?? 0)),
-            parseMoneyCents(encodeMonetaryAmount(acctTran.amount)))));
+        this.$extras.addedSum = Number(formatMoneyCents(subtractMoneyCents(
+          parseMoneyCents(encodeMonetaryAmount(this.$extras.addedSum ?? 0)),
+          parseMoneyCents(encodeMonetaryAmount(acctTran.amount)))));
       }
 
        
@@ -754,7 +751,6 @@ class Account extends BaseModel {
 
     if (ofxData) {
       let sum = parseMoneyCents('0.00');
-      let excludedSum = 0;
       let providerBalance: number | undefined;
 
       const sgml2Xml = (sgml: string) => (
@@ -900,8 +896,7 @@ class Account extends BaseModel {
             .save();
 
           await validateStoredCategoryConservation(transaction);
-          if (this.type === AccountType.Loan) excludedSum += newEffect - oldEffect;
-          else sum = addMoneyCents(sum, amount);
+          sum = addMoneyCents(sum, amount);
         }
         else {
           if (!this.$trx) {
@@ -938,8 +933,7 @@ class Account extends BaseModel {
             .startDate);
 
           if (!acctTrans.pending && transaction.date >= this.startDate) {
-            if (this.type === AccountType.Loan) excludedSum += acctTrans.amount;
-            else sum = addMoneyCents(sum, parseMoneyCents(encodeMonetaryAmount(acctTrans.amount)));
+            sum = addMoneyCents(sum, parseMoneyCents(encodeMonetaryAmount(acctTrans.amount)));
           }
 
 
@@ -952,9 +946,8 @@ class Account extends BaseModel {
         }
       }
 
-      this.balance = this.type === AccountType.Loan ? this.balance + excludedSum
-        : Number(formatMoneyCents(addMoneyCents(
-          parseMoneyCents(encodeMonetaryAmount(this.balance)), sum)));
+      this.balance = Number(formatMoneyCents(addMoneyCents(
+        parseMoneyCents(encodeMonetaryAmount(this.balance)), sum)));
       if (providerBalance !== undefined) this.plaidBalance = providerBalance;
 
       await this.save();

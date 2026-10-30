@@ -97,11 +97,9 @@ class Institution extends BaseModel {
             await acct.updateStartingBalance(budget, fundingPool)
             await fundingPool.save()
           } else {
-            acct.balance = acct.type === AccountType.Loan
-              ? acct.balance + (acct.$extras.addedSum ?? 0)
-              : Number(formatMoneyCents(addMoneyCents(
-                parseMoneyCents(encodeMonetaryAmount(acct.balance)),
-                parseMoneyCents(encodeMonetaryAmount(acct.$extras.addedSum ?? 0)))));
+            acct.balance = Number(formatMoneyCents(addMoneyCents(
+              parseMoneyCents(encodeMonetaryAmount(acct.balance)),
+              parseMoneyCents(encodeMonetaryAmount(acct.$extras.addedSum ?? 0)))));
           }
            
           await acct.save();
@@ -167,11 +165,9 @@ class Institution extends BaseModel {
       const [amount, unassignedAmount] = await acct.addOrUpdateTransaction(transaction, budget);
 
       // Account returns deltas based on both the old and new applicable state.
-      acct.$extras.addedSum = acct.type === AccountType.Loan
-        ? (acct.$extras.addedSum ?? 0) + amount
-        : Number(formatMoneyCents(addMoneyCents(
-          parseMoneyCents(encodeMonetaryAmount(acct.$extras.addedSum ?? 0)),
-          parseMoneyCents(encodeMonetaryAmount(amount)))));
+      acct.$extras.addedSum = Number(formatMoneyCents(addMoneyCents(
+        parseMoneyCents(encodeMonetaryAmount(acct.$extras.addedSum ?? 0)),
+        parseMoneyCents(encodeMonetaryAmount(amount)))));
 
       if (acct.tracking === TrackingType.Transactions) {
         if (acct.type === AccountType.Loan) excludedUnassignedSum += unassignedAmount;

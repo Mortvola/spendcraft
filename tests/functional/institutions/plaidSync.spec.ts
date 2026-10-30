@@ -130,8 +130,10 @@ test.group('Plaid sync characterization', (group) => {
   }
 
   test('fractional provider effects remain exact across pages, modification and removal')
-    .with([1, -1]).run(async ({ client, assert }, sign) => {
-      await f.account.merge({ balance: sign * 0.1 }).save()
+    .with([false, true].flatMap(loan => [1, -1].map(sign => ({ loan, sign }))))
+    .run(async ({ client, assert }, { loan, sign }) => {
+      await f.account.merge({ balance: sign * 0.1,
+        ...(loan ? { type: AccountType.Loan } : {}) }).save()
       await f.unassigned.merge({ balance: sign * 0.1 }).save()
       fake.responses = [page(accounts(), 'fraction-1', { added: [purchase('first', {
         amount: -sign * 0.2 })], has_more: true }), page(accounts(), 'fraction-2', {
@@ -148,6 +150,13 @@ test.group('Plaid sync characterization', (group) => {
       assert.strictEqual(f.unassigned.balance, sign * 0.6)
       const { transaction } = await local('first')
       assert.strictEqual(transaction.categories[0].amount, sign * 0.4)
+      const stored = await db.from('transactions').where('id', transaction.id).firstOrFail()
+      assert.isTrue(stored.categories.every((split: { amount: unknown }) => typeof split.amount
+        === (loan ? 'number' : 'string')))
+      fake.responses = [page(accounts(), 'fraction-replay', { modified: [purchase('first', {
+        amount: -sign * 0.4 })] })]
+      ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
+      assert.strictEqual((await Account.findOrFail(f.account.id)).balance, sign * 0.6)
       fake.responses = [page(accounts(), 'fraction-4', { removed: [
         { transaction_id: 'first', account_id: providerId(f.account) },
         { transaction_id: 'second', account_id: providerId(f.account) }] })]
@@ -1163,9 +1172,10 @@ untouched', async ({ client, assert }) => {
   })
 
   test('pending-only provider transitions change Account effects independently of Categories')
-    .with(['2024-12-31', '2025-01-01', '2025-02-10'].flatMap((date) => [false, true].map((
-      pending) => ({ date, pending }))))
-    .run(async ({ client, assert }, { date, pending }) => {
+    .with(['2024-12-31', '2025-01-01', '2025-02-10'].flatMap(date => [false, true]
+      .flatMap(pending => [false, true].map(loan => ({ date, pending, loan })))))
+    .run(async ({ client, assert }, { date, pending, loan }) => {
+      if (loan) await f.account.merge({ type: AccountType.Loan }).save()
       fake.responses = [page(accounts(), 'eligibility-c1', { added: [purchase('purchase', { date,
         pending })] })]
       ;(await client.post(url()).loginAs(f.user)).assertStatus(200)

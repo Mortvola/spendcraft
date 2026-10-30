@@ -139,9 +139,11 @@ FX>`
     })
 
   test('fractional OFX effects remain exact on import, replay and replacement')
-    .with([1, -1]).run(async ({ client, assert }, sign) => {
+    .with([false, true].flatMap(loan => [1, -1].map(sign => ({ loan, sign }))))
+    .run(async ({ client, assert }, { loan, sign }) => {
       const f = await fixture()
-      await f.account.merge({ balance: sign * 0.1 }).save()
+      await f.account.merge({ balance: sign * 0.1,
+        ...(loan ? { type: AccountType.Loan } : {}) }).save()
       const unassigned = await f.budget.getUnassignedCategory()
       await unassigned.merge({ balance: sign * 0.1 }).save()
       ;(await upload(client, f, sign * 0.2)).assertStatus(200)
