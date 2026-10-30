@@ -200,6 +200,32 @@ direction`)
       assert.deepEqual(await state(), before)
     })
 
+  test('Bill debit totals retain exact strings, nulls and current-month Budget filtering',
+    async ({ client, assert }) => {
+      await a.first.merge({ type: CategoryType.Bill }).save()
+      await a.second.merge({ type: CategoryType.Bill }).save()
+      await b.first.merge({ type: CategoryType.Bill }).save()
+      const current = DateTime.now().startOf('month')
+      const add = async (owner: typeof a, amount: string, date = current, deleted = false) => {
+        const transaction = await owner.budget.related('transactions').create({ date,
+          type: TransactionType.REBALANCE_TRANSACTION, categories: [], taxes: [], deleted })
+        await db.from('transactions').where('id', transaction.id).update({ categories:
+          JSON.stringify([{ categoryId: a.first.id, amount }]) })
+      }
+      await add(a, '-0.10')
+      await add(a, '-0.20')
+      await add(a, '0.99')
+      await add(a, '-0.40', current, true)
+      await add(a, '-0.50', current.minus({ days: 1 }))
+      await add(b, '-0.99')
+      const before = await state()
+      const response = await client.get('/api/v1/bills').loginAs(a.shared)
+      response.assertStatus(200)
+      assert.sameDeepMembers(response.body(), [{ id: a.first.id, debits: '-0.30' },
+        { id: a.second.id, debits: null }])
+      assert.deepEqual(await state(), before)
+    })
+
   test('balance helper constrains the exclusion OR branch to its own budget', async ({ client,
     assert }) => {
     const baseline = await client.get(path('balances')).qs({ date: '2025-03-01' }).accept('json')

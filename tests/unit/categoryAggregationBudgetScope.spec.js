@@ -8,7 +8,7 @@ import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
 import { DateTime } from 'luxon'
-import { TransactionType } from '../../common/ResponseTypes.ts'
+import { TransactionType, CategoryType } from '../../common/ResponseTypes.ts'
 
 // Evaluate the actual production SQL templates and binding expressions, without
 // bootstrapping Adonis or connecting to a database.
@@ -199,3 +199,40 @@ test.group('Proposed funding checked cents without a database', () => {
     await assert.rejects(() => fundingProposal(changes))
   })
 })
+
+
+async function billTotals(values) {
+  const file = 'app/Controllers/Http/CategoriesController.ts'
+  const source = ts.createSourceFile(file, await readFile(file, 'utf8'), ts.ScriptTarget.Latest,
+    true)
+  const method = source.statements.find(ts.isClassDeclaration).members.find(node =>
+    ts.isMethodDeclaration(node) && node.name.getText(source) === 'getBills')
+  const bills = values.map((_, index) => ({ id: index + 1, $extras: {} }))
+  let index = 0
+  const budget = { id: 7, related: () => ({ query: () => ({ joinRaw() { return this },
+    where() { return this }, sum: async () => [{ $extras: { debits: values[index++] } }],
+  }) }) }
+  const run = runInNewContext(ts.transpileModule(`(async function(${method.parameters.map(p =>
+    p.getText(source)).join(',')}) ${method.body.getText(source)})`, {
+    compilerOptions: { target: ts.ScriptTarget.ES2022 },
+  }).outputText, { DateTime, CategoryType, parseMoneyCents, formatMoneyCents,
+    Category: { query: () => ({ whereHas() { return this }, where: async () => bills }) } })
+  return run({ auth: { user: { related: () => ({ query: () => ({
+    firstOrFail: async () => budget,
+  }) }) } } })
+}
+
+test('Bill debit totals format exact cents and preserve nulls, IDs and empty results',
+  async ({ assert }) => {
+    assert.deepEqual(await billTotals(['-0.10', '-0.30', '-90071992547409.91', null, undefined]),
+      [{ id: 1, debits: '-0.10' }, { id: 2, debits: '-0.30' },
+        { id: 3, debits: '-90071992547409.91' }, { id: 4, debits: null },
+        { id: 5, debits: '0.00' }])
+    assert.deepEqual(await billTotals([]), [])
+  })
+
+test('Bill debit totals reject invalid or unsafe SQL values')
+  .with([0.1, 'NaN', 'Infinity', '-0.001', '-90071992547409.92'])
+  .run(async ({ assert }, value) => {
+    await assert.rejects(() => billTotals([value]))
+  })
