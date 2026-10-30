@@ -1,6 +1,7 @@
 import { encodeMonetaryAmount, canonicalCategoryAllocations } from
   '../../app/services/categoryAmountCodec.ts'
-import { addMoneyCents, parseMoneyCents, formatMoneyCents } from '../../common/moneyCents.ts'
+import { addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents } from
+  '../../common/moneyCents.ts'
 import { test } from '@japa/runner'
 import { DateTime } from 'luxon'
 import { readFile } from 'node:fs/promises'
@@ -72,7 +73,7 @@ async function patchFixture({ date = dates[1], pending = false, amount = 10, spl
     /* The query adapters independently assert the owning transaction. */ }, related() { return {
     query: () => query(budget) } } }
   const globals = { encodeMonetaryAmount, canonicalCategoryAllocations,
-    addMoneyCents, parseMoneyCents, formatMoneyCents,
+    addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents,
     hasCategoryStorage: () => activeStorage,
     excludeCategoryStorage: () => { activeStorage = false },
     CategoryType: { Loan: 'Loan' }, validateStoredCategoryConservation: async () => undefined,
@@ -166,6 +167,33 @@ test.group('Ordinary eligibility and real PATCH effects without DB', () => {
       assert.deepEqual(f.events.filter(event => Array.isArray(event) && event[0] === 'category'),
         [['category', 1, sign * 0.3]])
     })
+  test('PATCH Account old/new effects and balance updates retain exact cents').with([1, -1])
+    .run(async ({ assert }, sign) => {
+      const f = await patchFixture({ amount: sign * 0.2 })
+      f.account.balance = sign * 0.1
+      await f.run({ amount: sign * 0.4, categories: [{ categoryId: 1, amount: sign * 0.4 }] })
+      assert.strictEqual(f.account.balance, sign * 0.3)
+      await f.run({ amount: sign * 0.2, categories: [{ categoryId: 1, amount: sign * 0.2 }] })
+      assert.strictEqual(f.account.balance, sign * 0.1)
+    })
+  test('pending PATCH retains the Account balance and performs no Account write', async ({
+    assert }) => {
+    const f = await patchFixture({ pending: true, amount: 0.2 })
+    f.account.balance = 0.1
+    await f.run({ amount: 0.4, categories: [{ categoryId: 1, amount: 0.4 }] })
+    assert.strictEqual(f.account.balance, 0.1)
+    assert.isFalse(f.events.some(event => Array.isArray(event) && event[0] === 'account'))
+  })
+  test('unsafe Account balances reject PATCH before Account save or commit').with([
+    Infinity, Number.MAX_SAFE_INTEGER,
+  ]).run(async ({ assert }, balance) => {
+    const f = await patchFixture()
+    f.account.balance = balance
+    await assert.rejects(() => f.run({ amount: 20, categories: [{ categoryId: 1, amount: 20 }] }))
+    assert.equal(f.events.at(-1), 'rollback')
+    assert.notInclude(f.events, 'commit')
+    assert.isFalse(f.events.some(event => Array.isArray(event) && event[0] === 'account'))
+  })
   test('excluded Loan allocations keep their existing calculation path', async ({ assert }) => {
     const f = await patchFixture({ excluded: true })
     await f.run({ categories: [{ categoryId: 2, amount: 10 }] })
@@ -248,8 +276,9 @@ test.group('Real manual CREATE before/equal/after boundary without DB', () => {
       const category = { id: 1, balance: initialBalance,
         async save() { events.push('category') } }
       let persisted
+      const initialAccountBalance = Math.abs(amount) === 0.2 ? 0.1 : 100
       const account = { id: 1, startDate: boundary, tracking: 'Transactions', type: 'Depository',
-        balance: 100,
+        balance: initialAccountBalance,
         async save() { events.push('account save') }, related() { return { async create(values) {
           return { ...values, pending: false } } } } }
       const budget = { id: 1, async getUnassignedCategory({ client }) { assert.strictEqual(client,
@@ -284,7 +313,9 @@ test.group('Real manual CREATE before/equal/after boundary without DB', () => {
         date: DateTime.fromISO(date), amount, name: 'Manual', categories: [{ categoryId: 1,
           amount }],
       }) }, logger: { error() { /* The caller captures errors from the production method. */ } } })
-      assert.equal(account.balance, 100 + (date >= dates[1] ? amount : 0))
+      const expectedAccount = date < dates[1] ? initialAccountBalance
+        : amount === 0.2 ? 0.3 : amount === -0.2 ? -0.1 : 100 + amount
+      assert.strictEqual(account.balance, expectedAccount)
       const expected = date < dates[1] ? initialBalance
         : amount === 0.2 ? 0.3 : amount === -0.2 ? -0.1 : 20 + amount
       assert.strictEqual(category.balance, expected)

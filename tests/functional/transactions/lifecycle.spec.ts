@@ -64,7 +64,7 @@ test.group('Ordinary transaction lifecycle', (group) => {
     ])
   }
 
-  test('CREATE and DELETE retain exact fractional Category and Unassigned balances')
+  test('CREATE and DELETE retain exact fractional Account, Category and Unassigned balances')
     .with(['explicit', 'duplicates', 'unassigned', 'negative'])
     .run(async ({ client, assert }, mode) => {
       const category = mode === 'unassigned' ? await fixture.budget.getUnassignedCategory()
@@ -72,6 +72,7 @@ test.group('Ordinary transaction lifecycle', (group) => {
       const negative = mode === 'negative'
       const initial = negative ? -0.1 : 0.1
       await category.merge({ balance: initial }).save()
+      await fixture.account.merge({ balance: initial }).save()
       const accountBefore = (await Account.findOrFail(fixture.account.id)).balance
       const categories = mode === 'unassigned' ? [] : mode === 'duplicates'
         ? [{ categoryId: category.id, amount: '0.10' }, { categoryId: category.id, amount: '0.10' }]
@@ -80,6 +81,9 @@ test.group('Ordinary transaction lifecycle', (group) => {
         .json({ date: '2025-03-01', name: 'Exact Category roundtrip',
           amount: negative ? '-0.20' : '0.20', categories }).accept('json').loginAs(fixture.user)
       created.assertStatus(200)
+      assert.strictEqual((await Account.findOrFail(fixture.account.id)).balance,
+        negative ? -0.3 : 0.3)
+      assert.strictEqual(created.body().acctBalances[0].balance, negative ? '-0.30' : '0.30')
       assert.strictEqual((await Category.findOrFail(category.id)).balance, negative ? -0.3 : 0.3)
       assert.strictEqual(created.body().categories.find((row: { id: number }) => row.id ===
         category.id).balance, negative ? '-0.30' : '0.30')
@@ -91,7 +95,34 @@ test.group('Ordinary transaction lifecycle', (group) => {
       assert.strictEqual(removed.body().data.categories.find((row: { id: number }) => row.id ===
         category.id).balance, negative ? '-0.10' : '0.10')
       assert.strictEqual((await Account.findOrFail(fixture.account.id)).balance, accountBefore)
+      assert.strictEqual(removed.body().data.acctBalances[0].balance, negative ? '-0.10' : '0.10')
       assert.isTrue((await Transaction.findOrFail(id)).deleted)
+    })
+
+  test('PATCH Account effects retain exact positive and negative cents').with([false, true])
+    .run(async ({ client, assert }, negative) => {
+      const sign = negative ? -1 : 1
+      await db.transaction(async trx => {
+        await Budget.query({ client: trx }).where('id', fixture.budget.id).forUpdate().firstOrFail()
+        const transaction = await Transaction.query({ client: trx }).where('id', fixture.transaction
+          .id).firstOrFail()
+        await transaction.merge({ categories: [{ categoryId: fixture.first.id,
+          amount: sign * 0.2 }] }).save()
+        await fixture.accountTransaction.useTransaction(trx).merge({ amount: sign * 0.2 }).save()
+        await fixture.account.useTransaction(trx).merge({ balance: sign * 0.1 }).save()
+        await fixture.first.useTransaction(trx).merge({ balance: sign * 0.2 }).save()
+      })
+      for (const [version, amount] of [negative ? '-0.40' : '0.40',
+        negative ? '-0.20' : '0.20'].entries()) {
+        const response = await client.patch(`/api/v1/transaction/${fixture.transaction.id}`)
+          .json({ version, amount, categories: [{ categoryId: fixture.first.id, amount }] })
+          .accept('json').loginAs(fixture.user)
+        response.assertStatus(200)
+        const expected = version === 0 ? 0.3 : 0.1
+        assert.strictEqual((await Account.findOrFail(fixture.account.id)).balance, sign * expected)
+        assert.strictEqual(response.body().data.acctBalances[0].balance,
+          `${negative ? '-' : ''}${version === 0 ? '0.30' : '0.10'}`)
+      }
     })
 
   test('PATCH equivalent decimal partitions skip Category and Account writes', async ({ client,

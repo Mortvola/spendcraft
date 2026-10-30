@@ -43,7 +43,9 @@ test.group('Final readiness forward deletion characterization without DB', () =>
       return { where() { return this }, andWhere() { return this }, whereHas() { return this },
         forUpdate() { events.push('gate'); return this }, async firstOrFail() { return row } }
     }
-    const account = { id: 1, type: 'Depository', tracking: 'Transactions', balance: 100,
+    const initialAccountBalance = scenario.categoryBalance ?? 100
+    const account = { id: 1, type: 'Depository', tracking: 'Transactions',
+      balance: initialAccountBalance,
       startDate: DateTime.fromISO('2025-02-01'), async save() { events.push('account.save') },
       related() { return { async create(values) { link = { ...values, accountId: 1,
         pending: false }; return link } } } }
@@ -79,7 +81,8 @@ test.group('Final readiness forward deletion characterization without DB', () =>
       categories: [{ categoryId: 1, amount: scenario.amount }],
     }) }, logger: { error(error) { events.push(error.message) } } })
     const eligible = scenario.date >= '2025-02-01'
-    assert.equal(account.balance, 100 + (eligible ? scenario.amount : 0))
+    assert.strictEqual(account.balance, scenario.categoryBalance === 0.1 ? 0.3
+      : scenario.categoryBalance === -0.1 ? -0.3 : 100 + (eligible ? scenario.amount : 0))
     assert.strictEqual(category.balance, scenario.categoryBalance === 0.1 ? 0.3
       : scenario.categoryBalance === -0.1 ? -0.3 : eligible ? scenario.amount : 0)
     // Exercise the existing Unassigned fallback for an empty historical split list.
@@ -88,7 +91,7 @@ test.group('Final readiness forward deletion characterization without DB', () =>
     await remove({ auth: { user }, request: { params: () => ({ trxId: 1 }) }, logger: { error(
       error) { events.push(error.message) } } })
     assert.isTrue(transaction.deleted)
-    assert.equal(account.balance, eligible ? 100 : 100 - scenario.amount)
+    assert.strictEqual(account.balance, eligible ? initialAccountBalance : 100 - scenario.amount)
     assert.strictEqual(category.balance, eligible ? initialBalance : -scenario.amount)
     assert.equal(events.filter((event) => event === 'gate').length, 2)
     assert.equal(events.filter((event) => event === 'commit').length, 2)

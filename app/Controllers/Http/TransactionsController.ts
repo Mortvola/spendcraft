@@ -225,11 +225,14 @@ export default class TransactionsController {
       const newState = { ...oldState, date: nextDate };
       const oldCategoryEligible = categoryEligible(oldState, account.startDate);
       const newCategoryEligible = categoryEligible(newState, account.startDate);
-      const accountDelta = ordinary
-        ? (accountEligible(newState, account.startDate) ? requestData.amount ?? acctTrans
-          .amount : 0)
-          - (accountEligible(oldState, account.startDate) ? acctTrans.amount : 0)
-        : 0;
+      const zeroCents = parseMoneyCents('0.00');
+      const accountDeltaCents = ordinary ? subtractMoneyCents(
+        accountEligible(newState, account.startDate)
+          ? parseMoneyCents(encodeMonetaryAmount(requestData.amount ?? acctTrans.amount))
+          : zeroCents,
+        accountEligible(oldState, account.startDate)
+          ? parseMoneyCents(encodeMonetaryAmount(acctTrans.amount)) : zeroCents,
+      ) : zeroCents;
 
       if (ordinary) {
         if (requestData.categories?.length === 0) {
@@ -457,8 +460,10 @@ export default class TransactionsController {
         if (!ordinary) await account.save();
       }
 
-      if (ordinary && accountDelta !== 0) {
-        account.balance += accountDelta;
+      if (ordinary && accountDeltaCents !== 0) {
+        const balanceCents = addMoneyCents(
+          parseMoneyCents(encodeMonetaryAmount(account.balance)), accountDeltaCents);
+        account.balance = Number(formatMoneyCents(balanceCents));
         await account.save();
       }
 
@@ -631,10 +636,11 @@ export default class TransactionsController {
       }
 
       const trxCategories = transaction.categories;
-      const useCategoryCents = account !== null && account.type !== AccountType.Loan
+      const ordinary = account !== null && account.type !== AccountType.Loan
         && account.tracking === TrackingType.Transactions
         && [TransactionType.REGULAR_TRANSACTION, TransactionType.MANUAL_TRANSACTION]
-          .includes(transaction.type) && hasCategoryStorage(transaction);
+          .includes(transaction.type);
+      const useCategoryCents = ordinary && hasCategoryStorage(transaction);
 
       for (const categoryId of new Set(trxCategories.map((category) => category.categoryId))) {
         await budgetCategories(budget.id, { client: trx }).where('id', categoryId).firstOrFail();
@@ -718,6 +724,12 @@ export default class TransactionsController {
         if (!acctTransaction.pending) {
           if (account.type === AccountType.Loan) {
             account.balance -= acctTransaction.principle ?? 0;
+          }
+          else if (ordinary) {
+            const balanceCents = subtractMoneyCents(
+              parseMoneyCents(encodeMonetaryAmount(account.balance)),
+              parseMoneyCents(encodeMonetaryAmount(acctTransaction.amount)));
+            account.balance = Number(formatMoneyCents(balanceCents));
           }
           else {
             account.balance -= acctTransaction.amount;

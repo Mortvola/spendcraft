@@ -251,7 +251,10 @@ export default class AccountsController {
         account.balance += acctTransaction.principle ?? 0;
       }
       else if (accountEligible(state, account.startDate)) {
-        account.balance += acctTransaction.amount;
+        const balanceCents = addMoneyCents(
+          parseMoneyCents(encodeMonetaryAmount(account.balance)),
+          parseMoneyCents(encodeMonetaryAmount(acctTransaction.amount)));
+        account.balance = Number(formatMoneyCents(balanceCents));
       }
 
       await account.save();

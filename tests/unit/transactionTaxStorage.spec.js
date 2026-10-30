@@ -22,7 +22,8 @@ import { updateTransaction } from '../../app/validation/Validators/transaction.t
 import {
   accountEligible, categoryEligible, categoryEffectDeltas, excludedCategoryEffectDeltas,
 } from '../../app/services/transactionEligibility.ts'
-import { addMoneyCents, parseMoneyCents, formatMoneyCents } from '../../common/moneyCents.ts'
+import { addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents } from
+  '../../common/moneyCents.ts'
 import { AccountType, CategoryType, TrackingType, TransactionType } from
   '../../common/ResponseTypes.ts'
 
@@ -265,7 +266,7 @@ async function patchFixture(input, { rawInput = input, invalidOwner = false, lat
     AccountType, CategoryType, TrackingType, TransactionType, Exception, accountEligible,
       categoryEligible, categoryEffectDeltas, excludedCategoryEffectDeltas,
     validateTransactionSplits,
-    addMoneyCents, parseMoneyCents, formatMoneyCents,
+    addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents,
     db: { transaction: async () => owner }, updateTransaction, transactionFields: {},
     getChanges: (_old, _new, previous) => previous,
     Transaction: { query({ client }) { if (client !== owner) throw new Error('Unbound Transaction');
