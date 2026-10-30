@@ -1,3 +1,6 @@
+import {
+  addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents, type MoneyCents,
+} from '#common/moneyCents';
 import { requestCategoryStorage } from '#services/categoryStorageBinding';
 import { requestFundingStorage } from '#services/fundingStorage';
 import {
@@ -689,7 +692,7 @@ class CategoriesController {
       validateCategoryConservation(type, categories, undefined, pool?.id);
 
       let transaction: Transaction;
-      const categeoryDeltas = new Map<number, number>();
+      const categeoryDeltas = new Map<number, MoneyCents>();
 
       if (!existingTransaction) {
         transaction = await requestCategoryStorage(new Transaction()).useTransaction(trx)
@@ -727,8 +730,9 @@ class CategoriesController {
 
          
         for (const transCategory of transaction.categories) {
-          const delta = categeoryDeltas.get(transCategory.categoryId) ?? 0;
-          categeoryDeltas.set(transCategory.categoryId, -transCategory.amount + delta)
+          const delta = categeoryDeltas.get(transCategory.categoryId) ?? parseMoneyCents('0.00');
+          categeoryDeltas.set(transCategory.categoryId, subtractMoneyCents(delta,
+            parseMoneyCents(encodeMonetaryAmount(transCategory.amount))));
         }
 
         await transaction
@@ -754,8 +758,9 @@ class CategoriesController {
       // Insert the category splits
        
       for (const transCategory of transaction.categories) {
-        const delta = categeoryDeltas.get(transCategory.categoryId) ?? 0;
-        categeoryDeltas.set(transCategory.categoryId, transCategory.amount + delta);
+        const delta = categeoryDeltas.get(transCategory.categoryId) ?? parseMoneyCents('0.00');
+        categeoryDeltas.set(transCategory.categoryId, addMoneyCents(delta,
+          parseMoneyCents(encodeMonetaryAmount(transCategory.amount))));
       }
 
        
@@ -764,7 +769,8 @@ class CategoriesController {
         const category = await budgetCategories(budget.id, { client: trx }).where('id', categoryId)
           .firstOrFail();
 
-        category.balance += delta;
+        category.balance = Number(formatMoneyCents(addMoneyCents(
+          parseMoneyCents(encodeMonetaryAmount(category.balance)), delta)));
 
          
         await category.save();

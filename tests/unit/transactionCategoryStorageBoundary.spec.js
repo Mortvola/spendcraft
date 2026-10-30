@@ -9,7 +9,8 @@ import { updateCategoryTransfer } from '../../app/validation/Validators/category
 import { calculateFunding, fundingCalculationInputs } from
   '../../client-src/Funding/calculateFunding.ts'
 import { encodeTransferCategories } from '../../client-src/monetary.ts'
-import { formatMoneyCents } from '../../common/moneyCents.ts'
+import { addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents } from
+  '../../common/moneyCents.ts'
 import { auditTransaction } from '../../scripts/auditTransactionCategoryCents.mjs'
 import { Exception } from '@adonisjs/core/exceptions'
 import { encodeMonetaryAmount, validateCategoryConservation, decodeCategoryAllocations } from
@@ -32,7 +33,8 @@ async function transferHandler(context) {
   if (!expression) throw new Error('Current transfer method not found')
   return runInNewContext(ts.transpileModule(expression, {
     compilerOptions: { target: ts.ScriptTarget.ES2022 },
-  }).outputText, context)
+  }).outputText, { addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents,
+    ...context })
 }
 
 test.group('Transaction Category storage boundary — approved CREATE admission', () => {
@@ -71,7 +73,7 @@ test.group('Transaction Category storage boundary — approved CREATE admission'
       }
       const budget = { id: 1, getFundingPoolCategory: async () => ({ id: 2 }) }
       const categories = new Map([1, 2].map((id) => [id, {
-        id, balance: 0, async save() { events.push('category.save') },
+        id, balance: 0.1, async save() { events.push('category.save') },
       }]))
       const handler = await transferHandler({
         DateTime, TransactionType, Exception, updateCategoryTransfer, encodeMonetaryAmount,
@@ -118,7 +120,7 @@ test.group('Transaction Category storage boundary — approved CREATE admission'
           params() { return {} },
           async validateUsing(validator) {
             return validator.validate({ type, date: '2026-10-01',
-              categories: [{ categoryId: 1, amount: '1.00' }, { categoryId: 2, amount: '-1.00' }] })
+              categories: [{ categoryId: 1, amount: '0.20' }, { categoryId: 2, amount: '-0.20' }] })
           },
         },
         logger: { error() { return undefined } },
@@ -136,8 +138,8 @@ test.group('Transaction Category storage boundary — approved CREATE admission'
       assert.equal(created.type, type)
       assert.equal(created.budgetId, 1)
       assert.equal(response.data.transaction.type, type)
-      assert.equal(categories.get(1).balance, 1)
-      assert.equal(categories.get(2).balance, -1)
+      assert.strictEqual(categories.get(1).balance, 0.3)
+      assert.strictEqual(categories.get(2).balance, -0.1)
       assert.include(events, 'commit')
       assert.notInclude(events, 'rollback')
       assert.isBelow(events.indexOf('budget.gate'), events.indexOf('transaction.create'))

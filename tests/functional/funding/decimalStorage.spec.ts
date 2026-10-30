@@ -8,7 +8,7 @@ import { mock } from 'node:test'
 import Budget from '#models/Budget'
 import Category from '#models/Category'
 import Transaction from '#models/Transaction'
-import { CategoryType } from '#common/ResponseTypes'
+import { CategoryType, TransactionType } from '#common/ResponseTypes'
 import { fundingForServer as calculateFunding } from '../../fixtures/funding/legacyPreview.js'
 
 let sequence = 0
@@ -32,6 +32,58 @@ const balances = async () => Promise.all(['accounts', 'account_transactions', 'c
   .map(table => db.from(table).orderBy('id')))
 
 test.group('Funding decimal-string PostgreSQL acceptance', () => {
+  test('transfer and funding replacements retain exact signed duplicate-ID balance effects')
+    .with([TransactionType.FUNDING_TRANSACTION, TransactionType.REBALANCE_TRANSACTION]
+      .flatMap(type => [1, -1].map(sign => ({ type, sign }))))
+    .run(async ({ client, assert }, { type, sign }) => {
+      const f = await fixture()
+      const foreign = await fixture()
+      const foreignBefore = await db.from('categories').whereIn('id', [foreign.category.id,
+        foreign.pool.id]).orderBy('id')
+      await f.category.merge({ balance: sign * 0.1 }).save()
+      await f.pool.merge({ balance: sign * 0.1 }).save()
+      const body = (replacement: boolean) => categoryTransferRequest({ type, date: '2025-02-01',
+        categories: [{ categoryId: f.category.id, amount: sign * 0.1 },
+          { categoryId: f.category.id, amount: sign * (replacement ? 0.3 : 0.1) },
+          { categoryId: f.pool.id, amount: -sign * (replacement ? 0.4 : 0.2) }] })
+      const created = await client.post('/api/v1/category-transfer').json(body(false))
+        .loginAs(f.user)
+      created.assertStatus(200)
+      const id: number = created.body().data.transaction.id
+      for (const replacement of [true, true, false]) {
+        const response = await client.patch(`/api/v1/category-transfer/${id}`)
+          .json(body(replacement)).loginAs(f.user)
+        response.assertStatus(200)
+        assert.strictEqual((await Category.findOrFail(f.category.id)).balance,
+          sign * (replacement ? 0.5 : 0.3))
+        assert.strictEqual((await Category.findOrFail(f.pool.id)).balance,
+          sign * (replacement ? -0.3 : -0.1))
+        assert.strictEqual(response.body().data.balances.find((row: { id: number }) => row.id ===
+          f.category.id).balance, sign < 0 ? (replacement ? '-0.50' : '-0.30')
+            : (replacement ? '0.50' : '0.30'))
+      }
+      const raw = await db.from('transactions').where('id', id).firstOrFail()
+      assert.deepEqual(raw.categories.map((row: { amount: string }) => row.amount),
+        sign > 0 ? ['0.10', '0.10', '-0.20'] : ['-0.10', '-0.10', '0.20'])
+      assert.deepEqual(await db.from('categories').whereIn('id', [foreign.category.id,
+        foreign.pool.id]).orderBy('id'), foreignBefore)
+    })
+
+  test('out-of-range resulting balance rolls back funding and all financial writes', async ({
+    client, assert }) => {
+    const f = await fixture()
+    await f.category.merge({ balance: 9999999999.99 }).save()
+    const before = await balances()
+    const transactions = await db.from('transactions').orderBy('id')
+    const response = await client.post('/api/v1/category-transfer').loginAs(f.user)
+      .json(categoryTransferRequest({ type: TransactionType.FUNDING_TRANSACTION,
+        date: '2025-02-01', categories: [{ categoryId: f.category.id, amount: 0.01 },
+          { categoryId: f.pool.id, amount: -0.01 }] }))
+    response.assertStatus(500)
+    assert.deepEqual(await balances(), before)
+    assert.deepEqual(await db.from('transactions').orderBy('id'), transactions)
+  })
+
   test('Category CREATE and PATCH store both rule modes as strings and return numeric APIs').with([
     'create', 'patch'])
     .run(async ({ client, assert }, operation) => {
