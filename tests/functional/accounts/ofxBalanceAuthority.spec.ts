@@ -92,6 +92,34 @@ async function assertBalances(f: Fixture, expected: number, provider: number, ca
 }
 
 test.group('OFX independent accounting and provider balance (prepared)', () => {
+  test('Initial Funding creation, adjustment and repetition retain exact cents')
+    .with([1, -1]).run(async ({ assert }, sign) => {
+      const f = await fixture()
+      const adjust = (balance: number) => db.transaction(async (trx) => {
+        const budget = await Budget.query({ client: trx }).where('id', f.budget.id).forUpdate()
+          .firstOrFail()
+        const account = await Account.findOrFail(f.account.id, { client: trx })
+        const pool = await budget.getFundingPoolCategory({ client: trx })
+        account.balance = balance
+        await account.save()
+        await account.updateStartingBalance(budget, pool)
+        await pool.save()
+        return { account, pool }
+      })
+      // Keep the existing opening row: replacing it exercises the exact delta path.
+      const first = await adjust(sign * 0.1)
+      assert.strictEqual(first.pool.balance, sign * 0.1)
+      const second = await adjust(sign * 0.3)
+      assert.strictEqual(second.pool.balance, sign * 0.3)
+      const repeated = await adjust(sign * 0.3)
+      assert.strictEqual(repeated.pool.balance, sign * 0.3)
+      const opening = await repeated.account.related('accountTransactions').query()
+        .whereHas('transaction', query => query.where('type', 4)).firstOrFail()
+      assert.strictEqual(opening.amount, sign * 0.3)
+      const transaction = await opening.related('transaction').query().firstOrFail()
+      assert.strictEqual(transaction.categories[0].amount, sign * 0.3)
+    })
+
   test('supplied positive/negative/zero provider ledger is independent of signed posting')
     .with([1500, -1500, 0]).run(async ({ client, assert }, observation) => {
       const f = await fixture()

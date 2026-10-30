@@ -150,3 +150,79 @@ test.group('Provider concurrency behavior without a database', () => {
     assert.deepEqual(events, ['opening-1', 'save-1', 'opening-2', 'save-2'])
   })
 })
+
+async function openingFixture({ balance = 0.3, total = '0.20', poolBalance = 0.1,
+  loan = false } = {}) {
+  const source = await method('app/Models/Account.ts', 'updateStartingBalance')
+  const events = []
+  let link
+  const transaction = { categories: [], merge(values) { Object.assign(this, values); return this },
+    async save() { events.push('transaction.save'); return this },
+    useTransaction(client) { this.$trx = client; return this },
+    fill(values) { Object.assign(this, values); return this } }
+  const account = { id: 1, type: loan ? 'Loan' : 'Credit', tracking: 'Transactions', balance,
+    $trx: {}, startDate: { toISODate: () => '2025-01-01' }, related() { return {
+      query() {
+        let aggregate = false
+        return { whereHas() { return this }, where() { return this },
+          sum() { aggregate = true; return this },
+          async first() { return aggregate ? { $extras: { sum: total } } : link } }
+      },
+      async create(values) { link = { ...values, merge(next) { Object.assign(this, next);
+        return this }, async save() { events.push('link.save'); return this },
+        related() { return { query: () => ({ firstOrFail: async () => transaction }) } } }
+        return link },
+    } } }
+  const pool = { id: 9, balance: poolBalance }
+  const run = runInNewContext(ts.transpileModule(`(async function(${source.parameters}) ${source
+    .body})`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, {
+    addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents, encodeMonetaryAmount,
+    AccountType: { Loan: 'Loan' }, TrackingType: { Balances: 'Balances' },
+    requestCategoryStorage: (model) => model, Transaction: function () { return transaction },
+    TransactionType: { STARTING_BALANCE: 4 }, logger: { info() { events.push('log') } },
+    validateStoredCategoryConservation: async () => { events.push('validate') },
+  })
+  return { account, pool, events, transaction, link: () => link,
+    run: () => run.call(account, { id: 7 }, pool) }
+}
+
+test.group('Initial Funding checked cents without a database', () => {
+  test('creation, adjustment and repeat preserve exact signed cents').with([1, -1])
+    .run(async ({ assert }, sign) => {
+      const f = await openingFixture({ balance: sign * 0.3, total: sign === 1 ? '0.20' : '-0.20',
+        poolBalance: sign * 0.1 })
+      await f.run()
+      assert.strictEqual(f.link().amount, sign * 0.1)
+      assert.strictEqual(f.pool.balance, sign * 0.2)
+      f.account.balance = sign * 0.4
+      await f.run()
+      assert.strictEqual(f.link().amount, sign * 0.2)
+      assert.strictEqual(f.pool.balance, sign * 0.3)
+      assert.strictEqual(f.transaction.categories[0].amount, sign * 0.2)
+      await f.run()
+      assert.strictEqual(f.pool.balance, sign * 0.3)
+      assert.strictEqual(f.account.balance, sign * 0.4)
+    })
+
+  test('empty aggregate is zero', async ({ assert }) => {
+    const f = await openingFixture({ balance: 0, total: null, poolBalance: 0 })
+    await f.run()
+    assert.strictEqual(f.link().amount, 0)
+    assert.strictEqual(f.pool.balance, 0)
+  })
+
+  test('malformed or unsafe aggregates reject before persistence')
+    .with(['0.2', 'NaN', '90071992547409.92', 0.2]).run(async ({ assert }, total) => {
+      const f = await openingFixture({ total })
+      await assert.rejects(f.run)
+      assert.deepEqual(f.events, [])
+      assert.strictEqual(f.pool.balance, 0.1)
+    })
+
+  test('Loan opening retains excluded arithmetic', async ({ assert }) => {
+    const f = await openingFixture({ loan: true, balance: 0.1, total: '0.005', poolBalance: 0 })
+    await f.run()
+    assert.strictEqual(f.link().amount, 0.1 - 0.005)
+    assert.strictEqual(f.pool.balance, 0.1 - 0.005)
+  })
+})

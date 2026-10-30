@@ -985,7 +985,13 @@ class Account extends BaseModel {
       .first();
 
     // The initial funding is the current balance minus the sum
-    const startingBalance = this.balance - (sum?.$extras.sum ?? 0);
+    // PostgreSQL SUM(numeric) retains the column's two-decimal scale. Parse its
+    // decimal text directly so the aggregate never passes through dollar arithmetic.
+    const startingBalanceCents = this.type === AccountType.Loan ? null : subtractMoneyCents(
+      parseMoneyCents(encodeMonetaryAmount(this.balance)),
+      parseMoneyCents(sum?.$extras.sum ?? '0.00'));
+    const startingBalance = startingBalanceCents === null
+      ? this.balance - (sum?.$extras.sum ?? 0) : Number(formatMoneyCents(startingBalanceCents));
 
     // Get the initial funding record and update the amount
     // or add the initial funding if one was not found.
@@ -1003,7 +1009,10 @@ class Account extends BaseModel {
       })
         .save();
 
-      const delta = startingBalance - acctTrx.amount;
+      const deltaCents = startingBalanceCents === null ? null : subtractMoneyCents(
+        startingBalanceCents, parseMoneyCents(encodeMonetaryAmount(acctTrx.amount)));
+      const delta = deltaCents === null ? startingBalance - acctTrx.amount
+        : Number(formatMoneyCents(deltaCents));
 
       await acctTrx.merge({
         amount: startingBalance,
@@ -1019,7 +1028,9 @@ class Account extends BaseModel {
         logger.info(`Initial funding for account ${this.id} changed by ${delta}`);
       }
 
-      fundingPool.balance += delta;
+      fundingPool.balance = deltaCents === null ? fundingPool.balance + delta
+        : Number(formatMoneyCents(addMoneyCents(
+          parseMoneyCents(encodeMonetaryAmount(fundingPool.balance)), deltaCents)));
     }
     else {
       const transaction = await requestCategoryStorage(new Transaction(), this.type !== AccountType
@@ -1042,7 +1053,9 @@ class Account extends BaseModel {
       });
 
       await validateStoredCategoryConservation(transaction);
-      fundingPool.balance += startingBalance;
+      fundingPool.balance = startingBalanceCents === null ? fundingPool.balance + startingBalance
+        : Number(formatMoneyCents(addMoneyCents(
+          parseMoneyCents(encodeMonetaryAmount(fundingPool.balance)), startingBalanceCents)));
     }
   }
 }
