@@ -1,3 +1,4 @@
+import { encodeMonetaryAmount } from './categoryAmountCodec.ts';
 import type { DateTime } from 'luxon';
 import { addMoneyCents, subtractMoneyCents, parseMoneyCents, type MoneyCents } from
   '#common/moneyCents';
@@ -39,18 +40,14 @@ export function categoryEffectDeltas(
     .map(id => [id, subtractMoneyCents(after.get(id) ?? zero, before.get(id) ?? zero)]));
 }
 
-// Loan-excluded allocations retain their existing dollar arithmetic and storage behavior.
+// Loan-excluded allocations keep numeric JSON; only their balance effects use cents.
 export function excludedCategoryEffectDeltas(oldSplits: readonly Allocation[],
   newSplits: readonly Allocation[],
-  oldEligible: boolean, newEligible: boolean): Map<number, number> {
-  const before = new Map<number, number>();
-  const after = new Map<number, number>();
-  for (const [splits, eligible, totals] of [[oldSplits, oldEligible, before],
-    [newSplits, newEligible, after]] as const) {
-    if (!eligible) continue;
-    for (const split of splits) totals.set(split.categoryId, (totals.get(split.categoryId) ?? 0) +
-      split.amount);
-  }
-  return new Map([...new Set([...before.keys(), ...after.keys()])]
-    .map((id) => [id, (after.get(id) ?? 0) - (before.get(id) ?? 0)]));
+  oldEligible: boolean, newEligible: boolean): Map<number, MoneyCents> {
+  const centAllocations = (splits: readonly Allocation[]) => splits.map(split => ({
+    categoryId: split.categoryId,
+    amountCents: parseMoneyCents(encodeMonetaryAmount(split.amount)),
+  }));
+  return categoryEffectDeltas(centAllocations(oldSplits), centAllocations(newSplits),
+    oldEligible, newEligible);
 }

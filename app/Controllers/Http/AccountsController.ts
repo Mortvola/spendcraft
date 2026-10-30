@@ -274,14 +274,10 @@ export default class AccountsController {
           .whereHas('group', (query) => query.where('budgetId', budget.id))
           .firstOrFail();
 
-        if (categoryStorageActive) {
-          const balanceCents = addMoneyCents(
-            parseMoneyCents(encodeMonetaryAmount(category.balance)),
-            parseMoneyCents(encodeMonetaryAmount(split.amount)));
-          category.balance = Number(formatMoneyCents(balanceCents));
-        } else {
-          category.balance += split.amount;
-        }
+        const balanceCents = addMoneyCents(
+          parseMoneyCents(encodeMonetaryAmount(category.balance)),
+          parseMoneyCents(encodeMonetaryAmount(split.amount)));
+        category.balance = Number(formatMoneyCents(balanceCents));
 
         await category.save();
 

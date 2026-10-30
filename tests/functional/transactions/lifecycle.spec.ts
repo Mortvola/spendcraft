@@ -234,6 +234,95 @@ test.group('Ordinary transaction lifecycle', (group) => {
       assert.deepEqual(await snapshot(), before)
     })
 
+  test('Loan-excluded numeric allocations keep exact signed CREATE PATCH DELETE balances')
+    .with(['account', 'category'].flatMap(exclusion => [1, -1].map(sign => ({ exclusion, sign }))))
+    .run(async ({ client, assert }, { exclusion, sign }) => {
+      await fixture.account.merge({ balance: sign * 0.1,
+        ...(exclusion === 'account' ? { type: AccountType.Loan } : {}) }).save()
+      await fixture.first.merge({ balance: sign * 0.1,
+        ...(exclusion === 'category' ? { type: CategoryType.Loan } : {}) }).save()
+      const amount = sign > 0 ? '0.20' : '-0.20'
+      const created = await client.post(`/api/v1/account/${fixture.account.id}/transactions`)
+        .json({ date: '2025-03-01', name: 'Exact excluded split', amount, principle: '0.00',
+          categories: [{ categoryId: fixture.first.id, amount: sign > 0 ? '0.10' : '-0.10' },
+            { categoryId: fixture.first.id, amount: sign > 0 ? '0.10' : '-0.10' }] })
+        .loginAs(fixture.user)
+      created.assertStatus(200)
+      const id: number = created.body().transaction.id
+      assert.strictEqual((await Category.findOrFail(fixture.first.id)).balance, sign * 0.3)
+      for (const [version, value] of ['0.40', '0.20'].entries()) {
+        const split = version === 0 ? '0.20' : '0.10'
+        const response = await client.patch(`/api/v1/transaction/${id}`).json({ version,
+          amount: sign < 0 ? `-${value}` : value, categories: [
+            { categoryId: fixture.first.id, amount: sign < 0 ? `-${split}` : split },
+            { categoryId: fixture.first.id, amount: sign < 0 ? `-${split}` : split }] })
+          .loginAs(fixture.user)
+        response.assertStatus(200)
+        assert.strictEqual((await Category.findOrFail(fixture.first.id)).balance,
+          sign * (version === 0 ? 0.5 : 0.3))
+      }
+      const stored = await db.from('transactions').where('id', id).firstOrFail()
+      assert.isTrue(stored.categories.every((split: { amount: unknown }) => typeof split.amount ===
+        'number'))
+      const metadata = await client.patch(`/api/v1/transaction/${id}`)
+        .json({ version: 2, name: 'Excluded metadata update' }).loginAs(fixture.user)
+      metadata.assertStatus(200)
+      assert.deepEqual((await db.from('transactions').where('id', id).firstOrFail()).categories,
+        stored.categories)
+      ;(await client.delete(`/api/v1/transaction/${id}`).loginAs(fixture.user)).assertStatus(200)
+      assert.strictEqual((await Category.findOrFail(fixture.first.id)).balance, sign * 0.1)
+      assert.strictEqual((await Account.findOrFail(fixture.account.id)).balance, sign * 0.1)
+      assert.strictEqual((await Category.findOrFail(fixture.second.id)).balance, 0)
+    })
+
+  test('Loan-excluded empty allocations preserve exact Unassigned fallback effects', async ({
+    client, assert }) => {
+    await fixture.account.merge({ type: AccountType.Loan }).save()
+    const unassigned = await fixture.budget.getUnassignedCategory()
+    await unassigned.merge({ balance: 0.1 }).save()
+    const created = await client.post(`/api/v1/account/${fixture.account.id}/transactions`)
+      .json({ date: '2025-03-01', name: 'Empty excluded', amount: '0.20', principle: '0.00',
+        categories: [] }).loginAs(fixture.user)
+    created.assertStatus(200)
+    const id: number = created.body().transaction.id
+    assert.strictEqual((await Category.findOrFail(unassigned.id)).balance, 0.3)
+    await db.from('transactions').where('id', id).update({ categories: '[]' })
+    const metadata = await client.patch(`/api/v1/transaction/${id}`)
+      .json({ version: 0, name: 'Preserve empty history' }).loginAs(fixture.user)
+    metadata.assertStatus(200)
+    assert.deepEqual((await db.from('transactions').where('id', id).firstOrFail()).categories, [])
+    const patched = await client.patch(`/api/v1/transaction/${id}`)
+      .json({ version: 1, amount: '0.40', categories: [] }).loginAs(fixture.user)
+    patched.assertStatus(200)
+    assert.strictEqual((await Category.findOrFail(unassigned.id)).balance, 0.5)
+    await db.from('transactions').where('id', id).update({ categories: '[]' })
+    ;(await client.delete(`/api/v1/transaction/${id}`).loginAs(fixture.user)).assertStatus(200)
+    assert.strictEqual((await Category.findOrFail(unassigned.id)).balance, 0.1)
+  })
+
+  test('Loan-excluded Category overflow rolls back the entire mutation')
+    .with(['create', 'patch', 'delete']).run(async ({ client, assert }, operation) => {
+      await fixture.account.merge({ type: AccountType.Loan }).save()
+      await fixture.first.merge({ balance: 9999999999.99 }).save()
+      await fixture.accountTransaction.merge({ amount: operation === 'delete' ? -0.01 : 0.2,
+        principle: 0 }).save()
+      await writeHistoricalTransactionFixture(fixture.transaction, { categories: [
+        { categoryId: fixture.first.id, amount: operation === 'delete' ? -0.01 : 0.2 }] })
+      const before = await snapshot()
+      const response = operation === 'create'
+        ? await client.post(`/api/v1/account/${fixture.account.id}/transactions`).json({
+          date: '2025-03-01', name: 'Excluded overflow', amount: '0.01', principle: '0.00',
+          categories: [{ categoryId: fixture.first.id, amount: '0.01' }] }).loginAs(fixture.user)
+        : operation === 'patch'
+          ? await client.patch(`/api/v1/transaction/${fixture.transaction.id}`).json({ version: 0,
+            amount: '0.30', categories: [{ categoryId: fixture.first.id, amount: '0.30' }] })
+            .loginAs(fixture.user)
+          : await client.delete(`/api/v1/transaction/${fixture.transaction.id}`)
+            .loginAs(fixture.user)
+      response.assertStatus(500)
+      assert.deepEqual(await snapshot(), before)
+    })
+
   test('Loan principal CREATE PATCH DELETE preserve exact signed balances and excluded JSON')
     .with([1, -1]).run(async ({ client, assert }, sign) => {
       await fixture.account.merge({ type: AccountType.Loan, balance: sign * 0.1 }).save()

@@ -194,7 +194,7 @@ test.group('Ordinary eligibility and real PATCH effects without DB', () => {
     assert.notInclude(f.events, 'commit')
     assert.isFalse(f.events.some(event => Array.isArray(event) && event[0] === 'account'))
   })
-  test('excluded Loan allocations keep their existing calculation path', async ({ assert }) => {
+  test('excluded Loan allocations preserve replacement and Account effects', async ({ assert }) => {
     const f = await patchFixture({ excluded: true })
     await f.run({ categories: [{ categoryId: 2, amount: 10 }] })
     assert.equal(f.categories.get(1).balance, 0)
@@ -396,3 +396,43 @@ test('special non-Loan PATCH rejects unsafe Account effects before save or commi
     assert.notInclude(f.events, 'commit')
     assert.isFalse(f.events.some(event => Array.isArray(event) && event[0] === 'account'))
   })
+
+
+test('excluded numeric allocations aggregate exact cents without rewriting nominal values', ({
+  assert }) => {
+  const old = [{ categoryId: 1, amount: 0.1 }, { categoryId: 1, amount: 0.2 }]
+  const next = [{ categoryId: 1, amount: 0.2 }, { categoryId: 1, amount: 0.4 }]
+  const before = globalThis.structuredClone({ old, next })
+  assert.strictEqual(excludedCategoryEffectDeltas(old, next, true, true).get(1), 30)
+  assert.strictEqual(excludedCategoryEffectDeltas([{ categoryId: 1, amount: -0.125 }], [],
+    true, false).get(1), 12)
+  assert.deepEqual({ old, next }, before)
+  assert.throws(() => excludedCategoryEffectDeltas([], [
+    { categoryId: 1, amount: 50000000000000 }, { categoryId: 1, amount: 50000000000000 },
+  ], false, true))
+})
+
+test('excluded numeric PATCH allocations retain exact signed balances across duplicate replacement')
+  .with([1, -1]).run(async ({ assert }, sign) => {
+    const f = await patchFixture({ excluded: true, amount: sign * 0.2,
+      splits: [{ categoryId: 1, amount: sign * 0.1 }, { categoryId: 1, amount: sign * 0.1 }] })
+    f.categories.get(1).balance = sign * 0.3
+    await f.run({ amount: sign * 0.4, categories: [{ categoryId: 1, amount: sign * 0.2 },
+      { categoryId: 1, amount: sign * 0.2 }] })
+    assert.strictEqual(f.categories.get(1).balance, sign * 0.5)
+    await f.run({ amount: sign * 0.2, categories: [{ categoryId: 1, amount: sign * 0.1 },
+      { categoryId: 1, amount: sign * 0.1 }] })
+    assert.strictEqual(f.categories.get(1).balance, sign * 0.3)
+    assert.isTrue(f.transaction.categories.every(split => typeof split.amount === 'number'))
+  })
+
+test('excluded metadata-only PATCH preserves historical subcent numeric allocations', async ({
+  assert }) => {
+  const f = await patchFixture({ excluded: true, amount: 0.125 })
+  const original = globalThis.structuredClone(f.transaction.categories)
+  const balance = f.categories.get(1).balance
+  await f.run({ name: 'Metadata only' })
+  assert.deepEqual(f.transaction.categories, original)
+  assert.strictEqual(f.categories.get(1).balance, balance)
+  assert.isFalse(f.events.some(event => Array.isArray(event) && event[0] === 'category'))
+})
