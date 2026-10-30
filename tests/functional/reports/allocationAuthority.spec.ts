@@ -80,6 +80,39 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
       assert.deepEqual(await snapshot(f.budget.id), before)
     })
 
+  test('Funding History preserves fractional totals, null histories and Budget isolation',
+    async ({ client, assert }) => {
+      const own = await createDomain('history-exact'), foreign = await createDomain('history-other')
+      const empty = await own.group.related('categories').create({ name: 'Empty history',
+        type: CategoryType.Regular, balance: 0, fundingCategories: [] })
+      for (const [date, amount] of [['2025-02-01', 0.1], ['2025-02-28', 0.2],
+        ['2025-02-15', -0.2], ['2025-01-31', -0.1]] as const) {
+        const transaction = await own.budget.related('transactions').create({
+          date: DateTime.fromISO(date), type: TransactionType.FUNDING_TRANSACTION,
+          categories: [{ categoryId: own.category.id, amount }], taxes: [], deleted: false })
+        await writeHistoricalTransactionFixture(transaction, { categories: [
+          { categoryId: own.category.id, amount: encodeMonetaryAmount(amount) }] })
+      }
+      await writeHistoricalTransactionFixture(foreign.transaction, {
+        type: TransactionType.FUNDING_TRANSACTION, categories: [
+          { categoryId: own.category.id, amount: '99.00' }] })
+      const before = await snapshot(own.budget.id)
+      const response = await client.get('/api/v1/reports/funding-history').loginAs(own.user)
+      response.assertStatus(200)
+      const row = response.body().find((item: { categoryId: number }) => item.categoryId ===
+        own.category.id)
+      assert.sameDeepMembers(row.history, [{ year: 2025, month: 1, amount: '-0.10' },
+        { year: 2025, month: 2, amount: '0.10' }])
+      assert.strictEqual(row.groupId, own.group.id)
+      assert.strictEqual(row.groupName, own.group.name)
+      assert.strictEqual(row.categoryName, own.category.name)
+      assert.isNull(response.body().find((item: { categoryId: number }) => item.categoryId ===
+        empty.id).history)
+      assert.isFalse(response.body().some((item: { categoryId: number }) => item.categoryId ===
+        foreign.category.id))
+      assert.deepEqual(await snapshot(own.budget.id), before)
+    })
+
   for (const report of ['category', 'funding-history'] as const) {
     test(`${report}: exclusive JSON cases`).with([
       { json: [50], legacy: null, amount: 50, count: 1 },
@@ -324,7 +357,7 @@ Unassigned', async ({ client, assert }) => {
   ]).run(async ({ client, assert }, scenario) => {
     const f = await createDomain(scenario.rule)
     await writeHistoricalTransactionFixture(f.transaction, { type: 2, categories: [{ categoryId: f
-      .category.id, amount: scenario.amount }] })
+      .category.id, amount: encodeMonetaryAmount(scenario.amount) }] })
     const response = await client.get('/api/v1/reports/funding-history').loginAs(f.user)
     response.assertStatus(200)
     assert.equal(response.body().find((r: { categoryId: number }) => r.categoryId === f.category.id)

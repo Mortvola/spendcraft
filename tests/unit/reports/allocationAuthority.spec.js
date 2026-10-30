@@ -179,12 +179,13 @@ test.group('Allocation report authority characterization without DB', () => {
             'jsonb_to_recordset(t.categories)')) throw new Error('Unexpected funding source')
           return Promise.resolve([{ categoryId: 10, history: scenario.json.length
             ? [{ year: 2026, month: 2, amount: scenario.json.reduce((sum, n) => sum + n,
-              0) }] : null }]).then(resolve)
+              0).toFixed(2) }] : null }]).then(resolve)
         } }
       },
     } })
     const rows = await run({ id: 1 })
-    assert.equal(rows[0].history?.[0].amount ?? null, scenario.expected)
+    assert.equal(rows[0].history?.[0].amount ?? null,
+      scenario.expected === null ? null : scenario.expected * 100)
     assert.include(sql, 't.type = 2'); assert.include(sql, 't.application_id = g.application_id')
   })
   test('Category sums multiple Categories and explicit Unassigned without multiplication', async ({
@@ -218,7 +219,7 @@ test('report endpoints encode only monetary values without changing calculation 
   { report: 'income-vs-expenses', method: 'incomeVsExpenses', rows: [['2026-10', 1025, -12, 1013]],
     expected: [['2026-10', '10.25', '-0.12', '10.13']] },
   { report: 'funding-history', method: 'fundingHistory', rows: [{ categoryId: 10, history: [{
-    year: 2026, month: 10, amount: 0.125 }] },
+    year: 2026, month: 10, amount: 13 }] },
     { categoryId: 11, history: null }], expected: [{ categoryId: 10, history: [{ year: 2026,
       month: 10, amount: '0.13' }] },
     { categoryId: 11, history: null }] },
@@ -263,5 +264,35 @@ test('Payee and Category helpers parse exact SQL totals and preserve metadata')
     for (const sum of ['NaN', '0.001', '90071992547409.92', 0.1]) {
       data = [{ ...metadata, sum }]
       await assert.rejects(execute)
+    }
+  })
+
+test('Funding History preserves exact SQL text, history order, nulls and row metadata',
+  async ({ assert }) => {
+    const metadata = { groupId: 1, groupName: 'Living', groupType: 'Regular', categoryId: 10,
+      categoryName: 'Food' }
+    let data = [{ ...metadata, history: [
+      { year: 2026, month: 2, amount: '0.10' }, { year: 2026, month: 1, amount: '-0.20' },
+      { year: 2025, month: 12, amount: '0' },
+      { year: 2025, month: 11, amount: '90071992547409.91' },
+    ] }, { ...metadata, categoryId: 11, history: null }]
+    const query = { select() { return this }, from() { return this }, join() { return this },
+      where() { return this }, andWhere() { return this }, orderBy() { return this },
+      then(resolve, reject) { return Promise.resolve(data).then(resolve, reject) } }
+    const { run } = await sourceMethod('fundingHistory', { db: { query: () => query,
+      raw: value => value } })
+    const before = globalThis.structuredClone(data)
+    const rows = await run({ id: 1 })
+    assert.deepEqual(rows, [{ ...metadata, history: [
+      { year: 2026, month: 2, amount: 10 }, { year: 2026, month: 1, amount: -20 },
+      { year: 2025, month: 12, amount: 0 },
+      { year: 2025, month: 11, amount: Number.MAX_SAFE_INTEGER },
+    ] }, { ...metadata, categoryId: 11, history: null }])
+    assert.deepEqual(data, before)
+    data = []
+    assert.deepEqual(await run({ id: 1 }), [])
+    for (const amount of [0.1, null, 'NaN', '0.001', '90071992547409.92']) {
+      data = [{ ...metadata, history: [{ year: 2026, month: 1, amount }] }]
+      await assert.rejects(() => run({ id: 1 }))
     }
   })

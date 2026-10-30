@@ -19,7 +19,7 @@ type PayeeReportType = (Omit<PayeeReportRow, 'sum'> & { sum: MoneyCents })[];
 type CategoryReportType = (Omit<CategoryReportRow, 'sum'> & { sum: MoneyCents })[];
 type IncomeVsExpensesReportType = [string, MoneyCents, MoneyCents, MoneyCents][];
 type FundingHistoryReportType = (Omit<FundingHistoryReportRow, 'history'> & {
-  history: { year: number, month: number, amount: number }[] | null;
+  history: { year: number, month: number, amount: MoneyCents }[] | null;
 })[];
 
 // PostgreSQL can return whole or one-decimal text for historical JSON totals.
@@ -116,7 +116,7 @@ class ReportController {
         const rows = await ReportController.fundingHistory(budget);
         return rows.map((row) => ({ ...row,
           history: row.history === null ? null : row.history.map((entry) => ({ ...entry,
-            amount: encodeMonetaryAmount(entry.amount) })),
+            amount: formatMoneyCents(entry.amount) })),
         }));
       }
 
@@ -461,7 +461,9 @@ expenses'),
   private static async fundingHistory(
     budget: Budget,
   ): Promise<FundingHistoryReportType> {
-    const query = await db.query()
+    const query: (Omit<FundingHistoryReportRow, 'history'> & {
+      history: { year: number, month: number, amount: string }[] | null;
+    })[] = await db.query()
       .select(
         'g.id as groupId',
         'g.name as groupName',
@@ -475,7 +477,7 @@ expenses'),
               json_build_object(
                 'year', EXTRACT(YEAR FROM t.date),
                 'month', EXTRACT(MONTH FROM t.date),
-                'amount', sum(allocation.amount)) AS monthly_amount
+                'amount', sum(allocation.amount)::text) AS monthly_amount
             from transactions as t
             cross join lateral jsonb_to_recordset(t.categories) as allocation("categoryId" int, \
 amount decimal)
@@ -492,7 +494,10 @@ amount decimal)
       .orderBy('g.name')
       .orderBy('c.name');
 
-    return query;
+    return query.map((row) => ({ ...row,
+      history: row.history === null ? null : row.history.map((entry) => ({ ...entry,
+        amount: reportAmountCents(entry.amount) })),
+    }));
   }
 
   private static async budgetProgress(
