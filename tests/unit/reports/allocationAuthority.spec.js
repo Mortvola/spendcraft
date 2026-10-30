@@ -223,7 +223,7 @@ test('report endpoints encode only monetary values without changing calculation 
     { categoryId: 11, history: null }], expected: [{ categoryId: 10, history: [{ year: 2026,
       month: 10, amount: '0.13' }] },
     { categoryId: 11, history: null }] },
-  { report: 'budget-progress', method: 'budgetProgress', rows: [['2026-10-01', 0.1 + 0.2, [1, 2]]],
+  { report: 'budget-progress', method: 'budgetProgress', rows: [['2026-10-01', 30, [1, 2]]],
     expected: [['2026-10-01', '0.30', [1, 2]]] },
 ]).run(async ({ assert }, scenario) => {
   const before = globalThis.structuredClone(scenario.rows)
@@ -295,4 +295,44 @@ test('Funding History preserves exact SQL text, history order, nulls and row met
       data = [{ ...metadata, history: [{ year: 2026, month: 1, amount }] }]
       await assert.rejects(() => run({ id: 1 }))
     }
+  })
+
+
+test('Budget Progress accumulates exact cents and preserves daily dates and transaction IDs',
+  async ({ assert }) => {
+    let funding = '0.10'
+    let movements = [{ date: '2026-02-01', amount: '0.20', transactions: [1, 2] },
+      { date: '2026-02-02', amount: '-0.40', transactions: [3] },
+      { date: '2026-02-03', amount: '0.10', transactions: [4] }]
+    let queryIndex = 0
+    const query = () => {
+      const fundingQuery = queryIndex++ % 2 === 0
+      return { select() { return this }, from() { return this }, join() { return this },
+        where() { return this }, whereBetween() { return this }, andWhere() { return this },
+        andWhereNotIn() { return this }, groupBy() { return this }, orderBy() { return this },
+        then(resolve, reject) { return Promise.resolve(fundingQuery ? [{ amount: funding }]
+          : movements).then(resolve, reject) } }
+    }
+    const { run } = await sourceMethod('budgetProgress', { db: { query, raw: value => value } })
+    const calculate = () => run({ id: 1, getAccountTransferCategory: async () => ({ id: 99 }) },
+      DateTime.fromISO('2026-02-01'), DateTime.fromISO('2026-02-28'))
+    const before = globalThis.structuredClone(movements)
+    assert.deepEqual(await calculate(), [['2026-02-01', 30, [1, 2]],
+      ['2026-02-02', -10, [3]], ['2026-02-03', 0, [4]]])
+    assert.deepEqual(movements, before)
+    funding = null
+    assert.deepEqual(await calculate(), [['2026-02-01', 20, [1, 2]],
+      ['2026-02-02', -20, [3]], ['2026-02-03', -10, [4]]])
+    movements = []
+    assert.deepEqual(await calculate(), [])
+    for (const amount of ['90071992547409.92', 'NaN', '0.001', 0.1]) {
+      funding = amount
+      await assert.rejects(calculate)
+    }
+    funding = '90071992547409.91'
+    movements = [{ date: '2026-02-01', amount: '0.01', transactions: [1] }]
+    await assert.rejects(calculate)
+    funding = '0.00'
+    movements[0].amount = 'NaN'
+    await assert.rejects(calculate)
   })

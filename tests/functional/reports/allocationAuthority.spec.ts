@@ -45,6 +45,40 @@ async function createDomain(label: string, existingBudget?: Budget) {
 
 
 test.group('Exclusive Category and Funding History JSON authority', () => {
+  test('Budget Progress keeps exact running totals, selection, dates and transaction IDs',
+    async ({ client, assert }) => {
+      const own = await createDomain('progress'), foreign = await createDomain('progress-other')
+      await db.from('categories').whereIn('id', [own.category.id, foreign.category.id])
+        .update({ monthly_expenses: true })
+      const empty = await client.get('/api/v1/reports/budget-progress').qs({ m: '2-2025' })
+        .loginAs(own.user)
+      empty.assertStatus(200)
+      assert.deepEqual(empty.body(), [])
+      const add = async (domain: typeof own, amount: number, type: number, date: string) => {
+        const transaction = await domain.budget.related('transactions').create({
+          date: DateTime.fromISO(date), type, categories: [], taxes: [], deleted: false })
+        await db.table('transaction_categories').insert({ transaction_id: transaction.id,
+          category_id: domain.category.id, amount })
+        return transaction.id
+      }
+      await add(own, 0.1, TransactionType.FUNDING_TRANSACTION, '2025-02-01')
+      const first = await add(own, 0.2, TransactionType.MANUAL_TRANSACTION, '2025-02-02')
+      const second = await add(own, -0.4, TransactionType.MANUAL_TRANSACTION, '2025-02-03')
+      const third = await add(own, 0.1, TransactionType.MANUAL_TRANSACTION, '2025-02-04')
+      await add(own, 99, TransactionType.REBALANCE_TRANSACTION, '2025-02-02')
+      await add(own, 99, TransactionType.STARTING_BALANCE, '2025-02-02')
+      await add(own, 99, TransactionType.MANUAL_TRANSACTION, '2025-03-01')
+      await add(foreign, 99, TransactionType.FUNDING_TRANSACTION, '2025-02-01')
+      await add(foreign, 99, TransactionType.MANUAL_TRANSACTION, '2025-02-02')
+      const before = await snapshot(own.budget.id)
+      const response = await client.get('/api/v1/reports/budget-progress').qs({ m: '2-2025' })
+        .loginAs(own.user)
+      response.assertStatus(200)
+      assert.deepEqual(response.body(), [['2025-02-02', '0.30', [first]],
+        ['2025-02-03', '-0.10', [second]], ['2025-02-04', '0.00', [third]]])
+      assert.deepEqual(await snapshot(own.budget.id), before)
+    })
+
   test('Payee and Category fractional totals preserve exact strings and report metadata')
     .with([1, -1]).run(async ({ client, assert }, sign) => {
       const f = await createDomain('exact')

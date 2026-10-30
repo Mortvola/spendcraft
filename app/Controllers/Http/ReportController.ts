@@ -128,7 +128,7 @@ class ReportController {
         const endDate = startDate.endOf('month');
         const rows = await ReportController.budgetProgress(budget, startDate, endDate);
         return rows.map<BudgetProgressReportResponse[number]>(([date, balance, transactions]) => [
-          date, encodeMonetaryAmount(balance), transactions]);
+          date, formatMoneyCents(balance), transactions]);
       }
 
       default:
@@ -504,7 +504,7 @@ amount decimal)
     budget: Budget,
     startDate: DateTime,
     endDate: DateTime,
-  ): Promise<[string, number, number[]][]> {
+  ): Promise<[string, MoneyCents, number[]][]> {
     const acctTransfer = await budget.getAccountTransferCategory();
 
     const fundingQuery = await db.query()
@@ -520,7 +520,7 @@ amount decimal)
       .andWhere('t.type', '=', TransactionType.FUNDING_TRANSACTION)
       .andWhere('c.monthly_expenses', true);
 
-    const fundingAmount = parseFloat(fundingQuery[0].amount);
+    const fundingCents = reportAmountCents(fundingQuery[0].amount ?? '0.00');
 
     const query = await db.query()
       .select(
@@ -543,10 +543,10 @@ amount decimal)
       .groupBy('t.date')
       .orderBy('t.date', 'asc');
 
-    let runningBalance = fundingAmount;
+    let runningBalance = fundingCents;
 
     return query.map((row) => {
-      runningBalance += parseFloat(row.amount);
+      runningBalance = addMoneyCents(runningBalance, reportAmountCents(row.amount));
 
       return [row.date, runningBalance, row.transactions];
     });
