@@ -45,6 +45,41 @@ async function createDomain(label: string, existingBudget?: Budget) {
 
 
 test.group('Exclusive Category and Funding History JSON authority', () => {
+  test('Payee and Category fractional totals preserve exact strings and report metadata')
+    .with([1, -1]).run(async ({ client, assert }, sign) => {
+      const f = await createDomain('exact')
+      await writeHistoricalTransactionFixture(f.transaction, { categories: [
+        { categoryId: f.category.id, amount: sign > 0 ? '0.10' : '-0.10' }] })
+      await db.from('account_transactions').where('account_id', f.account.id).update({
+        amount: sign * 0.1, name: 'Exact shop', payment_channel: 'online' })
+      for (const amount of [sign * 0.2, -sign * 0.2]) {
+        const transaction = await f.budget.related('transactions').create({
+          date: DateTime.fromISO('2025-02-15'), type: TransactionType.MANUAL_TRANSACTION,
+          categories: [{ categoryId: f.category.id, amount }], taxes: [], deleted: false })
+        await writeHistoricalTransactionFixture(transaction, { categories: [
+          { categoryId: f.category.id, amount: encodeMonetaryAmount(amount) }] })
+        await f.account.related('accountTransactions').create({ transactionId: transaction.id,
+          name: 'Exact shop', paymentChannel: 'online', amount, pending: false, provider: 'NONE' })
+      }
+      const before = await snapshot(f.budget.id)
+      for (const report of ['payee', 'category']) {
+        const filters = report === 'payee' ? { a: f.account.id, pc: 'online' }
+          : { c: f.category.id }
+        const response = await client.get(`/api/v1/reports/${report}`).qs({ ...filters,
+          startDate: '2025-02-01', endDate: '2025-02-28' }).loginAs(f.user)
+        response.assertStatus(200)
+        assert.deepEqual(response.body(), [{ rowNumber: '1', count: 3,
+          sum: sign > 0 ? '0.10' : '-0.10', ...(report === 'payee' ? { name: 'Exact shop',
+            paymentChannel: 'online' } : { groupName: f.group.name, categoryName: f.category.name })
+        }])
+        const empty = await client.get(`/api/v1/reports/${report}`).qs({ ...filters,
+          startDate: '2025-03-01', endDate: '2025-03-31' }).loginAs(f.user)
+        empty.assertStatus(200)
+        assert.deepEqual(empty.body(), [])
+      }
+      assert.deepEqual(await snapshot(f.budget.id), before)
+    })
+
   for (const report of ['category', 'funding-history'] as const) {
     test(`${report}: exclusive JSON cases`).with([
       { json: [50], legacy: null, amount: 50, count: 1 },

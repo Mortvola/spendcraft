@@ -10,8 +10,11 @@ import { legacyIncomeBody } from '../../fixtures/reports/legacyIncomeBody.js'
 async function currentBody() {
   const s = ts.createSourceFile('report.ts', await readFile(
     'app/Controllers/Http/ReportController.ts', 'utf8'), ts.ScriptTarget.Latest, true)
-  return s.statements.find(ts.isClassDeclaration).members.find((n) => ts.isMethodDeclaration(n) && n
-    .name.getText(s) === 'incomeVsExpenses').body.getText(s)
+  const body = s.statements.find(ts.isClassDeclaration).members.find((n) =>
+    ts.isMethodDeclaration(n) && n.name.getText(s) === 'incomeVsExpenses').body.getText(s)
+  const parser = s.statements.find(node => ts.isFunctionDeclaration(node)
+    && node.name.text === 'reportAmountCents').getText(s)
+  return `{ ${parser} ${body.slice(1)}`
 }
 const tx = (id, changes = {}) => ({ id, application_id: 1, type: 5, date: '2025-02-01',
   deleted: false, ...changes })

@@ -16,8 +16,10 @@ async function sourceMethod(name, context = {}) {
   const declaration = source.statements.find(ts.isClassDeclaration).members.find((node) => ts
     .isMethodDeclaration(node) && node.name.getText(source) === name)
   const body = declaration.body.getText(source)
+  const amountParser = source.statements.find(node => ts.isFunctionDeclaration(node)
+    && node.name.text === 'reportAmountCents').getText(source)
   const expression = `(async function(${declaration.parameters.map((p) => p.getText(source)).join(
-    ',')}) ${body})`
+    ',')}) { ${amountParser} ${body.slice(1)})`
   return { body, run: runInNewContext(ts.transpileModule(expression, { compilerOptions: { target: ts
     .ScriptTarget.ES2022 } }).outputText,
     { TransactionType, CategoryType, TrackingType, DateTime, addMoneyCents, parseMoneyCents,
@@ -79,7 +81,7 @@ function adapter({ categories = [{ id: 10, name: 'Food', groupName: 'Living', bu
                 categoryName: category.name, sum: 0, count: 0 }
               item.sum += split.amount; item.count++; result.set(key, item)
             }
-            return [...result.values()]
+            return [...result.values()].map(row => ({ ...row, sum: row.sum.toFixed(2) }))
           }
           if (this.source === 'transactions as t') {
             if (!this.selects.some((sql) => sql.includes(
@@ -118,8 +120,10 @@ test.group('Allocation report authority characterization without DB', () => {
     const { run } = await sourceMethod('category', { db: f.db })
     const result = await run({ id: 1 }, '2026-01-01', '2026-12-31', [10])
     if (scenario.expected === null) assert.deepEqual(result, [])
-    else { assert.equal(result[0].sum, scenario.expected); assert.equal(result[0].count, scenario
-      .count) }
+    else {
+      assert.equal(result[0].sum, scenario.expected * 100)
+      assert.equal(result[0].count, scenario.count)
+    }
     assert.equal(f.queries[0].source, 'transactions as t')
   })
   test('Category report does not establish applied-effect eligibility', async ({ assert }) => {
@@ -127,7 +131,7 @@ test.group('Allocation report authority characterization without DB', () => {
       id: 1, type: 5, date: '2026-02-10', budgetId: 1, categories: [{ categoryId: 10, amount: 50 }],
         deleted: true, pending: true, startDate: '2026-03-01' } })
     const { run } = await sourceMethod('category', { db: f.db })
-    assert.equal((await run({ id: 1 }, '2026-01-01', '2026-12-31', [10]))[0].sum, 50)
+    assert.equal((await run({ id: 1 }, '2026-01-01', '2026-12-31', [10]))[0].sum, 5000)
   })
   test('conceptual missing Category INNER JOIN drops even a legacy allocation', async ({
     assert }) => {
@@ -194,7 +198,7 @@ test.group('Allocation report authority characterization without DB', () => {
       ] } })
     const { run } = await sourceMethod('category', { db: f.db })
     const rows = await run({ id: 1 }, '', '', [10, 11])
-    assert.deepEqual(rows.map(({ sum, count }) => [sum, count]), [[50, 2], [-7, 1]])
+    assert.deepEqual(rows.map(({ sum, count }) => [sum, count]), [[5000, 2], [-700, 1]])
   })
 
 })
@@ -205,10 +209,10 @@ test('report endpoints encode only monetary values without changing calculation 
     rows: [['date', 'Account'], ['2026-10-01', -0.125], ['2026-10-02', 0]],
     expected: [['date', 'Account'], ['2026-10-01', '-0.12'], ['2026-10-02', '0.00']] },
   { report: 'payee', method: 'payee', rows: [{ rowNumber: '1', name: 'Shop', paymentChannel:
-    'online', sum: 0.1 + 0.2, count: 3 }],
+    'online', sum: 30, count: 3 }],
     expected: [{ rowNumber: '1', name: 'Shop', paymentChannel: 'online', sum: '0.30', count: 3 }] },
   { report: 'category', method: 'category', rows: [{ rowNumber: '1', groupName: 'Group',
-    categoryName: 'Food', sum: 1.005, count: 2 }],
+    categoryName: 'Food', sum: 100, count: 2 }],
     expected: [{ rowNumber: '1', groupName: 'Group', categoryName: 'Food', sum: '1.00',
       count: 2 }] },
   { report: 'income-vs-expenses', method: 'incomeVsExpenses', rows: [['2026-10', 1025, -12, 1013]],
@@ -233,3 +237,31 @@ test('report endpoints encode only monetary values without changing calculation 
   assert.deepEqual(JSON.parse(JSON.stringify(rows)), scenario.expected)
   assert.deepEqual(scenario.rows, before)
 })
+
+test('Payee and Category helpers parse exact SQL totals and preserve metadata')
+  .with(['payee', 'category']).run(async ({ assert }, report) => {
+    const metadata = report === 'payee' ? { rowNumber: '1', name: 'Shop',
+      paymentChannel: 'online', count: 3 } : { rowNumber: '1', groupName: 'Group',
+      categoryName: 'Food', count: 3 }
+    let data = ['0.10', '-0.20', '0', '1.2', '90071992547409.91'].map(sum => ({ ...metadata, sum }))
+    const query = { select() { return this }, from() { return this }, join() { return this },
+      joinRaw() { return this }, where() { return this }, andWhere() { return this },
+      andWhereIn() { return this }, groupBy() { return this }, groupByRaw() { return this },
+      orderByRaw() { return this }, orderBy() { return this }, whereIn() { return this },
+      andWhereRaw() { return this },
+      then(resolve, reject) { return Promise.resolve(data).then(resolve, reject) } }
+    const { run } = await sourceMethod(report, { db: { query: () => query, raw: value => value } })
+    const execute = () => report === 'payee' ? run({ id: 1 }, '', '', 'online', [1])
+      : run({ id: 1 }, '', '', [1])
+    const before = globalThis.structuredClone(data)
+    const result = await execute()
+    assert.deepEqual(result.map(row => row.sum), [10, -20, 0, 120, Number.MAX_SAFE_INTEGER])
+    assert.deepEqual(result.map(({ sum: _sum, ...rest }) => rest), data.map(() => metadata))
+    assert.deepEqual(data, before)
+    data = []
+    assert.deepEqual(await execute(), [])
+    for (const sum of ['NaN', '0.001', '90071992547409.92', 0.1]) {
+      data = [{ ...metadata, sum }]
+      await assert.rejects(execute)
+    }
+  })

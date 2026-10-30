@@ -15,12 +15,22 @@ import { type BudgetProgressReportResponse, type NetworthReportResponse, type Pa
 import { DateTime } from 'luxon';
 
 type NetworthReportType = (string | number)[][];
-type PayeeReportType = (Omit<PayeeReportRow, 'sum'> & { sum: number })[];
-type CategoryReportType = (Omit<CategoryReportRow, 'sum'> & { sum: number })[];
+type PayeeReportType = (Omit<PayeeReportRow, 'sum'> & { sum: MoneyCents })[];
+type CategoryReportType = (Omit<CategoryReportRow, 'sum'> & { sum: MoneyCents })[];
 type IncomeVsExpensesReportType = [string, MoneyCents, MoneyCents, MoneyCents][];
 type FundingHistoryReportType = (Omit<FundingHistoryReportRow, 'history'> & {
   history: { year: number, month: number, amount: number }[] | null;
 })[];
+
+// PostgreSQL can return whole or one-decimal text for historical JSON totals.
+// Pad decimal digits without converting exact SQL results to dollar numbers.
+function reportAmountCents(value: unknown): MoneyCents {
+  if (typeof value !== 'string' || !/^-?(?:0|[1-9]\d*)(?:\.\d{1,2})?$/.test(value)) {
+    return parseMoneyCents(value);
+  }
+  const [whole, fraction = ''] = value.split('.');
+  return parseMoneyCents(`${whole}.${fraction.padEnd(2, '0')}`);
+}
 
 function parseReportIds(value: unknown): number[] | undefined {
   if (value === undefined) return undefined;
@@ -77,7 +87,7 @@ class ReportController {
             .firstOrFail();
         }
         const rows = await ReportController.payee(budget, startDate, endDate, pc, accountIds);
-        return rows.map((row) => ({ ...row, sum: encodeMonetaryAmount(row.sum) }));
+        return rows.map((row) => ({ ...row, sum: formatMoneyCents(row.sum) }));
       }
 
       case 'category': {
@@ -93,7 +103,7 @@ class ReportController {
             .firstOrFail();
         }
         const rows = await ReportController.category(budget, startDate, endDate, categoryIds);
-        return rows.map((row) => ({ ...row, sum: encodeMonetaryAmount(row.sum) }));
+        return rows.map((row) => ({ ...row, sum: formatMoneyCents(row.sum) }));
       }
 
       case 'income-vs-expenses': {
@@ -305,7 +315,7 @@ PRECEDING AND CURRENT ROW) AS balance
           db.raw('coalesce(at.merchant_name, at.name) as "name"'),
           db.raw(`${paymentColumn} as "paymentChannel"`),
           db.raw('CAST(count(*) as integer) as count'),
-          db.raw('CAST(sum(amount) as float) as sum'),
+          db.raw('sum(amount) as sum'),
         )
         .from('account_transactions as at')
         .join('transactions', 'transactions.id', 'at.transaction_id')
@@ -344,7 +354,8 @@ PRECEDING AND CURRENT ROW) AS balance
 
       query.whereIn('accounts.id', a);
 
-      return query;
+      const rows: (Omit<PayeeReportRow, 'sum'> & { sum: string })[] = await query;
+      return rows.map((row) => ({ ...row, sum: reportAmountCents(row.sum) }));
     }
 
     return [];
@@ -362,7 +373,7 @@ PRECEDING AND CURRENT ROW) AS balance
           db.raw('row_number() over (order by g.name, c.name) as "rowNumber"'),
           'g.name as groupName',
           'c.name as categoryName',
-          db.raw('CAST(sum(allocation.amount) as float) as sum'),
+          db.raw('sum(allocation.amount) as sum'),
           db.raw('CAST(count(*) as integer) as count'),
         )
         .from('transactions as t')
@@ -389,7 +400,8 @@ amount decimal)')
 
       query.whereIn('c.id', c);
 
-      return query;
+      const rows: (Omit<CategoryReportRow, 'sum'> & { sum: string })[] = await query;
+      return rows.map((row) => ({ ...row, sum: reportAmountCents(row.sum) }));
     }
 
     return [];
@@ -439,18 +451,9 @@ expenses'),
 2, \'0\')')
       .orderBy('month', 'asc');
 
-    // CASE's zero branch can produce whole-number decimal text. Pad digits
-    // before strict cent parsing, without passing SQL totals through dollar numbers.
-    const totalCents = (value: unknown): MoneyCents => {
-      if (typeof value !== 'string' || !/^-?(?:0|[1-9]\d*)(?:\.\d{1,2})?$/.test(value)) {
-        return parseMoneyCents(value);
-      }
-      const [whole, fraction = ''] = value.split('.');
-      return parseMoneyCents(`${whole}.${fraction.padEnd(2, '0')}`);
-    };
     return query.map((row) => {
-      const incomeCents = totalCents(row.income);
-      const expenseCents = totalCents(row.expenses);
+      const incomeCents = reportAmountCents(row.income);
+      const expenseCents = reportAmountCents(row.expenses);
       return [row.month, incomeCents, expenseCents, addMoneyCents(incomeCents, expenseCents)];
     });
   }
