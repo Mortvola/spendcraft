@@ -93,13 +93,15 @@ async function assertBalances(f: Fixture, expected: number, provider: number, ca
 
 test.group('OFX independent accounting and provider balance (prepared)', () => {
   test('Initial Funding creation, adjustment and repetition retain exact cents')
-    .with([1, -1]).run(async ({ assert }, sign) => {
+    .with([false, true].flatMap(loan => [1, -1].map(sign => ({ loan, sign }))))
+    .run(async ({ assert }, { loan, sign }) => {
       const f = await fixture()
       const adjust = (balance: number) => db.transaction(async (trx) => {
         const budget = await Budget.query({ client: trx }).where('id', f.budget.id).forUpdate()
           .firstOrFail()
         const account = await Account.findOrFail(f.account.id, { client: trx })
         const pool = await budget.getFundingPoolCategory({ client: trx })
+        if (loan) account.type = AccountType.Loan
         account.balance = balance
         await account.save()
         await account.updateStartingBalance(budget, pool)
@@ -118,6 +120,25 @@ test.group('OFX independent accounting and provider balance (prepared)', () => {
       assert.strictEqual(opening.amount, sign * 0.3)
       const transaction = await opening.related('transaction').query().firstOrFail()
       assert.strictEqual(transaction.categories[0].amount, sign * 0.3)
+      const raw = await db.from('transactions').where('id', transaction.id).firstOrFail()
+      assert.strictEqual(typeof raw.categories[0].amount, loan ? 'number' : 'string')
+    })
+
+  test('Loan initial-funding failure rolls back Account, opening and Funding Pool changes',
+    async ({ assert }) => {
+      const f = await fixture()
+      const before = await snapshot(f)
+      await assert.rejects(() => db.transaction(async trx => {
+        const budget = await Budget.query({ client: trx }).where('id', f.budget.id).forUpdate()
+          .firstOrFail()
+        const account = await Account.findOrFail(f.account.id, { client: trx })
+        await account.merge({ type: AccountType.Loan, balance: 0.3 }).save()
+        const pool = await budget.getFundingPoolCategory({ client: trx })
+        await account.updateStartingBalance(budget, pool)
+        await pool.save()
+        throw new Error('Injected Loan opening failure')
+      }), 'Injected Loan opening failure')
+      assert.deepEqual(await snapshot(f), before)
     })
 
   test('supplied positive/negative/zero provider ledger is independent of signed posting')

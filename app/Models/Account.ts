@@ -993,11 +993,10 @@ class Account extends BaseModel {
     // The initial funding is the current balance minus the sum
     // PostgreSQL SUM(numeric) retains the column's two-decimal scale. Parse its
     // decimal text directly so the aggregate never passes through dollar arithmetic.
-    const startingBalanceCents = this.type === AccountType.Loan ? null : subtractMoneyCents(
+    const startingBalanceCents = subtractMoneyCents(
       parseMoneyCents(encodeMonetaryAmount(this.balance)),
       parseMoneyCents(sum?.$extras.sum ?? '0.00'));
-    const startingBalance = startingBalanceCents === null
-      ? this.balance - (sum?.$extras.sum ?? 0) : Number(formatMoneyCents(startingBalanceCents));
+    const startingBalance = Number(formatMoneyCents(startingBalanceCents));
 
     // Get the initial funding record and update the amount
     // or add the initial funding if one was not found.
@@ -1015,10 +1014,9 @@ class Account extends BaseModel {
       })
         .save();
 
-      const deltaCents = startingBalanceCents === null ? null : subtractMoneyCents(
+      const deltaCents = subtractMoneyCents(
         startingBalanceCents, parseMoneyCents(encodeMonetaryAmount(acctTrx.amount)));
-      const delta = deltaCents === null ? startingBalance - acctTrx.amount
-        : Number(formatMoneyCents(deltaCents));
+      const delta = Number(formatMoneyCents(deltaCents));
 
       await acctTrx.merge({
         amount: startingBalance,
@@ -1034,9 +1032,8 @@ class Account extends BaseModel {
         logger.info(`Initial funding for account ${this.id} changed by ${delta}`);
       }
 
-      fundingPool.balance = deltaCents === null ? fundingPool.balance + delta
-        : Number(formatMoneyCents(addMoneyCents(
-          parseMoneyCents(encodeMonetaryAmount(fundingPool.balance)), deltaCents)));
+      fundingPool.balance = Number(formatMoneyCents(addMoneyCents(
+        parseMoneyCents(encodeMonetaryAmount(fundingPool.balance)), deltaCents)));
     }
     else {
       const transaction = await requestCategoryStorage(new Transaction(), this.type !== AccountType
@@ -1059,9 +1056,8 @@ class Account extends BaseModel {
       });
 
       await validateStoredCategoryConservation(transaction);
-      fundingPool.balance = startingBalanceCents === null ? fundingPool.balance + startingBalance
-        : Number(formatMoneyCents(addMoneyCents(
-          parseMoneyCents(encodeMonetaryAmount(fundingPool.balance)), startingBalanceCents)));
+      fundingPool.balance = Number(formatMoneyCents(addMoneyCents(
+        parseMoneyCents(encodeMonetaryAmount(fundingPool.balance)), startingBalanceCents)));
     }
   }
 }

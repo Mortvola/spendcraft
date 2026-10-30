@@ -181,7 +181,8 @@ async function openingFixture({ balance = 0.3, total = '0.20', poolBalance = 0.1
     .body})`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, {
     addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents, encodeMonetaryAmount,
     AccountType: { Loan: 'Loan' }, TrackingType: { Balances: 'Balances' },
-    requestCategoryStorage: (model) => model, Transaction: function () { return transaction },
+    requestCategoryStorage(model, supported) { events.push(['storage', supported]); return model },
+    Transaction: function () { return transaction },
     TransactionType: { STARTING_BALANCE: 4 }, logger: { info() { events.push('log') } },
     validateStoredCategoryConservation: async () => { events.push('validate') },
   })
@@ -190,11 +191,14 @@ async function openingFixture({ balance = 0.3, total = '0.20', poolBalance = 0.1
 }
 
 test.group('Initial Funding checked cents without a database', () => {
-  test('creation, adjustment and repeat preserve exact signed cents').with([1, -1])
-    .run(async ({ assert }, sign) => {
+  test('creation, adjustment and repeat preserve exact signed cents')
+    .with([false, true].flatMap(loan => [1, -1].map(sign => ({ loan, sign }))))
+    .run(async ({ assert }, { loan, sign }) => {
       const f = await openingFixture({ balance: sign * 0.3, total: sign === 1 ? '0.20' : '-0.20',
-        poolBalance: sign * 0.1 })
+        poolBalance: sign * 0.1, loan })
       await f.run()
+      assert.deepEqual(f.events.find(event => Array.isArray(event) && event[0] === 'storage'),
+        ['storage', !loan])
       assert.strictEqual(f.link().amount, sign * 0.1)
       assert.strictEqual(f.pool.balance, sign * 0.2)
       f.account.balance = sign * 0.4
@@ -222,11 +226,11 @@ test.group('Initial Funding checked cents without a database', () => {
       assert.strictEqual(f.pool.balance, 0.1)
     })
 
-  test('Loan opening retains excluded arithmetic', async ({ assert }) => {
+  test('Loan opening rejects a subcent SQL aggregate before persistence', async ({ assert }) => {
     const f = await openingFixture({ loan: true, balance: 0.1, total: '0.005', poolBalance: 0 })
-    await f.run()
-    assert.strictEqual(f.link().amount, 0.1 - 0.005)
-    assert.strictEqual(f.pool.balance, 0.1 - 0.005)
+    await assert.rejects(f.run)
+    assert.deepEqual(f.events, [])
+    assert.strictEqual(f.pool.balance, 0)
   })
 })
 
