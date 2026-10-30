@@ -3,8 +3,10 @@ import { prepareTaxReplacement } from '#services/transactionTaxStorage';
 import { excludeTaxStorage } from '#services/taxStorageBinding';
 import { hasCategoryStorage, excludeCategoryStorage } from '#services/categoryStorageBinding';
 import { validateStoredCategoryConservation } from '#services/transactionCategoryStorage';
-import { accountEligible, categoryEligible, categoryEffectDeltas } from
-  '#services/transactionEligibility';
+import {
+  accountEligible, categoryEligible, categoryEffectDeltas, excludedCategoryEffectDeltas,
+} from '#services/transactionEligibility';
+import { addMoneyCents, parseMoneyCents, formatMoneyCents } from '#common/moneyCents';
 import { HttpContext } from '@adonisjs/core/http';
 import { Exception } from '@adonisjs/core/exceptions';
 import db from '@adonisjs/lucid/services/db';
@@ -238,16 +240,37 @@ export default class TransactionsController {
         const nominalNew = requestData.categories ?? transaction.categories;
         const newSplits = nominalNew.length > 0 ? nominalNew
           : [{ categoryId: unassignedCat.id, amount: requestData.amount ?? acctTrans.amount }];
-        const deltas = categoryEffectDeltas(oldSplits, newSplits, oldCategoryEligible,
-          newCategoryEligible);
-        for (const [categoryId, delta] of deltas) {
-          if (delta === 0) continue;
-          const category = await budgetCategories(budget.id, { client: trx }).where('id',
-            categoryId).firstOrFail();
-          category.balance += delta;
-          await category.save();
-          categoriesResult.push({ id: category.id, balance: encodeMonetaryAmount(category
-            .balance) });
+        if (hasCategoryStorage(transaction)) {
+          // Models still expose dollars outside this slice. Convert at the calculation boundary.
+          const centAllocations = (splits: typeof oldSplits) => splits.map(split => ({
+            categoryId: split.categoryId,
+            amountCents: parseMoneyCents(encodeMonetaryAmount(split.amount)),
+          }));
+          const deltas = categoryEffectDeltas(centAllocations(oldSplits),
+            centAllocations(newSplits), oldCategoryEligible, newCategoryEligible);
+          for (const [categoryId, delta] of deltas) {
+            if (delta === 0) continue;
+            const category = await budgetCategories(budget.id, { client: trx }).where('id',
+              categoryId).firstOrFail();
+            const balanceCents = addMoneyCents(
+              parseMoneyCents(encodeMonetaryAmount(category.balance)), delta);
+            const balance = formatMoneyCents(balanceCents);
+            category.balance = Number(balance);
+            await category.save();
+            categoriesResult.push({ id: category.id, balance });
+          }
+        } else {
+          const deltas = excludedCategoryEffectDeltas(oldSplits, newSplits, oldCategoryEligible,
+            newCategoryEligible);
+          for (const [categoryId, delta] of deltas) {
+            if (delta === 0) continue;
+            const category = await budgetCategories(budget.id, { client: trx }).where('id',
+              categoryId).firstOrFail();
+            category.balance += delta;
+            await category.save();
+            categoriesResult.push({ id: category.id, balance: encodeMonetaryAmount(category
+              .balance) });
+          }
         }
       }
 

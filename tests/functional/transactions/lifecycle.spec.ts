@@ -64,6 +64,61 @@ test.group('Ordinary transaction lifecycle', (group) => {
     ])
   }
 
+  test('PATCH equivalent decimal partitions skip Category and Account writes', async ({ client,
+    assert }) => {
+    const id = fixture.first.id
+    await db.transaction(async trx => {
+      await Budget.query({ client: trx }).where('id', fixture.budget.id).forUpdate().firstOrFail()
+      const transaction = await Transaction.query({ client: trx }).where('id', fixture.transaction
+        .id).firstOrFail()
+      await transaction.merge({ categories: [{ categoryId: id, amount: 0.1 },
+        { categoryId: id, amount: 0.2 }] }).save()
+      await fixture.accountTransaction.useTransaction(trx).merge({ amount: 0.3 }).save()
+      await fixture.account.useTransaction(trx).merge({ balance: 100.3 }).save()
+      await fixture.first.useTransaction(trx).merge({ balance: 0.3 }).save()
+    })
+    const categoryBefore = await db.from('categories').where('id', id).firstOrFail()
+    const accountBefore = await db.from('accounts').where('id', fixture.account.id).firstOrFail()
+    const response = await client.patch(`/api/v1/transaction/${fixture.transaction.id}`)
+      .json({ version: 0, categories: [{ categoryId: id, amount: '0.30' }] })
+      .accept('json').loginAs(fixture.user)
+    response.assertStatus(200)
+    assert.deepEqual(response.body().data.categories, [])
+    assert.deepEqual(await db.from('categories').where('id', id).firstOrFail(), categoryBefore)
+    assert.deepEqual(await db.from('accounts').where('id', fixture.account.id).firstOrFail(),
+      accountBefore)
+    assert.deepEqual((await Transaction.findOrFail(fixture.transaction.id)).categories,
+      [{ categoryId: id, amount: 0.3 }])
+  })
+
+  test('PATCH moves exact cents while preserving duplicate nominal allocations', async ({ client,
+    assert }) => {
+    await db.transaction(async trx => {
+      await Budget.query({ client: trx }).where('id', fixture.budget.id).forUpdate().firstOrFail()
+      const transaction = await Transaction.query({ client: trx }).where('id', fixture.transaction
+        .id).firstOrFail()
+      await transaction.merge({ categories: [
+        { categoryId: fixture.first.id, amount: 0.1 },
+        { categoryId: fixture.second.id, amount: 0.2 },
+      ] }).save()
+      await fixture.accountTransaction.useTransaction(trx).merge({ amount: 0.3 }).save()
+      await fixture.first.useTransaction(trx).merge({ balance: 0.1 }).save()
+      await fixture.second.useTransaction(trx).merge({ balance: 0.2 }).save()
+    })
+    const accountBefore = await db.from('accounts').where('id', fixture.account.id).firstOrFail()
+    const categories = [{ categoryId: fixture.first.id, amount: '0.10' },
+      { categoryId: fixture.first.id, amount: '0.20' }]
+    const response = await client.patch(`/api/v1/transaction/${fixture.transaction.id}`)
+      .json({ version: 0, categories }).accept('json').loginAs(fixture.user)
+    response.assertStatus(200)
+    assert.strictEqual((await Category.findOrFail(fixture.first.id)).balance, 0.3)
+    assert.strictEqual((await Category.findOrFail(fixture.second.id)).balance, 0)
+    const raw = await db.from('transactions').where('id', fixture.transaction.id).firstOrFail()
+    assert.deepEqual(raw.categories, categories)
+    assert.deepEqual(await db.from('accounts').where('id', fixture.account.id).firstOrFail(),
+      accountBefore)
+  })
+
   test('Loan CREATE and PATCH decode canonical principal and preserve numeric models', async ({
     client, assert }) => {
     await fixture.account.merge({ type: AccountType.Loan }).save()

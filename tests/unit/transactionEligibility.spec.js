@@ -1,11 +1,14 @@
-import { encodeMonetaryAmount } from '../../app/services/categoryAmountCodec.ts'
+import { encodeMonetaryAmount, canonicalCategoryAllocations } from
+  '../../app/services/categoryAmountCodec.ts'
+import { addMoneyCents, parseMoneyCents, formatMoneyCents } from '../../common/moneyCents.ts'
 import { test } from '@japa/runner'
 import { DateTime } from 'luxon'
 import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
-import { accountEligible, categoryEligible, categoryEffectDeltas } from
-  '../../app/services/transactionEligibility.ts'
+import {
+  accountEligible, categoryEligible, categoryEffectDeltas, excludedCategoryEffectDeltas,
+} from '../../app/services/transactionEligibility.ts'
 import { validateTransactionSplits } from '../../app/validation/transactionSplits.ts'
 
 const boundary = DateTime.fromISO('2025-02-01')
@@ -26,7 +29,9 @@ async function method(file, name) {
 }
 
 // Run the actual controller with inert transaction-bound persistence adapters.
-async function patchFixture({ date = dates[1], pending = false, amount = 10, splits } = {}) {
+async function patchFixture({ date = dates[1], pending = false, amount = 10, splits,
+  excluded = false } = {}) {
+  let activeStorage = !excluded
   const events = []
   const trx = { async commit() { events.push('commit') }, async rollback() { events.push(
     'rollback') } }
@@ -52,6 +57,9 @@ async function patchFixture({ date = dates[1], pending = false, amount = 10, spl
     } }
   if (eligible) for (const split of transaction.categories) categories.get(split.categoryId)
     .balance += split.amount
+  for (const category of categories.values()) {
+    category.balance = Number(encodeMonetaryAmount(category.balance))
+  }
   function query(row) {
     return { where() { return this }, andWhere() { return this }, whereHas() { return this },
       forUpdate() { events.push('gate'); return this }, async firstOrFail() { return row } }
@@ -63,9 +71,12 @@ async function patchFixture({ date = dates[1], pending = false, amount = 10, spl
   const user = { username: 'Test', useTransaction() {
     /* The query adapters independently assert the owning transaction. */ }, related() { return {
     query: () => query(budget) } } }
-  const globals = { encodeMonetaryAmount, hasCategoryStorage: () => false, excludeCategoryStorage: (
-    ) => undefined, CategoryType: { Loan: 'Loan' }, validateStoredCategoryConservation: async () =>
-    undefined, accountEligible, categoryEligible, categoryEffectDeltas,
+  const globals = { encodeMonetaryAmount, canonicalCategoryAllocations,
+    addMoneyCents, parseMoneyCents, formatMoneyCents,
+    hasCategoryStorage: () => activeStorage,
+    excludeCategoryStorage: () => { activeStorage = false },
+    CategoryType: { Loan: 'Loan' }, validateStoredCategoryConservation: async () => undefined,
+    accountEligible, categoryEligible, categoryEffectDeltas, excludedCategoryEffectDeltas,
     AccountType: { Loan: 'Loan' }, TrackingType: { Transactions: 'Transactions', Balances:
       'Balances' },
     TransactionType: { MANUAL_TRANSACTION: 5, REGULAR_TRANSACTION: 0 },
@@ -98,9 +109,69 @@ test.group('Ordinary eligibility and real PATCH effects without DB', () => {
   }
   test('duplicate allocations aggregate; identical decimal allocations have zero replay delta', ({
     assert }) => {
-    const splits = [{ categoryId: 1, amount: 0.1 }, { categoryId: 1, amount: 0.2 }]
+    const splits = [{ categoryId: 1, amountCents: parseMoneyCents('0.10') },
+      { categoryId: 1, amountCents: parseMoneyCents('0.20') }]
     assert.equal(categoryEffectDeltas(splits, splits, true, true).get(1), 0)
-    assert.equal(categoryEffectDeltas(splits, [], true, false).get(1), -(0.1 + 0.2))
+    assert.equal(categoryEffectDeltas(splits, [], true, false).get(1), -30)
+  })
+  test('different partitions of the same cents produce exact zero deltas').with([1, -1])
+    .run(({ assert }, sign) => {
+      const before = [{ categoryId: 1,
+        amountCents: parseMoneyCents(sign === 1 ? '0.10' : '-0.10') },
+        { categoryId: 1, amountCents: parseMoneyCents(sign === 1 ? '0.20' : '-0.20') }]
+      const after = [{ categoryId: 1, amountCents: parseMoneyCents(sign === 1 ? '0.30' : '-0.30') }]
+      const original = globalThis.structuredClone(before)
+      assert.deepEqual([...categoryEffectDeltas(before, after, true, true)], [[1, 0]])
+      assert.deepEqual(before, original)
+    })
+  test('cent deltas preserve category order and independent old/new eligibility', ({ assert }) => {
+    const before = [{ categoryId: 2, amountCents: parseMoneyCents('0.20') },
+      { categoryId: 1, amountCents: parseMoneyCents('-0.10') }]
+    const after = [{ categoryId: 3, amountCents: parseMoneyCents('0.10') },
+      { categoryId: 2, amountCents: parseMoneyCents('0.10') }]
+    assert.deepEqual([...categoryEffectDeltas(before, after, true, true)],
+      [[2, -10], [1, 10], [3, 10]])
+    assert.deepEqual([...categoryEffectDeltas(before, after, false, true)], [[3, 10], [2, 10]])
+    assert.deepEqual([...categoryEffectDeltas(before, after, true, false)], [[2, -20], [1, 10]])
+    assert.deepEqual([...categoryEffectDeltas(before, after, false, false)], [])
+  })
+  test('cent aggregation rejects invalid inputs and unsafe sums or differences', ({ assert }) => {
+    for (const amountCents of [0.1, NaN, Infinity, '0.10', Number.MAX_SAFE_INTEGER + 1]) {
+      assert.throws(() => categoryEffectDeltas([], [{ categoryId: 1, amountCents }], false, true))
+    }
+    assert.throws(() => categoryEffectDeltas([], [
+      { categoryId: 1, amountCents: Number.MAX_SAFE_INTEGER }, { categoryId: 1, amountCents: 1 },
+    ], false, true), 'Unsafe monetary cents')
+    assert.throws(() => categoryEffectDeltas([
+      { categoryId: 1, amountCents: -Number.MAX_SAFE_INTEGER },
+    ], [{ categoryId: 1, amountCents: Number.MAX_SAFE_INTEGER }], true, true),
+    'Unsafe monetary cents')
+  })
+  test('PATCH repartitioning skips Category writes when exact cents do not change', async ({
+    assert }) => {
+    const f = await patchFixture({ amount: 0.3,
+      splits: [{ categoryId: 1, amount: 0.1 }, { categoryId: 1, amount: 0.2 }] })
+    await f.run({ categories: [{ categoryId: 1, amount: 0.3 }] })
+    assert.strictEqual(f.categories.get(1).balance, 0.3)
+    assert.isFalse(f.events.some(event => Array.isArray(event) && event[0] === 'category'))
+    assert.isFalse(f.events.some(event => Array.isArray(event) && event[0] === 'account'))
+    assert.deepEqual(f.transaction.categories, [{ categoryId: 1, amount: 0.3 }])
+    assert.equal(f.events.at(-1), 'commit')
+  })
+  test('PATCH applies fractional positive and negative deltas in cents').with([1, -1])
+    .run(async ({ assert }, sign) => {
+      const f = await patchFixture({ amount: sign * 0.1 })
+      await f.run({ amount: sign * 0.3, categories: [{ categoryId: 1, amount: sign * 0.3 }] })
+      assert.strictEqual(f.categories.get(1).balance, sign * 0.3)
+      assert.deepEqual(f.events.filter(event => Array.isArray(event) && event[0] === 'category'),
+        [['category', 1, sign * 0.3]])
+    })
+  test('excluded Loan allocations keep their existing calculation path', async ({ assert }) => {
+    const f = await patchFixture({ excluded: true })
+    await f.run({ categories: [{ categoryId: 2, amount: 10 }] })
+    assert.equal(f.categories.get(1).balance, 0)
+    assert.equal(f.categories.get(2).balance, 10)
+    assert.equal(f.account.balance, 110)
   })
   for (const pending of [false, true]) for (const amount of [-10, 0, 10]) {
     test(`actual PATCH roundtrip dates pending=${pending} amount=${amount}`, async ({ assert }) => {

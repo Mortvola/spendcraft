@@ -19,8 +19,10 @@ import { bindResolvedCategoryStorage, prepareCategoryStorage, stageCategoryStora
     '../../app/services/categoryStorageBinding.ts'
 import { validateTransactionSplits } from '../../app/validation/transactionSplits.ts'
 import { updateTransaction } from '../../app/validation/Validators/transaction.ts'
-import { accountEligible, categoryEligible, categoryEffectDeltas } from
-  '../../app/services/transactionEligibility.ts'
+import {
+  accountEligible, categoryEligible, categoryEffectDeltas, excludedCategoryEffectDeltas,
+} from '../../app/services/transactionEligibility.ts'
+import { addMoneyCents, parseMoneyCents, formatMoneyCents } from '../../common/moneyCents.ts'
 import { AccountType, CategoryType, TrackingType, TransactionType } from
   '../../common/ResponseTypes.ts'
 
@@ -261,7 +263,9 @@ async function patchFixture(input, { rawInput = input, invalidOwner = false, lat
     validateStoredCategoryConservation: async () => { throw new Error(
       'Invented tax conservation') },
     AccountType, CategoryType, TrackingType, TransactionType, Exception, accountEligible,
-      categoryEligible, categoryEffectDeltas, validateTransactionSplits,
+      categoryEligible, categoryEffectDeltas, excludedCategoryEffectDeltas,
+    validateTransactionSplits,
+    addMoneyCents, parseMoneyCents, formatMoneyCents,
     db: { transaction: async () => owner }, updateTransaction, transactionFields: {},
     getChanges: (_old, _new, previous) => previous,
     Transaction: { query({ client }) { if (client !== owner) throw new Error('Unbound Transaction');
