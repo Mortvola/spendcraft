@@ -1,3 +1,4 @@
+import { parseMoneyCents, formatMoneyCents } from '#common/moneyCents'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
@@ -181,7 +182,8 @@ test.group('Account start-date characterization', () => {
     await f.account.merge({ tracking: TrackingType.Balances }).save()
     const statement = await f.account.related('statements').create({
       startDate: DateTime.fromISO('2025-01-01'), endDate: DateTime.fromISO('2025-01-31'),
-        startingBalance: 0, endingBalance: 100, data: null,
+        startingBalanceCents: parseMoneyCents('0.00'), endingBalanceCents: parseMoneyCents(
+          '100.00'), data: null,
     })
     const categories = await db.from('categories').select('categories.*').join('groups',
       'groups.id', 'categories.group_id')
@@ -194,7 +196,8 @@ test.group('Account start-date characterization', () => {
       assert.equal((await Account.findOrFail(f.account.id)).startDate.toISODate(), startDate)
       assert.lengthOf(await Transaction.query().where('budgetId', f.budget.id), 0)
       assert.lengthOf(await AccountTransaction.query().where('accountId', f.account.id), 0)
-      assert.equal((await Statement.findOrFail(statement.id)).endingBalance, 100)
+      assert.equal(Number(formatMoneyCents((await Statement.findOrFail(
+        statement.id)).endingBalanceCents)), 100)
       assert.deepEqual(await db.from('categories').select('categories.*').join('groups',
         'groups.id', 'categories.group_id')
         .where('groups.application_id', f.budget.id).orderBy('categories.id'), categories)

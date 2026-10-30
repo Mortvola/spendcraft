@@ -1,3 +1,4 @@
+import { formatMoneyCents } from '#common/moneyCents'
 import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
@@ -63,8 +64,8 @@ test.group('Opening snapshot Statements', (group) => {
       assert.lengthOf(statements, 1)
       assert.equal(statements[0].startDate.toISODate(), startDate)
       assert.equal(statements[0].endDate.toISODate(), startDate)
-      assert.strictEqual(statements[0].startingBalance, expected)
-      assert.strictEqual(statements[0].endingBalance, expected)
+      assert.strictEqual(Number(formatMoneyCents(statements[0].startingBalanceCents)), expected)
+      assert.strictEqual(Number(formatMoneyCents(statements[0].endingBalanceCents)), expected)
       assert.strictEqual(created.balance, expected)
       assert.lengthOf(await BalanceHistory.query().where('accountId', id), 0)
       assert.lengthOf(await created.related('accountTransactions').query(), 0)

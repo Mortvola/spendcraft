@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '#common/moneyCents'
 import { transactionRequest } from '../../helpers/transactionRequest.js'
 import {
   writeCanonicalTransactionFixture, writeHistoricalTransactionFixture,
@@ -46,7 +47,7 @@ async function createDomain(label: string) {
     })
     const statement = await account.related('statements').create({
       startDate: DateTime.fromISO('2025-02-01'), endDate: DateTime.fromISO('2025-02-28'),
-      startingBalance: 90, endingBalance: 100,
+      startingBalanceCents: parseMoneyCents('90.00'), endingBalanceCents: parseMoneyCents('100.00'),
     })
     return { budget, user, institution, account, category, transaction, accountTransaction,
       statement }
@@ -176,7 +177,8 @@ test.group('Transaction budget isolation', (group) => {
     })
     const otherStatement = await otherAccount.related('statements').create({
       startDate: DateTime.fromISO('2025-02-01'), endDate: DateTime.fromISO('2025-02-28'),
-      startingBalance: 190, endingBalance: 200,
+      startingBalanceCents: parseMoneyCents('190.00'), endingBalanceCents: parseMoneyCents(
+        '200.00'),
     })
     await fixture.own.accountTransaction.merge({ statementId: fixture.own.statement.id }).save()
     const before = await state([otherAccount.id])

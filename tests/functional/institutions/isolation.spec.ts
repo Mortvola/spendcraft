@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '#common/moneyCents'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
@@ -50,7 +51,7 @@ async function createDomain(label: string) {
     })
     const statement = await account.related('statements').create({
       startDate: DateTime.fromISO('2025-02-01'), endDate: DateTime.fromISO('2025-02-28'),
-      startingBalance: 90, endingBalance: 100,
+      startingBalanceCents: parseMoneyCents('90.00'), endingBalanceCents: parseMoneyCents('100.00'),
     })
     await account.related('balanceHistory').create({ date: DateTime.fromISO('2025-01-01'),
       balance: 100 })

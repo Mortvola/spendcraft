@@ -1,5 +1,6 @@
 import { transactionRequest } from '../../helpers/transactionRequest.js'
 import { statementRequest } from '../../helpers/statementRequest.js'
+import { addMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import { test } from '@japa/runner'
 import type { ApiClient } from '@japa/api-client'
 import db from '@adonisjs/lucid/services/db'
@@ -59,6 +60,39 @@ test.group('Statement transaction eligibility', (group) => {
     response.assertStatus(200)
     return response.body().find((row: { id: number }) => row.id === id)
   }
+
+  test('snapshot persistence and CREATE/PATCH/list totals retain exact cents', async ({ client,
+    assert }) => {
+    for (const amount of [0.1, 0.2, -0.1]) await createTransaction(client, amount)
+    const before = await fixture.account.refresh()
+    const balance = before.balance
+    const created = await client.post(`/api/v1/account/${fixture.account.id}/statements`)
+      .json({ ...period, startingBalance: '0.10', endingBalance: '0.30' })
+      .accept('json').loginAs(fixture.user)
+    created.assertStatus(200)
+    const statement = await Statement.findOrFail(created.body().id)
+    assert.strictEqual(statement.startingBalanceCents, parseMoneyCents('0.10'))
+    assert.strictEqual(statement.endingBalanceCents, parseMoneyCents('0.30'))
+    const stored = await db.from('statements').where('id', statement.id).firstOrFail()
+    assert.strictEqual(stored.starting_balance, '0.10')
+    assert.strictEqual(stored.ending_balance, '0.30')
+    for (const response of [created.body(), await totals(client, statement.id)]) {
+      assert.strictEqual(response.startingBalance, '0.10')
+      assert.strictEqual(response.endingBalance, '0.30')
+      assert.strictEqual(response.credits, '0.30')
+      assert.strictEqual(response.debits, '-0.10')
+      assert.strictEqual(addMoneyCents(statement.startingBalanceCents,
+        parseMoneyCents(response.credits), parseMoneyCents(response.debits)),
+      statement.endingBalanceCents)
+    }
+    const patched = await client.patch(`/api/v1/statements/${statement.id}`)
+      .json({ endingBalance: '0.00' }).accept('json').loginAs(fixture.user)
+    patched.assertStatus(200)
+    assert.strictEqual(patched.body().endingBalance, '0.00')
+    assert.strictEqual(patched.body().credits, '0.30')
+    assert.strictEqual(patched.body().debits, '-0.10')
+    assert.strictEqual((await fixture.account.refresh()).balance, balance)
+  })
 
   async function register(client: ApiClient, pending = false): Promise<number[]> {
     const response = await client.get(`/api/v1/account/${fixture.account.id}/transactions`)

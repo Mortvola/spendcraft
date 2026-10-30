@@ -6,7 +6,7 @@ import {
 import AccountTransaction from './AccountTransaction.js'
 import type { BelongsTo, HasMany } from "@adonisjs/lucid/types/relations";
 import Account from './Account.ts';
-import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { formatMoneyCents, parseMoneyCents, type MoneyCents } from '#common/moneyCents'
 import {
   serializeStatementIncomeResponse, type StatementIncomeData,
 } from '#services/statementIncomeCodec'
@@ -39,16 +39,16 @@ export default class Statement extends BaseModel {
   public endDate: DateTime
 
   @column({
-    consume: (value: string) => parseFloat(value),
-    serialize: (value: number) => encodeMonetaryAmount(value),
+    columnName: 'starting_balance', serializeAs: 'startingBalance',
+    consume: parseMoneyCents, prepare: formatMoneyCents, serialize: formatMoneyCents,
   })
-  public startingBalance: number
+  public startingBalanceCents: MoneyCents
 
   @column({
-    consume: (value: string) => parseFloat(value),
-    serialize: (value: number) => encodeMonetaryAmount(value),
+    columnName: 'ending_balance', serializeAs: 'endingBalance',
+    consume: parseMoneyCents, prepare: formatMoneyCents, serialize: formatMoneyCents,
   })
-  public endingBalance: number
+  public endingBalanceCents: MoneyCents
 
   @column({
     consume: (value, _key, row) => consumeStatementIncome(value, row),
@@ -65,8 +65,8 @@ export default class Statement extends BaseModel {
 
   public serializeExtras() {
     return {
-      debits: encodeMonetaryAmount(this.$extras.debits ?? 0),
-      credits: encodeMonetaryAmount(this.$extras.credits ?? 0),
+      debits: formatMoneyCents(parseMoneyCents(this.$extras.debits ?? '0.00')),
+      credits: formatMoneyCents(parseMoneyCents(this.$extras.credits ?? '0.00')),
     }
   }
 }

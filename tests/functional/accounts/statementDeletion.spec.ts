@@ -1,3 +1,5 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { parseMoneyCents, formatMoneyCents } from '#common/moneyCents'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
@@ -44,7 +46,8 @@ test.group('Statement DELETE persisted-state characterization', () => {
       await f.account.merge({ tracking: scenario.tracking, balance: 300 }).save()
       const target = await f.account.related('statements').create({
         startDate: DateTime.fromISO('2025-02-01'), endDate: DateTime.fromISO('2025-02-28'),
-        startingBalance: 100, endingBalance: scenario.position === 'older' ? 200 : 300,
+        startingBalanceCents: parseMoneyCents('100.00'), endingBalanceCents: parseMoneyCents(
+          encodeMonetaryAmount(scenario.position === 'older' ? 200 : 300)),
           data: investmentData,
       })
       const neighbor = scenario.position === 'only' ? null : await f.account.related('statements')
@@ -53,8 +56,9 @@ test.group('Statement DELETE persisted-state characterization', () => {
           '2025-03-01'),
         endDate: DateTime.fromISO(scenario.position.startsWith('latest') ? '2025-01-31' :
           '2025-03-31'),
-        startingBalance: 100, endingBalance: scenario.position === 'latest-zero' ? 0 : scenario
-          .position === 'latest' ? 150 : 300, data: investmentData,
+        startingBalanceCents: parseMoneyCents('100.00'), endingBalanceCents: parseMoneyCents(
+          encodeMonetaryAmount(scenario.position === 'latest-zero' ? 0 : scenario
+          .position === 'latest' ? 150 : 300)), data: investmentData,
       })
       for (let index = 0; index < scenario.count + 2; index++) {
         const transaction = await f.budget.related('transactions').create({
@@ -93,7 +97,7 @@ test.group('Statement DELETE persisted-state characterization', () => {
         return { ...row, statement_id: null, updated_at: after[1][index].updated_at }
       }))
       assert.equal(Number(after[0][0].balance), scenario.tracking === TrackingType.Balances
-        ? neighbor?.endingBalance ?? 0 : 300)
+        ? neighbor ? Number(formatMoneyCents(neighbor.endingBalanceCents)) : 0 : 300)
       assert.deepEqual(after[4], before[4])
       assert.deepEqual(after[3], before[3].filter((row) => row.id !== target.id))
       assert.lengthOf(after[1].filter((row) => row.statement_id === target.id), 0)
@@ -122,7 +126,8 @@ test.group('Statement DELETE persisted-state characterization', () => {
     await f.account.merge({ tracking: TrackingType.Balances, balance: 300 }).save()
     const statement = await f.account.related('statements').create({
       startDate: DateTime.fromISO('2025-02-01'), endDate: DateTime.fromISO('2025-02-28'),
-      startingBalance: 100, endingBalance: 300, data: investmentData,
+      startingBalanceCents: parseMoneyCents('100.00'), endingBalanceCents: parseMoneyCents(
+        '300.00'), data: investmentData,
     })
     const transaction = await f.budget.related('transactions').create({
       date: DateTime.fromISO('2025-02-10'), type: TransactionType.MANUAL_TRANSACTION,

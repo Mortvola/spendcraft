@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '#common/moneyCents'
 import { statementRequest } from '../../helpers/statementRequest.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
@@ -38,11 +39,13 @@ test.group('Statement and balance-history authority characterization', (group) =
     f = await createFixture()
     await f.account.merge({ tracking: TrackingType.Balances }).save()
     older = await f.account.related('statements').create({ startDate: DateTime.fromISO(
-      '2025-01-01'), endDate: DateTime.fromISO('2025-01-31'), startingBalance: 0, endingBalance: 50,
+      '2025-01-01'), endDate: DateTime.fromISO('2025-01-31'),
+        startingBalanceCents: parseMoneyCents('0.00'), endingBalanceCents: parseMoneyCents('50.00'),
       data: investmentData })
     latest = await f.account.related('statements').create({ startDate: DateTime.fromISO(
-      '2025-02-01'), endDate: DateTime.fromISO('2025-02-28'), startingBalance: 50,
-      endingBalance: 100, data: investmentData })
+      '2025-02-01'), endDate: DateTime.fromISO('2025-02-28'),
+        startingBalanceCents: parseMoneyCents('50.00'),
+      endingBalanceCents: parseMoneyCents('100.00'), data: investmentData })
   })
 
   async function snapshot() {

@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '#common/moneyCents'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
@@ -110,9 +111,11 @@ test.group('Net-worth opening snapshots', (group) => {
       const later = f.today.minus({ days: 1 })
       if (tracking === TrackingType.Balances) {
         await other.related('statements').create({ startDate: date, endDate: date,
-          startingBalance: 40, endingBalance: 40, data: null })
+          startingBalanceCents: parseMoneyCents('40.00'), endingBalanceCents: parseMoneyCents(
+            '40.00'), data: null })
         await other.related('statements').create({ startDate: later, endDate: later,
-          startingBalance: 40, endingBalance: 50, data: null })
+          startingBalanceCents: parseMoneyCents('40.00'), endingBalanceCents: parseMoneyCents(
+            '50.00'), data: null })
       } else {
         await movement({ ...f, account: other }, date, 10)
         await movement({ ...f, account: other }, later, 10)

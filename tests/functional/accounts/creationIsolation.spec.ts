@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '#common/moneyCents'
 import { transactionRequest } from '../../helpers/transactionRequest.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
@@ -42,7 +43,7 @@ async function createDomain(label: string) {
     })
     const statement = await account.related('statements').create({
       startDate: DateTime.fromISO('2025-02-01'), endDate: DateTime.fromISO('2025-02-28'),
-      startingBalance: 90, endingBalance: 100,
+      startingBalanceCents: parseMoneyCents('90.00'), endingBalanceCents: parseMoneyCents('100.00'),
     })
     return { budget, user, institution, account, category, transaction, accountTransaction,
       statement }

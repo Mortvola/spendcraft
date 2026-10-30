@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '#common/moneyCents'
 import { transactionRequest } from '../../helpers/transactionRequest.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
@@ -35,7 +36,8 @@ test.group('Balance-tracked invariant enforcement', (group) => {
     f = await createFixture()
     await f.account.merge({ tracking: TrackingType.Balances }).save()
     await f.account.related('statements').create({ startDate: DateTime.fromISO('2025-01-01'),
-      endDate: DateTime.fromISO('2025-01-31'), startingBalance: 0, endingBalance: 100,
+      endDate: DateTime.fromISO('2025-01-31'), startingBalanceCents: parseMoneyCents('0.00'),
+        endingBalanceCents: parseMoneyCents('100.00'),
       data: investmentData })
     const owner = await f.budget.related('groups').create({ name: 'Invariant categories', type:
       'Regular' })

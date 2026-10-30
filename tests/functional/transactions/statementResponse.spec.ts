@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '#common/moneyCents'
 import { transactionRequest } from '../../helpers/transactionRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { test } from '@japa/runner'
@@ -27,10 +28,12 @@ async function fixture(mode: string) {
   const category = await budget.getUnassignedCategory()
   const oldStatement = await account.related('statements').create({ startDate: DateTime.fromISO(
     '2025-01-01'),
-    endDate: DateTime.fromISO('2025-01-31'), startingBalance: 90, endingBalance: 100 })
+    endDate: DateTime.fromISO('2025-01-31'), startingBalanceCents: parseMoneyCents('90.00'),
+      endingBalanceCents: parseMoneyCents('100.00') })
   const target = await account.related('statements').create({ startDate: DateTime.fromISO(
     '2025-02-01'),
-    endDate: DateTime.fromISO('2025-02-28'), startingBalance: 90, endingBalance: 100 })
+    endDate: DateTime.fromISO('2025-02-28'), startingBalanceCents: parseMoneyCents('90.00'),
+      endingBalanceCents: parseMoneyCents('100.00') })
   const transaction = await budget.related('transactions').create({ date: DateTime.fromISO(
     '2025-02-10'),
     type: TransactionType.MANUAL_TRANSACTION, categories: [{ categoryId: category.id, amount: 10 }],

@@ -1,5 +1,6 @@
 import { requestFundingStorage } from '../../app/services/fundingStorage.ts'
 import { encodeMonetaryAmount } from '../../app/services/categoryAmountCodec.ts'
+import { parseMoneyCents } from '../../common/moneyCents.ts'
 import { validateSubmittedTaxForecast, serializeTaxForecast } from
   '../../app/services/taxMonetaryCodec.ts'
 import { replaceTaxForecast } from '../../app/services/taxMonetaryStorage.ts'
@@ -25,7 +26,8 @@ async function method(file, name, context, dependencyLoader = false) {
   return runInNewContext(ts.transpileModule(`(async function(${member.parameters.map((p) => p
     .getText(ast)).join(',')}) ${body})`,
     { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, { requestFundingStorage,
-      encodeMonetaryAmount, validateSubmittedTaxForecast, replaceTaxForecast, ...context })
+      encodeMonetaryAmount, parseMoneyCents, validateSubmittedTaxForecast, replaceTaxForecast,
+      ...context })
 }
 const noop = async () => undefined
 
@@ -681,7 +683,8 @@ for (const scenario of ['transactions', 'balances', 'missing-institution', 'stat
       related(name) {
         assert.equal(name, 'statements'); assert.strictEqual(this.client, owner)
         return { create: async (values) => {
-          assert.equal(values.startingBalance, 10); assert.equal(values.endingBalance, 10)
+          assert.equal(values.startingBalanceCents, parseMoneyCents('10.00'))
+          assert.equal(values.endingBalanceCents, parseMoneyCents('10.00'))
           assert.isNull(values.data); events.push('statement')
           if (scenario === 'statement-failure') throw new Error('statement failed')
         } }

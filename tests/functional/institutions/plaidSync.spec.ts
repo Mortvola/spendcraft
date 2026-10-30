@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '#common/moneyCents'
 import { test } from '@japa/runner'
 import app from '@adonisjs/core/services/app'
 import db from '@adonisjs/lucid/services/db'
@@ -83,8 +84,9 @@ async function fixture() {
     const other = await createAccount('B')
     const unassigned = await budget.getUnassignedCategory({ client: trx })
     const statement = await account.related('statements').create({ startDate: DateTime.fromISO(
-      '2025-02-01'), endDate: DateTime.fromISO('2025-02-28'), startingBalance: 100,
-      endingBalance: 90 })
+      '2025-02-01'), endDate: DateTime.fromISO('2025-02-28'),
+        startingBalanceCents: parseMoneyCents('100.00'),
+      endingBalanceCents: parseMoneyCents('90.00') })
     return { budget, user, shared, institution, account, other, unassigned, statement }
   })
 }

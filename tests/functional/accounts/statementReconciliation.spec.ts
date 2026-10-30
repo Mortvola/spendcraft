@@ -1,3 +1,4 @@
+import { parseMoneyCents, formatMoneyCents } from '#common/moneyCents'
 import { statementRequest } from '../../helpers/statementRequest.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
@@ -35,11 +36,13 @@ async function createFixture() {
     const statement = await account.related('statements').create({
       startDate: DateTime.fromISO(date(oldPeriod.start)), endDate: DateTime.fromISO(date(oldPeriod
         .end)),
-      startingBalance: 100, endingBalance: 200, data: null,
+      startingBalanceCents: parseMoneyCents('100.00'), endingBalanceCents: parseMoneyCents(
+        '200.00'), data: null,
     })
     const neighbor = await account.related('statements').create({
       startDate: DateTime.fromISO(date(21)), endDate: DateTime.fromISO(date(28)),
-      startingBalance: 200, endingBalance: 300, data: null,
+      startingBalanceCents: parseMoneyCents('200.00'), endingBalanceCents: parseMoneyCents(
+        '300.00'), data: null,
     })
     const rows: { day: number, row: AccountTransaction }[] = []
     for (let day = 1; day <= 28; day += 1) {
@@ -94,8 +97,8 @@ test.group('Statement reconciliation period characterization', (group) => {
       const persisted = await Statement.findOrFail(fixture.statement.id)
       assert.equal(persisted.startDate.toISODate(), dates.startDate)
       assert.equal(persisted.endDate.toISODate(), dates.endDate)
-      assert.equal(persisted.startingBalance, 100)
-      assert.equal(persisted.endingBalance, 200)
+      assert.equal(Number(formatMoneyCents(persisted.startingBalanceCents)), 100)
+      assert.equal(Number(formatMoneyCents(persisted.endingBalanceCents)), 200)
       assert.isNull(persisted.data)
       const selectedPeriod = period
       const actualAssignments = await Promise.all(fixture.rows.map(async ({ day, row }) => ({ day,

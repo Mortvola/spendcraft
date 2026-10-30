@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '#common/moneyCents'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
@@ -119,7 +120,8 @@ test.group('Net-worth history independence', (group) => {
       await f.account.merge({ tracking: TrackingType.Balances }).save()
       const date = f.today.minus({ days: scenario.age })
       await f.account.related('statements').create({ startDate: date, endDate: date,
-        startingBalance: 100, endingBalance: 100, data: null })
+        startingBalanceCents: parseMoneyCents('100.00'), endingBalanceCents: parseMoneyCents(
+          '100.00'), data: null })
       const bucket = scenario.unit === 'week' ? date.startOf('week')
         : scenario.unit === 'month' ? date.startOf('month') : date.startOf('year')
       assert.deepEqual(await report(client, f), [['date', 'Transaction account'], [bucket.toISODate(
@@ -151,7 +153,8 @@ test.group('Net-worth history independence', (group) => {
       await f.account.merge({ tracking: TrackingType.Balances }).save()
       const date = f.today.minus({ days: 3 })
       await f.account.related('statements').create({ startDate: date, endDate: date,
-        startingBalance: 100, endingBalance: 100, data: null })
+        startingBalanceCents: parseMoneyCents('100.00'), endingBalanceCents: parseMoneyCents(
+          '100.00'), data: null })
       if (mixed) {
         const account = await f.institution.related('accounts').create({ name:
           'Second transaction account', balance: 50,

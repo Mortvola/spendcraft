@@ -28,6 +28,7 @@ import { addTransaction } from '#validators/transaction';
 import { validateTransactionSplits } from '#app/validation/transactionSplits';
 import { addStatement, updateStatement } from '#validators/statement';
 import type { ModelAdapterOptions } from '@adonisjs/lucid/types/model';
+import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents';
 
 interface AddedTransaction {
   categories: CategoryBalanceProps[],
@@ -534,8 +535,8 @@ export default class AccountsController {
       const statement = await account.related('statements').create({
         startDate: requestData.startDate,
         endDate: requestData.endDate,
-        startingBalance: requestData.startingBalance,
-        endingBalance: requestData.endingBalance,
+        startingBalanceCents: requestData.startingBalance,
+        endingBalanceCents: requestData.endingBalance,
         data: requestData.data ? {
           shortTermCapitalGains: requestData.data.shortTermCapitalGains,
           longTermCapitalGains: requestData.data.longTermCapitalGains,
@@ -551,7 +552,7 @@ export default class AccountsController {
           .orderBy('endDate', 'desc')
           .firstOrFail()
 
-        account.balance = latestStatement.endingBalance;
+        account.balance = Number(formatMoneyCents(latestStatement.endingBalanceCents));
 
         await account.save()
       }
@@ -569,32 +570,35 @@ export default class AccountsController {
         })
         .whereNull('statementId')
 
-      let debits = 0;
-      let credits = 0;
-
       for (const acctTransaction of acctTransactions) {
         await acctTransaction.merge({
           statementId: statement.id,
         })
           .save()
 
-        if (acctTransaction.amount < 0) {
-          debits += acctTransaction.amount
-        } else {
-          credits += acctTransaction.amount
-        }
       }
 
-      await trx.commit()
+      const credits = await AccountTransaction.query({ client: trx })
+        .sum('amount')
+        .where('statementId', statement.id)
+        .andWhere('accountId', statement.accountId)
+        .where('amount', '>', 0)
+        .whereHas('transaction', query => query.where('deleted', false))
+      const debits = await AccountTransaction.query({ client: trx })
+        .sum('amount')
+        .where('statementId', statement.id)
+        .andWhere('accountId', statement.accountId)
+        .where('amount', '<', 0)
+        .whereHas('transaction', query => query.where('deleted', false))
 
-      return {
+      const response: AddStatementResponse = {
         id: statement.id,
         startDate,
         endDate,
-        startingBalance: encodeMonetaryAmount(statement.startingBalance),
-        endingBalance: encodeMonetaryAmount(statement.endingBalance),
-        credits: encodeMonetaryAmount(credits),
-        debits: encodeMonetaryAmount(debits),
+        startingBalance: formatMoneyCents(statement.startingBalanceCents),
+        endingBalance: formatMoneyCents(statement.endingBalanceCents),
+        credits: formatMoneyCents(parseMoneyCents(credits[0].$extras.sum ?? '0.00')),
+        debits: formatMoneyCents(parseMoneyCents(debits[0].$extras.sum ?? '0.00')),
         data: {
           shortTermCapitalGains: encodeMonetaryAmount(statement.data?.shortTermCapitalGains ?? 0),
           longTermCapitalGains: encodeMonetaryAmount(statement.data?.longTermCapitalGains ?? 0),
@@ -603,6 +607,8 @@ export default class AccountsController {
         },
         transactions: acctTransactions.map((acctTransaction) => acctTransaction.transactionId)
       };
+      await trx.commit()
+      return response
     }
     catch (error) {
       logger.error(error)
@@ -679,9 +685,9 @@ export default class AccountsController {
         }
       }
 
-      if (requestData.startingBalance !== undefined) statement.startingBalance = requestData
+      if (requestData.startingBalance !== undefined) statement.startingBalanceCents = requestData
         .startingBalance
-      if (requestData.endingBalance !== undefined) statement.endingBalance = requestData
+      if (requestData.endingBalance !== undefined) statement.endingBalanceCents = requestData
         .endingBalance
       if (requestData.data !== undefined) replaceStatementIncome(statement, requestData.data)
 
@@ -697,7 +703,7 @@ export default class AccountsController {
           .orderBy('endDate', 'desc')
           .firstOrFail()
 
-        account.balance = latestStatement.endingBalance;
+        account.balance = Number(formatMoneyCents(latestStatement.endingBalanceCents));
 
         await account.save()
       }
@@ -730,10 +736,10 @@ export default class AccountsController {
         id: statement.id,
         startDate,
         endDate,
-        startingBalance: encodeMonetaryAmount(statement.startingBalance),
-        endingBalance: encodeMonetaryAmount(statement.endingBalance),
-        credits: encodeMonetaryAmount(credits[0].$extras.sum ?? 0),
-        debits: encodeMonetaryAmount(debits[0].$extras.sum ?? 0),
+        startingBalance: formatMoneyCents(statement.startingBalanceCents),
+        endingBalance: formatMoneyCents(statement.endingBalanceCents),
+        credits: formatMoneyCents(parseMoneyCents(credits[0].$extras.sum ?? '0.00')),
+        debits: formatMoneyCents(parseMoneyCents(debits[0].$extras.sum ?? '0.00')),
         data: {
           shortTermCapitalGains: encodeMonetaryAmount(statement.data?.shortTermCapitalGains ?? 0),
           longTermCapitalGains: encodeMonetaryAmount(statement.data?.longTermCapitalGains ?? 0),
@@ -783,7 +789,7 @@ export default class AccountsController {
       if (account.tracking === TrackingType.Balances) {
         const latest = await Statement.query({ client: trx }).where('accountId', account.id)
           .orderBy('endDate', 'desc').first()
-        account.balance = latest?.endingBalance ?? 0
+        account.balance = latest ? Number(formatMoneyCents(latest.endingBalanceCents)) : 0
         await account.save()
       }
     })

@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '#common/moneyCents'
 import { transactionRequest } from '../../helpers/transactionRequest.js'
 import { mock } from 'node:test'
 import { deepStrictEqual } from 'node:assert'
@@ -76,8 +77,9 @@ async function fixture() {
       98765.43 })
     const unassigned = await budget.getUnassignedCategory({ client: trx })
     const statement = await account.related('statements').create({ startDate: DateTime.fromISO(
-      '2025-02-01'), endDate: DateTime.fromISO('2025-02-28'), startingBalance: 100,
-      endingBalance: 90 })
+      '2025-02-01'), endDate: DateTime.fromISO('2025-02-28'),
+        startingBalanceCents: parseMoneyCents('100.00'),
+      endingBalanceCents: parseMoneyCents('90.00') })
     return { budget, user, shared, institution, account, other, unassigned, statement }
   })
 }

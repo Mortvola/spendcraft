@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '#common/moneyCents'
 import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 // Requires task-specific DB authorization and independent per-operation safeguards.
@@ -41,7 +42,8 @@ async function fixture() {
     const pool = await budget.getFundingPoolCategory({ client: trx })
     await account.updateStartingBalance(budget, pool); await pool.save()
     await account.related('statements').create({ startDate: DateTime.fromISO('2025-01-01'),
-      endDate: DateTime.fromISO('2025-01-31'), startingBalance: 100, endingBalance: 100 })
+      endDate: DateTime.fromISO('2025-01-31'), startingBalanceCents: parseMoneyCents('100.00'),
+        endingBalanceCents: parseMoneyCents('100.00') })
     const target = await group.related('categories').create({ name: 'Funding recipient',
       type: CategoryType.Regular,
       balance: 0, fundingCategories: [] })

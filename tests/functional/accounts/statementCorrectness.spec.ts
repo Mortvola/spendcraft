@@ -1,3 +1,5 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { parseMoneyCents, formatMoneyCents } from '#common/moneyCents'
 import { statementRequest } from '../../helpers/statementRequest.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
@@ -39,7 +41,8 @@ test.group('Manual statement correctness', (group) => {
   async function seedStatement(startDate: string, endDate: string, endingBalance: number) {
     return fixture.account.related('statements').create({
       startDate: DateTime.fromISO(startDate), endDate: DateTime.fromISO(endDate),
-      startingBalance: 100, endingBalance, data: investmentData,
+      startingBalanceCents: parseMoneyCents('100.00'), endingBalanceCents: parseMoneyCents(
+        encodeMonetaryAmount(endingBalance)), data: investmentData,
     })
   }
 
@@ -82,8 +85,8 @@ test.group('Manual statement correctness', (group) => {
       const rows = await Statement.query().where('accountId', fixture.account.id).orderBy('endDate')
       const created = rows.find((row) => !neighbors.some((neighbor) => neighbor.id === row.id))
       assert.exists(created)
-      assert.equal(created?.startingBalance, 100)
-      assert.equal(created?.endingBalance, 200)
+      assert.equal(created?.startingBalanceCents, parseMoneyCents('100.00'))
+      assert.equal(created?.endingBalanceCents, parseMoneyCents('200.00'))
       assert.equal(created?.startDate.toISODate(), february.startDate)
       assert.equal(created?.endDate.toISODate(), february.endDate)
       const after = await state()
@@ -112,7 +115,8 @@ test.group('Manual statement correctness', (group) => {
       assert.equal(rows.length, position === 'between' ? 3 : position === 'older' || position ===
         'newer' ? 2 : 1,
         `HTTP ${response.status()}: statement creation must persist`)
-      assert.equal((await Account.findOrFail(fixture.account.id)).balance, rows[0].endingBalance)
+      assert.equal((await Account.findOrFail(fixture.account.id)).balance, Number(
+        formatMoneyCents(rows[0].endingBalanceCents)))
       response.assertStatus(200)
     })
 
@@ -177,8 +181,10 @@ test.group('Manual statement correctness', (group) => {
         .startDate)
       assert.equal(persisted.endDate.toISODate(), field === 'end-date' ? '2025-03-31' : february
         .endDate)
-      assert.equal(persisted.startingBalance, field === 'starting-balance' ? 90 : 100)
-      assert.equal(persisted.endingBalance, field === 'ending-balance' ? 250 : 200)
+      assert.equal(Number(formatMoneyCents(persisted.startingBalanceCents)),
+        field === 'starting-balance' ? 90 : 100)
+      assert.equal(Number(formatMoneyCents(persisted.endingBalanceCents)),
+        field === 'ending-balance' ? 250 : 200)
       assert.equal((await AccountTransaction.findOrFail(row.id)).statementId, field ===
         'reconcile-all' ? statement.id : null)
       const after = await state()
@@ -189,8 +195,9 @@ test.group('Manual statement correctness', (group) => {
         dividends: 9 } : investmentData)
       assert.equal(response.body().startDate, persisted.startDate.toISODate())
       assert.equal(response.body().endDate, persisted.endDate.toISODate())
-      assert.equal(response.body().startingBalance, persisted.startingBalance.toFixed(2))
-      assert.equal(response.body().endingBalance, persisted.endingBalance.toFixed(2))
+      assert.equal(response.body().startingBalance, formatMoneyCents(
+        persisted.startingBalanceCents))
+      assert.equal(response.body().endingBalance, formatMoneyCents(persisted.endingBalanceCents))
       assert.deepEqual(response.body().data, Object.fromEntries(Object.entries(persisted.data ?? {})
         .map(([key, value]) => [key, typeof value === 'number' ? value.toFixed(2) : value])))
       assert.equal(response.body().credits, field === 'reconcile-all' ? '10.00' : '0.00')
@@ -206,7 +213,7 @@ test.group('Manual statement correctness', (group) => {
     response.assertStatus(200)
     const persisted = await Statement.findOrFail(statement.id)
     assert.isNull(persisted.data)
-    assert.equal(persisted.endingBalance, 250)
+    assert.equal(Number(formatMoneyCents(persisted.endingBalanceCents)), 250)
     assert.equal(response.body().startDate, february.startDate)
     assert.equal(response.body().endDate, february.endDate)
     assert.deepEqual(response.body().data, { shortTermCapitalGains: '0.00', longTermCapitalGains:
@@ -224,8 +231,8 @@ test.group('Manual statement correctness', (group) => {
         .loginAs(fixture.user)
     response.assertStatus(200)
     const persisted = await Statement.findOrFail(statement.id)
-    assert.equal(persisted.startingBalance, 0)
-    assert.equal(persisted.endingBalance, 0)
+    assert.equal(Number(formatMoneyCents(persisted.startingBalanceCents)), 0)
+    assert.equal(Number(formatMoneyCents(persisted.endingBalanceCents)), 0)
     assert.deepEqual(persisted.data, data)
     assert.equal(persisted.startDate.toISODate(), february.startDate)
     assert.equal(persisted.endDate.toISODate(), february.endDate)
@@ -245,7 +252,8 @@ test.group('Manual statement correctness', (group) => {
       .json(statementRequest({ ...february, endingBalance: 250, data: investmentData })).accept(
         'json').loginAs(fixture.user)
     response.assertStatus(200)
-    assert.equal((await Statement.findOrFail(statement.id)).endingBalance, 250)
+    assert.equal(Number(formatMoneyCents((await Statement.findOrFail(
+      statement.id)).endingBalanceCents)), 250)
     const after = await state()
     assert.deepEqual([after[0], ...after.slice(2)], [before[0], ...before.slice(2)])
   })
@@ -287,14 +295,15 @@ test.group('Manual statement correctness', (group) => {
       response.assertStatus(200)
       const changed = await Statement.findOrFail(target.id)
       assert.equal(changed.endDate.toISODate(), endDate)
-      assert.equal(changed.endingBalance, 250)
+      assert.equal(Number(formatMoneyCents(changed.endingBalanceCents)), 250)
       const current = await Statement.query().where('accountId', fixture.account.id).orderBy(
         'endDate', 'desc').firstOrFail()
       const after = await state()
       assert.deepEqual(after[1].filter((row) => row.id !== target.id), before[1].filter((row) => row
         .id !== target.id))
       assert.deepEqual(after.slice(2), before.slice(2))
-      assert.equal((await Account.findOrFail(fixture.account.id)).balance, current.endingBalance)
+      assert.equal((await Account.findOrFail(fixture.account.id)).balance, Number(
+        formatMoneyCents(current.endingBalanceCents)))
     })
 
   test('omitting investment data in an otherwise full PATCH preserves it', async ({ client,

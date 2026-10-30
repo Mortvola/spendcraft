@@ -14,6 +14,7 @@ import { consumeStatementIncome, prepareStatementIncome, stageStatementIncomeSav
   replaceStatementIncome } from '../../app/services/statementIncomeStorage.ts'
 import { addStatement, updateStatement } from '../../app/validation/Validators/statement.ts'
 import { TrackingType } from '../../common/ResponseTypes.ts'
+import { formatMoneyCents, parseMoneyCents } from '../../common/moneyCents.ts'
 
 const data = amount => Object.fromEntries(statementIncomeFields.map(f => [f, amount]))
 async function sample() {
@@ -21,9 +22,9 @@ async function sample() {
     'utf8'), ts.ScriptTarget.Latest, true)
   const model = source.statements.find(ts.isClassDeclaration)
   const names = ['stageIncome', 'finishIncome', 'id', 'accountId', 'startDate', 'endDate',
-    'startingBalance', 'endingBalance', 'data', 'serializeExtras']
+    'startingBalanceCents', 'endingBalanceCents', 'data', 'serializeExtras']
   const context = { BaseModel, column, beforeSave, afterSave, DateTime,
-    serializeStatementIncomeResponse, encodeMonetaryAmount,
+    serializeStatementIncomeResponse, formatMoneyCents, parseMoneyCents,
     consumeStatementIncome, prepareStatementIncome, stageStatementIncomeSave,
       finishStatementIncomeSave }
   runInNewContext(ts.transpileModule(`class Sample extends BaseModel { ${model.members.filter(m =>
@@ -38,13 +39,54 @@ async function sample() {
     async insert(_row, values) { writes.push(values) }, async update(_row, values) { writes.push(
       values) },
   }
-  const hydrated = raw => Sample.$createFromAdapterResult({ id: 1, account_id: 2, start_date:
-    '2026-01-01', end_date: '2026-01-31', starting_balance: '100.00', ending_balance: '200.00',
+  const hydrated = (raw, start = '100.00', end = '200.00') => Sample.$createFromAdapterResult({
+    id: 1, account_id: 2, start_date:
+    '2026-01-01', end_date: '2026-01-31', starting_balance: start, ending_balance: end,
     data: raw })
   return { Sample, writes, hydrated }
 }
 
 test.group('Statement income production codec and model boundary (no database)', () => {
+  test('snapshot hydration, persistence and API serialization retain exact cents').with([
+    '0.00', '0.10', '0.20', '-0.12', '9999999999.99', '-9999999999.99',
+  ]).run(async ({ assert }, value) => {
+    const { hydrated, writes } = await sample(), row = hydrated(null, value, value)
+    assert.strictEqual(row.startingBalanceCents, parseMoneyCents(value))
+    assert.strictEqual(row.endingBalanceCents, parseMoneyCents(value))
+    const response = row.serialize()
+    assert.strictEqual(response.startingBalance, value)
+    assert.strictEqual(response.endingBalance, value)
+    assert.notProperty(response, 'startingBalanceCents')
+    assert.notProperty(response, 'endingBalanceCents')
+    row.endingBalanceCents = parseMoneyCents('0.30')
+    await row.save()
+    assert.strictEqual(writes[0].ending_balance, '0.30')
+    assert.notProperty(writes[0], 'starting_balance')
+  })
+  test('snapshot storage rejects noncanonical values and writes reject invalid cents', async ({
+    assert }) => {
+    const { hydrated } = await sample()
+    for (const value of [0.1, null, '0.1', '1e2', '-0.00', '90071992547409.92']) {
+      assert.throws(() => hydrated(null, value))
+    }
+    for (const value of [0.1, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
+      const row = hydrated(null)
+      row.endingBalanceCents = value
+      await assert.rejects(() => row.save())
+    }
+  })
+  test('exact SQL totals serialize directly with null aggregates defaulting to zero', async ({
+    assert }) => {
+    const { hydrated } = await sample(), row = hydrated(null)
+    row.$extras.credits = '0.30'; row.$extras.debits = '-0.30'
+    assert.deepEqual(row.serializeExtras(), { credits: '0.30', debits: '-0.30' })
+    row.$extras.credits = null; row.$extras.debits = null
+    assert.deepEqual(row.serializeExtras(), { credits: '0.00', debits: '0.00' })
+    row.$extras.credits = '90071992547409.92'
+    assert.throws(() => row.serializeExtras())
+    row.$extras.credits = 0.3
+    assert.throws(() => row.serializeExtras())
+  })
   test('approved individual rounding').with([
     [12.34, '12.34'], [-12.34, '-12.34'], [12.345, '12.35'], [0.125, '0.13'], [-0.125, '-0.12'],
     [-1.005, '-1.00'], [0.1 + 0.2, '0.30'], [0, '0.00'], [-0, '0.00'], [0.005, '0.01'], [-0.005,
@@ -62,13 +104,14 @@ test.group('Statement income production codec and model boundary (no database)',
     'bad', Infinity, null, undefined])
     .run(({ assert }, amount) => assert.throws(() => validateSubmittedStatementIncome(data(
       amount))))
-  test('canonical request strings decode to numeric controller values', async ({ assert }) => {
+  test('requests decode snapshots to cents and keep income values in dollars', async (
+    { assert }) => {
     for (const value of ['1.00', '-0.12', '0.00', '0.30']) {
       validateSubmittedStatementIncome(data(value))
       const validated = await updateStatement.validate({ startingBalance: value,
         endingBalance: value, data: data(value) })
-      assert.strictEqual(validated.startingBalance, Number(value))
-      assert.strictEqual(validated.endingBalance, Number(value))
+      assert.strictEqual(validated.startingBalance, parseMoneyCents(value))
+      assert.strictEqual(validated.endingBalance, parseMoneyCents(value))
       for (const field of statementIncomeFields) assert.strictEqual(validated.data[field], Number(
         value))
     }
@@ -131,7 +174,7 @@ test.group('Statement income production codec and model boundary (no database)',
       row.$isDirty)
     assert.notProperty(writes[0], 'starting_balance'); assert.notProperty(writes[0],
       'ending_balance')
-    assert.equal(row.startingBalance, 100); assert.equal(row.endingBalance, 200)
+    assert.equal(row.startingBalanceCents, 10000); assert.equal(row.endingBalanceCents, 20000)
   })
   test('new model writes and saved APIs use rounded amounts', async ({ assert }) => {
     const { Sample, writes } = await sample(), row = new Sample()
@@ -178,6 +221,7 @@ function chain(value) {
 }
 async function lifecycle(input, options = {}) {
   const { Sample, hydrated, writes } = await sample(), events = [], owner = new EventEmitter()
+  const aggregates = []
   owner.commit = async () => { events.push('commit') }; owner.rollback = async () => { events.push(
     'rollback') }
   const statement = hydrated({ ...data('1.00'), note: 'preserve' }).useTransaction(owner)
@@ -195,7 +239,8 @@ async function lifecycle(input, options = {}) {
         'budget.acquired'); return {} },
     }) } },
   }
-  const context = { encodeMonetaryAmount, TrackingType, addStatement, updateStatement,
+  const context = { encodeMonetaryAmount, formatMoneyCents, parseMoneyCents, TrackingType,
+    addStatement, updateStatement,
     validateSubmittedStatementIncome, encodeStatementIncome, replaceStatementIncome,
     db: { transaction: async () => owner }, budgetAccounts(budget, { client }) {
       if (budget !== 3 || client !== owner || !events.includes('budget.acquired')) throw Error(
@@ -207,10 +252,20 @@ async function lifecycle(input, options = {}) {
       events.push('statement.read'); if (options.foreign) throw Error('not found'); return chain(
         statement)
     }, Statement: { query({ client }) { if (client !== owner) throw Error(
-      'wrong balance transaction'); return chain({ endingBalance: 200 }) } },
+      'wrong balance transaction'); return chain({ endingBalanceCents: parseMoneyCents(
+        '200.00') }) } },
     AccountTransaction: { query({ client }) { if (client !== owner) throw Error(
       'wrong aggregate transaction'); if (options.lateFailure) throw Error('late failure');
-      return chain([{ $extras: { sum: 0 } }]) } },
+      const rows = [{ $extras: { sum: '0.00' } }], query = chain(rows), filters = []
+      aggregates.push(filters)
+      query.where = (key, operator, value) => {
+        filters.push([key, operator, value])
+        if (key === 'amount') rows[0].$extras.sum = options.totals?.[
+          operator === '>' ? 'credits' : 'debits'] ?? '0.00'
+        return query
+      }
+      query.andWhere = query.where
+      return query } },
   }
   const method = await controllerMethod(options.create ? 'addStatement' : 'updateStatement',
     context)
@@ -218,10 +273,40 @@ async function lifecycle(input, options = {}) {
     input.data,
     validateUsing: validator => validator.validate(input) }, auth: { user }, logger: { error: () =>
       undefined } })
-  return { operation, events, statement, writes, account }
+  return { operation, events, statement, writes, account, aggregates }
 }
 
 test.group('Statement income production controllers (no database)', () => {
+  test('CREATE and PATCH format exact database totals inside the owning transaction')
+    .with([true, false]).run(async ({ assert }, create) => {
+      const f = await lifecycle({ startDate: '2026-01-01', endDate: '2026-01-31',
+        startingBalance: '0.10', endingBalance: '0.30' }, {
+        create, totals: { credits: '0.30', debits: '-0.10' },
+      })
+      const response = await f.operation
+      assert.strictEqual(response.startingBalance, '0.10')
+      assert.strictEqual(response.endingBalance, '0.30')
+      assert.strictEqual(response.credits, '0.30')
+      assert.strictEqual(response.debits, '-0.10')
+      assert.deepEqual(f.aggregates, [
+        [['statementId', 1, undefined], ['accountId', 2, undefined], ['amount', '>', 0]],
+        [['statementId', 1, undefined], ['accountId', 2, undefined], ['amount', '<', 0]],
+      ])
+      assert.equal(f.events.at(-1), 'commit')
+      assert.notInclude(f.events, 'account.save')
+    })
+  test('invalid or unsafe totals reject before CREATE or PATCH commits')
+    .with([true, false]).run(async ({ assert }, create) => {
+      for (const credits of ['90071992547409.92', '0.3', NaN]) {
+        const f = await lifecycle({ startDate: '2026-01-01', endDate: '2026-01-31',
+          startingBalance: '0.10', endingBalance: '0.30' }, {
+          create, totals: { credits, debits: '0.00' },
+        })
+        await assert.rejects(() => f.operation)
+        assert.equal(f.events.at(-1), 'rollback')
+        assert.notInclude(f.events, 'commit')
+      }
+    })
   test('real CREATE accepts and returns canonical strings and unchanged supplied balances', async ({
     assert }) => {
     const f = await lifecycle({ startDate: '2026-01-01', endDate: '2026-01-31', startingBalance:

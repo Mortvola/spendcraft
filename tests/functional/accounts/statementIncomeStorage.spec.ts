@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '#common/moneyCents'
 import { statementRequest } from '../../helpers/statementRequest.js'
 // Prepared PostgreSQL acceptance cases. Do not run without database authorization.
 import { test } from '@japa/runner'
@@ -25,8 +26,9 @@ async function fixture() {
       type: AccountType.Investment, subtype: 'brokerage', tracking: TrackingType.Transactions,
       startDate: DateTime.fromISO('2026-01-01'), rate: 0, closed: false })
     const statement = await account.related('statements').create({ startDate: DateTime.fromISO(
-      '2026-01-01'), endDate: DateTime.fromISO('2026-01-31'), startingBalance: 100,
-      endingBalance: 200, data: income(1) })
+      '2026-01-01'), endDate: DateTime.fromISO('2026-01-31'),
+        startingBalanceCents: parseMoneyCents('100.00'),
+      endingBalanceCents: parseMoneyCents('200.00'), data: income(1) })
     return { budget, user, account, statement }
   })
 }
@@ -121,7 +123,8 @@ test.group('Statement income decimal-string PostgreSQL acceptance', group => {
       amount: number) => {
       const statement = await account.related('statements').create({
         startDate: DateTime.fromISO(start), endDate: DateTime.fromISO(end),
-        startingBalance: 0, endingBalance: 0, data: income(amount),
+        startingBalanceCents: parseMoneyCents('0.00'), endingBalanceCents: parseMoneyCents(
+          '0.00'), data: income(amount),
       })
       const stored = await db.from('statements').where('id', statement.id).firstOrFail()
       assert.deepEqual(stored.data, encodeStatementIncome(income(amount)))

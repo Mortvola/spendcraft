@@ -1,3 +1,4 @@
+import { parseMoneyCents, formatMoneyCents } from '#common/moneyCents'
 import { statementRequest } from '../../helpers/statementRequest.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
@@ -36,7 +37,8 @@ async function domain(label: string) {
       .fromISO('2025-02-01'), balance: 50 })
     const statement = await account.related('statements').create({
       startDate: DateTime.fromISO('2025-02-01'), endDate: DateTime.fromISO('2025-02-28'),
-        startingBalance: 100, endingBalance: 123.45,
+        startingBalanceCents: parseMoneyCents('100.00'), endingBalanceCents: parseMoneyCents(
+          '123.45'),
     })
     const transaction = await budget.related('transactions').create({
       date: DateTime.fromISO('2025-02-05'), type: TransactionType.MANUAL_TRANSACTION,
@@ -194,14 +196,15 @@ test.group('Account, history and statement budget isolation', (group) => {
     response.assertStatus(200)
     const statement = await Statement.findOrFail(response.body().id)
     assert.equal(statement.accountId, fixture.own.account.id)
-    assert.equal(statement.endingBalance, 999)
+    assert.equal(Number(formatMoneyCents(statement.endingBalanceCents)), 999)
   })
   test('shared-budget user can update and reconcile a statement', async ({ client, assert }) => {
     const response = await client.patch(`/api/v1/statements/${fixture.own.statement.id}`).json(
       statementRequest({ startDate: '2025-02-01', endDate: '2025-02-28', startingBalance: 100,
       endingBalance: 150, reconcile: 'All' })).accept('json').loginAs(fixture.shared)
     response.assertStatus(200)
-    assert.equal((await Statement.findOrFail(fixture.own.statement.id)).endingBalance, 150)
+    assert.equal(Number(formatMoneyCents((await Statement.findOrFail(
+      fixture.own.statement.id)).endingBalanceCents)), 150)
     assert.equal((await Account.findOrFail(fixture.own.account.id)).balance, 150)
     assert.equal((await AccountTransaction.findOrFail(fixture.own.accountTransaction.id))
       .statementId, fixture.own.statement.id)

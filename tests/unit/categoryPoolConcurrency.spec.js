@@ -1,6 +1,7 @@
 import { categoryNonzeroAllocationSql, encodeMonetaryAmount } from
   '../../app/services/categoryAmountCodec.ts'
 import { test } from '@japa/runner'
+import { parseMoneyCents } from '../../common/moneyCents.ts'
 import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
@@ -52,6 +53,7 @@ async function offlineFixture({ competing = false, balances = [10], tracking = T
     } }) }) }
   const { run } = await method(institutions, 'addOffline', {
     db: { transaction: async () => owner }, TrackingType, addInstitutionOffline: {},
+    parseMoneyCents, encodeMonetaryAmount,
   })
   await run({ auth: { user }, logger: { error: noop }, request: { validateUsing: async () => ({
     institution: { name: 'Offline' }, startDate: { toISODate: () => '2025-01-01' },

@@ -1,4 +1,5 @@
 import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
+import { parseMoneyCents } from '#common/moneyCents';
 import PlaidItemCleanupService from '#services/plaidItemCleanup'
  
 import { HttpContext } from '@adonisjs/core/http';
@@ -216,7 +217,9 @@ class InstitutionController {
           case TrackingType.Balances:
             await newAcct.related('statements').create({
               startDate: newAcct.startDate, endDate: newAcct.startDate,
-              startingBalance: newAcct.balance, endingBalance: newAcct.balance, data: null,
+              startingBalanceCents: parseMoneyCents(encodeMonetaryAmount(newAcct.balance)),
+              endingBalanceCents: parseMoneyCents(encodeMonetaryAmount(newAcct.balance)),
+                data: null,
             });
             break
 
@@ -620,7 +623,8 @@ class InstitutionController {
       if (acct.tracking === TrackingType.Balances) {
         await acct.related('statements').create({
           startDate: start, endDate: start,
-          startingBalance: acct.balance, endingBalance: acct.balance, data: null,
+          startingBalanceCents: parseMoneyCents(encodeMonetaryAmount(acct.balance)),
+          endingBalanceCents: parseMoneyCents(encodeMonetaryAmount(acct.balance)), data: null,
         });
       }
       else {

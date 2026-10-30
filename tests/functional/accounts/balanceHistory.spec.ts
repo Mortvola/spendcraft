@@ -1,3 +1,4 @@
+import { formatMoneyCents } from '#common/moneyCents'
 import { transactionRequest } from '../../helpers/transactionRequest.js'
 // Prepared only: requires fresh authorization and current independent DB safeguards.
 // Old tests encoded history->Account writes. Product deprecation removes that API
@@ -132,7 +133,8 @@ test.group('BalanceHistory runtime deprecation (prepared)', () => {
       assert.equal(account.balance, 12)
       const statements = await account.related('statements').query()
       assert.lengthOf(statements, tracking === TrackingType.Balances ? 1 : 0)
-      if (statements[0]) assert.equal(statements[0].endingBalance, 12)
+      if (statements[0]) assert.equal(Number(formatMoneyCents(statements[0].endingBalanceCents)),
+        12)
       const openings = await account.related('accountTransactions').query().whereHas('transaction',
         (query) => query.where('type', 4))
       assert.lengthOf(openings, route === 'new' && tracking === TrackingType.Transactions ? 1 : 0)
