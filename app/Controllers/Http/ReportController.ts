@@ -1,3 +1,5 @@
+import { addMoneyCents, parseMoneyCents, formatMoneyCents, type MoneyCents } from
+  '#common/moneyCents';
 import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
 import { HttpContext } from '@adonisjs/core/http';
 import db from '@adonisjs/lucid/services/db';
@@ -15,7 +17,7 @@ import { DateTime } from 'luxon';
 type NetworthReportType = (string | number)[][];
 type PayeeReportType = (Omit<PayeeReportRow, 'sum'> & { sum: number })[];
 type CategoryReportType = (Omit<CategoryReportRow, 'sum'> & { sum: number })[];
-type IncomeVsExpensesReportType = [string, number, number, number][];
+type IncomeVsExpensesReportType = [string, MoneyCents, MoneyCents, MoneyCents][];
 type FundingHistoryReportType = (Omit<FundingHistoryReportRow, 'history'> & {
   history: { year: number, month: number, amount: number }[] | null;
 })[];
@@ -97,7 +99,7 @@ class ReportController {
       case 'income-vs-expenses': {
         const rows = await ReportController.incomeVsExpenses(budget);
         return rows.map(([month, income, expenses, net]) => [month,
-          encodeMonetaryAmount(income), encodeMonetaryAmount(expenses), encodeMonetaryAmount(net)]);
+          formatMoneyCents(income), formatMoneyCents(expenses), formatMoneyCents(net)]);
       }
 
       case 'funding-history': {
@@ -437,12 +439,20 @@ expenses'),
 2, \'0\')')
       .orderBy('month', 'asc');
 
-    return query.map((row) => [
-      row.month,
-      parseFloat(row.income),
-      parseFloat(row.expenses),
-      parseFloat(row.income) + parseFloat(row.expenses),
-    ]);
+    // CASE's zero branch can produce whole-number decimal text. Pad digits
+    // before strict cent parsing, without passing SQL totals through dollar numbers.
+    const totalCents = (value: unknown): MoneyCents => {
+      if (typeof value !== 'string' || !/^-?(?:0|[1-9]\d*)(?:\.\d{1,2})?$/.test(value)) {
+        return parseMoneyCents(value);
+      }
+      const [whole, fraction = ''] = value.split('.');
+      return parseMoneyCents(`${whole}.${fraction.padEnd(2, '0')}`);
+    };
+    return query.map((row) => {
+      const incomeCents = totalCents(row.income);
+      const expenseCents = totalCents(row.expenses);
+      return [row.month, incomeCents, expenseCents, addMoneyCents(incomeCents, expenseCents)];
+    });
   }
 
   private static async fundingHistory(

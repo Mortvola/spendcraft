@@ -1,3 +1,4 @@
+import { addMoneyCents, parseMoneyCents, formatMoneyCents } from '../../../common/moneyCents.ts'
 import { test } from '@japa/runner'
 import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
@@ -113,6 +114,8 @@ function engine(tables) {
           result.set(month, total)
         }
         return [...result.values()].sort((a, b) => a.month.localeCompare(b.month))
+          .map(row => ({ ...row, income: row.income.toFixed(2),
+            expenses: row.expenses.toFixed(2) }))
       },
       then(resolve, reject) { observed.executions++; return Promise.resolve().then(() => this.rows(
         )).then(resolve, reject) },
@@ -126,7 +129,8 @@ async function run(tables, old = false) {
   const body = old ? legacyIncomeBody : await currentBody()
   const method = runInNewContext(ts.transpileModule(`(async function(budget) ${body})`, {
     compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText,
-    { db: f.db, TrackingType: { Transactions: 'Transactions' }, TransactionType: {
+    { db: f.db, addMoneyCents, parseMoneyCents, formatMoneyCents,
+      TrackingType: { Transactions: 'Transactions' }, TransactionType: {
       STARTING_BALANCE: 4 } })
   const result = await method({ id: 1, getAccountTransferCategory: async () => ({ id: 99 }) })
   return { ...f, result, body }
@@ -140,7 +144,7 @@ test.group('Income transfer cardinality without database', () => {
     { amounts: [0, 0], expected: 50 }, { amounts: [50, 0], expected: 0 },
   ]).run(async ({ assert }, scenario) => {
     const f = await run(domain(scenario.amounts.map((amount, i) => transfer(i + 1, amount))))
-    assert.deepEqual(f.result, [['2025-02', scenario.expected, 0, scenario.expected]])
+    assert.deepEqual(f.result, [['2025-02', scenario.expected * 100, 0, scenario.expected * 100]])
     assert.equal(f.observed.executions, 1)
   })
   test('original 50 versus20+30 defect is characterized alongside correction', async ({ assert }) =>
@@ -160,7 +164,8 @@ test.group('Income transfer cardinality without database', () => {
   ]).run(async ({ assert }, s) => {
     const f = await run(domain(s.transfers.map((n, i) => transfer(i + 1, n)), {
       account_transactions: [link(1, 1, s.amount)] }))
-    assert.deepEqual(f.result, [['2025-02', s.income, s.expenses, s.income + s.expenses]])
+    assert.deepEqual(f.result, [['2025-02', s.income * 100, s.expenses * 100,
+      (s.income + s.expenses) * 100]])
   })
   test(
     'multiple movements, Accounts and same-Transaction links retain existing per-link subtraction',
@@ -171,7 +176,7 @@ test.group('Income transfer cardinality without database', () => {
       account_transactions: [link(1, 1, 50), link(2, 1, -50, 2), link(3, 2, -40, 2), link(4, 3, 8)],
     })
     const f = await run(data)
-    assert.deepEqual(f.result, [['2025-02', 0, -130, -130], ['2025-03', 8, 0, 8]])
+    assert.deepEqual(f.result, [['2025-02', 0, -13000, -13000], ['2025-03', 800, 0, 800]])
     assert.deepEqual(f.observed.movements, [1, 2, 3, 4])
   })
   test('movement selection is unchanged; JSON matching Category/Budget defines deduction', async ({
@@ -204,7 +209,7 @@ test.group('Income transfer cardinality without database', () => {
     const f = await run(domain([], { transactions: [tx(1, { date: '2025-01-01' }), tx(2, { date:
       '2024-12-31' })],
       account_transactions: [link(1, 1, 50), link(2, 2, -20)] }))
-    assert.deepEqual(f.result, [['2024-12', 0, -20, -20], ['2025-01', 50, 0, 50]])
+    assert.deepEqual(f.result, [['2024-12', 0, -2000, -2000], ['2025-01', 5000, 0, 5000]])
   })
   test('current JSON deduction excludes stale/missing/legacy-only attribution').with([
     { json: [50], legacy: [], expected: 0 }, { json: [50], legacy: [20], expected: 0 },
@@ -214,7 +219,7 @@ test.group('Income transfer cardinality without database', () => {
     const f = await run(domain(s.legacy.map((amount, i) => transfer(i + 1, amount)), {
       transactions: [tx(1, { categories: s.json.map((amount) => ({ categoryId: 99, amount })) })],
     }))
-    assert.deepEqual(f.result, [['2025-02', s.expected, 0, s.expected]])
+    assert.deepEqual(f.result, [['2025-02', s.expected * 100, 0, s.expected * 100]])
   })
   test('source contract uses scoped JSON deduction and retains original selectors/response', async (
     { assert }) => {
@@ -225,5 +230,45 @@ test.group('Income transfer cardinality without database', () => {
     assert.deepEqual(aggregate.sums, ['transfer.amount as amount'])
     assert.deepEqual(aggregate.filters, [['transfer_transaction.application_id', '=', 1], [
       'transfer.categoryId', '=', 99]])
+  })
+})
+
+
+async function totals(rows) {
+  const query = { from() { return this }, joinRaw() { return this }, select() { return this },
+    sum() { return this }, where() { return this }, andWhere() { return this },
+    groupBy() { return this }, with() { return this }, join() { return this },
+    leftJoin() { return this }, groupByRaw() { return this }, orderBy() { return this },
+    then(resolve, reject) { return Promise.resolve(rows).then(resolve, reject) } }
+  const method = runInNewContext(ts.transpileModule(`(async function(budget) ${await currentBody(
+    )})`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, {
+    db: { query: () => query, raw: value => value }, addMoneyCents, parseMoneyCents,
+    TrackingType: { Transactions: 'Transactions' }, TransactionType: { STARTING_BALANCE: 4 },
+  })
+  return method({ id: 1, getAccountTransferCategory: async () => ({ id: 99 }) })
+}
+
+test.group('Income report exact SQL totals without a database', () => {
+  test('SQL totals stay in cents through exact net addition', async ({ assert }) => {
+    const result = await totals([
+      { month: '2025-01', income: '0.10', expenses: '0.2' },
+      { month: '2025-02', income: '0.30', expenses: '-0.20' },
+      { month: '2025-03', income: '0.10', expenses: '-0.10' },
+      { month: '2025-04', income: '0', expenses: '-1' },
+      { month: '2025-05', income: '90071992547409.91', expenses: '-90071992547409.91' },
+    ])
+    assert.deepEqual(result, [['2025-01', 10, 20, 30], ['2025-02', 30, -20, 10],
+      ['2025-03', 10, -10, 0], ['2025-04', 0, -100, -100],
+      ['2025-05', Number.MAX_SAFE_INTEGER, -Number.MAX_SAFE_INTEGER, 0]])
+    assert.deepEqual(await totals([]), [])
+  })
+
+  test('invalid totals and unsafe net results reject').with([
+    { income: '0.001', expenses: '0' }, { income: 'NaN', expenses: '0' },
+    { income: 0.1, expenses: '0' }, { income: null, expenses: '0' },
+    { income: '90071992547409.92', expenses: '0' },
+    { income: '90071992547409.91', expenses: '0.01' },
+  ]).run(async ({ assert }, values) => {
+    await assert.rejects(() => totals([{ month: '2025-01', ...values }]))
   })
 })

@@ -1,3 +1,4 @@
+import { addMoneyCents, parseMoneyCents, formatMoneyCents } from '../../../common/moneyCents.ts'
 import { encodeMonetaryAmount } from '../../../app/services/categoryAmountCodec.ts'
 import { test } from '@japa/runner'
 import { readFile } from 'node:fs/promises'
@@ -19,7 +20,8 @@ async function sourceMethod(name, context = {}) {
     ',')}) ${body})`
   return { body, run: runInNewContext(ts.transpileModule(expression, { compilerOptions: { target: ts
     .ScriptTarget.ES2022 } }).outputText,
-    { TransactionType, CategoryType, TrackingType, DateTime, ...context }) }
+    { TransactionType, CategoryType, TrackingType, DateTime, addMoneyCents, parseMoneyCents,
+      formatMoneyCents, ...context }) }
 }
 function adapter({ categories = [{ id: 10, name: 'Food', groupName: 'Living', budgetId: 1 }],
   transaction = { id: 1, type: 5, date: '2026-02-10', budgetId: 1, amount: 50, categories: [{
@@ -156,7 +158,7 @@ test.group('Allocation report authority characterization without DB', () => {
       categories: scenario.json.map((amount) => ({ categoryId: 99, amount })) } })
     const { run } = await sourceMethod('incomeVsExpenses', { db: f.db })
     const rows = await run({ id: 1, getAccountTransferCategory: async () => ({ id: 99 }) })
-    assert.equal(rows[0][1], scenario.expected)
+    assert.equal(rows[0][1], scenario.expected * 100)
   })
   test('Funding History exclusively expands net JSON, with no fallback').with([
     { json: [50], legacy: null, expected: 50 }, { json: [50], legacy: 20, expected: 50 },
@@ -209,8 +211,7 @@ test('report endpoints encode only monetary values without changing calculation 
     categoryName: 'Food', sum: 1.005, count: 2 }],
     expected: [{ rowNumber: '1', groupName: 'Group', categoryName: 'Food', sum: '1.00',
       count: 2 }] },
-  { report: 'income-vs-expenses', method: 'incomeVsExpenses', rows: [['2026-10', 10.25, -0.125,
-    10.125]],
+  { report: 'income-vs-expenses', method: 'incomeVsExpenses', rows: [['2026-10', 1025, -12, 1013]],
     expected: [['2026-10', '10.25', '-0.12', '10.13']] },
   { report: 'funding-history', method: 'fundingHistory', rows: [{ categoryId: 10, history: [{
     year: 2026, month: 10, amount: 0.125 }] },

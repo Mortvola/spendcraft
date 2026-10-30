@@ -62,6 +62,26 @@ async function selected(f: Fixture) {
 }
 
 test.group('Income Vs Expenses transfer fan-out PostgreSQL acceptance', () => {
+  test('fractional SQL totals and net preserve exact strings, empty results and Budget isolation',
+    async ({ client, assert }) => {
+      const own = await fixture(), foreign = await fixture()
+      const empty = await client.get('/api/v1/reports/income-vs-expenses').loginAs(own.user)
+      empty.assertStatus(200)
+      assert.deepEqual(empty.body(), [])
+      await movement(own, 0.1, [], { date: '2025-01-01' })
+      await movement(own, 0.2, [], { date: '2025-01-31' })
+      await movement(own, -0.2, [], { date: '2025-01-15' })
+      await movement(own, -0.1, [], { date: '2025-02-01' })
+      await movement(own, 0.3, [0.1, 0.2], { date: '2025-03-01' })
+      await movement(foreign, 99, [], { date: '2025-01-01' })
+      const before = await snapshot()
+      const response = await client.get('/api/v1/reports/income-vs-expenses').loginAs(own.user)
+      response.assertStatus(200)
+      assert.deepEqual(response.body(), [['2025-01', '0.30', '-0.20', '0.10'],
+        ['2025-02', '0.00', '-0.10', '-0.10'], ['2025-03', '0.00', '0.00', '0.00']])
+      assert.deepEqual(await snapshot(), before)
+    })
+
   test('movement50: JSON transfer partitions, repeated equal values and zero').with([
     { values: [50], expected: 0 }, { values: [20, 30], expected: 0 },
     { values: [10, 15, 25], expected: 0 }, { values: [20, 20], expected: 10 },
