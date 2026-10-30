@@ -4,6 +4,7 @@ import {
   '../../common/moneyCents.ts'
 import { encodeMonetaryAmount } from '../../app/Services/categoryAmountCodec.ts'
 import { test } from '@japa/runner'
+import { DateTime } from 'luxon'
 import { readFile } from 'node:fs/promises'
 import { URL } from 'node:url'
 import ts from 'typescript'
@@ -336,4 +337,74 @@ test.group('Auto-assignment checked cents without a database', () => {
       assert.deepEqual(f.transaction.categories.map(split => split.amount), [0.14, 0.15])
       assert.strictEqual(f.balances[1].balance, 0.1 + 0.15)
     })
+})
+
+
+async function startDateFixture({ amount = 0.2, balance = 0.3, earlier = false,
+  duplicate = false, loan = false } = {}) {
+  const source = await method(accounts, 'update')
+  const events = []
+  const trx = { async commit() { events.push('commit') },
+    async rollback() { events.push('rollback') } }
+  const category = { balance, async save() { events.push('category.save') } }
+  const account = { type: loan ? 'Loan' : 'Credit', tracking: 'Transactions',
+    startDate: DateTime.fromISO(earlier ? '2025-02-01' : '2025-01-01'),
+    async save() { events.push('account.save') },
+    async updateStartingBalance() { events.push('opening') },
+    related() { return { query() { return { if() { return this }, whereHas() { return this },
+      async preload() { return Array.from({ length: duplicate ? 2 : 1 }, () => ({ amount,
+        transaction: { categories: [{ categoryId: 1, amount }] } })) },
+    } } } } }
+  const pool = { async save() { events.push('pool.save') } }
+  const budget = { useTransaction() { events.push('budget.bound') },
+    async getUnassignedCategory() { return { id: 2 } },
+    async getFundingPoolCategory() { return pool } }
+  const user = { budgetId: 7, useTransaction() { events.push('user.bound') },
+    related() { return { query() { return {
+    forUpdate() { return this }, async firstOrFail() { return budget },
+  } } } } }
+  const update = runInNewContext(ts.transpileModule(`(async function(${source.parameters}) ${
+    source.body})`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, {
+    addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents, encodeMonetaryAmount,
+    updateAccount: {}, db: { transaction: async () => trx },
+    AccountType: { Loan: 'Loan' }, TrackingType: { Transactions: 'Transactions', Balances:
+      'Balances' }, budgetAccounts: () => ({ where() { return this },
+      async firstOrFail() { return account } }), Category: { query(options) {
+      if (options.client !== trx) throw new Error('Missing transaction binding')
+      return { where() { return this }, whereHas() { return this },
+        async firstOrFail() { return category } }
+    } },
+  })
+  return { events, category, run: () => update({ auth: { user }, request: {
+    params: () => ({ acctId: 1 }), validateUsing: async () => ({ startDate: DateTime.fromISO(
+      earlier ? '2025-01-01' : '2025-02-01') }),
+  }, logger: { error() { events.push('error') } } }) }
+}
+
+test.group('Account start-date checked cents without a database', () => {
+  test('date movement applies exact signed effects').with([
+    { amount: 0.2, balance: 0.3, earlier: false, expected: 0.1 },
+    { amount: -0.2, balance: -0.3, earlier: false, expected: -0.1 },
+    { amount: 0.2, balance: 0.1, earlier: true, expected: 0.3 },
+    { amount: -0.2, balance: -0.1, earlier: true, expected: -0.3 },
+    { amount: 0.125, balance: 0.005, earlier: true, expected: 0.14, loan: true },
+  ]).run(async ({ assert }, scenario) => {
+    const f = await startDateFixture(scenario)
+    await f.run()
+    assert.strictEqual(f.category.balance, scenario.expected)
+    assert.strictEqual(f.events.at(-1), 'commit')
+  })
+
+  test('unsafe deltas and balance totals roll back before Category or Account saves').with([
+    { amount: 50000000000000, duplicate: true },
+    { amount: 50000000000000, balance: 50000000000000, earlier: true },
+    { amount: Infinity },
+  ]).run(async ({ assert }, scenario) => {
+    const f = await startDateFixture(scenario)
+    await assert.rejects(f.run)
+    assert.include(f.events, 'rollback')
+    assert.notInclude(f.events, 'category.save')
+    assert.notInclude(f.events, 'account.save')
+    assert.notInclude(f.events, 'commit')
+  })
 })

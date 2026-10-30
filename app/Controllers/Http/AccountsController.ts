@@ -28,7 +28,9 @@ import { addTransaction } from '#validators/transaction';
 import { validateTransactionSplits } from '#app/validation/transactionSplits';
 import { addStatement, updateStatement } from '#validators/statement';
 import type { ModelAdapterOptions } from '@adonisjs/lucid/types/model';
-import { addMoneyCents, formatMoneyCents, parseMoneyCents } from '#common/moneyCents';
+import {
+  addMoneyCents, subtractMoneyCents, formatMoneyCents, parseMoneyCents, type MoneyCents,
+} from '#common/moneyCents';
 
 interface AddedTransaction {
   categories: CategoryBalanceProps[],
@@ -375,20 +377,23 @@ export default class AccountsController {
                 .where('date', '>=', later ? previousDate : nextDate)
                 .where('date', '<', later ? nextDate : previousDate);
             }).preload('transaction');
-          const deltas = new Map<number, number>();
+          const deltas = new Map<number, MoneyCents>();
           const unassigned = await budget.getUnassignedCategory({ client: trx });
           for (const row of crossing) {
             const splits = row.transaction.categories.length > 0
               ? row.transaction.categories : [{ categoryId: unassigned.id, amount: row.amount }];
             for (const split of splits) {
-              deltas.set(split.categoryId, (deltas.get(split.categoryId) ?? 0)
-                + Math.round(split.amount * 100) * (later ? -1 : 1));
+              const previous = deltas.get(split.categoryId) ?? parseMoneyCents('0.00');
+              const amount = parseMoneyCents(encodeMonetaryAmount(split.amount));
+              deltas.set(split.categoryId, later ? subtractMoneyCents(previous, amount)
+                : addMoneyCents(previous, amount));
             }
           }
           for (const [categoryId, cents] of deltas) {
             const category = await Category.query({ client: trx }).where('id', categoryId)
               .whereHas('group', (query) => query.where('budgetId', budget.id)).firstOrFail();
-            category.balance = (Math.round(category.balance * 100) + cents) / 100;
+            category.balance = Number(formatMoneyCents(addMoneyCents(
+              parseMoneyCents(encodeMonetaryAmount(category.balance)), cents)));
             await category.save();
           }
         }

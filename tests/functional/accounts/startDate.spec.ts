@@ -32,6 +32,43 @@ async function createFixture() {
 }
 
 test.group('Account start-date characterization', () => {
+  test('fractional multi-row effects and empty-split fallback roundtrip exactly')
+    .with([1, -1]).run(async ({ client, assert }, sign) => {
+      const f = await createFixture()
+      const group = await f.budget.related('groups').create({ name: 'Exact boundaries',
+        type: 'Regular' })
+      const category = await group.related('categories').create({ name: 'Exact Category',
+        type: CategoryType.Regular, balance: sign * 0.4, fundingCategories: [] })
+      const unassigned = await f.budget.getUnassignedCategory()
+      await unassigned.merge({ balance: sign * 0.3 }).save()
+      for (const [amount, pending, categories] of [
+        [sign * 0.2, false, [{ categoryId: category.id, amount: sign * 0.1 },
+          { categoryId: category.id, amount: sign * 0.1 }]],
+        [sign * 0.1, true, [{ categoryId: category.id, amount: sign * 0.1 }]],
+        [sign * 0.2, false, []],
+      ] as const) {
+        const transaction = await f.budget.related('transactions').create({
+          date: DateTime.fromISO('2025-01-15'), type: TransactionType.MANUAL_TRANSACTION,
+          categories: [...categories], version: 0, deleted: false, sortOrder: 0, taxes: [] })
+        await writeCanonicalTransactionFixture(transaction)
+        await f.account.related('accountTransactions').create({ transactionId: transaction.id,
+          amount, pending, name: 'Exact boundary', provider: 'NONE' })
+      }
+      const before = await db.from('account_transactions').where('account_id', f.account.id)
+        .orderBy('id')
+      for (const date of ['2025-02-01', '2025-02-01', '2025-01-01']) {
+        ;(await client.patch(`/api/v1/account/${f.account.id}`).json({ startDate: date })
+          .loginAs(f.user)).assertStatus(200)
+        assert.strictEqual((await Category.findOrFail(category.id)).balance,
+          date === '2025-01-01' ? sign * 0.4 : sign * 0.1)
+        assert.strictEqual((await Category.findOrFail(unassigned.id)).balance,
+          date === '2025-01-01' ? sign * 0.3 : sign * 0.1)
+        assert.strictEqual((await Account.findOrFail(f.account.id)).balance, 100)
+      }
+      assert.deepEqual(await db.from('account_transactions').whereIn('id', before.map(row =>
+        row.id)).orderBy('id'), before)
+    })
+
   test('boundary movement preserves current balance and ordinary transaction identity')
     .with([TrackingType.Transactions]).run(async ({ client, assert }, tracking) => {
       const f = await createFixture()
