@@ -1,11 +1,11 @@
 import { categoryNonzeroAllocationSql, encodeMonetaryAmount } from
   '../../app/services/categoryAmountCodec.ts'
 import { test } from '@japa/runner'
-import { parseMoneyCents } from '../../common/moneyCents.ts'
+import { parseMoneyCents, subtractMoneyCents, formatMoneyCents } from '../../common/moneyCents.ts'
 import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
-import { CategoryType, TrackingType } from '../../common/ResponseTypes.ts'
+import { CategoryType, TrackingType, AccountType } from '../../common/ResponseTypes.ts'
 
 // Executes current protocol against inert adapters; no app/ORM/DB bootstrap.
 async function method(file, name, context = {}) {
@@ -158,7 +158,49 @@ test.group('Category/Pool bounded Budget protocol (no database)', () => {
     }
     const { body } = await method(institutions, 'deleteAccounts')
     assert.notInclude(body, 'forUpdate')
-    assert.include(body, 'category.balance -= tc.amount'); assert.notInclude(body,
-      'transaction.deleted')
+    assert.notInclude(body, 'transaction.deleted')
   })
+})
+
+
+test.group('Deletion Category effects in checked cents without DB', () => {
+  test('explicit, duplicate, empty and multi-account allocations reverse exact signed effects')
+    .with(['explicit', 'empty', 'multiple', 'loan'].flatMap(shape => [1, -1].map(sign => ({ shape,
+      sign }))))
+    .run(async ({ assert }, { shape, sign }) => {
+      const events = []
+      const trx = {}
+      const category = { id: 1, balance: sign * (shape === 'multiple' ? 0.4 : 0.3),
+        async save() { events.push('category.save') } }
+      const accounts = Array.from({ length: shape === 'multiple' ? 2 : 1 }, (_, index) => ({
+        id: index + 1, type: shape === 'loan' ? AccountType.Loan : AccountType.Depository,
+        tracking: TrackingType.Transactions,
+        async delete() { events.push('account.delete') },
+      }))
+      const transactions = accounts.map(account => ({ categories: shape === 'empty' ? []
+        : account.id === 1 ? [{ categoryId: 1, amount: sign * 0.1 },
+          { categoryId: 1, amount: sign * 0.1 }] : [{ categoryId: 1, amount: sign * 0.1 }],
+        async delete() { events.push('transaction.delete') } }))
+      const { run } = await method(institutions, 'deleteAccounts', {
+        parseMoneyCents, subtractMoneyCents, formatMoneyCents, AccountType, TrackingType,
+        AccountTransaction: { query({ client }) {
+          assert.strictEqual(client, trx)
+          return { async where(_field, id) { return [{ transactionId: id,
+            amount: sign * (id === 1 ? 0.2 : 0.1),
+            async delete() { events.push('link.delete') } }] } }
+        } }, Transaction: { async find(id, { client }) {
+          assert.strictEqual(client, trx); return transactions[id - 1]
+        } }, Category: { async find(_id, { client }) {
+          assert.strictEqual(client, trx); return category
+        } }, BalanceHistory: { query: () => ({ where: async () => [] }) },
+      })
+      const result = await run(accounts, { $trx: trx, async getUnassignedCategory({ client }) {
+        assert.strictEqual(client, trx); return category
+      } })
+      assert.strictEqual(category.balance, shape === 'loan'
+        ? sign * 0.3 - sign * 0.1 - sign * 0.1 : sign * 0.1)
+      assert.deepEqual(Array.from(result, row => ({ ...row })), [{ id: 1,
+        balance: sign > 0 ? '0.10' : '-0.10' }])
+      assert.equal(events.filter(event => event === 'account.delete').length, accounts.length)
+    })
 })

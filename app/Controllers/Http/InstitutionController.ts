@@ -1,5 +1,5 @@
 import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
-import { parseMoneyCents } from '#common/moneyCents';
+import { parseMoneyCents, subtractMoneyCents, formatMoneyCents } from '#common/moneyCents';
 import PlaidItemCleanupService from '#services/plaidItemCleanup'
  
 import { HttpContext } from '@adonisjs/core/http';
@@ -924,7 +924,11 @@ class InstitutionController {
                
               const unassignedCat = await budget.getUnassignedCategory({ client: budget.$trx });
 
-              unassignedCat.balance -= acctTran.amount;
+              unassignedCat.balance = acct.type === AccountType.Loan
+                ? unassignedCat.balance - acctTran.amount
+                : Number(formatMoneyCents(subtractMoneyCents(
+                  parseMoneyCents(encodeMonetaryAmount(unassignedCat.balance)),
+                  parseMoneyCents(encodeMonetaryAmount(acctTran.amount)))));
 
               await unassignedCat.save();
 
@@ -946,7 +950,10 @@ class InstitutionController {
               const category = await Category.find(tc.categoryId, { client: budget.$trx });
 
               if (category) {
-                category.balance -= tc.amount;
+                category.balance = acct.type === AccountType.Loan ? category.balance - tc.amount
+                  : Number(formatMoneyCents(subtractMoneyCents(
+                    parseMoneyCents(encodeMonetaryAmount(category.balance)),
+                    parseMoneyCents(encodeMonetaryAmount(tc.amount)))));
 
                  
                 await category.save();

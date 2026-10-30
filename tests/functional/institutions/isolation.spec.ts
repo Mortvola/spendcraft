@@ -1,3 +1,4 @@
+import { mock } from 'node:test'
 import { parseMoneyCents } from '#common/moneyCents'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { test } from '@japa/runner'
@@ -379,6 +380,63 @@ test.group('Institution isolation', (group) => {
     response.assertStatus(200)
     assert.equal(response.body().institution_id, 'provider-own')
     assert.deepEqual(fake.calls, [{ method: 'getInstitutionById', resource: 'provider-own' }])
+  })
+
+  test('deletion reverses fractional duplicate and empty allocations exactly')
+    .with(['account', 'institution'].flatMap(operation => [1, -1].map(sign => ({ operation,
+      sign })))).run(async ({ client, assert }, { operation, sign }) => {
+      const f = fixture.own
+      await f.category.merge({ balance: sign * 0.3 }).save()
+      await f.accountTransaction.merge({ amount: sign * 0.2 }).save()
+      await db.from('transactions').where('id', f.transaction.id).update({ categories:
+        JSON.stringify([{ categoryId: f.category.id, amount: sign > 0 ? '0.10' : '-0.10' },
+          { categoryId: f.category.id, amount: sign > 0 ? '0.10' : '-0.10' }]) })
+      const unassigned = await f.budget.getUnassignedCategory()
+      if (operation === 'institution') {
+        await unassigned.merge({ balance: sign * 0.3 }).save()
+        const other = await f.institution.related('accounts').create({ name: 'Second exact account',
+          type: AccountType.Depository, subtype: 'checking', tracking: TrackingType.Transactions,
+          balance: 0, startDate: DateTime.fromISO('2025-01-01'), rate: 0, closed: false })
+        const transaction = await f.budget.related('transactions').create({
+          date: DateTime.fromISO('2025-02-01'), type: TransactionType.MANUAL_TRANSACTION,
+          categories: [], taxes: [], deleted: false })
+        await writeCanonicalTransactionFixture(transaction)
+        await other.related('accountTransactions').create({ transactionId: transaction.id,
+          amount: sign * 0.2, pending: false, name: 'Empty allocation', provider: 'NONE' })
+      }
+      const foreignBefore = await db.from('categories').where('id', fixture.foreign.category.id)
+        .firstOrFail()
+      const suffix = operation === 'account' ? `/accounts/${f.account.id}` : ''
+      const response = await client.delete(`/api/v1/institution/${f.institution.id}${suffix}`)
+        .loginAs(fixture.shared)
+      response.assertStatus(200)
+      assert.strictEqual((await Category.findOrFail(f.category.id)).balance, sign * 0.1)
+      if (operation === 'institution') {
+        assert.strictEqual((await Category.findOrFail(unassigned.id)).balance, sign * 0.1)
+        assert.lengthOf(await Account.query().where('institutionId', f.institution.id), 0)
+      }
+      assert.strictEqual(response.body().find((row: { id: number }) => row.id === f.category.id)
+        .balance, sign > 0 ? '0.10' : '-0.10')
+      assert.isNull(await Account.find(f.account.id))
+      assert.deepEqual(await db.from('categories').where('id', fixture.foreign.category.id)
+        .firstOrFail(), foreignBefore)
+    })
+
+  test('late deletion balance failure rolls back all local financial changes', async ({ client,
+    assert }) => {
+    const before = await state()
+    const original = Category.prototype.save
+    const failure = mock.method(Category.prototype, 'save', async function (this: Category) {
+      const result = await original.call(this)
+      if (this.id === fixture.own.category.id) throw new Error('Injected deletion save failure')
+      return result
+    })
+    try {
+      const response = await client.delete(`/api/v1/institution/${fixture.own.institution
+        .id}/accounts/${fixture.own.account.id}`).loginAs(fixture.shared)
+      response.assertStatus(500)
+      assert.deepEqual(await state(), before)
+    } finally { failure.mock.restore() }
   })
 
   test('shared-budget institution deletion removes only own financial records', async ({ client,
