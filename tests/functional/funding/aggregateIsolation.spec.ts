@@ -171,6 +171,35 @@ direction`)
       assert.deepEqual(await state(), before)
     })
 
+  test('monthly summary preserves exact signed totals and previous-month boundaries')
+    .with([1, -1]).run(async ({ client, assert }, sign) => {
+      await a.first.merge({ balance: sign * 0.3 }).save()
+      for (const [index, amount] of [[0, 0.1], [1, 0.1], [2, 0.2], [3, 0.3]] as const) {
+        await db.from('transactions').where('id', a.transactions[index].id).update({
+          categories: JSON.stringify([{ categoryId: a.first.id,
+            amount: encodeMonetaryAmount(sign * amount),
+            ...(index === 3 ? { baseAmount: encodeMonetaryAmount(sign * 0.2) } : {}) }]),
+          ...(index === 3 ? { date: '2025-02-28', deleted: false,
+            type: TransactionType.FUNDING_TRANSACTION } : {}),
+        })
+      }
+      await a.budget.related('transactions').create({ date: DateTime.fromISO('2025-02-01'),
+        type: TransactionType.REBALANCE_TRANSACTION, categories: [
+          { categoryId: a.first.id, amount: sign * 0.1 },
+          { categoryId: a.second.id, amount: -sign * 0.1 }], taxes: [], deleted: false })
+      const before = await state()
+      const response = await client.get('/api/v1/categories').qs({ date: '2025-03-15' })
+        .loginAs(a.user)
+      response.assertStatus(200)
+      const prefix = sign < 0 ? '-' : ''
+      assert.deepEqual(response.body().data.find((row: { id: number }) => row.id === a.first.id),
+        { id: a.first.id, name: a.first.name, balance: `${prefix}0.10`,
+          previousSum: `${prefix}0.20`, previousFunding: `${prefix}0.30`,
+          previousBaseAmount: `${prefix}0.20`, previousCatTransfers: `${prefix}0.10` })
+      assert.isFalse(response.body().data.some((row: { id: number }) => row.id === b.first.id))
+      assert.deepEqual(await state(), before)
+    })
+
   test('balance helper constrains the exclusion OR branch to its own budget', async ({ client,
     assert }) => {
     const baseline = await client.get(path('balances')).qs({ date: '2025-03-01' }).accept('json')

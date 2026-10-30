@@ -213,16 +213,26 @@ class CategoriesController {
           TransactionType.REBALANCE_TRANSACTION,
         ])
 
+      // SUM may return "0" for missing baseAmount values, or shorter decimal
+      // text from historical JSON. Pad decimal digits without numeric conversion.
+      const aggregateCents = (value: unknown): MoneyCents => {
+        if (value === null || value === undefined) return parseMoneyCents('0.00');
+        if (typeof value !== 'string' || !/^-?(?:0|[1-9]\d*)(?:\.\d{1,2})?$/.test(value)) {
+          return parseMoneyCents(value);
+        }
+        const [whole, fraction = ''] = value.split('.');
+        return parseMoneyCents(`${whole}.${fraction.padEnd(2, '0')}`);
+      };
       return {
         data: categories.map((c) => ({
           id: c.id,
           name: c.name,
-          balance: encodeMonetaryAmount(c.balance - parseFloat(c.$extras.sum ?? 0)),
-          previousSum: encodeMonetaryAmount(parseFloat(c.$extras.previousSum ?? 0)),
-          previousFunding: encodeMonetaryAmount(parseFloat(c.$extras.previousFunding ?? 0)),
-          previousBaseAmount: encodeMonetaryAmount(parseFloat(c.$extras.previousBaseAmount ?? 0)),
-          previousCatTransfers: encodeMonetaryAmount(parseFloat(c.$extras.previousCatTransfers ??
-            0)),
+          balance: formatMoneyCents(subtractMoneyCents(
+            parseMoneyCents(encodeMonetaryAmount(c.balance)), aggregateCents(c.$extras.sum))),
+          previousSum: formatMoneyCents(aggregateCents(c.$extras.previousSum)),
+          previousFunding: formatMoneyCents(aggregateCents(c.$extras.previousFunding)),
+          previousBaseAmount: formatMoneyCents(aggregateCents(c.$extras.previousBaseAmount)),
+          previousCatTransfers: formatMoneyCents(aggregateCents(c.$extras.previousCatTransfers)),
         })),
       }
     }
