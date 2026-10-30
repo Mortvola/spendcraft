@@ -165,6 +165,63 @@ test.group('Plaid sync characterization', (group) => {
     assert.deepEqual(await snapshot(), before)
   })
 
+  test('auto-assignment retains exact Category balances and last-rule residual cents')
+    .with([
+      { amount: 0.3, rules: [{ amount: 0.1, percentage: false },
+        { amount: 50, percentage: true }, { amount: 50, percentage: true }],
+      expected: [0.1, 0.1, 0.1], balances: [0.2, 0.2, 0.2], accountBalance: 0.4 },
+      { amount: 0.29, rules: [{ amount: 50, percentage: true },
+        { amount: 50, percentage: true }], expected: [0.15, 0.14], balances: [0.25, 0.24],
+      accountBalance: 0.39 },
+      { amount: -0.01, rules: [{ amount: 50, percentage: true },
+        { amount: 50, percentage: true }], expected: [0, -0.01], balances: [0.1, 0.09],
+      accountBalance: 0.09 },
+      { amount: 100, rules: [{ amount: 10.01, percentage: false },
+        { amount: 12.75, percentage: true }, { amount: 87.25, percentage: true }],
+      expected: [10.01, 11.47, 78.52], balances: [10.11, 11.57, 78.62], accountBalance: 100.1 },
+    ]).run(async ({ client, assert }, scenario) => {
+      await f.account.merge({ balance: 0.1 }).save()
+      const group = await f.budget.related('groups').create({ name: 'Exact assignment',
+        type: 'Regular' })
+      const assignment = await f.budget.related('autoAssignment').create({ name: 'Exact rule',
+        searchStrings: ['Provider purchase'] })
+      const categories = []
+      for (const rule of scenario.rules) {
+        const category = await group.related('categories').create({ name: 'Exact split',
+          type: CategoryType.Regular, balance: 0.1, fundingCategories: [] })
+        categories.push(category)
+        await assignment.related('categories').create({ ...rule, categoryId: category.id })
+      }
+      fake.responses = [page(accounts(), 'exact-assigned', { added: [purchase('purchase', {
+        amount: -scenario.amount })] })]
+      ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
+      const { transaction } = await local()
+      assert.deepEqual(transaction.categories.map(split => split.amount), scenario.expected)
+      assert.deepEqual(transaction.categories.map(split => split.categoryId), categories.map(
+        category => category.id))
+      for (let index = 0; index < categories.length; index++) {
+        await categories[index].refresh()
+        assert.strictEqual(categories[index].balance, scenario.balances[index])
+      }
+      assert.strictEqual((await Account.findOrFail(f.account.id)).balance, scenario.accountBalance)
+      await f.unassigned.refresh()
+      assert.strictEqual(f.unassigned.balance, 0)
+      assert.strictEqual((await Account.findOrFail(f.other.id)).balance, 100)
+    })
+
+  test('unsafe auto-assignment percentage result rolls back the complete sync', async ({ client,
+    assert }) => {
+    const assignment = await f.budget.related('autoAssignment').create({ name: 'Overflow',
+      searchStrings: ['Provider purchase'] })
+    await assignment.related('categories').create({ categoryId: f.unassigned.id,
+      amount: 9999999999.99, percentage: true })
+    const before = await snapshot()
+    fake.responses = [page(accounts(), 'unsafe-assignment', { added: [purchase('purchase', {
+      amount: -9999999999.99 })] })]
+    ;(await client.post(url()).loginAs(f.user)).assertStatus(500)
+    assert.deepEqual(await snapshot(), before)
+  })
+
   test('Plaid reimport preserves canonical tax attribution and numeric/mixed reads reject').with([
     'numeric', 'string', 'mixed'])
     .run(async ({ client, assert }, encoding) => {

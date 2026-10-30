@@ -1,5 +1,6 @@
 import {
-  addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents, type MoneyCents,
+  addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents, moneyCentsFromInteger,
+  type MoneyCents,
 } from '#common/moneyCents';
 import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
 import { requestCategoryStorage, hasCategoryStorage } from '#services/categoryStorageBinding';
@@ -297,48 +298,60 @@ class Account extends BaseModel {
       const categories = await autoAssignment.related('categories').query()
         .orderByRaw('CASE WHEN percentage THEN 1 ELSE 0 END');
 
-      // Multiplying by 100 and rounding to the nearest integer insures we are not
-      // working with fractional pennies.
-      let remaining = Math.round(accountTransaction.amount * 100);
-
-      const assignedCategories: string[] = [];
-
-      transaction.categories = [];
+      const useCents = this.type !== AccountType.Loan;
+      const zeroCents = parseMoneyCents('0.00');
+      let remainingCents = useCents
+        ? parseMoneyCents(encodeMonetaryAmount(accountTransaction.amount)) : zeroCents;
+      let percentageBaseCents = remainingCents;
+      // Loan-excluded allocations retain their existing arithmetic.
+      let remaining = useCents ? 0 : Math.round(accountTransaction.amount * 100);
       let transactionAmount = accountTransaction.amount;
 
-       
+      const assignedCategories: string[] = [];
+      transaction.categories = [];
+
       for (let i = 0; i < categories.length; i += 1) {
-        const cat = categories[i]
-
+        const cat = categories[i];
         let amount: number;
+        let amountCents = zeroCents;
 
-        if (cat.percentage) {
-          amount = Math.round(transactionAmount * (cat.amount / 100.0) * 100);
+        if (useCents) {
+          amountCents = cat.percentage
+            ? moneyCentsFromInteger(Math.round(percentageBaseCents * (cat.amount / 100)))
+            : parseMoneyCents(encodeMonetaryAmount(cat.amount));
+          if (!cat.percentage) {
+            percentageBaseCents = subtractMoneyCents(percentageBaseCents, amountCents);
+          }
+          remainingCents = subtractMoneyCents(remainingCents, amountCents);
+          // The final rule absorbs the remainder, as before.
+          if (remainingCents !== 0 && i === categories.length - 1) {
+            amountCents = addMoneyCents(amountCents, remainingCents);
+          }
+          amount = Number(formatMoneyCents(amountCents));
         }
         else {
-          amount = Math.round(cat.amount * 100);
-          // Adjust the transaction amount so that any follow any percentage entries
-          // are applied against the remainder after fixed amounts are applied.
-          transactionAmount -= amount / 100.0;
+          let legacyCents: number;
+          if (cat.percentage) {
+            legacyCents = Math.round(transactionAmount * (cat.amount / 100.0) * 100);
+          }
+          else {
+            legacyCents = Math.round(cat.amount * 100);
+            transactionAmount -= legacyCents / 100.0;
+          }
+          remaining -= legacyCents;
+          if (remaining !== 0 && i === categories.length - 1) legacyCents += remaining;
+          amount = legacyCents / 100.0;
         }
 
-        remaining -= amount;
+        transaction.categories.push({ categoryId: cat.categoryId, amount });
 
-        // If this is the last auto assign category and there is a remaining balance
-        // then add it to transaction category about to be created.
-        if (remaining !== 0 && i === categories.length - 1) {
-          amount += remaining;
-        }
-
-        transaction.categories.push({ categoryId: cat.categoryId, amount: amount / 100.0 })
-
-        // Update the category balance
-         
-        const category = await Category.findOrFail(cat.categoryId, { client: this.$trx })
+        const category = await Category.findOrFail(cat.categoryId, { client: this.$trx });
         if (transaction.date >= this.startDate) {
-          category.balance += amount / 100.0;
+          category.balance = useCents ? Number(formatMoneyCents(addMoneyCents(
+            parseMoneyCents(encodeMonetaryAmount(category.balance)), amountCents)))
+            : category.balance + amount;
         }
-         
+
         await category.save()
 
          

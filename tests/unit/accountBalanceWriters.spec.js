@@ -1,4 +1,6 @@
-import { addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents } from
+import {
+  addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents, moneyCentsFromInteger,
+} from
   '../../common/moneyCents.ts'
 import { encodeMonetaryAmount } from '../../app/Services/categoryAmountCodec.ts'
 import { test } from '@japa/runner'
@@ -225,4 +227,113 @@ test.group('Initial Funding checked cents without a database', () => {
     assert.strictEqual(f.link().amount, 0.1 - 0.005)
     assert.strictEqual(f.pool.balance, 0.1 - 0.005)
   })
+})
+
+
+async function assignmentFixture(amount, rules, { loan = false, eligible = true,
+  balance = 0.1, matched = true } = {}) {
+  const source = await method('app/Models/Account.ts', 'autoAssign')
+  const events = []
+  const categories = rules.map((rule, index) => ({ id: index + 1, categoryId: index + 1,
+    ...rule }))
+  const balances = categories.map(category => ({ id: category.id, name: `Category ${category.id}`,
+    balance, async save() { events.push(['category.save', this.id]) },
+    related() { return { query: () => ({ firstOrFail: async () => ({ type: 'NoGroup' }) }) } } }))
+  const trx = {}
+  const account = { type: loan ? 'Loan' : 'Credit', $trx: trx, startDate: 1 }
+  const transaction = { budgetId: 7, date: eligible ? 1 : 0, categories: [],
+    async save() { events.push('transaction.save') }, related() { return { create: async () => {
+      events.push('log') } } } }
+  const budget = { related() { return { query() { return { whereIn() { return this },
+    async first() { return matched ? { related() { return { query: () => ({
+      async orderByRaw(order) {
+        events.push(order)
+        return categories
+      },
+    }) } } } : null } } } } } }
+  const allocate = runInNewContext(ts.transpileModule(`(async function(${source.parameters}) ${
+    source.body})`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, {
+    addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents, moneyCentsFromInteger,
+    encodeMonetaryAmount, AccountType: { Loan: 'Loan' }, GroupType: { NoGroup: 'NoGroup' },
+    Category: { async findOrFail(id, options) {
+      if (options.client !== trx) throw new Error('Missing transaction binding')
+      return balances[id - 1]
+    } },
+  })
+  return { transaction, balances, events,
+    run: () => allocate.call(account, budget, transaction, { amount, name: 'Match' }) }
+}
+
+test.group('Auto-assignment checked cents without a database', () => {
+  test('fixed, percentage and mixed rules retain order, rounding and final residual')
+    .with([
+      { amount: 100, rules: [{ amount: 10.01 }, { amount: 12.75, percentage: true },
+        { amount: 87.25, percentage: true }], expected: [10.01, 11.47, 78.52] },
+      { amount: 0.3, rules: [{ amount: 0.1, percentage: null }, { amount: 50, percentage: true },
+        { amount: 50, percentage: true }], expected: [0.1, 0.1, 0.1] },
+      { amount: 0.29, rules: [{ amount: 50, percentage: true },
+        { amount: 50, percentage: true }], expected: [0.15, 0.14] },
+      { amount: -0.01, rules: [{ amount: 50, percentage: true },
+        { amount: 50, percentage: true }], expected: [0, -0.01] },
+      { amount: 0.01, rules: [{ amount: 50, percentage: true },
+        { amount: 50, percentage: true }], expected: [0.01, 0] },
+      { amount: -100, rules: [{ amount: -10 }, { amount: 25, percentage: true },
+        { amount: 75, percentage: true }], expected: [-10, -22.5, -67.5] },
+      { amount: 0.3, rules: [{ amount: 0.1 }, { amount: 0.1 }], expected: [0.1, 0.2] },
+      { amount: 0.05, rules: [1, 2, 3].map(() => ({ amount: 33.33, percentage: true })),
+        expected: [0.02, 0.02, 0.01] },
+      { amount: 0, rules: [{ amount: 100, percentage: true }], expected: [0] },
+      { amount: 0.1, rules: [{ amount: 0.2 }, { amount: 50, percentage: true },
+        { amount: 50, percentage: true }], expected: [0.2, -0.05, -0.05] },
+    ]).run(async ({ assert }, scenario) => {
+      const f = await assignmentFixture(scenario.amount, scenario.rules)
+      assert.isTrue(await f.run())
+      assert.deepEqual(f.transaction.categories.map(split => split.amount), scenario.expected)
+      assert.deepEqual(f.transaction.categories.map(split => split.categoryId), scenario.rules
+        .map((_, index) => index + 1))
+      assert.strictEqual(addMoneyCents(...f.transaction.categories.map(split => parseMoneyCents(
+        encodeMonetaryAmount(split.amount)))), parseMoneyCents(encodeMonetaryAmount(scenario
+        .amount)))
+      for (let i = 0; i < f.balances.length; i++) {
+        assert.strictEqual(f.balances[i].balance, Number(formatMoneyCents(addMoneyCents(
+          parseMoneyCents('0.10'), parseMoneyCents(encodeMonetaryAmount(scenario.expected[i]))))))
+      }
+      assert.include(f.events, 'CASE WHEN percentage THEN 1 ELSE 0 END')
+    })
+
+  test('unsafe amounts, percentages and Category results reject')
+    .with([
+      { amount: Infinity, rules: [{ amount: 100, percentage: true }] },
+      { amount: 0.1, rules: [{ amount: Infinity, percentage: true }] },
+      { amount: 9999999999.99, rules: [{ amount: 9999999999.99, percentage: true }] },
+      { amount: 0.1, rules: [{ amount: 100, percentage: true }], balance: Number.MAX_SAFE_INTEGER },
+      { amount: 0.1, rules: [{ amount: Number.MAX_SAFE_INTEGER }] },
+    ]).run(async ({ assert }, scenario) => {
+      const f = await assignmentFixture(scenario.amount, scenario.rules, scenario)
+      await assert.rejects(f.run)
+      assert.notInclude(f.events, 'transaction.save')
+      assert.isFalse(f.events.some(event => Array.isArray(event) && event[0] === 'category.save'))
+    })
+
+  test('pre-start-date allocations do not change Category balances', async ({ assert }) => {
+    const f = await assignmentFixture(0.2, [{ amount: 100, percentage: true }], { eligible: false })
+    await f.run()
+    assert.strictEqual(f.balances[0].balance, 0.1)
+    assert.strictEqual(f.transaction.categories[0].amount, 0.2)
+  })
+
+  test('unmatched assignment leaves allocations untouched', async ({ assert }) => {
+    const f = await assignmentFixture(0.2, [], { matched: false })
+    assert.isFalse(await f.run())
+    assert.deepEqual(f.events, [])
+  })
+
+  test('Loan-excluded allocations retain prior percentage rounding and balance arithmetic',
+    async ({ assert }) => {
+      const f = await assignmentFixture(0.29, [{ amount: 50, percentage: true },
+        { amount: 50, percentage: true }], { loan: true })
+      await f.run()
+      assert.deepEqual(f.transaction.categories.map(split => split.amount), [0.14, 0.15])
+      assert.strictEqual(f.balances[1].balance, 0.1 + 0.15)
+    })
 })
