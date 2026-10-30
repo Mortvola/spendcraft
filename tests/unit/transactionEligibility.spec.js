@@ -239,12 +239,14 @@ nominal splits', async ({ assert }) => {
 })
 
 test.group('Real manual CREATE before/equal/after boundary without DB', () => {
-  for (const date of dates) for (const amount of [-10, 0, 10]) {
+  for (const date of dates) for (const amount of [-10, -0.2, 0, 0.2, 10]) {
     test(`${date} signed amount ${amount}`, async ({ assert }) => {
       const events = []
       const trx = { async commit() { events.push('commit') }, async rollback() { events.push(
         'rollback') } }
-      const category = { id: 1, balance: 20, async save() { events.push('category') } }
+      const initialBalance = Math.abs(amount) === 0.2 ? 0.1 : 20
+      const category = { id: 1, balance: initialBalance,
+        async save() { events.push('category') } }
       let persisted
       const account = { id: 1, startDate: boundary, tracking: 'Transactions', type: 'Depository',
         balance: 100,
@@ -265,7 +267,7 @@ test.group('Real manual CREATE before/equal/after boundary without DB', () => {
         /* The query adapters independently assert the owning transaction. */ }, related() {
         return { query: () => query(budget) } } }
       const create = runInNewContext(await method('app/Controllers/Http/AccountsController.ts',
-        'addTransaction'), { encodeMonetaryAmount,
+        'addTransaction'), { encodeMonetaryAmount, addMoneyCents, parseMoneyCents, formatMoneyCents,
         requestCategoryStorage: (model) => model, excludeCategoryStorage: () => undefined,
           CategoryType: { Loan: 'Loan' }, validateStoredCategoryConservation: async () => undefined,
         accountEligible, categoryEligible, Transaction, AccountType: { Loan: 'Loan' },
@@ -283,7 +285,9 @@ test.group('Real manual CREATE before/equal/after boundary without DB', () => {
           amount }],
       }) }, logger: { error() { /* The caller captures errors from the production method. */ } } })
       assert.equal(account.balance, 100 + (date >= dates[1] ? amount : 0))
-      assert.equal(category.balance, 20 + (date >= dates[1] ? amount : 0))
+      const expected = date < dates[1] ? initialBalance
+        : amount === 0.2 ? 0.3 : amount === -0.2 ? -0.1 : 20 + amount
+      assert.strictEqual(category.balance, expected)
       assert.equal(persisted.categories[0].amount, amount)
       assert.equal(persisted.date.toISODate(), date)
       assert.equal(events[0], 'gate')

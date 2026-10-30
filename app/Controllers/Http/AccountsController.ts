@@ -28,7 +28,7 @@ import { addTransaction } from '#validators/transaction';
 import { validateTransactionSplits } from '#app/validation/transactionSplits';
 import { addStatement, updateStatement } from '#validators/statement';
 import type { ModelAdapterOptions } from '@adonisjs/lucid/types/model';
-import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents';
+import { addMoneyCents, formatMoneyCents, parseMoneyCents } from '#common/moneyCents';
 
 interface AddedTransaction {
   categories: CategoryBalanceProps[],
@@ -266,7 +266,14 @@ export default class AccountsController {
           .whereHas('group', (query) => query.where('budgetId', budget.id))
           .firstOrFail();
 
-        category.balance += split.amount;
+        if (categoryStorageActive) {
+          const balanceCents = addMoneyCents(
+            parseMoneyCents(encodeMonetaryAmount(category.balance)),
+            parseMoneyCents(encodeMonetaryAmount(split.amount)));
+          category.balance = Number(formatMoneyCents(balanceCents));
+        } else {
+          category.balance += split.amount;
+        }
 
         await category.save();
 

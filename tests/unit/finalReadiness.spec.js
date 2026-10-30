@@ -6,6 +6,8 @@ import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
 import { accountEligible, categoryEligible } from '../../app/services/transactionEligibility.ts'
 import { validateTransactionSplits } from '../../app/validation/transactionSplits.ts'
+import { addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents } from
+  '../../common/moneyCents.ts'
 
 // Characterize the CURRENT forward CREATE→DELETE contradiction, not acceptance
 // of that arithmetic. Actual method bodies, inert adapters, no app/model/DB boot.
@@ -17,7 +19,8 @@ async function method(file, name, globals) {
   return runInNewContext(ts.transpileModule(`(async function(${declaration.parameters.map((p) => p
     .getText(source)).join(',')}) ${declaration.body.getText(source)})`, {
     compilerOptions: { target: ts.ScriptTarget.ES2022 },
-  }).outputText, { encodeMonetaryAmount, ...globals })
+  }).outputText, { encodeMonetaryAmount, addMoneyCents, subtractMoneyCents, parseMoneyCents,
+    formatMoneyCents, ...globals })
 }
 
 test.group('Final readiness forward deletion characterization without DB', () => {
@@ -25,11 +28,15 @@ test.group('Final readiness forward deletion characterization without DB', () =>
     [
     { date: '2025-01-31', amount: 10 }, { date: '2025-01-31', amount: -10 },
     { date: '2025-02-01', amount: 10 },
+    { date: '2025-02-01', amount: 0.2, categoryBalance: 0.1 },
+    { date: '2025-02-01', amount: 0.2, categoryBalance: 0.1, empty: true },
+    { date: '2025-02-01', amount: -0.2, categoryBalance: -0.1 },
   ]).run(async ({ assert }, scenario) => {
     const events = []
     const trx = { async commit() { events.push('commit') }, async rollback() { events.push(
       'rollback') } }
-    const category = { id: 1, type: 'Regular', balance: 0, async save() { events.push(
+    const initialBalance = scenario.categoryBalance ?? 0
+    const category = { id: 1, type: 'Regular', balance: initialBalance, async save() { events.push(
       'category.save') } }
     let transaction, link
     function query(row) {
@@ -54,7 +61,8 @@ test.group('Final readiness forward deletion characterization without DB', () =>
       static query() { return query(transaction) }
     }
     const globals = { requestCategoryStorage: (model) => model, excludeCategoryStorage: () =>
-      undefined, validateStoredCategoryConservation: async () => undefined, accountEligible,
+      undefined, hasCategoryStorage: () => true,
+      validateStoredCategoryConservation: async () => undefined, accountEligible,
       categoryEligible, validateTransactionSplits, Transaction,
       Account: { query: () => query(account) }, AccountTransaction: { findBy: async () => link },
       Category: { query: () => query(category) }, budgetCategories: () => query(category),
@@ -72,13 +80,16 @@ test.group('Final readiness forward deletion characterization without DB', () =>
     }) }, logger: { error(error) { events.push(error.message) } } })
     const eligible = scenario.date >= '2025-02-01'
     assert.equal(account.balance, 100 + (eligible ? scenario.amount : 0))
-    assert.equal(category.balance, eligible ? scenario.amount : 0)
+    assert.strictEqual(category.balance, scenario.categoryBalance === 0.1 ? 0.3
+      : scenario.categoryBalance === -0.1 ? -0.3 : eligible ? scenario.amount : 0)
+    // Exercise the existing Unassigned fallback for an empty historical split list.
+    if (scenario.empty) transaction.categories = []
     const remove = await method('app/Controllers/Http/TransactionsController.ts', 'delete', globals)
     await remove({ auth: { user }, request: { params: () => ({ trxId: 1 }) }, logger: { error(
       error) { events.push(error.message) } } })
     assert.isTrue(transaction.deleted)
     assert.equal(account.balance, eligible ? 100 : 100 - scenario.amount)
-    assert.equal(category.balance, eligible ? 0 : -scenario.amount)
+    assert.strictEqual(category.balance, eligible ? initialBalance : -scenario.amount)
     assert.equal(events.filter((event) => event === 'gate').length, 2)
     assert.equal(events.filter((event) => event === 'commit').length, 2)
   })

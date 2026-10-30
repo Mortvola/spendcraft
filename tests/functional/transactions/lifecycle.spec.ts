@@ -64,6 +64,36 @@ test.group('Ordinary transaction lifecycle', (group) => {
     ])
   }
 
+  test('CREATE and DELETE retain exact fractional Category and Unassigned balances')
+    .with(['explicit', 'duplicates', 'unassigned', 'negative'])
+    .run(async ({ client, assert }, mode) => {
+      const category = mode === 'unassigned' ? await fixture.budget.getUnassignedCategory()
+        : fixture.first
+      const negative = mode === 'negative'
+      const initial = negative ? -0.1 : 0.1
+      await category.merge({ balance: initial }).save()
+      const accountBefore = (await Account.findOrFail(fixture.account.id)).balance
+      const categories = mode === 'unassigned' ? [] : mode === 'duplicates'
+        ? [{ categoryId: category.id, amount: '0.10' }, { categoryId: category.id, amount: '0.10' }]
+        : [{ categoryId: category.id, amount: negative ? '-0.20' : '0.20' }]
+      const created = await client.post(`/api/v1/account/${fixture.account.id}/transactions`)
+        .json({ date: '2025-03-01', name: 'Exact Category roundtrip',
+          amount: negative ? '-0.20' : '0.20', categories }).accept('json').loginAs(fixture.user)
+      created.assertStatus(200)
+      assert.strictEqual((await Category.findOrFail(category.id)).balance, negative ? -0.3 : 0.3)
+      assert.strictEqual(created.body().categories.find((row: { id: number }) => row.id ===
+        category.id).balance, negative ? '-0.30' : '0.30')
+      const id = created.body().transaction.id
+      const removed = await client.delete(`/api/v1/transaction/${id}`).accept('json')
+        .loginAs(fixture.user)
+      removed.assertStatus(200)
+      assert.strictEqual((await Category.findOrFail(category.id)).balance, initial)
+      assert.strictEqual(removed.body().data.categories.find((row: { id: number }) => row.id ===
+        category.id).balance, negative ? '-0.10' : '0.10')
+      assert.strictEqual((await Account.findOrFail(fixture.account.id)).balance, accountBefore)
+      assert.isTrue((await Transaction.findOrFail(id)).deleted)
+    })
+
   test('PATCH equivalent decimal partitions skip Category and Account writes', async ({ client,
     assert }) => {
     const id = fixture.first.id

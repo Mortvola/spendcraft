@@ -6,7 +6,8 @@ import { validateStoredCategoryConservation } from '#services/transactionCategor
 import {
   accountEligible, categoryEligible, categoryEffectDeltas, excludedCategoryEffectDeltas,
 } from '#services/transactionEligibility';
-import { addMoneyCents, parseMoneyCents, formatMoneyCents } from '#common/moneyCents';
+import { addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents } from
+  '#common/moneyCents';
 import { HttpContext } from '@adonisjs/core/http';
 import { Exception } from '@adonisjs/core/exceptions';
 import db from '@adonisjs/lucid/services/db';
@@ -630,6 +631,10 @@ export default class TransactionsController {
       }
 
       const trxCategories = transaction.categories;
+      const useCategoryCents = account !== null && account.type !== AccountType.Loan
+        && account.tracking === TrackingType.Transactions
+        && [TransactionType.REGULAR_TRANSACTION, TransactionType.MANUAL_TRANSACTION]
+          .includes(transaction.type) && hasCategoryStorage(transaction);
 
       for (const categoryId of new Set(trxCategories.map((category) => category.categoryId))) {
         await budgetCategories(budget.id, { client: trx }).where('id', categoryId).firstOrFail();
@@ -643,7 +648,14 @@ export default class TransactionsController {
 
           const unassignedCat = await budget.getUnassignedCategory({ client: trx });
 
-          unassignedCat.balance -= acctTransaction.amount;
+          if (useCategoryCents) {
+            const balanceCents = subtractMoneyCents(
+              parseMoneyCents(encodeMonetaryAmount(unassignedCat.balance)),
+              parseMoneyCents(encodeMonetaryAmount(acctTransaction.amount)));
+            unassignedCat.balance = Number(formatMoneyCents(balanceCents));
+          } else {
+            unassignedCat.balance -= acctTransaction.amount;
+          }
 
           result.categories.push({ id: unassignedCat.id, balance: encodeMonetaryAmount(unassignedCat
             .balance) });
@@ -658,7 +670,14 @@ export default class TransactionsController {
           const category = await budgetCategories(budget.id, { client: trx }).where('id', trxCat
             .categoryId).firstOrFail();
 
-          category.balance -= trxCat.amount;
+          if (useCategoryCents) {
+            const balanceCents = subtractMoneyCents(
+              parseMoneyCents(encodeMonetaryAmount(category.balance)),
+              parseMoneyCents(encodeMonetaryAmount(trxCat.amount)));
+            category.balance = Number(formatMoneyCents(balanceCents));
+          } else {
+            category.balance -= trxCat.amount;
+          }
 
           const balance = result.categories.find((b) => b.id === category.id);
 
