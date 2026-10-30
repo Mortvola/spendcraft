@@ -414,10 +414,10 @@ export default class TransactionsController {
         || requestData.principle !== undefined
         || requestData.statementId !== undefined
       ) {
-        if (!ordinary && account.type === AccountType.Loan) {
-          account.balance -= acctTrans.principle ?? 0;
-        }
-        else if (!ordinary) {
+        const loanBalanceCents = !ordinary && account.type === AccountType.Loan
+          ? subtractMoneyCents(parseMoneyCents(encodeMonetaryAmount(account.balance)),
+            parseMoneyCents(encodeMonetaryAmount(acctTrans.principle ?? 0))) : null;
+        if (!ordinary && account.type !== AccountType.Loan) {
           account.balance -= acctTrans.amount;
         }
 
@@ -450,8 +450,9 @@ export default class TransactionsController {
 
         await acctTrans.save();
 
-        if (!ordinary && account.type === AccountType.Loan) {
-          account.balance += acctTrans.principle ?? 0;
+        if (loanBalanceCents !== null) {
+          account.balance = Number(formatMoneyCents(addMoneyCents(loanBalanceCents,
+            parseMoneyCents(encodeMonetaryAmount(acctTrans.principle ?? 0)))));
         }
         else if (!ordinary) {
           account.balance += acctTrans.amount;
@@ -723,7 +724,10 @@ export default class TransactionsController {
 
         if (!acctTransaction.pending) {
           if (account.type === AccountType.Loan) {
-            account.balance -= acctTransaction.principle ?? 0;
+            const balanceCents = subtractMoneyCents(
+              parseMoneyCents(encodeMonetaryAmount(account.balance)),
+              parseMoneyCents(encodeMonetaryAmount(acctTransaction.principle ?? 0)));
+            account.balance = Number(formatMoneyCents(balanceCents));
           }
           else if (ordinary) {
             const balanceCents = subtractMoneyCents(

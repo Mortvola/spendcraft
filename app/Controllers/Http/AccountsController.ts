@@ -250,7 +250,10 @@ export default class AccountsController {
       const state = { date: transaction.date, deleted: transaction.deleted, pending: acctTransaction
         .pending };
       if (account.type === AccountType.Loan) {
-        account.balance += acctTransaction.principle ?? 0;
+        const balanceCents = addMoneyCents(
+          parseMoneyCents(encodeMonetaryAmount(account.balance)),
+          parseMoneyCents(encodeMonetaryAmount(acctTransaction.principle ?? 0)));
+        account.balance = Number(formatMoneyCents(balanceCents));
       }
       else if (accountEligible(state, account.startDate)) {
         const balanceCents = addMoneyCents(

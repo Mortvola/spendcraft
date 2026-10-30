@@ -180,6 +180,59 @@ test.group('Ordinary transaction lifecycle', (group) => {
       accountBefore)
   })
 
+  test('Loan principal CREATE PATCH DELETE preserve exact signed balances and excluded JSON')
+    .with([1, -1]).run(async ({ client, assert }, sign) => {
+      await fixture.account.merge({ type: AccountType.Loan, balance: sign * 0.1 }).save()
+      const created = await client.post(`/api/v1/account/${fixture.account.id}/transactions`)
+        .json({ date: '2025-03-01', name: 'Exact Loan payment',
+          amount: sign > 0 ? '0.30' : '-0.30', principle: sign > 0 ? '0.20' : '-0.20',
+          categories: [] }).loginAs(fixture.user)
+      created.assertStatus(200)
+      const id: number = created.body().transaction.id
+      assert.strictEqual((await Account.findOrFail(fixture.account.id)).balance, sign * 0.3)
+      const stored = await db.from('transactions').where('id', id).firstOrFail()
+      assert.isTrue(stored.categories.every((split: { amount: unknown }) => typeof split.amount ===
+        'number'))
+      for (const [version, principle] of ['0.10', '0.20'].entries()) {
+        const response = await client.patch(`/api/v1/transaction/${id}`).json({ version,
+          principle: sign < 0 ? `-${principle}` : principle }).loginAs(fixture.user)
+        response.assertStatus(200)
+        assert.strictEqual((await Account.findOrFail(fixture.account.id)).balance,
+          sign * (version === 0 ? 0.2 : 0.3))
+        assert.strictEqual(response.body().data.transaction.accountTransaction.principle,
+          sign < 0 ? `-${principle}` : principle)
+        assert.deepEqual((await db.from('transactions').where('id', id).firstOrFail()).categories,
+          stored.categories)
+      }
+      const removed = await client.delete(`/api/v1/transaction/${id}`).loginAs(fixture.user)
+      removed.assertStatus(200)
+      assert.strictEqual((await Account.findOrFail(fixture.account.id)).balance, sign * 0.1)
+      assert.strictEqual(removed.body().data.acctBalances[0].balance,
+        sign < 0 ? '-0.10' : '0.10')
+      assert.strictEqual((await Category.findOrFail(fixture.first.id)).balance, 10)
+    })
+
+  test('Loan principal balance overflow rolls back the complete mutation')
+    .with(['create', 'patch', 'delete']).run(async ({ client, assert }, operation) => {
+      await fixture.account.merge({ type: AccountType.Loan, balance: 9999999999.99 }).save()
+      await fixture.accountTransaction.merge({ principle: operation === 'delete' ? -0.01 : 0 })
+        .save()
+      await writeHistoricalTransactionFixture(fixture.transaction, { categories: [
+        { categoryId: fixture.first.id, amount: 10 }] })
+      const before = await snapshot()
+      const response = operation === 'create'
+        ? await client.post(`/api/v1/account/${fixture.account.id}/transactions`).json({
+          date: '2025-03-01', name: 'Overflow Loan', amount: '0.01', principle: '0.01',
+          categories: [] }).loginAs(fixture.user)
+        : operation === 'patch'
+          ? await client.patch(`/api/v1/transaction/${fixture.transaction.id}`).json({ version: 0,
+            principle: '0.01' }).loginAs(fixture.user)
+          : await client.delete(`/api/v1/transaction/${fixture.transaction.id}`)
+            .loginAs(fixture.user)
+      response.assertStatus(500)
+      assert.deepEqual(await snapshot(), before)
+    })
+
   test('Loan CREATE and PATCH decode canonical principal and preserve numeric models', async ({
     client, assert }) => {
     await fixture.account.merge({ type: AccountType.Loan }).save()

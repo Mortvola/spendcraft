@@ -327,3 +327,44 @@ test.group('Real manual CREATE before/equal/after boundary without DB', () => {
     })
   }
 })
+
+
+test('Loan PATCH principal replacement and metadata-only edits retain exact signed balances')
+  .with([1, -1].flatMap(sign => [false, true].map(pending => ({ sign, pending }))))
+  .run(async ({ assert }, { sign, pending }) => {
+    const f = await patchFixture({ excluded: true, pending })
+    f.account.type = 'Loan'
+    f.account.balance = sign * 0.3
+    f.link.principle = sign * 0.2
+    const before = Array.from(f.categories.values(), row => row.balance)
+    await f.run({ principle: sign * 0.1 })
+    assert.strictEqual(f.account.balance, sign * 0.2)
+    await f.run({ principle: sign * 0.2 })
+    assert.strictEqual(f.account.balance, sign * 0.3)
+    await f.run({ name: 'Renamed Loan payment' })
+    assert.strictEqual(f.account.balance, sign * 0.3)
+    assert.deepEqual(Array.from(f.categories.values(), row => row.balance), before)
+    assert.isFalse(f.events.some(event => Array.isArray(event) && event[0] === 'category'))
+    assert.equal(f.events.filter(event => event === 'commit').length, 3)
+  })
+
+test('Loan PATCH treats missing historical principal as zero', async ({ assert }) => {
+  const f = await patchFixture({ excluded: true })
+  f.account.type = 'Loan'
+  f.account.balance = 0.1
+  f.link.principle = null
+  await f.run({ principle: 0.2 })
+  assert.strictEqual(f.account.balance, 0.3)
+})
+
+test('Loan PATCH rejects unsafe principal effects before Account save or commit')
+  .with([Infinity, Number.MAX_SAFE_INTEGER]).run(async ({ assert }, principle) => {
+    const f = await patchFixture({ excluded: true })
+    f.account.type = 'Loan'
+    f.account.balance = 0.1
+    f.link.principle = 0
+    await assert.rejects(() => f.run({ principle }))
+    assert.include(f.events, 'rollback')
+    assert.notInclude(f.events, 'commit')
+    assert.isFalse(f.events.some(event => Array.isArray(event) && event[0] === 'account'))
+  })
