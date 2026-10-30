@@ -1,3 +1,6 @@
+import {
+  subtractMoneyCents, parseMoneyCents, formatMoneyCents, moneyCentsFromInteger,
+} from '#common/moneyCents';
 import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
 import { DateTime } from 'luxon'
 import {
@@ -547,27 +550,23 @@ amount decimal)
             goalMonth = fundingMonth.plus({ months: monthDiff })
           }
 
-          const futureTrxSum = parseFloat(cat.$extras.sum ?? 0);
+          const futureTrxCents = parseMoneyCents(cat.$extras.sum ?? '0.00');
+          const goalCents = parseMoneyCents(encodeMonetaryAmount(cat.fundingAmount));
+          const balanceCents = parseMoneyCents(encodeMonetaryAmount(cat.balance));
+          const goalDiffCents = subtractMoneyCents(goalCents,
+            subtractMoneyCents(balanceCents, futureTrxCents));
+          const monthlyCents = goalDiffCents > 0
+            ? moneyCentsFromInteger(Math.round(goalDiffCents / (monthDiff + 1)))
+            : parseMoneyCents('0.00');
+          proposedCat.amount = Number(formatMoneyCents(monthlyCents));
 
-          // TODO: use the planCat.amount sans any transactions this month
-          const goalDiff = cat.fundingAmount - (cat.balance - futureTrxSum);
+          const plannedCents = moneyCentsFromInteger(Math.round(goalCents / cat.recurrence));
 
-          let monthlyAmount = 0.0;
-
-          // if (monthDiff > 0) {
-          if (goalDiff > 0) {
-            monthlyAmount = Math.round((goalDiff / (monthDiff + 1)) * 100) / 100.0;
-          }
-
-          proposedCat.amount = monthlyAmount;
-
-          const plannedAmount = Math.round((cat.fundingAmount / cat.recurrence) * 100) / 100.0;
-
-          if (monthlyAmount !== plannedAmount) {
+          if (monthlyCents !== plannedCents) {
             proposedCat.adjusted = true;
             proposedCat.adjustedReason =
-              `The funding amount was adjusted from a planned amount of ${plannedAmount.toFixed(
-              2)} to ${monthlyAmount.toFixed(2)} for the goal of ${cat
+              `The funding amount was adjusted from a planned amount of ${formatMoneyCents(
+              plannedCents)} to ${formatMoneyCents(monthlyCents)} for the goal of ${cat
               .fundingAmount} due ${goalMonth.month}-${goalMonth.year}.`;
           }
         }

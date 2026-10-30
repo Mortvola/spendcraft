@@ -1,3 +1,4 @@
+import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { categoryRequest } from '../../helpers/categoryRequest.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
@@ -5,7 +6,7 @@ import { mock } from 'node:test'
 import Budget from '#models/Budget'
 import Category from '#models/Category'
 import CategoriesController from '#controllers/CategoriesController'
-import { CategoryType } from '#common/ResponseTypes'
+import { CategoryType, TransactionType } from '#common/ResponseTypes'
 import { DateTime, Settings } from 'luxon'
 
 let sequence = 0
@@ -41,6 +42,38 @@ function legacyRead(category: Category) {
 }
 
 test.group('Funding recurrence characterization', () => {
+  test('fractional proposed funding uses integer-cent differences and period rounding')
+    .with([
+      { fundingAmount: 0.29, balance: 0, expected: 0.15 },
+      { fundingAmount: 0.2, balance: -0.1, expected: 0.15 },
+      { fundingAmount: 0.01, balance: 0, expected: 0.01 },
+      { fundingAmount: -0.01, balance: -0.03, expected: 0.01 },
+      { fundingAmount: 0.3, balance: 0.1, future: 0.1, expected: 0.15 },
+    ]).run(async ({ client, assert }, scenario) => {
+      const f = await fixture()
+      await f.category.merge({ fundingAmount: scenario.fundingAmount, balance: scenario.balance,
+        recurrence: 2, goalDate: DateTime.fromISO('2025-04-01') }).save()
+      if (scenario.future !== undefined) {
+        const pool = await f.budget.getFundingPoolCategory()
+        const transaction = await f.budget.related('transactions').create({
+          date: DateTime.fromISO('2025-03-10'),
+          type: TransactionType.REBALANCE_TRANSACTION, categories: [
+            { categoryId: f.category.id, amount: scenario.future },
+            { categoryId: pool.id, amount: -scenario.future }], taxes: [], deleted: false })
+        await writeCanonicalTransactionFixture(transaction)
+      }
+      const before = await db.from('categories').where('id', f.category.id).firstOrFail()
+      const proposal = (await f.budget.getProposedFunding('2025-03-01')).find(row =>
+        row.categoryId === f.category.id)
+      assert.strictEqual(proposal?.amount, scenario.expected)
+      const response = await client.get('/api/v1/funding-plans/proposed').qs({ date: '2025-03-01' })
+        .loginAs(f.user)
+      response.assertStatus(200)
+      assert.strictEqual(response.body().data.find((row: { categoryId: number }) => row.categoryId
+        === f.category.id).amount, scenario.expected.toFixed(2))
+      assert.deepEqual(await db.from('categories').where('id', f.category.id).firstOrFail(), before)
+    })
+
   // API contracts preserve coercion and optional-field behavior while enforcing the business
   // domain.
   test('positive-integer recurrence and past-goal proposal for supported Category create/PATCH')
@@ -123,7 +156,7 @@ goal of 120 due 4-2025.')
   // Legacy-data controls inject hydrated values at the read boundary, without invalid database
   // writes.
   test(
-    'legacy zero recurrence with a future goal and without a goal records branch-specific behavior',
+    'legacy zero recurrence rejects nonfinite goal arithmetic but preserves the no-goal branch',
     async ({ client, assert, cleanup }) => {
     const f = await fixture()
     const read = legacyRead(f.category)
@@ -132,10 +165,11 @@ goal of 120 due 4-2025.')
       f.category.merge({ recurrence: 0, useGoal, goalDate: DateTime.fromISO('2025-04-01') })
       const response = await client.get('/api/v1/funding-plans/proposed?date=2025-03-01').accept(
         'json').loginAs(f.user)
-      response.assertStatus(200)
+      response.assertStatus(useGoal ? 500 : 200)
+      if (useGoal) continue
       const row = response.body().data.find((item: { categoryId: number }) => item.categoryId === f
         .category.id)
-      assert.strictEqual(row.amount, useGoal ? '60.00' : '120.00')
+      assert.strictEqual(row.amount, '120.00')
       console.log(JSON.stringify({ scenario: 'zero recurrence branch', useGoal, proposal: row }))
     }
   })
@@ -166,25 +200,19 @@ goal of 120 due 4-2025.')
         proposal: amount }))
   })
 
-  test(
-    'negative recurrence with a goal one month overdue records non-finite arithmetic and JSON \
-behavior', async ({ client, assert, cleanup }) => {
+  test('legacy negative recurrence rejects nonfinite funding without modifying storage',
+    async ({ client, assert, cleanup }) => {
     const f = await fixture()
     f.category.merge({ recurrence: -3, goalDate: DateTime.fromISO('2025-02-01') })
     const read = legacyRead(f.category)
     cleanup(() => read.mock.restore())
-    const before = (await Category.findOrFail(f.category.id)).serialize()
-    const direct = (await f.budget.getProposedFunding('2025-03-01')).find((row) => row
-      .categoryId === f.category.id)
-    assert.isDefined(direct)
-    const response = await client.get('/api/v1/funding-plans/proposed?date=2025-03-01').accept(
-      'json').loginAs(f.user)
-    const row = response.body().data?.find((item: { categoryId: number }) => item.categoryId === f
-      .category.id)
-    console.log(JSON.stringify({ scenario: 'overdue negative recurrence', directAmount: String(
-      direct?.amount),
-      status: response.status(), proposal: row }))
-    assert.deepEqual((await Category.findOrFail(f.category.id)).serialize(), before)
+    const before = await db.from('categories').where('id', f.category.id).firstOrFail()
+    await assert.rejects(() => f.budget.getProposedFunding('2025-03-01'),
+      'Invalid monetary cents')
+    const response = await client.get('/api/v1/funding-plans/proposed?date=2025-03-01')
+      .accept('json').loginAs(f.user)
+    response.assertStatus(500)
+    assert.deepEqual(await db.from('categories').where('id', f.category.id).firstOrFail(), before)
   })
 
   test(

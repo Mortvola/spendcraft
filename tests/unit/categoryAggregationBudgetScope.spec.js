@@ -1,4 +1,6 @@
-import { addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents } from
+import {
+  addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents, moneyCentsFromInteger,
+} from
   '../../common/moneyCents.ts'
 import { encodeMonetaryAmount } from '../../app/services/categoryAmountCodec.ts'
 import { test } from '@japa/runner'
@@ -127,4 +129,73 @@ test.group('Monthly Category summary cents without a database', () => {
     .run(async ({ assert }, total) => {
       await assert.rejects(() => monthlySummary(0.3, { sum: total }))
     })
+})
+
+
+async function fundingProposal(changes = {}) {
+  const file = 'app/Models/Budget.ts'
+  const source = ts.createSourceFile(file, await readFile(file, 'utf8'), ts.ScriptTarget.Latest,
+    true)
+  let method
+  function visit(node) {
+    if (ts.isMethodDeclaration(node) && node.name.getText(source) === 'getProposedFunding') {
+      method = node
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(source)
+  const category = { id: 1, balance: 0, fundingAmount: 0.29, useGoal: true, suspended: false,
+    goalDate: DateTime.fromISO('2025-04-01'), recurrence: 2, $extras: {}, fundingCategories: [],
+    includeFundingTransfers: false, ...changes }
+  const before = JSON.stringify(category)
+  const query = { whereHas() { return this }, joinRaw: async () => [category] }
+  const calculate = runInNewContext(ts.transpileModule(`(async function(date) ${method.body
+    .getText(source)})`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, {
+    DateTime, Category: { query: () => query }, parseMoneyCents, encodeMonetaryAmount,
+    subtractMoneyCents, formatMoneyCents, moneyCentsFromInteger,
+  })
+  const result = await calculate.call({ id: 7 }, '2025-03-01')
+  if (JSON.stringify(category) !== before) throw new Error('Proposal mutated Category')
+  return result[0]
+}
+
+test.group('Proposed funding checked cents without a database', () => {
+  test('fractional goals, negative balances and half ties round cents at the period boundary')
+    .with([
+      { changes: {}, amount: 0.15, adjusted: false },
+      { changes: { fundingAmount: 0.2, balance: -0.1 }, amount: 0.15, adjusted: true },
+      { changes: { fundingAmount: 0.3, balance: 0.1, $extras: { sum: '0.10' } },
+        amount: 0.15, adjusted: false },
+      { changes: { fundingAmount: 0.01 }, amount: 0.01, adjusted: false },
+      { changes: { fundingAmount: -0.01, balance: -0.03 }, amount: 0.01, adjusted: true },
+      { changes: { fundingAmount: 0, balance: 0.1 }, amount: 0, adjusted: false },
+      { changes: { fundingAmount: 0.1, balance: 0.3, $extras: { sum: '-0.10' } },
+        amount: 0, adjusted: true },
+      { changes: { goalDate: DateTime.fromISO('2025-01-01'), recurrence: 3, fundingAmount: 120 },
+        amount: 60, adjusted: true },
+      { changes: { goalDate: DateTime.fromISO('2025-03-01'), recurrence: 1 },
+        amount: 0.29, adjusted: false },
+      { changes: { suspended: true }, amount: 0, adjusted: false },
+      { changes: { useGoal: false }, amount: 0.29, adjusted: false },
+    ]).run(async ({ assert }, { changes, amount, adjusted }) => {
+      const proposal = await fundingProposal(changes)
+      assert.strictEqual(proposal.amount, amount)
+      assert.strictEqual(proposal.adjusted, adjusted)
+    })
+
+  test('adjustment message keeps its existing format without dollar formatting arithmetic',
+    async ({ assert }) => {
+      const proposal = await fundingProposal({ fundingAmount: 0.2, balance: -0.1 })
+      assert.strictEqual(proposal.adjustedReason,
+        'The funding amount was adjusted from a planned amount of 0.10 to 0.15 for the goal of '
+        + '0.2 due 4-2025.')
+    })
+
+  test('invalid or unsafe monetary results reject').with([
+    { fundingAmount: Infinity }, { balance: Number.MAX_SAFE_INTEGER },
+    { balance: -1, $extras: { sum: '90071992547409.91' } },
+    { recurrence: 0 }, { recurrence: -3, goalDate: DateTime.fromISO('2025-02-01') },
+  ]).run(async ({ assert }, changes) => {
+    await assert.rejects(() => fundingProposal(changes))
+  })
 })
