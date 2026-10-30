@@ -180,6 +180,60 @@ test.group('Ordinary transaction lifecycle', (group) => {
       accountBefore)
   })
 
+  test('special Account-linked PATCH and DELETE retain exact balances and existing pending rules')
+    .with([TransactionType.STARTING_BALANCE, TransactionType.TRANSFER_TRANSACTION]
+      .flatMap(type => [1, -1].flatMap(sign => [false, true].map(pending => ({ type, sign,
+        pending })))))
+    .run(async ({ client, assert }, { type, sign, pending }) => {
+      await fixture.account.merge({ balance: sign * 0.1 }).save()
+      await fixture.first.merge({ balance: sign * 0.2 }).save()
+      await fixture.accountTransaction.merge({ amount: sign * 0.2, pending }).save()
+      await writeHistoricalTransactionFixture(fixture.transaction, { type, categories: [
+        { categoryId: fixture.first.id, amount: type === TransactionType.TRANSFER_TRANSACTION
+          ? sign * 0.2 : sign > 0 ? '0.20' : '-0.20' }] })
+      for (const [version, value] of ['0.40', '0.20'].entries()) {
+        const amount = sign < 0 ? `-${value}` : value
+        const response = await client.patch(`/api/v1/transaction/${fixture.transaction.id}`)
+          .json({ version, amount, categories: [{ categoryId: fixture.first.id, amount }] })
+          .loginAs(fixture.user)
+        response.assertStatus(200)
+        assert.strictEqual((await Account.findOrFail(fixture.account.id)).balance,
+          sign * (version === 0 ? 0.3 : 0.1))
+        assert.strictEqual(response.body().data.acctBalances[0].balance,
+          sign < 0 ? (version === 0 ? '-0.30' : '-0.10') : (version === 0 ? '0.30' : '0.10'))
+      }
+      const metadata = await client.patch(`/api/v1/transaction/${fixture.transaction.id}`)
+        .json({ version: 2, name: 'Renamed special entry' }).loginAs(fixture.user)
+      metadata.assertStatus(200)
+      assert.strictEqual((await Account.findOrFail(fixture.account.id)).balance, sign * 0.1)
+      const stored = await db.from('transactions').where('id', fixture.transaction.id).firstOrFail()
+      assert.strictEqual(typeof stored.categories[0].amount,
+        type === TransactionType.TRANSFER_TRANSACTION ? 'number' : 'string')
+      const removed = await client.delete(`/api/v1/transaction/${fixture.transaction.id}`)
+        .loginAs(fixture.user)
+      removed.assertStatus(200)
+      assert.strictEqual((await Account.findOrFail(fixture.account.id)).balance,
+        pending ? sign * 0.1 : -sign * 0.1)
+      assert.strictEqual((await Category.findOrFail(fixture.second.id)).balance, 0)
+    })
+
+  test('special Account-linked balance overflow rolls back the full mutation')
+    .with(['patch', 'delete']).run(async ({ client, assert }, operation) => {
+      await fixture.account.merge({ balance: 9999999999.99 }).save()
+      await fixture.accountTransaction.merge({ amount: -0.01 }).save()
+      await writeHistoricalTransactionFixture(fixture.transaction, {
+        type: TransactionType.STARTING_BALANCE, categories: [
+          { categoryId: fixture.first.id, amount: '-0.01' }] })
+      const before = await snapshot()
+      const response = operation === 'patch'
+        ? await client.patch(`/api/v1/transaction/${fixture.transaction.id}`).json({ version: 0,
+          amount: '0.00', categories: [{ categoryId: fixture.first.id, amount: '0.00' }] })
+          .loginAs(fixture.user)
+        : await client.delete(`/api/v1/transaction/${fixture.transaction.id}`).loginAs(fixture.user)
+      response.assertStatus(500)
+      assert.deepEqual(await snapshot(), before)
+    })
+
   test('Loan principal CREATE PATCH DELETE preserve exact signed balances and excluded JSON')
     .with([1, -1]).run(async ({ client, assert }, sign) => {
       await fixture.account.merge({ type: AccountType.Loan, balance: sign * 0.1 }).save()

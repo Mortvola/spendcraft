@@ -414,12 +414,10 @@ export default class TransactionsController {
         || requestData.principle !== undefined
         || requestData.statementId !== undefined
       ) {
-        const loanBalanceCents = !ordinary && account.type === AccountType.Loan
+        const replacementBalanceCents = !ordinary
           ? subtractMoneyCents(parseMoneyCents(encodeMonetaryAmount(account.balance)),
-            parseMoneyCents(encodeMonetaryAmount(acctTrans.principle ?? 0))) : null;
-        if (!ordinary && account.type !== AccountType.Loan) {
-          account.balance -= acctTrans.amount;
-        }
+            parseMoneyCents(encodeMonetaryAmount(account.type === AccountType.Loan
+              ? acctTrans.principle ?? 0 : acctTrans.amount))) : null;
 
         const accountTransactionChanges: ModelObject = {
           name: requestData.name,
@@ -450,12 +448,10 @@ export default class TransactionsController {
 
         await acctTrans.save();
 
-        if (loanBalanceCents !== null) {
-          account.balance = Number(formatMoneyCents(addMoneyCents(loanBalanceCents,
-            parseMoneyCents(encodeMonetaryAmount(acctTrans.principle ?? 0)))));
-        }
-        else if (!ordinary) {
-          account.balance += acctTrans.amount;
+        if (replacementBalanceCents !== null) {
+          account.balance = Number(formatMoneyCents(addMoneyCents(replacementBalanceCents,
+            parseMoneyCents(encodeMonetaryAmount(account.type === AccountType.Loan
+              ? acctTrans.principle ?? 0 : acctTrans.amount)))));
         }
 
         if (!ordinary) await account.save();
@@ -729,14 +725,11 @@ export default class TransactionsController {
               parseMoneyCents(encodeMonetaryAmount(acctTransaction.principle ?? 0)));
             account.balance = Number(formatMoneyCents(balanceCents));
           }
-          else if (ordinary) {
+          else {
             const balanceCents = subtractMoneyCents(
               parseMoneyCents(encodeMonetaryAmount(account.balance)),
               parseMoneyCents(encodeMonetaryAmount(acctTransaction.amount)));
             account.balance = Number(formatMoneyCents(balanceCents));
-          }
-          else {
-            account.balance -= acctTransaction.amount;
           }
 
           await account.save();

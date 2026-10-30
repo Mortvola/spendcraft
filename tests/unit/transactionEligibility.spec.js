@@ -368,3 +368,31 @@ test('Loan PATCH rejects unsafe principal effects before Account save or commit'
     assert.notInclude(f.events, 'commit')
     assert.isFalse(f.events.some(event => Array.isArray(event) && event[0] === 'account'))
   })
+
+
+test('special non-Loan PATCH replacements and metadata edits retain exact signed balances')
+  .with([1, 4].flatMap(type => [1, -1].flatMap(sign => [false, true].map(pending => ({ type, sign,
+    pending })))))
+  .run(async ({ assert }, { type, sign, pending }) => {
+    const f = await patchFixture({ excluded: type === 1, pending, amount: sign * 0.2 })
+    f.transaction.type = type
+    f.account.balance = sign * 0.1
+    await f.run({ amount: sign * 0.4, categories: [{ categoryId: 1, amount: sign * 0.4 }] })
+    assert.strictEqual(f.account.balance, sign * 0.3)
+    await f.run({ amount: sign * 0.2, categories: [{ categoryId: 1, amount: sign * 0.2 }] })
+    assert.strictEqual(f.account.balance, sign * 0.1)
+    await f.run({ name: 'Renamed special transaction' })
+    assert.strictEqual(f.account.balance, sign * 0.1)
+    assert.equal(f.events.filter(event => event === 'commit').length, 3)
+  })
+
+test('special non-Loan PATCH rejects unsafe Account effects before save or commit')
+  .with([Infinity, Number.MAX_SAFE_INTEGER]).run(async ({ assert }, balance) => {
+    const f = await patchFixture({ amount: 0.2 })
+    f.transaction.type = 4
+    f.account.balance = balance
+    await assert.rejects(() => f.run({ name: 'Unsafe special transaction' }))
+    assert.include(f.events, 'rollback')
+    assert.notInclude(f.events, 'commit')
+    assert.isFalse(f.events.some(event => Array.isArray(event) && event[0] === 'account'))
+  })
