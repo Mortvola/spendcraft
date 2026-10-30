@@ -1,3 +1,4 @@
+import { parseMoneyCents, type MoneyCents } from '#common/moneyCents';
 import { serializeFundingRules } from '#services/fundingAmountCodec';
 import { encodeMonetaryAmount, categoryNonzeroAllocationSql } from '#services/categoryAmountCodec';
 import { consumeFundingStorage, prepareFundingStorage, finishFundingStorage,
@@ -93,7 +94,7 @@ export default class Category extends BaseModel {
     budget: Budget,
     date: string,
     transactionId: number,
-  ): Promise<{ id: number, balance: number }[]> {
+  ): Promise<{ id: number, balanceCents: MoneyCents }[]> {
     const subQuery = db.query()
       .select('categoryId')
       .select(db.raw('sum("transCats".amount) as amount'))
@@ -117,7 +118,7 @@ export default class Category extends BaseModel {
     const query = db.query()
       .select(
         'c.id',
-        db.raw('CAST(c.balance - sum(coalesce(tc.amount, 0)) as float) as balance'),
+        db.raw('c.balance - sum(coalesce(tc.amount, 0)) as balance'),
       )
       .from('categories as c')
       .join('groups', (groups) => {
@@ -130,7 +131,8 @@ export default class Category extends BaseModel {
       .groupBy('c.id')
       .groupByRaw('coalesce(tc.amount, 0)')
 
-    return query;
+    const rows: { id: number, balance: string }[] = await query;
+    return rows.map((row) => ({ id: row.id, balanceCents: parseMoneyCents(row.balance) }));
   }
 
   private getTransactionQuery(budget: Budget) {

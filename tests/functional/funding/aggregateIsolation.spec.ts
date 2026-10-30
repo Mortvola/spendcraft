@@ -1,3 +1,4 @@
+import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
@@ -145,6 +146,31 @@ direction`)
     })
   }
 
+  test('fractional historical balances remain exact through helper and API')
+    .with([1, -1]).run(async ({ client, assert }, sign) => {
+      await a.first.merge({ balance: sign * 0.3 }).save()
+      await a.second.merge({ balance: -sign * 0.1 }).save()
+      for (const [index, amount] of [[0, sign * 0.1], [1, sign * 0.1]] as const) {
+        await db.from('transactions').where('id', a.transactions[index].id).update({
+          categories: JSON.stringify([{ categoryId: a.first.id,
+            amount: encodeMonetaryAmount(amount) }]),
+        })
+      }
+      const before = await state()
+      const rows = await Category.balances(a.budget, '2025-03-01', a.transactions[2].id)
+      // Excluding the past transaction also reverses its existing four-dollar split.
+      assert.strictEqual(rows.find(row => row.id === a.first.id)?.balanceCents,
+        parseMoneyCents(sign > 0 ? '-3.90' : '-4.10'))
+      const response = await client.get(path('balances')).qs({ date: '2025-03-01' })
+        .loginAs(a.user)
+      response.assertStatus(200)
+      assert.deepEqual(response.body().find((row: { id: number }) => row.id === a.first.id),
+        { id: a.first.id, balance: sign > 0 ? '0.10' : '-0.10' })
+      assert.deepEqual(response.body().find((row: { id: number }) => row.id === a.second.id),
+        { id: a.second.id, balance: sign > 0 ? '-0.10' : '0.10' })
+      assert.deepEqual(await state(), before)
+    })
+
   test('balance helper constrains the exclusion OR branch to its own budget', async ({ client,
     assert }) => {
     const baseline = await client.get(path('balances')).qs({ date: '2025-03-01' }).accept('json')
@@ -156,8 +182,8 @@ direction`)
     // The HTTP controller already rejects foreign exclusion IDs. The helper must
     // also enforce ownership when the exclusion is its only matching condition.
     const balances = await Category.balances(a.budget, '2025-03-01', historical.id)
-    assert.deepEqual(balances.map((row) => ({ ...row, balance: encodeMonetaryAmount(row
-      .balance) })), baseline.body())
+    assert.deepEqual(balances.map((row) => ({ id: row.id,
+      balance: formatMoneyCents(row.balanceCents) })), baseline.body())
     assert.deepEqual(await state(), before)
   })
 

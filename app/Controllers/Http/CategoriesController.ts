@@ -814,7 +814,7 @@ class CategoriesController {
 
     const balances = await Category.balances(budget, date, id !== undefined ? parseInt(id,
       10) : id);
-    return balances.map((row) => ({ ...row, balance: encodeMonetaryAmount(row.balance) }));
+    return balances.map((row) => ({ id: row.id, balance: formatMoneyCents(row.balanceCents) }));
   }
 
   static getGoalDate(goalDate?: DateTime | null, recurrence = 1): DateTime | null {
