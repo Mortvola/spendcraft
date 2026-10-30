@@ -60,6 +60,41 @@ test.group('Net-worth history independence', (group) => {
     return response.body()
   }
 
+  test('fractional transaction and Statement histories retain exact cents through gaps')
+    .with([1, -1]).run(async ({ client, assert }, sign) => {
+      const f = await fixture(), foreign = await fixture()
+      await f.account.merge({ balance: sign * 0.3 }).save()
+      await movement(f, f.account.startDate, sign * 0.1, TransactionType.STARTING_BALANCE)
+      const movementDate = f.today.minus({ days: 5 })
+      await movement(f, movementDate, sign * 0.2)
+      const statementAccount = await f.institution.related('accounts').create({ name:
+        'Exact Statement account', balance: -sign * 0.1, type: AccountType.Depository,
+        subtype: 'checking', tracking: TrackingType.Balances, startDate: f.account.startDate,
+        rate: 0, closed: false })
+      const statementDate = f.today.minus({ days: 4 }), lastDate = f.today.minus({ days: 1 })
+      for (const [date, amount] of [[statementDate, -sign * 0.2], [lastDate, -sign * 0.1]] as const)
+        {
+        const cents = parseMoneyCents(amount.toFixed(2))
+        await statementAccount.related('statements').create({ startDate: date, endDate: date,
+          startingBalanceCents: cents, endingBalanceCents: cents, data: null })
+      }
+      await movement(foreign, foreign.account.startDate, 99, TransactionType.STARTING_BALANCE)
+      const before = await db.from('accounts').orderBy('id')
+      const response = await client.get('/api/v1/reports/networth').loginAs(f.user)
+      response.assertStatus(200)
+      const body: string[][] = response.body()
+      assert.sameMembers(body[0], ['date', f.account.name, statementAccount.name])
+      const cashColumn = body[0].indexOf(f.account.name)
+      const statementColumn = body[0].indexOf(statementAccount.name)
+      assert.deepEqual(body.slice(1).map(row => [row[0], row[cashColumn], row[statementColumn]]), [
+        [f.account.startDate.toISODate(), sign > 0 ? '0.10' : '-0.10', '0.00'],
+        [movementDate.toISODate(), sign > 0 ? '0.30' : '-0.30', '0.00'],
+        [statementDate.toISODate(), sign > 0 ? '0.30' : '-0.30', sign > 0 ? '-0.20' : '0.20'],
+        [lastDate.toISODate(), sign > 0 ? '0.30' : '-0.30', sign > 0 ? '-0.10' : '0.10'],
+      ])
+      assert.deepEqual(await db.from('accounts').orderBy('id'), before)
+    })
+
   test('transactions without stored history produce daily closing balances', async ({ client,
     assert }) => {
     const f = await fixture()

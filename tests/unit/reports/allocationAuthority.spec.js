@@ -5,7 +5,8 @@ import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
 import { DateTime } from 'luxon'
-import { TransactionType, CategoryType, TrackingType } from '../../../common/ResponseTypes.ts'
+import { TransactionType, CategoryType, TrackingType, AccountType } from
+  '../../../common/ResponseTypes.ts'
 
 // Execute actual report methods with an inert adapter for their current
 // JSON/relational join/filter/aggregate subset. This is NOT PostgreSQL execution.
@@ -22,8 +23,8 @@ async function sourceMethod(name, context = {}) {
     ',')}) { ${amountParser} ${body.slice(1)})`
   return { body, run: runInNewContext(ts.transpileModule(expression, { compilerOptions: { target: ts
     .ScriptTarget.ES2022 } }).outputText,
-    { TransactionType, CategoryType, TrackingType, DateTime, addMoneyCents, parseMoneyCents,
-      formatMoneyCents, ...context }) }
+    { TransactionType, CategoryType, TrackingType, AccountType, DateTime, addMoneyCents,
+      parseMoneyCents, formatMoneyCents, ...context }) }
 }
 function adapter({ categories = [{ id: 10, name: 'Food', groupName: 'Living', budgetId: 1 }],
   transaction = { id: 1, type: 5, date: '2026-02-10', budgetId: 1, amount: 50, categories: [{
@@ -207,7 +208,7 @@ test.group('Allocation report authority characterization without DB', () => {
 
 test('report endpoints encode only monetary values without changing calculation results').with([
   { report: 'networth', method: 'networth',
-    rows: [['date', 'Account'], ['2026-10-01', -0.125], ['2026-10-02', 0]],
+    rows: [['date', 'Account'], ['2026-10-01', -12], ['2026-10-02', 0]],
     expected: [['date', 'Account'], ['2026-10-01', '-0.12'], ['2026-10-02', '0.00']] },
   { report: 'payee', method: 'payee', rows: [{ rowNumber: '1', name: 'Shop', paymentChannel:
     'online', sum: 30, count: 3 }],
@@ -335,4 +336,42 @@ test('Budget Progress accumulates exact cents and preserves daily dates and tran
     funding = '0.00'
     movements[0].amount = 'NaN'
     await assert.rejects(calculate)
+  })
+
+
+test('Net Worth retains exact crosstab cents, account order and gap filling', async ({ assert }) =>
+  {
+  let names = [{ name: '1_Cash' }, { name: '2_Credit' }]
+  let data = [
+    { date: '2026-01-01', account_0: '0.10', account_1: null },
+    { date: '2026-01-02', account_0: null, account_1: '-0.20' },
+    { date: '2026-01-03', account_0: '90071992547409.91', account_1: null },
+  ]
+  let rawIndex = 0
+  const { run } = await sourceMethod('networth', { db: {
+    query: () => ({ select() { return this }, from() { return this },
+      first: async () => ({ days: 3 }) }), raw: value => value,
+    rawQuery: async () => ({ rows: rawIndex++ % 2 === 0 ? names : data }),
+  } })
+  const before = globalThis.structuredClone(data)
+  assert.deepEqual(await run({ id: 1 }), [['date', 'Cash', 'Credit'],
+    ['2026-01-01', 10, 0], ['2026-01-02', 10, -20],
+    ['2026-01-03', Number.MAX_SAFE_INTEGER, -20]])
+  assert.deepEqual(data, before)
+  data = []
+  assert.deepEqual(await run({ id: 1 }), [['date', 'Cash', 'Credit']])
+  names = []
+  assert.deepEqual(await run({ id: 1 }), [['date']])
+})
+
+test('Net Worth rejects invalid and unsafe crosstab amounts')
+  .with(['0.001', 'NaN', '90071992547409.92', 0.1]).run(async ({ assert }, amount) => {
+    let calls = 0
+    const { run } = await sourceMethod('networth', { db: {
+      query: () => ({ select() { return this }, from() { return this },
+        first: async () => ({ days: 3 }) }), raw: value => value,
+      rawQuery: async () => ({ rows: calls++ === 0 ? [{ name: '1_Cash' }]
+        : [{ date: '2026-01-01', account_0: amount }] }),
+    } })
+    await assert.rejects(() => run({ id: 1 }))
   })

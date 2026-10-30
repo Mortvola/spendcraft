@@ -1,6 +1,5 @@
 import { addMoneyCents, parseMoneyCents, formatMoneyCents, type MoneyCents } from
   '#common/moneyCents';
-import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
 import { HttpContext } from '@adonisjs/core/http';
 import db from '@adonisjs/lucid/services/db';
 import Budget from '#app/Models/Budget';
@@ -14,7 +13,7 @@ import { type BudgetProgressReportResponse, type NetworthReportResponse, type Pa
     '#common/ResponseTypes';
 import { DateTime } from 'luxon';
 
-type NetworthReportType = (string | number)[][];
+type NetworthReportType = (string | MoneyCents)[][];
 type PayeeReportType = (Omit<PayeeReportRow, 'sum'> & { sum: MoneyCents })[];
 type CategoryReportType = (Omit<CategoryReportRow, 'sum'> & { sum: MoneyCents })[];
 type IncomeVsExpensesReportType = [string, MoneyCents, MoneyCents, MoneyCents][];
@@ -69,8 +68,11 @@ class ReportController {
     switch (request.params().report) {
       case 'networth': {
         const rows = await ReportController.networth(budget);
-        return rows.map((row, index) => row.map((cell, column) => index === 0 || column === 0
-          ? String(cell) : encodeMonetaryAmount(cell)));
+        return rows.map((row, index) => row.map((cell, column) => {
+          if (index === 0 || column === 0) return String(cell);
+          if (typeof cell !== 'number') throw new Error('Invalid Net Worth monetary cell');
+          return formatMoneyCents(cell);
+        }));
       }
 
       case 'payee': {
@@ -138,7 +140,7 @@ class ReportController {
 
   private static async networth(budget: Budget): Promise<NetworthReportType> {
     const listCategories = (categories: { name: string }[]): string => (
-      categories.map((_, index) => `, account_${index} FLOAT`).join('')
+      categories.map((_, index) => `, account_${index} NUMERIC`).join('')
     );
 
     const { days } = await db.query()
@@ -220,7 +222,7 @@ t.date end) as date', [TransactionType.STARTING_BALANCE, TrackingType.Transactio
       select
         ${date2} AS date,
         accounts.id || '_' || accounts.name AS name,
-        max(CAST(hist.ending_balance AS float)) AS balance
+        max(hist.ending_balance) AS balance
       from statements AS hist
       join accounts ON accounts.id = hist.account_id
       join institutions ON institutions.id = accounts.institution_id
@@ -269,33 +271,21 @@ PRECEDING AND CURRENT ROW) AS balance
     const crosstab = `SELECT * FROM crosstab($$${query}$$, $$${categoryQuery}$$) `
     + `AS (date TEXT ${listCategories(categories.rows)})`;
 
-    const data: { rows: object[] } = await db.rawQuery(crosstab);
+    const data: { rows: Record<string, unknown>[] } = await db.rawQuery(crosstab);
 
-    // Move the data into the result object
-    // Also, strip the account id off of the column names
-    const result: (string | number)[][] = [
-      ['date'].concat(categories.rows
-        .map((item) => item.name.replace(/\d+_/, '')))
-    ]
-      .concat(data.rows.map((item) => Object.values(item)));
-
-    if (result.length === 1) return result;
-
-    // Fill in any gaps in balances
-    for (let j = 1; j < result[1].length; j += 1) {
-      if (result[1][j] === null) {
-        result[1][j] = 0;
-      }
+    // Keep header/account ordering and carry the last cent balance across gaps.
+    const result: NetworthReportType = [
+      ['date', ...categories.rows.map((item) => item.name.replace(/\d+_/, ''))],
+    ];
+    let previousBalances = categories.rows.map(() => parseMoneyCents('0.00'));
+    for (const item of data.rows) {
+      const [date, ...amounts] = Object.values(item);
+      if (typeof date !== 'string') throw new Error('Invalid Net Worth date');
+      const balances = amounts.map((amount, index) => amount === null
+        ? previousBalances[index] : reportAmountCents(amount));
+      result.push([date, ...balances]);
+      previousBalances = balances;
     }
-
-    for (let i = 2; i < result.length; i += 1) {
-      for (let j = 1; j < result[i].length; j += 1) {
-        if (result[i][j] === null) {
-          result[i][j] = result[i - 1][j];
-        }
-      }
-    }
-
     return result;
   }
 
