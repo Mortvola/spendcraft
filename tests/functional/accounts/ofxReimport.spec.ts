@@ -138,6 +138,24 @@ FX>`
         .map(tax => tax.amount))
     })
 
+  test('fractional OFX effects remain exact on import, replay and replacement')
+    .with([1, -1]).run(async ({ client, assert }, sign) => {
+      const f = await fixture()
+      await f.account.merge({ balance: sign * 0.1 }).save()
+      const unassigned = await f.budget.getUnassignedCategory()
+      await unassigned.merge({ balance: sign * 0.1 }).save()
+      ;(await upload(client, f, sign * 0.2)).assertStatus(200)
+      assert.strictEqual((await Account.findOrFail(f.account.id)).balance, sign * 0.3)
+      await unassigned.refresh()
+      assert.strictEqual(unassigned.balance, sign * 0.3)
+      ;(await upload(client, f, sign * 0.2)).assertStatus(200)
+      assert.strictEqual((await Account.findOrFail(f.account.id)).balance, sign * 0.3)
+      ;(await upload(client, f, sign * 0.4)).assertStatus(200)
+      assert.strictEqual((await Account.findOrFail(f.account.id)).balance, sign * 0.5)
+      await unassigned.refresh()
+      assert.strictEqual(unassigned.balance, sign * 0.5)
+    })
+
   test('first import and identical replay preserve identities and financial effects', async ({
     client, assert }) => {
     const f = await fixture()

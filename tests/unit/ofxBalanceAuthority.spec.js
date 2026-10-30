@@ -1,3 +1,6 @@
+import { addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents } from
+  '../../common/moneyCents.ts'
+import { encodeMonetaryAmount } from '../../app/Services/categoryAmountCodec.ts'
 import { test } from '@japa/runner'
 import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
@@ -87,6 +90,7 @@ async function fixture() {
   const categoryQuery = { where(field, id) { if (field === 'id') this.id = id; return this },
     whereHas() { return this }, async firstOrFail() { return categories.get(this.id) } }
   const runMethod = runInNewContext(await currentMethod(), {
+    addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents, encodeMonetaryAmount,
     requestCategoryStorage: (model) => model, hasCategoryStorage: () => true,
       validateStoredCategoryConservation: async () => undefined,
     AccountType: { Loan: 'loan' }, TransactionType: { REGULAR_TRANSACTION: 0 },
@@ -106,6 +110,29 @@ async function fixture() {
 }
 
 test.group('OFX accounting and provider balance independence', () => {
+  test('fractional imports, replay and replacement keep checked cents exact')
+    .with([1, -1]).run(async ({ assert }, sign) => {
+      const f = await fixture()
+      f.account.balance = sign * 0.1
+      f.categories.get(1).balance = sign * 0.1
+      await f.run([{ amount: sign * 0.2 }], '')
+      assert.strictEqual(f.account.balance, sign * 0.3)
+      assert.strictEqual(f.categories.get(1).balance, sign * 0.3)
+      await f.run([{ amount: sign * 0.2 }], '')
+      assert.strictEqual(f.account.balance, sign * 0.3)
+      await f.run([{ amount: sign * 0.4 }], '')
+      assert.strictEqual(f.account.balance, sign * 0.5)
+      assert.strictEqual(f.categories.get(1).balance, sign * 0.5)
+    })
+
+  test('Loan imports retain their excluded numeric balance behavior', async ({ assert }) => {
+    const f = await fixture()
+    f.account.type = 'loan'
+    f.account.balance = 0.1
+    await f.run([{ amount: 0.005 }], '')
+    assert.strictEqual(f.account.balance, 0.1 + 0.005)
+  })
+
   test('ledger-only observation never replaces accounting balance or writes history')
     .with([1500, -1500, 0, 0.005]).run(async ({ assert }, ledger) => {
       const f = await fixture()

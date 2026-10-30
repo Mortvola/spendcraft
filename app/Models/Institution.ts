@@ -1,3 +1,5 @@
+import { addMoneyCents, parseMoneyCents, formatMoneyCents } from '#common/moneyCents';
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
 import {
   BaseModel, hasMany,
   column,
@@ -95,7 +97,11 @@ class Institution extends BaseModel {
             await acct.updateStartingBalance(budget, fundingPool)
             await fundingPool.save()
           } else {
-            acct.balance += (acct.$extras.addedSum ?? 0)
+            acct.balance = acct.type === AccountType.Loan
+              ? acct.balance + (acct.$extras.addedSum ?? 0)
+              : Number(formatMoneyCents(addMoneyCents(
+                parseMoneyCents(encodeMonetaryAmount(acct.balance)),
+                parseMoneyCents(encodeMonetaryAmount(acct.$extras.addedSum ?? 0)))));
           }
            
           await acct.save();
@@ -111,7 +117,8 @@ class Institution extends BaseModel {
     accounts: Account[],
     plaidAccounts: Plaid.AccountBase[],
   ) {
-    let unassignedSum = 0;
+    let unassignedSum = parseMoneyCents('0.00');
+    let excludedUnassignedSum = 0;
 
     // for (let i = 0; i < transactions.length; i += 1) {
     //   const transaction: Plaid.Transaction = transactions[i];
@@ -160,16 +167,22 @@ class Institution extends BaseModel {
       const [amount, unassignedAmount] = await acct.addOrUpdateTransaction(transaction, budget);
 
       // Account returns deltas based on both the old and new applicable state.
-      acct.$extras.addedSum = (acct.$extras.addedSum ?? 0) + amount;
+      acct.$extras.addedSum = acct.type === AccountType.Loan
+        ? (acct.$extras.addedSum ?? 0) + amount
+        : Number(formatMoneyCents(addMoneyCents(
+          parseMoneyCents(encodeMonetaryAmount(acct.$extras.addedSum ?? 0)),
+          parseMoneyCents(encodeMonetaryAmount(amount)))));
 
       if (acct.tracking === TrackingType.Transactions) {
-        unassignedSum += unassignedAmount;
+        if (acct.type === AccountType.Loan) excludedUnassignedSum += unassignedAmount;
+        else unassignedSum = addMoneyCents(unassignedSum,
+          parseMoneyCents(encodeMonetaryAmount(unassignedAmount)));
       }
 
       acct.$extras.modified = true;
     }
 
-    return unassignedSum;
+    return { unassignedSum, excludedUnassignedSum };
   }
 
    
@@ -231,7 +244,8 @@ class Institution extends BaseModel {
       const accounts = await this.related('accounts').query();
 
       let nextCursor = this.cursor;
-      let unassignedSum = 0;
+      let unassignedSum = parseMoneyCents('0.00');
+      let excludedUnassignedSum = 0;
       let more = true;
 
       while (more) {
@@ -268,8 +282,10 @@ class Institution extends BaseModel {
           ];
 
           // Process added/modified transactions
-          unassignedSum += await this.addOrUpdateTransactions(budget, transactions, accounts,
+          const effects = await this.addOrUpdateTransactions(budget, transactions, accounts,
             plaidAccounts);
+          unassignedSum = addMoneyCents(unassignedSum, effects.unassignedSum);
+          excludedUnassignedSum += effects.excludedUnassignedSum;
 
           // Process removed transactions
           await this.removeTransactions(response.removed, accounts);
@@ -285,7 +301,9 @@ class Institution extends BaseModel {
         await Institution.updateAccountBalances(budget, accounts, plaidAccounts);
 
         const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
-        unassigned.balance += unassignedSum;
+        unassigned.balance = Number(formatMoneyCents(addMoneyCents(
+          parseMoneyCents(encodeMonetaryAmount(unassigned.balance)), unassignedSum)));
+        if (excludedUnassignedSum !== 0) unassigned.balance += excludedUnassignedSum;
         await unassigned.save();
 
         this.cursor = nextCursor;

@@ -1,3 +1,6 @@
+import { addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents } from
+  '../../common/moneyCents.ts'
+import { encodeMonetaryAmount } from '../../app/Services/categoryAmountCodec.ts'
 import { test } from '@japa/runner'
 import { readFile } from 'node:fs/promises'
 import { URL } from 'node:url'
@@ -54,7 +57,8 @@ test.group('Budget-gated controller behavior without a database', () => {
       const operation = runInNewContext(ts.transpileModule(`(async function(${source
         .parameters}) ${source.body})`, {
         compilerOptions: { target: ts.ScriptTarget.ES2022 },
-      }).outputText, { db: { transaction: async () => trx }, addTransaction: {},
+      }).outputText, { addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents,
+        encodeMonetaryAmount, db: { transaction: async () => trx }, addTransaction: {},
         Transaction: { query(options) { assert.strictEqual(options.client, trx); financialReads++;
           throw stop } },
       })
@@ -96,7 +100,8 @@ test.group('Provider concurrency behavior without a database', () => {
     const sync = runInNewContext(ts.transpileModule(`(async function(${source.parameters}) ${source
       .body})`, {
       compilerOptions: { target: ts.ScriptTarget.ES2022 },
-    }).outputText, {
+    }).outputText, { addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents,
+        encodeMonetaryAmount,
       logger: { error() { /* The caller captures the intentional test failure. */ } },
       app: { container: { make: async () => ({ syncTransactions: async (instance, cursor) => {
         assert.equal(cursor, 'committed-cursor')
@@ -135,7 +140,9 @@ test.group('Provider concurrency behavior without a database', () => {
     const update = runInNewContext(ts.transpileModule(`(async function(${source
       .parameters}) ${source.body})`, {
       compilerOptions: { target: ts.ScriptTarget.ES2022 },
-    }).outputText, { TrackingType: { Balances: 'Balances' }, AccountType: { Credit: 'Credit', Loan:
+    }).outputText, { addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents,
+        encodeMonetaryAmount,
+        TrackingType: { Balances: 'Balances' }, AccountType: { Credit: 'Credit', Loan:
       'Loan' } })
     await update(budget, accounts, accounts.map((account, i) => ({ account_id: account
       .plaidAccountId, balances: { current: i + 1 } })))

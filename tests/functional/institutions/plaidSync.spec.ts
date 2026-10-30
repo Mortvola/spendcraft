@@ -129,6 +129,42 @@ test.group('Plaid sync characterization', (group) => {
     return { at, transaction }
   }
 
+  test('fractional provider effects remain exact across pages, modification and removal')
+    .with([1, -1]).run(async ({ client, assert }, sign) => {
+      await f.account.merge({ balance: sign * 0.1 }).save()
+      await f.unassigned.merge({ balance: sign * 0.1 }).save()
+      fake.responses = [page(accounts(), 'fraction-1', { added: [purchase('first', {
+        amount: -sign * 0.2 })], has_more: true }), page(accounts(), 'fraction-2', {
+        added: [purchase('second', { amount: -sign * 0.1 })] })]
+      ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
+      assert.strictEqual((await Account.findOrFail(f.account.id)).balance, sign * 0.4)
+      await f.unassigned.refresh()
+      assert.strictEqual(f.unassigned.balance, sign * 0.4)
+      fake.responses = [page(accounts(), 'fraction-3', { modified: [purchase('first', {
+        amount: -sign * 0.4 })] })]
+      ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
+      assert.strictEqual((await Account.findOrFail(f.account.id)).balance, sign * 0.6)
+      await f.unassigned.refresh()
+      assert.strictEqual(f.unassigned.balance, sign * 0.6)
+      const { transaction } = await local('first')
+      assert.strictEqual(transaction.categories[0].amount, sign * 0.4)
+      fake.responses = [page(accounts(), 'fraction-4', { removed: [
+        { transaction_id: 'first', account_id: providerId(f.account) },
+        { transaction_id: 'second', account_id: providerId(f.account) }] })]
+      ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
+      assert.strictEqual((await Account.findOrFail(f.account.id)).balance, sign * 0.1)
+      await f.unassigned.refresh()
+      assert.strictEqual(f.unassigned.balance, sign * 0.1)
+    })
+
+  test('unsafe imported Account effects roll back provider state', async ({ client, assert }) => {
+    const before = await snapshot()
+    fake.responses = [page(accounts(), 'unsafe', { added: [purchase('unsafe', {
+      amount: Number.MAX_SAFE_INTEGER })] })]
+    ;(await client.post(url()).loginAs(f.user)).assertStatus(500)
+    assert.deepEqual(await snapshot(), before)
+  })
+
   test('Plaid reimport preserves canonical tax attribution and numeric/mixed reads reject').with([
     'numeric', 'string', 'mixed'])
     .run(async ({ client, assert }, encoding) => {
