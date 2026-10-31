@@ -14,7 +14,6 @@ import Category from '#app/Models/Category';
 import { updateCategoryTransfer } from '#validators/categoryTransfer';
 import Transaction from '#app/Models/Transaction';
 import AccountTransaction from '#app/Models/AccountTransaction';
-import Loan from '#app/Models/Loan';
 import {
   CategoryBalanceProps,
   TransactionsResponse,
@@ -548,14 +547,6 @@ class CategoriesController {
         }
       }
 
-      if (category.type === CategoryType.Loan) {
-        const loan = await Loan.findBy('categoryId', catId, { client: trx });
-
-        if (loan) {
-          await loan.delete();
-        }
-      }
-
       await category.delete();
 
       await trx.commit();
@@ -671,13 +662,9 @@ class CategoriesController {
         // Do not rely on the hasOne relation: even one of several links disqualifies the target.
         const accountLink = await AccountTransaction.query({ client: trx })
           .where('transactionId', existingTransaction.id).first();
-        const loanLink = await db.from('loan_transactions as lt').useTransaction(trx)
-          .join('transaction_categories as tc', 'tc.id', 'lt.transaction_category_id')
-          .where('tc.transaction_id', existingTransaction.id).select('lt.id').first();
-        if (accountLink || loanLink) {
+        if (accountLink) {
           throw new Exception(
-            'Account-linked or Loan-related transactions ' +
-            'cannot be replaced as funding or rebalance.',
+            'Account-linked transactions cannot be replaced as funding or rebalance.',
             { status: 422 });
         }
       }

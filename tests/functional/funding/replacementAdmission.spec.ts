@@ -45,7 +45,7 @@ const invalid = ['deleted funding', 'deleted rebalance', 'funding as rebalance',
   'rebalance as funding',
   'manual', 'provider', 'opening', 'transfer', 'unknown type', 'unknown request', 'one link',
     'multiple links',
-  'Loan Account', 'Loan ownership', 'null allocations', 'object allocations', 'empty allocations',
+  'Loan Account', 'null allocations', 'object allocations', 'empty allocations',
     'string money']
 
 test.group('Replacement admission persisted noninterference (prepared)', () => {
@@ -76,15 +76,6 @@ test.group('Replacement admission persisted noninterference (prepared)', () => {
         await account.related('accountTransactions').create({ transactionId: f.target.id, amount: 2,
           name: 'Unsupported link', pending: false })
       }
-    }
-    if (shape === 'Loan ownership') {
-      const [loan] = await db.table('loans').insert({ user_id: f.user.id, category_id: f.category
-        .id,
-        rate: 5, start_date: '2025-01-01', starting_balance: 100, balance: -100 }).returning('id')
-      const [split] = await db.table('transaction_categories').insert({ transaction_id: f.target.id,
-        category_id: f.category.id, amount: 2 }).returning('id')
-      await db.table('loan_transactions').insert({ loan_id: loan.id, transaction_category_id: split
-        .id, principle: 2 })
     }
     const malformed: Record<string, unknown> = { 'null allocations': null, 'object allocations': {},
       'empty allocations': [], 'string money': [{ categoryId: f.category.id, amount: '2' }] }

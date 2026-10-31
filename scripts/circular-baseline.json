@@ -7,8 +7,6 @@
     "app/Models/Category.ts",
     "app/Models/Group.ts",
     "app/Models/Institution.ts",
-    "app/Models/Loan.ts",
-    "app/Models/LoanTransaction.ts",
     "app/Models/Statement.ts",
     "app/Models/Transaction.ts",
     "app/Models/User.ts"
@@ -56,10 +54,6 @@
     ],
     [
       "app/Models/Budget.ts",
-      "app/Models/Loan.ts"
-    ],
-    [
-      "app/Models/Budget.ts",
       "app/Models/Transaction.ts"
     ],
     [
@@ -85,18 +79,6 @@
     [
       "app/Models/Institution.ts",
       "app/Models/Budget.ts"
-    ],
-    [
-      "app/Models/Loan.ts",
-      "app/Models/Category.ts"
-    ],
-    [
-      "app/Models/Loan.ts",
-      "app/Models/LoanTransaction.ts"
-    ],
-    [
-      "app/Models/LoanTransaction.ts",
-      "app/Models/Loan.ts"
     ],
     [
       "app/Models/Statement.ts",

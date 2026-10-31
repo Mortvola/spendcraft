@@ -15,7 +15,6 @@ import Category from '#app/Models/Category';
 import Group from '#app/Models/Group';
 import Institution from '#app/Models/Institution';
 import Transaction from '#app/Models/Transaction';
-import Loan from '#app/Models/Loan';
 import logger from '@adonisjs/core/services/logger';
 import AutoAssignment from './AutoAssignment.js';
 import TransactionLog from './TransactionLog.js';
@@ -52,9 +51,6 @@ export default class Budget extends BaseModel {
 
   @hasMany(() => Transaction)
   public transactions: HasMany<typeof Transaction>;
-
-  @hasMany(() => Loan)
-  public loans: HasMany<typeof Loan>;
 
   @hasMany(() => Group)
   public groups: HasMany<typeof Group>;

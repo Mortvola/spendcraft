@@ -312,19 +312,7 @@ export default class TransactionsController {
             });
           }
 
-          // Delete any loan transactions that are associated with the categories being deleted.
-           
-          // for (const split of splits) {
-          //   if (split.loanTransaction) {
-          //     split.loanTransaction.delete();
-          //     // eslint-disable-next-line no-await-in-loop
-          // const loan = await Loan.findByOrFail('categoryId', split.categoryId, { client: trx });
-          //     // eslint-disable-next-line no-await-in-loop
-          //     await loan.updateBalance();
-          //   }
 
-          //   split.delete();
-          // }
         }
         else if (account.tracking === TrackingType.Transactions) {
           // There are no category splits. Debit the 'Unassigned' category
@@ -356,23 +344,7 @@ export default class TransactionsController {
              
             await category.save();
 
-            if (category.type === CategoryType.Loan) {
-              // const loanTrx = (new LoanTransaction()).useTransaction(trx);
-
-              // // eslint-disable-next-line no-await-in-loop
-              // const loan = await Loan.findByOrFail('categoryId', split.categoryId, { client: trx
-              // });
-
-              // loanTrx.fill({
-              //   loanId: loan.id,
-              //   principle: 0,
-              // });
-
-              // // eslint-disable-next-line no-await-in-loop
-              // await loanTrx.related('transactionCategory').associate(txCategory);
-              // // eslint-disable-next-line no-await-in-loop
-              // await loan.updateBalance();
-            }
+            
 
             // Determine if the category is already in the array.
             const index = categoriesResult.findIndex((c) => c.id === category.id);
@@ -688,19 +660,7 @@ export default class TransactionsController {
               .balance) });
           }
 
-          if (category.type === CategoryType.Loan) {
-            // // eslint-disable-next-line no-await-in-loop
-            // const loanTransaction = await
-            // trxCat.related('loanTransaction').query().firstOrFail();
-
-            // // eslint-disable-next-line no-await-in-loop
-            // await loanTransaction.delete();
-
-            // // eslint-disable-next-line no-await-in-loop
-            // const loan = await loanTransaction.related('loan').query().firstOrFail();
-
-            // loan.updateBalance();
-          }
+          
 
           await category.save();
 

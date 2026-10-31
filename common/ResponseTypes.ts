@@ -358,45 +358,6 @@ export interface TransactionProps {
   },
 }
 
-export interface LoanTransactionProps {
-  id: number;
-
-  principle: DecimalMoneyString;
-
-  loanId: number;
-
-  transactionCategory: {
-    id: number;
-
-    amount: DecimalMoneyString;
-
-    transaction: {
-      id: number;
-
-      date: string;
-
-      accountTransaction: {
-        name: string;
-      }
-    }
-  }
-}
-
-export interface LoanTransactionsProps {
-  balance: DecimalMoneyString,
-  transactions: LoanTransactionProps[],
-}
-
-export interface LoanUpdateProps {
-  name: string;
-
-  loan: LoanTransactionsProps;
-}
-
-// export const isLoanTransactionProps = (r: unknown): r is LoanTransactionProps => (
-//   (r as LoanTransactionProps).transaction !== undefined
-// );
-
 export interface TransactionLogChanges extends Record<string, unknown> {
   amount?: {
     old?: DecimalMoneyString | null;

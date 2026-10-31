@@ -37,7 +37,6 @@ const AutoAssignmentsController = () => import('#controllers/AutoAssignmentsCont
 const FundingPlanController = () => import("#controllers/FundingPlanController")
 const WebhookController = () => import("#controllers/WebhookController")
 const ReportController = () => import("#controllers/ReportController")
-const LoansController = () => import("#controllers/LoansController")
 
 router.get('/home', [HomeController, 'index']).as('home');
 router.get('/home/:categoryId', [HomeController, 'index']).as('home.category');
@@ -217,17 +216,7 @@ router.group(() => {
   
       router.get('/reports/:report', [ReportController, 'get']);
   
-      router.group(() => {
-        router.post('', [LoansController, 'add']);
-  
-        router.group(() => {
-          router.get('', [LoansController, 'get']);
-          router.patch('', [LoansController, 'update']);
-          router.get('/transactions', [LoansController, 'getTransactions']);  
-        })
-          .prefix('/:catId');
-      })
-        .prefix('/loans');
+
   
       router.get('/rebalances', [TransactionsController, 'getRebalances'])    
 

@@ -51,7 +51,6 @@ export { default as Transaction } from ${source('client-src/State/Transaction.ts
 export { worksheet2_1_2026, getCurrentPeriod } from ${source(
   'client-src/State/Taxes/Estimated.ts')};
 export { default as TransactionRow } from ${source('client-src/Transactions/Transaction.tsx')};
-export { default as LoanTransaction } from ${source('client-src/State/LoanTransaction.ts')};
 export { default as Bill } from ${source('client-src/State/Bill.ts')};
 export { default as Statement } from ${source('client-src/State/Statement.ts')};
 export { default as StatementView } from ${source('client-src/AccountView/StatementView.tsx')};
@@ -793,42 +792,6 @@ cent fields', async ({ assert }) => {
       categories: [transfer] }, state.TransactionType.FUNDING_TRANSACTION))
     assert.strictEqual(category.baseAmountCents, Number.MAX_SAFE_INTEGER)
     assert.strictEqual(category.fundingCategories[0].amountCents, -12)
-  })
-
-  test('Loan transaction responses retain cents before interest calculations', ({ assert }) => {
-    const props = { id: 1, loanId: 2, principle: '10.25', transactionCategory: { id: 3, amount:
-      '-12.50',
-      transaction: { id: 4, date: '2026-10-01', accountTransaction: { name: 'Loan payment' } } } }
-    const transaction = new state.LoanTransaction(props)
-    assert.notProperty(transaction, 'principle')
-    assert.notProperty(transaction, 'interest')
-    assert.strictEqual(transaction.paymentCents, 1250)
-    assert.strictEqual(transaction.principleCents, 1025)
-    assert.strictEqual(transaction.interestCents, 225)
-    assert.strictEqual(transaction.transactionId, 4)
-    assert.strictEqual(transaction.transactionCategoryId, 3)
-    assert.strictEqual(props.principle, '10.25')
-    for (const value of [1, '', '1.2', '-0.00', 'Infinity']) {
-      assert.throws(() => new state.LoanTransaction({ ...props, principle: value }))
-      assert.throws(() => new state.LoanTransaction({ ...props, transactionCategory: { ...props
-        .transactionCategory, amount: value } }))
-    }
-  })
-
-  test('Loan payment breakdowns retain exact subtraction and signs').with([
-    ['-0.30', '0.10', 30, 20], ['0.30', '-0.10', -30, -20],
-    ['0.00', '0.00', 0, 0], ['-0.10', '0.30', 10, -20],
-    ['-90071992547409.91', '0.01', Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER - 1],
-  ]).run(({ assert }, [categoryAmount, principal, payment, interest]) => {
-    const props = { id: 1, principle: principal, transactionCategory: { id: 3,
-      amount: categoryAmount,
-      transaction: { id: 4, date: '2026-10-01', accountTransaction: { name: 'Loan payment' } } } }
-    const transaction = new state.LoanTransaction(props)
-    assert.strictEqual(transaction.paymentCents, payment)
-    assert.strictEqual(transaction.interestCents, interest)
-    assert.throws(() => new state.LoanTransaction({ ...props, principle: '90071992547409.92' }))
-    assert.throws(() => new state.LoanTransaction({ ...props, principle: '-90071992547409.91',
-      transactionCategory: { ...props.transactionCategory, amount: '-0.01' } }))
   })
 
   test('Loan register payment, principal and interest displays use retained cents', ({ assert }) =>
