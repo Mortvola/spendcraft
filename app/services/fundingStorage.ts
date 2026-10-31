@@ -1,12 +1,11 @@
 import type { LucidRow } from '@adonisjs/lucid/types/model'
 import { isDeepStrictEqual } from 'node:util'
-import { encodeMonetaryAmount } from './categoryAmountCodec.ts'
 import { decodeFundingRules, decodeFundingMetadata, encodeFundingRules, encodeFundingMetadata,
-  mapFundingRules, mapFundingMetadata, runtimeFundingAmount } from './fundingAmountCodec.ts'
+  mapFundingRules, mapFundingMetadata } from './fundingAmountCodec.ts'
 
 const originals = new WeakMap<object, unknown>()
 const pending = new WeakMap<object, unknown>()
-const stagedMetadata = new WeakMap<object, unknown>()
+const stagedValues = new WeakMap<object, unknown>()
 const replacements = new WeakSet<object>()
 
 // Explicit CREATE/replacement requests encode supplied leaves, even when their values are
@@ -16,15 +15,12 @@ export function requestFundingStorage(row: LucidRow): void { replacements.add(ro
 export function stageFundingStorage(row: LucidRow, property: 'fundingCategories' |
   'categories'): void {
   pending.delete(row)
-  stagedMetadata.delete(row)
+  stagedValues.delete(row)
   if (!replacements.has(row)) return
-  if (property === 'fundingCategories') row.$attributes[property] = encodeFundingRules(
-    row.$attributes[property])
-  else {
-    const encoded = encodeFundingMetadata(row.$attributes[property])
-    stagedMetadata.set(row, encoded)
-    row.$attributes[property] = encoded
-  }
+  const encoded = property === 'categories' ? encodeFundingMetadata(row.$attributes[property])
+    : encodeFundingRules(row.$attributes[property])
+  stagedValues.set(row, encoded)
+  row.$attributes[property] = encoded
 }
 
 export function consumeFundingStorage(value: unknown, row: LucidRow, metadata = false): unknown {
@@ -37,8 +33,8 @@ export function prepareFundingStorage(value: unknown, row: LucidRow, metadata = 
   const original = originals.get(row)
   const map = metadata ? mapFundingMetadata : mapFundingRules
   // Only this hook's own staged object may already use storage field names.
-  const input = metadata && stagedMetadata.get(row) !== value ? encodeFundingMetadata(value)
-    : value
+  const input = stagedValues.get(row) === value ? value
+    : metadata ? encodeFundingMetadata(value) : encodeFundingRules(value)
   const encoded = map(input, (amount, path) => {
     let old = original
     let current = value
@@ -53,8 +49,8 @@ export function prepareFundingStorage(value: unknown, row: LucidRow, metadata = 
         key) : undefined
     }
     if (row.$isPersisted && !replacements.has(row) && old !== null && old !== undefined
-      && isDeepStrictEqual(amount, metadata ? old : runtimeFundingAmount(old))) return old
-    return metadata ? amount : encodeMonetaryAmount(amount)
+      && isDeepStrictEqual(amount, old)) return old
+    return amount
   })
   pending.set(row, structuredClone(encoded))
   return encoded
@@ -62,11 +58,11 @@ export function prepareFundingStorage(value: unknown, row: LucidRow, metadata = 
 
 export function finishFundingStorage(row: LucidRow, property: 'fundingCategories' | 'categories',
   raw = pending.get(row)): void {
-  if (!pending.has(row)) { replacements.delete(row); stagedMetadata.delete(row); return }
+  if (!pending.has(row)) { replacements.delete(row); stagedValues.delete(row); return }
   const decoded = consumeFundingStorage(raw, row, property === 'categories')
   row.$attributes[property] = decoded
   row.$original[property] = structuredClone(decoded)
   pending.delete(row)
-  stagedMetadata.delete(row)
+  stagedValues.delete(row)
   replacements.delete(row)
 }

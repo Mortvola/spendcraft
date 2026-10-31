@@ -1,4 +1,4 @@
-import { fundingMetadataToCents } from '#services/fundingAmountCodec'
+import { fundingMetadataToCents, fundingRulesToCents } from '#services/fundingAmountCodec'
 import { categoryAllocationsToCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { addMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import AutoAssignmentCategory from '#models/AutoAssignmentCategory'
@@ -339,7 +339,7 @@ test('funding API serialization preserves percentages, nulls, metadata and numer
     { categoryId: 2, amount: 12.75, percentage: true },
     { categoryId: 3, amount: null, percentage: false }, { categoryId: 4, percentage: false }]
   const category = new Category().merge({ fundingAmountCents: parseMoneyCents('1.00') })
-  category.$setAttribute('fundingCategories', rules)
+  category.$setAttribute('fundingCategories', fundingRulesToCents(rules))
   const original = globalThis.structuredClone(category.$attributes)
   const expected = [{ ...rules[0], amount: '-0.12' }, ...rules.slice(1)]
   assert.deepEqual(category.serialize().fundingCategories, expected)

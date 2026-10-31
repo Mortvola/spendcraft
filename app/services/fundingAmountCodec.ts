@@ -52,27 +52,24 @@ export function mapFundingMetadata(value: unknown, scalar: Scalar): unknown {
   })
 }
 
-export const encodeFundingRules = (value: unknown) => mapFundingRules(value, encodeMonetaryAmount)
-export const decodeFundingRules = (value: unknown) => mapFundingRules(value,
-  decodeStoredMonetaryAmount)
-export const encodeFundingMetadata = (value: unknown) => transactionMetadata(value, 'encode')
-export const decodeFundingMetadata = (value: unknown) => transactionMetadata(value, 'decode')
-export const runtimeFundingMetadata = (value: unknown) => transactionMetadata(value, 'runtime')
+export const encodeFundingRules = (value: unknown) => fundingValues(value, 'encode', false)
+export const decodeFundingRules = (value: unknown) => fundingValues(value, 'decode', false)
+export const encodeFundingMetadata = (value: unknown) => fundingValues(value, 'encode')
+export const decodeFundingMetadata = (value: unknown) => fundingValues(value, 'decode')
+export const runtimeFundingMetadata = (value: unknown) => fundingValues(value, 'runtime')
 
 // API money uses decimal strings; percentages retain their numeric meaning.
 export function serializeFundingRules(value: unknown): unknown {
-  if (value === null || value === undefined) return value
-  if (!Array.isArray(value)) throw new Exception('Funding rules must be an array', { status: 422 })
-  return value.map((entry: unknown) => {
-    const row = object(entry)
-    leaf(row, 'amount', row.percentage === true ? runtimeFundingAmount : encodeMonetaryAmount, [])
-    return row
-  })
+  return fundingValues(value, 'serialize', false)
 }
 
 export function serializeFundingMetadata(value: unknown): unknown {
-  return transactionMetadata(value, 'serialize')
+  return fundingValues(value, 'serialize')
 }
+
+export type CategoryFundingRule = { categoryId: number } & (
+  { percentage: true, amount: number } | { percentage: false, amountCents: MoneyCents }
+)
 
 export type TransactionFundingRule = { categoryId: number } & (
   { percentage: true, amount?: number | null }
@@ -89,7 +86,11 @@ interface FundingRuleInput {
 }
 
 // Request dollars are rounded once; percentage calculations retain their existing precision.
-function fundingRulesToCents(value: readonly FundingRuleInput[] | null | undefined):
+export function fundingRulesToCents(value: readonly { categoryId: number, percentage: boolean,
+  amount: number }[]): CategoryFundingRule[]
+export function fundingRulesToCents(value: readonly FundingRuleInput[] | null | undefined):
+  TransactionFundingRule[] | null | undefined
+export function fundingRulesToCents(value: readonly FundingRuleInput[] | null | undefined):
   TransactionFundingRule[] | null | undefined {
   if (value == null) return value
   return value.map(rule => {
@@ -119,10 +120,10 @@ export function fundingMetadataToCents<T extends { categoryId: number, baseAmoun
 
 type MetadataOperation = 'decode' | 'encode' | 'runtime' | 'serialize'
 
-function transactionMetadata(value: unknown, operation: MetadataOperation): unknown {
+function fundingValues(value: unknown, operation: MetadataOperation, metadata = true): unknown {
   if (value === null || value === undefined) return value
-  if (!Array.isArray(value)) throw new Exception('Funding allocations must be an array', {
-    status: 422 })
+  if (!Array.isArray(value)) throw new Exception(metadata
+    ? 'Funding allocations must be an array' : 'Funding rules must be an array', { status: 422 })
   const decode = operation === 'decode'
   const external = operation === 'encode' || operation === 'serialize'
   const money = (amount: unknown): unknown => {
@@ -147,22 +148,24 @@ function transactionMetadata(value: unknown, operation: MetadataOperation): unkn
     if (source !== target) Reflect.deleteProperty(row, source)
     row[target] = amount == null ? amount : money(amount)
   }
+  const rule = (entry: unknown) => {
+    const row = object(entry)
+    if (row.percentage === true) {
+      if (Object.hasOwn(row, 'amountCents')) throw new Exception(
+        'Percentage funding rules require numeric percentages', { status: 422 })
+      leaf(row, 'amount', decode ? decodeStoredMonetaryAmount
+        : operation === 'encode' ? encodeMonetaryAmount : runtimeFundingAmount, [])
+    } else move(row, 'amount', 'amountCents')
+    return row
+  }
+  if (!metadata) return value.map(rule)
   return value.map(entry => {
     const row = object(entry)
     move(row, 'baseAmount', 'baseAmountCents')
     if (Object.hasOwn(row, 'fundingCategories') && row.fundingCategories != null) {
       if (!Array.isArray(row.fundingCategories)) throw new Exception(
         'Funding rules must be an array', { status: 422 })
-      row.fundingCategories = row.fundingCategories.map(entry => {
-        const rule = object(entry)
-        if (rule.percentage === true) {
-          if (Object.hasOwn(rule, 'amountCents')) throw new Exception(
-            'Percentage funding rules require numeric percentages', { status: 422 })
-          leaf(rule, 'amount', decode ? decodeStoredMonetaryAmount
-            : operation === 'encode' ? encodeMonetaryAmount : runtimeFundingAmount, [])
-        } else move(rule, 'amount', 'amountCents')
-        return rule
-      })
+      row.fundingCategories = row.fundingCategories.map(rule)
     }
     return row
   })

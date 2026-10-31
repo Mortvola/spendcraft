@@ -25,7 +25,7 @@ import Tax from './Tax.ts';
 type ProposedFundingCategory = Omit<ProposedFundingCategoryProps, 'amount' |
   'fundingCategories'> & {
   amountCents: MoneyCents;
-  fundingCategories: { categoryId: number, amount: number, percentage: boolean }[];
+  fundingCategories: Category['fundingCategories'];
 };
 
 export default class Budget extends BaseModel {

@@ -1,5 +1,5 @@
 import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
-import { parseMoneyCents } from '#common/moneyCents'
+import { parseMoneyCents, formatMoneyCents } from '#common/moneyCents'
 import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 import { categoryRequest } from '../../helpers/categoryRequest.js'
 // Requires explicit authorization for localhost:5432/spendcraft_test
@@ -214,8 +214,11 @@ balances from metadata').with(['create', 'replace'])
     await db.from('categories').where('id', f.category.id).update({ funding_categories: JSON
       .stringify(raw) })
     const row = await Category.findOrFail(f.category.id)
-    assert.equal(row.fundingCategories[0].amount, 1)
-    assert.equal(row.fundingCategories[1].amount, 100)
+    assert.deepEqual(row.fundingCategories, [
+      { categoryId: f.pool.id, amountCents: parseMoneyCents('1.00'), percentage: false,
+        note: { amount: 2.345 } },
+      { categoryId: f.pool.id, amount: 100, percentage: true },
+    ])
     assert.isFalse(row.$isDirty)
     row.name = 'Metadata'; await row.save()
     assert.deepEqual((await db.from('categories').where('id', row.id).firstOrFail())
@@ -250,7 +253,10 @@ balances from metadata').with(['create', 'replace'])
        fundingCategories: [{ categoryId: f.pool.id,
       amount: 100, percentage: true }] }).save()
     const loaded = await Category.findOrFail(f.category.id)
-    const inputs = { [f.category.id]: { baseAmount: 1, fundingCategories: loaded.fundingCategories,
+    const inputs = { [f.category.id]: { baseAmount: 1,
+      fundingCategories: loaded.fundingCategories.map(rule => rule.percentage ? rule
+        : { categoryId: rule.categoryId, percentage: false, amount: Number(
+          formatMoneyCents(rule.amountCents)) }),
       includeFundingTransfers: false } }
     const calculated = calculateFunding(inputs, f.pool.id)
     const response = await client.post('/api/v1/category-transfer').loginAs(f.user).json(

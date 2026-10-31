@@ -5,7 +5,8 @@ import { parseMoneyCents } from '#common/moneyCents'
 import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 import { categoryRequest } from '../../helpers/categoryRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
-import { fundingMetadataToCents, decodeFundingRules } from '#services/fundingAmountCodec'
+import { fundingMetadataToCents, fundingRulesToCents,
+  decodeFundingRules } from '#services/fundingAmountCodec'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import testUtils from '@adonisjs/core/services/test_utils'
@@ -118,8 +119,8 @@ test.group('Funding configuration validation regression', (group) => {
           continue
         }
         response.assertStatus(200)
-        const expected = configuration.map((entry) => ({ ...entry, amount: Math.round(Number(entry
-          .amount) * 100) / 100 }))
+        const expected = fundingRulesToCents(configuration.map((entry) => ({ ...entry,
+          amount: Math.round(Number(entry.amount) * 100) / 100 })))
         const stored = writer.startsWith('category')
           ? (await Category.findOrFail(writer === 'category create' ? response.body().data.id : f
             .category.id)).fundingCategories
@@ -216,7 +217,7 @@ test.group('Funding configuration validation regression', (group) => {
     const f = await fixture()
     const legacy = [{ categoryId: f.source.id, amount: -1, percentage: true }, { categoryId: f
       .source.id, amount: 101, percentage: true }]
-    await f.category.merge({ fundingCategories: legacy }).save()
+    await f.category.merge({ fundingCategories: fundingRulesToCents(legacy) }).save()
     const path = `/api/v1/groups/${f.group.id}/categories/${f.category.id}`
     for (const extra of [{}, { fundingCategories: null }]) {
       const before = await db.from('categories').where('id', f.category.id).first()
@@ -232,7 +233,7 @@ test.group('Funding configuration validation regression', (group) => {
     }
     const before = await db.from('categories').where('id', f.category.id).first()
     const rejected = await client.patch(path).json(categoryRequest({ name: 'Must not change',
-      fundingCategories: legacy })).accept('json').loginAs(f.user)
+      fundingCategories: fundingRulesToCents(legacy) })).accept('json').loginAs(f.user)
     rejected.assertStatus(422)
     assert.deepEqual(await db.from('categories').where('id', f.category.id).first(), before)
     const valid = [{ categoryId: f.source.id, amount: 100, percentage: true }]

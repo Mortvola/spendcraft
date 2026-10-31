@@ -1,5 +1,4 @@
 import { formatMoneyCents } from '#common/moneyCents';
-import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
 import { HttpContext } from '@adonisjs/core/http';
 import { ApiResponse, FundingRuleResponse, ProposedFundingCategoryProps } from
   '#common/ResponseTypes';
@@ -25,10 +24,11 @@ class FundingPlanController {
       data: proposed.map(({ amountCents, fundingCategories, ...category }) => ({
         ...category,
         amount: formatMoneyCents(amountCents),
-        fundingCategories: fundingCategories.map<FundingRuleResponse>((rule) => rule
-          .percentage
-          ? { ...rule, percentage: rule.percentage, amount: rule.amount }
-          : { ...rule, percentage: rule.percentage, amount: encodeMonetaryAmount(rule.amount) }),
+        fundingCategories: fundingCategories.map<FundingRuleResponse>((rule) => {
+          if (rule.percentage) return { ...rule };
+          const { amountCents: ruleCents, ...metadata } = rule;
+          return { ...metadata, amount: formatMoneyCents(ruleCents) };
+        }),
       })),
     }
   }

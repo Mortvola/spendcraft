@@ -1,4 +1,4 @@
-import { fundingMetadataToCents } from '#services/fundingAmountCodec';
+import { fundingMetadataToCents, fundingRulesToCents } from '#services/fundingAmountCodec';
 import {
   addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents, type MoneyCents,
 } from '#common/moneyCents';
@@ -442,7 +442,7 @@ class CategoriesController {
           goalDate: requestData.goalDate,
           recurrence: requestData.recurrence,
           useGoal: requestData.useGoal,
-          fundingCategories: requestData.fundingCategories,
+          fundingCategories: fundingRulesToCents(requestData.fundingCategories),
         })
         .save();
 
@@ -501,7 +501,8 @@ class CategoriesController {
         useGoal: requestData.useGoal,
         goalDate: requestData.goalDate,
         recurrence: requestData.recurrence,
-        fundingCategories: requestData.fundingCategories,
+        fundingCategories: requestData.fundingCategories === undefined ? undefined
+          : fundingRulesToCents(requestData.fundingCategories),
       }));
 
       await category.save();

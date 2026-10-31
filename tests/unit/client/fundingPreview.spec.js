@@ -153,7 +153,8 @@ test.group('Funding same-state preview and submission without DB', () => {
     let rolledBack = false
     const trx = { rollback: async () => { rolledBack = true } }
     const existing = { id: 1, type: 2, date: DateTime.fromISO('2025-03-01'),
-      categories: [{ categoryId: 1, amount: 1 }, { categoryId: 2, amount: -1 }] }
+      categories: [{ categoryId: 1, amountCents: parseMoneyCents('1.00') },
+        { categoryId: 2, amountCents: parseMoneyCents('-1.00') }] }
     const budget = { related: () => ({ query: () => ({ where() { return this }, firstOrFail: async (
       ) => existing }) }) }
     const user = { useTransaction: () => undefined, related: () => ({ query: () => ({ forUpdate: (
@@ -392,11 +393,11 @@ goal algorithm', async ({ assert }) => {
 
 test.group('Funding preview API decimal strings', () => {
   test('proposed endpoint formats cents and preserves percentage values')
-    .with(['0.30', '-0.12', '0.00', '90071992547409.90']).run(async ({ assert }, amount) => {
+    .with(['0.30', '-0.12', '0.00', '90071992547409.91']).run(async ({ assert }, amount) => {
     const proposed = [{ categoryId: 10, amountCents: parseMoneyCents(amount), adjusted: true,
       adjustedReason: 'keep',
       includeFundingTransfers: false, fundingCategories: [
-        { categoryId: 99, amount: -0.125, percentage: false },
+        { categoryId: 99, amountCents: parseMoneyCents('-0.12'), percentage: false },
         { categoryId: 20, amount: 12.75, percentage: true },
       ] }]
     const before = globalThis.structuredClone(proposed)
@@ -409,6 +410,7 @@ test.group('Funding preview API decimal strings', () => {
     assert.strictEqual(response.data[0].amount, amount)
     assert.notProperty(response.data[0], 'amountCents')
     assert.strictEqual(response.data[0].fundingCategories[0].amount, '-0.12')
+    assert.notProperty(response.data[0].fundingCategories[0], 'amountCents')
     assert.strictEqual(response.data[0].fundingCategories[1].amount, 12.75)
     assert.strictEqual(response.data[0].adjustedReason, 'keep')
     assert.deepEqual(proposed, before)
@@ -427,15 +429,17 @@ test.group('Funding preview API decimal strings', () => {
 
   test('prior-period context encodes totals, defaults empty aggregates, and decodes for the screen',
     async ({ assert }) => {
-    const rows = [{ id: 10, name: 'Category', balance: 20, $extras: { sum: '1.00', previousSum:
+    const rows = [{ id: 10, name: 'Category', balanceCents: parseMoneyCents('20.00'),
+      $extras: { sum: '1.00', previousSum:
       '-0.30',
-      previousFunding: '12.5', previousBaseAmount: '0.300', previousCatTransfers: null } }]
+      previousFunding: '12.5', previousBaseAmount: '0.30', previousCatTransfers: null } }]
     const before = globalThis.structuredClone(rows)
     const query = { whereHas() { return this }, joinRaw() { return this },
       then(resolve, reject) { return Promise.resolve(rows).then(resolve, reject) } }
     const get = runInNewContext(await expression('app/Controllers/Http/CategoriesController.ts',
       'get'), {
       Category: { query: () => query }, DateTime, TransactionType, encodeMonetaryAmount,
+      formatMoneyCents, parseMoneyCents, subtractMoneyCents,
     })
     const response = await get({ auth: { user: { related: () => ({ query: () => ({
       firstOrFail: async () => ({ id: 1 }) }) }) } },
@@ -464,7 +468,7 @@ test.group('Funding preview API decimal strings', () => {
 
 test('bills endpoint encodes debit totals and preserves null without changing aggregates', async ({
   assert }) => {
-  const totals = ['-12.5', '0', '-0.125', '0.300', null]
+  const totals = ['-12.50', '0.00', '-0.12', '0.30', null]
   const bills = totals.map((_, index) => ({ id: index + 1, $extras: {} }))
   const query = { whereHas() { return this }, where() { return Promise.resolve(bills) } }
   const budget = { id: 1, related: () => ({ query: () => ({
@@ -475,6 +479,7 @@ test('bills endpoint encodes debit totals and preserves null without changing ag
   const getBills = runInNewContext(await expression('app/Controllers/Http/CategoriesController.ts',
     'getBills'), {
     DateTime, CategoryType, Category: { query: () => query }, encodeMonetaryAmount,
+    formatMoneyCents, parseMoneyCents,
   })
   const response = await getBills({ auth: { user: { related: () => ({ query: () => ({
     firstOrFail: async () => budget }) }) } } })

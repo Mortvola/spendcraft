@@ -1,3 +1,4 @@
+import { fundingRulesToCents } from '../../app/services/fundingAmountCodec.ts'
 import { formatMoneyCents } from '#common/moneyCents'
 import { requestFundingStorage } from '../../app/services/fundingStorage.ts'
 import { encodeMonetaryAmount } from '../../app/services/categoryAmountCodec.ts'
@@ -494,7 +495,7 @@ for (const action of ['deleteGroup', 'addCategory', 'updateCategory']) {
         db: { transaction: async (callback) => {
           try { const result = await callback(owner); events.push('commit'); return result }
           catch (error) { events.push('rollback'); throw error }
-        } }, Category: FakeCategory, CategoryType: { Regular: 0, Bill: 1 },
+        } }, Category: FakeCategory, fundingRulesToCents, CategoryType: { Regular: 0, Bill: 1 },
         RequestErrorCode: { HAS_CHILDREN: 'HAS_CHILDREN' }, addCategory: {}, updateCategory: {},
         budgetGroups: (id, options) => query(group, id, options),
         budgetCategories: (id, options) => query(category, id, options),

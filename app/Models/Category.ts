@@ -1,5 +1,5 @@
 import { formatMoneyCents, parseMoneyCents, type MoneyCents } from '#common/moneyCents';
-import { serializeFundingRules } from '#services/fundingAmountCodec';
+import { serializeFundingRules, type CategoryFundingRule } from '#services/fundingAmountCodec';
 import { categoryNonzeroAllocationSql } from '#services/categoryAmountCodec';
 import { consumeFundingStorage, prepareFundingStorage, finishFundingStorage,
   stageFundingStorage } from '#services/fundingStorage';
@@ -13,11 +13,7 @@ import Budget from '#app/Models/Budget';
 import { DateTime } from 'luxon';
 import type { BelongsTo } from "@adonisjs/lucid/types/relations";
 
-interface FundingCategory {
-  categoryId: number,
-  amount: number,
-  percentage: boolean,
-}
+
 
 export default class Category extends BaseModel {
   @beforeSave()
@@ -82,7 +78,7 @@ export default class Category extends BaseModel {
       .Loan ? value : prepareFundingStorage(value, model)),
     serialize: (value) => serializeFundingRules(value),
   })
-  public fundingCategories: FundingCategory[];
+  public fundingCategories: CategoryFundingRule[];
 
   @column()
   public suspended: boolean;
