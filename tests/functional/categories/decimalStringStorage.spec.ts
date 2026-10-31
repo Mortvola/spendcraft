@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '#common/moneyCents'
 import { transactionRequest, categoryTransferRequest } from '../../helpers/transactionRequest.js'
 // PREPARED ONLY. Run through the safeguarded application test runner after fresh authorization.
 // tests/bootstrap.ts installs independent configured/live pg+pgLog/execution guards on every write.
@@ -20,7 +21,8 @@ async function fixture() {
     const user = await budget.related('users').create({ username: `cent-storage-${++sequence}`,
       email: `cent-storage-${sequence}@example.com`, password: 'testPassw0rd' })
     const institution = await budget.related('institutions').create({ name: 'Cent storage' })
-    const account = await institution.related('accounts').create({ name: 'Checking', balance: 10,
+    const account = await institution.related('accounts').create({ name: 'Checking',
+      balanceCents: parseMoneyCents('10.00'),
       type: AccountType.Depository, subtype: 'checking', tracking: TrackingType.Transactions,
         startDate: DateTime.fromISO('2025-01-01'),
       rate: 0, closed: false })

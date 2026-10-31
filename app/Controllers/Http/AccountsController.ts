@@ -74,7 +74,7 @@ export default class AccountsController {
     // and get the balance
     const acct = await budgetAccounts(user.budgetId).where('id', accountId).firstOrFail();
 
-    result.balance = encodeMonetaryAmount(acct.balance);
+    result.balance = formatMoneyCents(acct.balanceCents);
 
     const transactions = await budget
       .related('transactions').query()
@@ -245,15 +245,15 @@ export default class AccountsController {
         .pending };
       if (account.type === AccountType.Loan) {
         const balanceCents = addMoneyCents(
-          parseMoneyCents(encodeMonetaryAmount(account.balance)),
+          account.balanceCents,
           parseMoneyCents(encodeMonetaryAmount(acctTransaction.principle ?? 0)));
-        account.balance = Number(formatMoneyCents(balanceCents));
+        account.balanceCents = balanceCents;
       }
       else if (accountEligible(state, account.startDate)) {
         const balanceCents = addMoneyCents(
-          parseMoneyCents(encodeMonetaryAmount(account.balance)),
+          account.balanceCents,
           parseMoneyCents(encodeMonetaryAmount(acctTransaction.amount)));
-        account.balance = Number(formatMoneyCents(balanceCents));
+        account.balanceCents = balanceCents;
       }
 
       await account.save();
@@ -297,7 +297,7 @@ export default class AccountsController {
       const result: AddedTransaction = {
         categories: categoryBalances,
         transaction: transaction.serialize(transactionFields),
-        acctBalances: [{ id: account.id, balance: encodeMonetaryAmount(account.balance) }],
+        acctBalances: [{ id: account.id, balance: formatMoneyCents(account.balanceCents) }],
       };
 
       return result;
@@ -560,7 +560,7 @@ export default class AccountsController {
           .orderBy('endDate', 'desc')
           .firstOrFail()
 
-        account.balance = Number(formatMoneyCents(latestStatement.endingBalanceCents));
+        account.balanceCents = latestStatement.endingBalanceCents;
 
         await account.save()
       }
@@ -711,7 +711,7 @@ export default class AccountsController {
           .orderBy('endDate', 'desc')
           .firstOrFail()
 
-        account.balance = Number(formatMoneyCents(latestStatement.endingBalanceCents));
+        account.balanceCents = latestStatement.endingBalanceCents;
 
         await account.save()
       }
@@ -797,7 +797,7 @@ export default class AccountsController {
       if (account.tracking === TrackingType.Balances) {
         const latest = await Statement.query({ client: trx }).where('accountId', account.id)
           .orderBy('endDate', 'desc').first()
-        account.balance = latest ? Number(formatMoneyCents(latest.endingBalanceCents)) : 0
+        account.balanceCents = latest?.endingBalanceCents ?? parseMoneyCents('0.00')
         await account.save()
       }
     })

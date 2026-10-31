@@ -29,7 +29,8 @@ async function createFixture() {
     })
     const institution = await budget.related('institutions').create({ name: 'Period bank' })
     const account = await institution.related('accounts').create({
-      name: 'Period account', balance: 300, type: AccountType.Investment, subtype: 'IRA',
+      name: 'Period account', balanceCents: parseMoneyCents('300.00'),
+        type: AccountType.Investment, subtype: 'IRA',
       tracking: TrackingType.Balances, startDate: DateTime.fromISO('2025-01-01'), rate: 0,
         closed: false,
     })
@@ -119,7 +120,8 @@ test.group('Statement reconciliation period characterization', (group) => {
       }
       assert.equal(response.body().startDate, dates.startDate)
       assert.equal(response.body().endDate, dates.endDate)
-      assert.equal((await Account.findOrFail(fixture.account.id)).balance, 300)
+      assert.equal((await Account.findOrFail(fixture.account.id)).balanceCents, parseMoneyCents(
+        '300.00'))
       const after = await state()
       assert.deepEqual([after[0], after[2], after[4], after[5]], [before[0], before[2], before[4],
         before[5]])

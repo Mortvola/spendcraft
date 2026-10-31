@@ -22,7 +22,8 @@ async function fixture(mode: string) {
   const user = await budget.related('users').create({ username: `statement-response-${++sequence}`,
     email: `statement-response-${sequence}@example.com`, password: 'testPassw0rd' })
   const institution = await budget.related('institutions').create({ name: 'Response bank' })
-  const account = await institution.related('accounts').create({ name: 'Checking', balance: 100,
+  const account = await institution.related('accounts').create({ name: 'Checking',
+    balanceCents: parseMoneyCents('100.00'),
     type: AccountType.Depository, subtype: 'checking', tracking: TrackingType.Transactions,
     startDate: DateTime.fromISO('2025-01-01'), rate: 0, closed: false })
   const category = await budget.getUnassignedCategory()
@@ -254,7 +255,8 @@ test.group('Transaction Statement response commit boundary', () => {
       .association.id).firstOrFail()
     assert.equal(persisted.name, 'Original')
     assert.isNull(persisted.statementId)
-    assert.equal((await Account.findOrFail(data.account.id)).balance, 100)
+    assert.equal((await Account.findOrFail(data.account.id)).balanceCents, parseMoneyCents(
+      '100.00'))
     assert.deepEqual((await data.transaction.related('transactionLog').query()).map((log) => log
       .serialize()), beforeLogs)
     assert.deepEqual((await Category.findOrFail(data.category.id)).serialize(), beforeCategory)

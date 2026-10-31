@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '#common/moneyCents'
 import { transactionRequest } from '../../helpers/transactionRequest.js'
 import { categoryRequest } from '../../helpers/categoryRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
@@ -71,7 +72,7 @@ async function fixture() {
       email: `writer-pair-${sequence}@example.com`, password: 'testPassw0rd' })
     const institution = await budget.related('institutions').create({ name: 'Pair bank' })
     const account = await institution.related('accounts').create({ name: 'Pair account',
-      balance: 105,
+      balanceCents: parseMoneyCents('105.00'),
       type: AccountType.Depository, subtype: 'checking', tracking: TrackingType.Transactions,
       startDate: DateTime.fromISO('2025-01-01'), initialized: true, enabled: true, closed: false,
         rate: 0 })
@@ -130,7 +131,7 @@ test.group('Staged real writer pair PostgreSQL regressions', (group) => {
         date: '2025-02-02', name: 'After rollback', amount: 5,
         categories: [{ categoryId: f.category.id, amount: 5 }] })).loginAs(f.user).then((r) => r
           .assertStatus(200)), true)
-    assert.equal((await Account.findOrFail(f.account.id)).balance, 110)
+    assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('110.00'))
     assert.equal((await Category.findOrFail(f.category.id)).balance, 10)
     assert.lengthOf(await db.from('transactions').where('application_id', f.budget.id), 2)
     assert.lengthOf(await db.from('account_transactions').where('account_id', f.account.id), 2)
@@ -204,7 +205,7 @@ test.group('Staged real writer pair PostgreSQL regressions', (group) => {
       assert.isNull(fresh.accessToken); assert.isNull(fresh.plaidItemId); assert.isNull(fresh
         .cursor)
       assert.equal(syncCalls, syncFirst ? 1 : 0)
-      assert.equal((await Account.findOrFail(f.account.id)).balance, 105)
+      assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('105.00'))
       assert.equal((await Category.findOrFail(f.category.id)).balance, 5)
     })
 })

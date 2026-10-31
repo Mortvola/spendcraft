@@ -1,3 +1,5 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents'
 // PREPARED ONLY. Requires fresh task-specific PostgreSQL authorization and the
 // accepted configured/live pg + pgLog destructive-operation safeguards.
 import { test } from '@japa/runner'
@@ -28,7 +30,7 @@ async function fixture() {
       email: `ofx-authority-${sequence}@example.com`, password: 'testPassw0rd' })
     const institution = await budget.related('institutions').create({ name: `OFX ${sequence}` })
     const account = await institution.related('accounts').create({ name: 'Accounting',
-      balance: 1000,
+      balanceCents: parseMoneyCents('1000.00'),
       plaidBalance: 1400, type: AccountType.Credit, subtype: 'credit card', tracking: TrackingType
         .Transactions,
       startDate: DateTime.fromISO('2025-02-01'), rate: 0, closed: false })
@@ -74,8 +76,10 @@ async function snapshot(f: Fixture) {
 }
 async function assertBalances(f: Fixture, expected: number, provider: number, category: number) {
   const account = await Account.findOrFail(f.account.id)
-  if (account.balance !== expected || account.plaidBalance !== provider) throw new Error(
-    `Independent Account balances disagree: actual ${account.balance}/${account
+  if (Number(formatMoneyCents(
+    account.balanceCents)) !== expected || account.plaidBalance !== provider) throw new Error(
+    `Independent Account balances disagree: actual ${Number(formatMoneyCents(
+      account.balanceCents))}/${account
     .plaidBalance}; expected ${expected}/${provider}`)
   const raw = await db.rawQuery(
     'SELECT balance::text, plaid_balance::text FROM accounts WHERE id = ?', [account.id])
@@ -102,7 +106,7 @@ test.group('OFX independent accounting and provider balance (prepared)', () => {
         const account = await Account.findOrFail(f.account.id, { client: trx })
         const pool = await budget.getFundingPoolCategory({ client: trx })
         if (loan) account.type = AccountType.Loan
-        account.balance = balance
+        account.balanceCents = parseMoneyCents(encodeMonetaryAmount(balance))
         await account.save()
         await account.updateStartingBalance(budget, pool)
         await pool.save()
@@ -132,7 +136,8 @@ test.group('OFX independent accounting and provider balance (prepared)', () => {
         const budget = await Budget.query({ client: trx }).where('id', f.budget.id).forUpdate()
           .firstOrFail()
         const account = await Account.findOrFail(f.account.id, { client: trx })
-        await account.merge({ type: AccountType.Loan, balance: 0.3 }).save()
+        await account.merge({ type: AccountType.Loan, balanceCents: parseMoneyCents(
+          '0.30') }).save()
         const pool = await budget.getFundingPoolCategory({ client: trx })
         await account.updateStartingBalance(budget, pool)
         await pool.save()
@@ -296,7 +301,8 @@ test.group('OFX independent accounting and provider balance (prepared)', () => {
           clients.add(this.$trx)
           if (this instanceof Account && ('balance' in this.$dirty || 'plaidBalance' in this
             .$dirty)) {
-            writes.push({ balance: this.balance, provider: this.plaidBalance })
+            writes.push({ balance: Number(formatMoneyCents(this.balanceCents)),
+              provider: this.plaidBalance })
           }
           return save.call(this)
         })
@@ -308,7 +314,7 @@ test.group('OFX independent accounting and provider balance (prepared)', () => {
       const opening = mock.method(Account.prototype, 'updateStartingBalance', async function (
         this: Account, ...args: Parameters<Account['updateStartingBalance']>) {
         openingCount++
-        assert.equal(this.balance, 950)
+        assert.equal(this.balanceCents, parseMoneyCents('950.00'))
         assert.equal(this.plaidBalance, 1500)
         await maintenance.apply(this, args)
       })

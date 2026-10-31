@@ -1,4 +1,4 @@
-import { formatMoneyCents } from '#common/moneyCents'
+import { parseMoneyCents, formatMoneyCents } from '#common/moneyCents'
 import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
@@ -21,7 +21,8 @@ async function createFixture() {
     })
     const institution = await budget.related('institutions').create({ name: 'Statement bank' })
     const account = await institution.related('accounts').create({
-      name: 'Statement account', balance: 100, type: AccountType.Investment, subtype: 'IRA',
+      name: 'Statement account', balanceCents: parseMoneyCents('100.00'),
+        type: AccountType.Investment, subtype: 'IRA',
       tracking: TrackingType.Transactions, startDate: DateTime.fromISO('2025-01-01'), rate: 0,
         closed: false,
     })
@@ -66,7 +67,7 @@ test.group('Opening snapshot Statements', (group) => {
       assert.equal(statements[0].endDate.toISODate(), startDate)
       assert.strictEqual(Number(formatMoneyCents(statements[0].startingBalanceCents)), expected)
       assert.strictEqual(Number(formatMoneyCents(statements[0].endingBalanceCents)), expected)
-      assert.strictEqual(created.balance, expected)
+      assert.strictEqual(created.balanceCents, parseMoneyCents(encodeMonetaryAmount(expected)))
       assert.lengthOf(await BalanceHistory.query().where('accountId', id), 0)
       assert.lengthOf(await created.related('accountTransactions').query(), 0)
     })
@@ -110,7 +111,7 @@ test.group('Opening snapshot Statements', (group) => {
       response.assertStatus(200)
       const id: number = path === 'institution' ? response.body().data.accounts[0].id : response
         .body().data.account.id
-      assert.equal((await Account.findOrFail(id)).balance, 100)
+      assert.equal((await Account.findOrFail(id)).balanceCents, parseMoneyCents('100.00'))
       assert.lengthOf(await Statement.query().where('accountId', id), 0)
       assert.lengthOf(await BalanceHistory.query().where('accountId', id), 0)
     })

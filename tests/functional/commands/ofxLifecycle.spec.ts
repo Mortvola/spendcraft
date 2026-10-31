@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '#common/moneyCents'
 import { test } from '@japa/runner'
 import { mock } from 'node:test'
 import ace from '@adonisjs/core/services/ace'
@@ -92,7 +93,8 @@ test.group('OFX command transaction lifecycle', (group) => {
       name: `OFX command bank ${sequence}` })
     const account = await institution.related('accounts').create({
       name: `OFX command card ${sequence}`,
-      balance: 0, type: AccountType.Credit, subtype: 'credit card', tracking: TrackingType
+      balanceCents: parseMoneyCents('0.00'), type: AccountType.Credit, subtype: 'credit card',
+        tracking: TrackingType
         .Transactions,
       startDate: DateTime.fromISO('2025-01-01'), rate: 0, closed: false })
     const command = await ace.create(OfxUpload, ['fixture.ofx'])

@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '#common/moneyCents'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import Budget from '#models/Budget'
@@ -17,7 +18,8 @@ async function fixture() {
     const user = await budget.related('users').create({ username: `precision-${++sequence}`,
       email: `precision-${sequence}@example.com`, password: 'testPassw0rd' })
     const institution = await budget.related('institutions').create({ name: 'Precision bank' })
-    const account = await institution.related('accounts').create({ name: 'Checking', balance: 0,
+    const account = await institution.related('accounts').create({ name: 'Checking',
+      balanceCents: parseMoneyCents('0.00'),
       type: AccountType.Depository, subtype: 'checking', rate: 0, closed: false,
       tracking: TrackingType.Transactions, startDate: DateTime.fromISO('2025-01-01') })
     const group = await budget.related('groups').create({ name: 'Precision categories', type:

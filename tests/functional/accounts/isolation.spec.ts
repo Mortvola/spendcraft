@@ -22,12 +22,14 @@ async function domain(label: string) {
     })
     const institution = await budget.related('institutions').create({ name: `${label} bank` })
     const account = await institution.related('accounts').create({
-      name: `${label} private account`, balance: 123.45, type: AccountType.Depository,
+      name: `${label} private account`,
+      balanceCents: parseMoneyCents('123.45'), type: AccountType.Depository,
       subtype: 'checking', tracking: TrackingType.Balances, startDate: DateTime.fromISO(
         '2025-01-01'), rate: 0, closed: false,
     })
     const otherAccount = await institution.related('accounts').create({
-      name: `${label} second account`, balance: 50, type: AccountType.Depository,
+      name: `${label} second account`,
+      balanceCents: parseMoneyCents('50.00'), type: AccountType.Depository,
       subtype: 'checking', tracking: TrackingType.Balances, startDate: DateTime.fromISO(
         '2025-01-01'), rate: 0, closed: false,
     })
@@ -173,12 +175,14 @@ test.group('Account, history and statement budget isolation', (group) => {
       .loginAs(fixture.shared)
     created.assertStatus(404)
     const id = fixture.own.history.id
-    assert.equal((await Account.findOrFail(fixture.own.account.id)).balance, 123.45)
+    assert.equal((await Account.findOrFail(fixture.own.account.id)).balanceCents,
+      parseMoneyCents('123.45'))
     const updated = await client.patch(`${url}/${id}`).json({ date: '2025-03-01', amount: 250 })
       .accept('json').loginAs(fixture.shared)
     updated.assertStatus(404)
     assert.equal((await BalanceHistory.findOrFail(id)).balance, 123.45)
-    assert.equal((await Account.findOrFail(fixture.own.account.id)).balance, 123.45)
+    assert.equal((await Account.findOrFail(fixture.own.account.id)).balanceCents,
+      parseMoneyCents('123.45'))
   })
   test('deprecated history deletion is unavailable through either route').with(['nested',
     'standalone']).run(async ({ client, assert }, route) => {
@@ -188,7 +192,8 @@ test.group('Account, history and statement budget isolation', (group) => {
     const response = await client.delete(`/api/v1${path}`).accept('json').loginAs(fixture.shared)
     response.assertStatus(404)
     assert.equal((await BalanceHistory.findOrFail(fixture.own.history.id)).balance, 123.45)
-    assert.equal((await Account.findOrFail(fixture.own.account.id)).balance, 123.45)
+    assert.equal((await Account.findOrFail(fixture.own.account.id)).balanceCents,
+      parseMoneyCents('123.45'))
   })
   test('shared-budget user can create a statement', async ({ client, assert }) => {
     const response = await client.post(`/api/v1/account/${fixture.own.account.id}/statements`).json(
@@ -205,7 +210,8 @@ test.group('Account, history and statement budget isolation', (group) => {
     response.assertStatus(200)
     assert.equal(Number(formatMoneyCents((await Statement.findOrFail(
       fixture.own.statement.id)).endingBalanceCents)), 150)
-    assert.equal((await Account.findOrFail(fixture.own.account.id)).balance, 150)
+    assert.equal((await Account.findOrFail(fixture.own.account.id)).balanceCents,
+      parseMoneyCents('150.00'))
     assert.equal((await AccountTransaction.findOrFail(fixture.own.accountTransaction.id))
       .statementId, fixture.own.statement.id)
   })

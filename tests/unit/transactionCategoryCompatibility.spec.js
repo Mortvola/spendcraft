@@ -1,10 +1,12 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { formatMoneyCents } from '#common/moneyCents'
 // Characterization of current functions only: no migration implementation or DB bootstrap.
 import { test } from '@japa/runner'
 import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
 import { fundingCategoryEffectCents } from '../../client-src/Funding/calculateFunding.ts'
-import { parseMoneyCents } from '../../common/moneyCents.ts'
+import { addMoneyCents, subtractMoneyCents, parseMoneyCents } from '../../common/moneyCents.ts'
 
 async function current(file, name, context = {}) {
   const source = await readFile(file, 'utf8')
@@ -24,7 +26,8 @@ async function current(file, name, context = {}) {
   visit(ast)
   if (!expression) throw new Error(`Current function not found: ${file}:${name}`)
   return runInNewContext(ts.transpileModule(expression, { compilerOptions: { target: ts.ScriptTarget
-    .ES2022 } }).outputText, context)
+    .ES2022 } }).outputText, { ...context, addMoneyCents, subtractMoneyCents, parseMoneyCents,
+    formatMoneyCents, encodeMonetaryAmount })
 }
 
 test.group('Current Transaction Category string compatibility — no DB', () => {
@@ -68,7 +71,8 @@ test.group('Current Transaction Category string compatibility — no DB', () => 
         fill(values) { Object.assign(this, values); return this }
         async save() { saves++; this.id = 7; row = { ...this }; return this }
       }
-      const account = { id: 1, balance: 100, tracking: 'Transactions', startDate: date, $trx: owner,
+      const account = { id: 1, balanceCents: parseMoneyCents(encodeMonetaryAmount(100)),
+        tracking: 'Transactions', startDate: date, $trx: owner,
         related: () => ({ query: () => ({ whereHas() { return this }, where() { return this }, sum(
           ) { return this },
           async first() { return queries++ === 0 ? { $extras: { sum: '25.00' } } : scenario ===
@@ -82,7 +86,7 @@ test.group('Current Transaction Category string compatibility — no DB', () => 
           TransactionType: { STARTING_BALANCE: 4 }, logger: { info: () => undefined },
       })
       await update.call(account, { id: 2 }, pool)
-      assert.equal(account.balance, 100)
+      assert.equal(Number(formatMoneyCents(account.balanceCents)), 100)
       assert.equal(row.categories[0].categoryId, 99)
       assert.strictEqual(row.categories[0].amount, 75)
       if (scenario === 'new') {

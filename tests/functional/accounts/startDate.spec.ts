@@ -23,7 +23,8 @@ async function createFixture() {
     })
     const institution = await budget.related('institutions').create({ name: 'Start-date bank' })
     const account = await institution.related('accounts').create({
-      name: 'Start-date account', balance: 100, type: AccountType.Investment, subtype: 'IRA',
+      name: 'Start-date account', balanceCents: parseMoneyCents('100.00'),
+        type: AccountType.Investment, subtype: 'IRA',
       tracking: TrackingType.Transactions, startDate: DateTime.fromISO('2025-01-01'), rate: 0,
         closed: false,
     })
@@ -63,7 +64,8 @@ test.group('Account start-date characterization', () => {
           date === '2025-01-01' ? sign * 0.4 : sign * 0.1)
         assert.strictEqual((await Category.findOrFail(unassigned.id)).balance,
           date === '2025-01-01' ? sign * 0.3 : sign * 0.1)
-        assert.strictEqual((await Account.findOrFail(f.account.id)).balance, 100)
+        assert.strictEqual((await Account.findOrFail(f.account.id)).balanceCents,
+          parseMoneyCents('100.00'))
       }
       assert.deepEqual(await db.from('account_transactions').whereIn('id', before.map(row =>
         row.id)).orderBy('id'), before)
@@ -118,7 +120,7 @@ test.group('Account start-date characterization', () => {
         response.assertStatus(200)
         const account = await Account.findOrFail(f.account.id)
         assert.equal(account.startDate.toISODate(), date)
-        assert.equal(account.balance, 100)
+        assert.equal(account.balanceCents, parseMoneyCents('100.00'))
         assert.deepEqual(await db.from('transactions').whereIn('id', ids).orderBy('id'), originals)
         assert.deepEqual(await db.from('account_transactions').whereIn('transaction_id', ids)
           .orderBy('id'), rows)
@@ -229,7 +231,7 @@ test.group('Account start-date characterization', () => {
       const response = await client.patch(`/api/v1/account/${f.account.id}`).json({ startDate })
         .accept('json').loginAs(f.user)
       response.assertStatus(200)
-      assert.equal((await Account.findOrFail(f.account.id)).balance, 100)
+      assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('100.00'))
       assert.equal((await Account.findOrFail(f.account.id)).startDate.toISODate(), startDate)
       assert.lengthOf(await Transaction.query().where('budgetId', f.budget.id), 0)
       assert.lengthOf(await AccountTransaction.query().where('accountId', f.account.id), 0)
@@ -258,7 +260,7 @@ test.group('Account start-date characterization', () => {
     assert.lengthOf(await Transaction.query().where('budgetId', f.budget.id), 1)
     assert.equal((await AccountTransaction.findByOrFail('transactionId', transaction.id)).amount,
       10)
-    assert.equal((await Account.findOrFail(f.account.id)).balance, 100)
+    assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('100.00'))
   })
 
 })

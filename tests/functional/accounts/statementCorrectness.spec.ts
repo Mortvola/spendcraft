@@ -26,7 +26,8 @@ async function createFixture() {
     })
     const institution = await budget.related('institutions').create({ name: 'Statement bank' })
     const account = await institution.related('accounts').create({
-      name: 'Statement account', balance: 100, type: AccountType.Investment, subtype: 'IRA',
+      name: 'Statement account', balanceCents: parseMoneyCents('100.00'),
+        type: AccountType.Investment, subtype: 'IRA',
       tracking: TrackingType.Transactions, startDate: DateTime.fromISO('2025-01-01'), rate: 0,
         closed: false,
     })
@@ -104,7 +105,7 @@ test.group('Manual statement correctness', (group) => {
       if (position === 'newer') { await seedStatement('2025-01-01', '2025-01-31', 100) }
       if (position === 'older' || position === 'between') {
         await seedStatement('2025-03-01', '2025-03-31', 300)
-        await fixture.account.merge({ balance: 300 }).save()
+        await fixture.account.merge({ balanceCents: parseMoneyCents('300.00') }).save()
       }
       if (position === 'between') await seedStatement('2025-01-01', '2025-01-31', 100)
       const response = await client.post(`/api/v1/account/${fixture.account.id}/statements`)
@@ -115,8 +116,9 @@ test.group('Manual statement correctness', (group) => {
       assert.equal(rows.length, position === 'between' ? 3 : position === 'older' || position ===
         'newer' ? 2 : 1,
         `HTTP ${response.status()}: statement creation must persist`)
-      assert.equal((await Account.findOrFail(fixture.account.id)).balance, Number(
-        formatMoneyCents(rows[0].endingBalanceCents)))
+      assert.equal((await Account.findOrFail(fixture.account.id)).balanceCents, parseMoneyCents(
+        encodeMonetaryAmount(Number(
+        formatMoneyCents(rows[0].endingBalanceCents)))))
       response.assertStatus(200)
     })
 
@@ -280,7 +282,8 @@ test.group('Manual statement correctness', (group) => {
   test('balance-tracked full PATCH recomputes current balance from the resulting latest statement')
     .with(['latest-amount', 'older-amount', 'latest-earlier', 'older-later']).run(async ({ client,
       assert }, scenario) => {
-      await fixture.account.merge({ tracking: TrackingType.Balances, balance: 300 }).save()
+      await fixture.account.merge({ tracking: TrackingType.Balances,
+        balanceCents: parseMoneyCents('300.00') }).save()
       const older = await seedStatement('2025-01-01', '2025-01-31', 100)
       const latest = await seedStatement('2025-03-01', '2025-03-31', 300)
       const target = scenario.startsWith('latest') ? latest : older
@@ -302,8 +305,9 @@ test.group('Manual statement correctness', (group) => {
       assert.deepEqual(after[1].filter((row) => row.id !== target.id), before[1].filter((row) => row
         .id !== target.id))
       assert.deepEqual(after.slice(2), before.slice(2))
-      assert.equal((await Account.findOrFail(fixture.account.id)).balance, Number(
-        formatMoneyCents(current.endingBalanceCents)))
+      assert.equal((await Account.findOrFail(fixture.account.id)).balanceCents, parseMoneyCents(
+        encodeMonetaryAmount(Number(
+        formatMoneyCents(current.endingBalanceCents)))))
     })
 
   test('omitting investment data in an otherwise full PATCH preserves it', async ({ client,
@@ -339,7 +343,7 @@ test.group('Manual statement correctness', (group) => {
       await seedTransaction('2025-02-01', 10)
       const last = await seedTransaction('2025-02-28', -4)
       if (operation !== 'create') await fixture.account.merge({ tracking: TrackingType.Balances,
-        balance: 200 }).save()
+        balanceCents: parseMoneyCents('200.00') }).save()
       const before = await state()
       const table = operation === 'create' || operation === 'late-create-balance' ?
         'account_transactions' : operation === 'patch' ? 'statements' : 'accounts'

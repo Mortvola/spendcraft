@@ -40,7 +40,7 @@ export function categoryEffectDeltas(
     .map(id => [id, subtractMoneyCents(after.get(id) ?? zero, before.get(id) ?? zero)]));
 }
 
-// Loan-excluded allocations keep numeric JSON; only their balance effects use cents.
+// Adapt numeric runtime allocations to checked cents without changing their stored JSON.
 export function excludedCategoryEffectDeltas(oldSplits: readonly Allocation[],
   newSplits: readonly Allocation[],
   oldEligible: boolean, newEligible: boolean): Map<number, MoneyCents> {

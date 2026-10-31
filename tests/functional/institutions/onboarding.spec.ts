@@ -1,3 +1,5 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { parseMoneyCents, formatMoneyCents } from '#common/moneyCents'
 import PlaidItemCleanupService from '#services/plaidItemCleanup'
 import { test } from '@japa/runner'
 import { mock } from 'node:test'
@@ -271,7 +273,8 @@ test.group('Plaid staged onboarding characterization', (group) => {
     for (const returned of response.body().data.accounts) {
       const account = await Account.findOrFail(returned.id)
       assert.equal(account.institutionId, inst.id)
-      assert.strictEqual(returned.balance, account.balance.toFixed(2))
+      assert.strictEqual(returned.balance, Number(formatMoneyCents(
+        account.balanceCents)).toFixed(2))
       assert.strictEqual(returned.plaidBalance, account.plaidBalance === null ? null : account
         .plaidBalance.toFixed(2))
       assert.equal(returned.plaidId, account.plaidAccountId)
@@ -357,7 +360,7 @@ effects').with(['manual', 'sync all', 'command', 'webhook']).run(async ({ client
     const purchase = await AccountTransaction.query().where('accountId', account.id).where(
       'providerTransactionId', 'purchase').firstOrFail()
     assert.equal(purchase.amount, -10)
-    assert.equal((await Account.findOrFail(account.id)).balance, 100)
+    assert.equal((await Account.findOrFail(account.id)).balanceCents, parseMoneyCents('100.00'))
     assert.equal((await budget.getUnassignedCategory()).balance, -10)
     assert.equal((await budget.getFundingPoolCategory()).balance, 110)
     const recovered = await snapshot()
@@ -369,7 +372,7 @@ effects').with(['manual', 'sync all', 'command', 'webhook']).run(async ({ client
       'providerTransactionId', 'purchase'), 1)
     assert.lengthOf(await Institution.query().where('budgetId', budget.id), 1)
     assert.lengthOf(await inst.related('accounts').query(), 1)
-    assert.equal((await Account.findOrFail(account.id)).balance, 100)
+    assert.equal((await Account.findOrFail(account.id)).balanceCents, parseMoneyCents('100.00'))
     assert.equal((await budget.getUnassignedCategory()).balance, -10)
     assert.notInclude(logs.join(''), token)
   })
@@ -405,7 +408,7 @@ effects').with(['manual', 'sync all', 'command', 'webhook']).run(async ({ client
     assert.equal(response.body().data.syncDate, inst.syncDate?.toISO())
     assert.equal(response.body().data.id, inst.id)
     assert.equal(response.body().data.accounts[0].id, account.id)
-    assert.equal(account.balance, 175)
+    assert.equal(account.balanceCents, parseMoneyCents('175.00'))
     const unassigned = await budget.getUnassignedCategory()
     const funding = await budget.getFundingPoolCategory()
     await assigned.refresh()
@@ -420,7 +423,8 @@ effects').with(['manual', 'sync all', 'command', 'webhook']).run(async ({ client
       assert.deepInclude(response.body().data.categories, { id: category.id, balance: category
         .balance.toFixed(2) })
     }
-    assert.strictEqual(response.body().data.accounts[0].balance, account.balance.toFixed(2))
+    assert.strictEqual(response.body().data.accounts[0].balance, Number(formatMoneyCents(
+      account.balanceCents)).toFixed(2))
     assert.strictEqual(response.body().data.accounts[0].plaidBalance, account
       .plaidBalance === null ? null : account.plaidBalance.toFixed(2))
     assert.strictEqual(response.body().data.accounts[0].pendingBalance, allocation === 'pending' ?
@@ -441,9 +445,11 @@ effects').with(['manual', 'sync all', 'command', 'webhook']).run(async ({ client
     response.assertStatus(200)
     const institution = await Institution.query().where('budgetId', budget.id).firstOrFail()
     const account = await institution.related('accounts').query().firstOrFail()
-    assert.equal(account.balance, state === 'posted' ? 175 : 100)
+    assert.equal(account.balanceCents, parseMoneyCents(encodeMonetaryAmount(
+      state === 'posted' ? 175 : 100)))
     assert.equal(account.plaidBalance, state === 'posted' ? 175 : 100)
-    assert.strictEqual(response.body().data.accounts[0].balance, account.balance.toFixed(2))
+    assert.strictEqual(response.body().data.accounts[0].balance, Number(formatMoneyCents(
+      account.balanceCents)).toFixed(2))
     assert.strictEqual(response.body().data.accounts[0].plaidBalance, account
       .plaidBalance === null ? null : account.plaidBalance.toFixed(2))
     assert.strictEqual(response.body().data.accounts[0].pendingBalance, state === 'pending' ?

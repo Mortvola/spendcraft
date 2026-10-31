@@ -1,3 +1,4 @@
+import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import { encodeMonetaryAmount } from '../../app/services/categoryAmountCodec.ts'
 import { test } from '@japa/runner'
 import { readFile } from 'node:fs/promises'
@@ -22,7 +23,8 @@ test.group('Deprecated BalanceHistory production boundary (no database)', () => 
     visit(ast)
     assert.isString(body)
     let queries = 0
-    const account = { id: 10, tracking: 'Transactions', balance: 100 }
+    const account = { id: 10, tracking: 'Transactions', balanceCents: parseMoneyCents(
+      encodeMonetaryAmount(100)) }
     const chain = { where() { return this }, whereHas() { return this }, orderBy() { return this },
       async first() { return { date: DateTime.fromISO('2025-02-10') } } }
     const method = runInNewContext(ts.transpileModule(
@@ -41,7 +43,7 @@ test.group('Deprecated BalanceHistory production boundary (no database)', () => 
     const result = await method({ request: { params: () => ({ acctId: '10' }) }, auth: { user: {
       budgetId: 1 } } })
     assert.equal(queries, 1); assert.equal(result[0].balance, '100.00')
-    assert.equal(account.balance, 100)
+    assert.equal(Number(formatMoneyCents(account.balanceCents)), 100)
     assert.notProperty(result[0], 'id')
   })
 })

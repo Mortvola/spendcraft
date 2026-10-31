@@ -27,7 +27,8 @@ async function createDomain(label: string) {
     })
     const institution = await budget.related('institutions').create({ name: `${label} bank` })
     const account = await institution.related('accounts').create({
-      name: `${label} account`, balance: 100, type: AccountType.Depository,
+      name: `${label} account`,
+      balanceCents: parseMoneyCents('100.00'), type: AccountType.Depository,
       subtype: 'checking', tracking: TrackingType.Transactions,
       startDate: DateTime.fromISO('2025-01-01'), rate: 0, closed: false,
     })
@@ -117,7 +118,8 @@ test.group('Transaction budget isolation', (group) => {
         categoryId: fixture.own.category.id, amount: 15 }] }))
       .accept('json').loginAs(user)
     response.assertStatus(200)
-    assert.equal((await Account.findOrFail(fixture.own.account.id)).balance, 105)
+    assert.equal((await Account.findOrFail(fixture.own.account.id)).balanceCents,
+      parseMoneyCents('105.00'))
     assert.equal((await Category.findOrFail(fixture.own.category.id)).balance, 25)
     assert.equal((await Transaction.findOrFail(fixture.own.transaction.id)).version, 1)
     assert.equal((await AccountTransaction.findOrFail(fixture.own.accountTransaction.id)).name,
@@ -171,7 +173,8 @@ test.group('Transaction budget isolation', (group) => {
     async ({ client, assert }, actor) => {
     const user = actor === 'owner' ? fixture.own.user : fixture.shared
     const otherAccount = await fixture.own.institution.related('accounts').create({
-      name: 'Other own account', balance: 200, type: AccountType.Depository,
+      name: 'Other own account', balanceCents: parseMoneyCents('200.00'),
+        type: AccountType.Depository,
       subtype: 'checking', tracking: TrackingType.Transactions,
       startDate: DateTime.fromISO('2025-01-01'), rate: 0, closed: false,
     })
@@ -211,7 +214,8 @@ test.group('Transaction budget isolation', (group) => {
       .accept('json').loginAs(user)
     response.assertStatus(200)
     assert.isTrue((await Transaction.findOrFail(fixture.own.transaction.id)).deleted)
-    assert.equal((await Account.findOrFail(fixture.own.account.id)).balance, 90)
+    assert.equal((await Account.findOrFail(fixture.own.account.id)).balanceCents,
+      parseMoneyCents('90.00'))
     assert.equal((await Category.findOrFail(fixture.own.category.id)).balance, 10)
   })
 

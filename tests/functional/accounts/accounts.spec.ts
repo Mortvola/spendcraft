@@ -1,4 +1,4 @@
-import { formatMoneyCents } from '#common/moneyCents'
+import { parseMoneyCents, formatMoneyCents } from '#common/moneyCents'
 import { statementRequest } from '../../helpers/statementRequest.js'
 import Account from '#models/Account'
 import Statement from '#models/Statement'
@@ -78,7 +78,8 @@ test.group('Accounts', (group) => {
       response.assertStatus(200)
       const statement = await Statement.findOrFail(response.body().id)
       assert.equal(Number(formatMoneyCents(statement.endingBalanceCents)), 150.10)
-      assert.equal((await Account.findOrFail(statement.accountId)).balance, 150.10)
+      assert.equal((await Account.findOrFail(statement.accountId)).balanceCents,
+        parseMoneyCents('150.10'))
     })
 
   test('add offline account')

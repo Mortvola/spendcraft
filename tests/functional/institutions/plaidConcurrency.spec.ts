@@ -1,3 +1,4 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { parseMoneyCents } from '#common/moneyCents'
 import { transactionRequest } from '../../helpers/transactionRequest.js'
 import { mock } from 'node:test'
@@ -64,7 +65,7 @@ async function fixture() {
       plaidItemId: `sync-item-${sequence}`, cursor: null })
     const createAccount = (suffix: string) => institution.related('accounts').create({
       name: `Checking ${suffix}`, plaidAccountId: `sync-account-${sequence}-${suffix}`,
-        balance: 100,
+        balanceCents: parseMoneyCents('100.00'),
       type: AccountType.Depository, subtype: 'checking', tracking: TrackingType.Transactions,
       startDate: DateTime.fromISO('2025-01-01'), rate: 0, enabled: true, closed: false,
         initialized: true,
@@ -225,7 +226,7 @@ wait_event_type='Lock'", [pid])
     const { at, transaction } = await local()
     assert.equal(at.providerTransactionId, 'purchase'); assert.equal(transaction.version, 0)
     assert.lengthOf(await transaction.related('transactionLog').query(), 1)
-    assert.equal((await f.account.refresh()).balance, 90)
+    assert.equal((await f.account.refresh()).balanceCents, parseMoneyCents('90.00'))
     assert.equal((await f.unassigned.refresh()).balance, -10)
     assert.equal((await f.institution.refresh()).cursor, 'c1'); assert.isNotNull(f.institution
       .syncDate)
@@ -238,7 +239,7 @@ wait_event_type='Lock'", [pid])
     assert.deepEqual(fake.calls.map((call) => call.cursor), [null, 'c1', 'c2', 'c1'])
     assert.equal(fake.maximumActive, 1)
     assert.lengthOf(await AccountTransaction.query().where('accountId', f.account.id), 2)
-    assert.equal((await f.account.refresh()).balance, 87.75)
+    assert.equal((await f.account.refresh()).balanceCents, parseMoneyCents('87.75'))
     assert.equal((await f.unassigned.refresh()).balance, -12.25)
     assert.equal((await f.institution.refresh()).cursor, 'c2')
   })
@@ -256,7 +257,8 @@ wait_event_type='Lock'", [pid])
     const at = await AccountTransaction.findOrFail(before.at.id)
     const transaction = await Transaction.findOrFail(before.transaction.id)
     const expected = kind === 'amount' ? -12.25 : kind === 'date' ? 0 : -10
-    assert.equal((await f.account.refresh()).balance, 100 + expected)
+    assert.equal((await f.account.refresh()).balanceCents, parseMoneyCents(encodeMonetaryAmount(
+      100 + expected)))
     assert.equal((await f.unassigned.refresh()).balance, expected)
     assert.equal(transaction.version, before.transaction.version + 1)
     assert.lengthOf(await transaction.related('transactionLog').query(), logs.length + 1)
@@ -277,7 +279,7 @@ wait_event_type='Lock'", [pid])
     assert.isTrue(after.transaction.deleted)
     assert.equal(after.transaction.version, before.transaction.version)
     assert.lengthOf(await after.transaction.related('transactionLog').query(), logs.length + 1)
-    assert.equal((await f.account.refresh()).balance, 100)
+    assert.equal((await f.account.refresh()).balanceCents, parseMoneyCents('100.00'))
     assert.equal((await f.unassigned.refresh()).balance, 0)
   })
 
@@ -286,7 +288,7 @@ wait_event_type='Lock'", [pid])
     assert.deepEqual(await overlap([response('c1', { added: [purchase()] })], [response('c2', {
       added: [purchase('purchase', { amount: 15.75 }), purchase('second', { amount: 1.25 })] })]), [
       'committed', 'committed'])
-    assert.equal((await f.account.refresh()).balance, 83)
+    assert.equal((await f.account.refresh()).balanceCents, parseMoneyCents('83.00'))
     assert.equal((await f.unassigned.refresh()).balance, -17)
     assert.equal((await f.institution.refresh()).cursor, 'c2')
     assert.lengthOf(await AccountTransaction.query().where('accountId', f.account.id), 2)
@@ -299,7 +301,7 @@ wait_event_type='Lock'", [pid])
       'Synthetic provider failure')] : good, good, failure === 'persistence' ?
       'persistence' : failure === 'cursor' ? 'cursor' : undefined)
     assert.instanceOf(results[0], Error); assert.equal(results[1], 'committed')
-    assert.equal((await f.account.refresh()).balance, 90)
+    assert.equal((await f.account.refresh()).balanceCents, parseMoneyCents('90.00'))
     assert.equal((await f.unassigned.refresh()).balance, -10)
     assert.equal((await f.institution.refresh()).cursor, 'c1')
     assert.lengthOf(await AccountTransaction.query().where('accountId', f.account.id), 1)
@@ -313,7 +315,7 @@ wait_event_type='Lock'", [pid])
       'uncommitted')] })], failure === 'persistence' ? 'persistence' : failure === 'cursor' ?
       'cursor' : undefined, 'second')
     assert.equal(results[0], 'committed'); assert.instanceOf(results[1], Error)
-    assert.equal((await f.account.refresh()).balance, 90)
+    assert.equal((await f.account.refresh()).balanceCents, parseMoneyCents('90.00'))
     assert.equal((await f.unassigned.refresh()).balance, -10)
     assert.equal((await f.institution.refresh()).cursor, 'c1')
     assert.lengthOf(await AccountTransaction.query().where('accountId', f.account.id), 1)
@@ -371,7 +373,7 @@ wait_event_type='Lock'", [pid])
     finally { fake.hold = false; fake.release.resolve() }
     await Promise.all([first, second])
     assert.equal(fake.maximumActive, 1)
-    assert.equal((await f.account.refresh()).balance, 90)
+    assert.equal((await f.account.refresh()).balanceCents, parseMoneyCents('90.00'))
     assert.equal((await f.unassigned.refresh()).balance, -10)
     assert.lengthOf(await Transaction.query().where('budgetId', f.budget.id), 1)
     assert.lengthOf(await AccountTransaction.query().where('accountId', f.account.id), 1)
@@ -392,7 +394,7 @@ wait_event_type='Lock'", [pid])
     finally { fake.hold = false; fake.release.resolve(); await Promise.allSettled([posting,
       manual]) }
     await Promise.all([posting, manual])
-    assert.equal((await f.account.refresh()).balance, 95)
+    assert.equal((await f.account.refresh()).balanceCents, parseMoneyCents('95.00'))
     assert.equal((await f.unassigned.refresh()).balance, -5)
     assert.lengthOf(await AccountTransaction.query().where('accountId', f.account.id), 2)
     assert.lengthOf(await Transaction.query().where('budgetId', f.budget.id), 2)
@@ -431,8 +433,8 @@ wait_event_type='Lock'", [pid])
           response.assertStatus(200)
         }
       } finally { requested.mock.restore() }
-      assert.equal((await f.account.refresh()).balance, 100)
-      assert.equal((await f.other.refresh()).balance, 100)
+      assert.equal((await f.account.refresh()).balanceCents, parseMoneyCents('100.00'))
+      assert.equal((await f.other.refresh()).balanceCents, parseMoneyCents('100.00'))
       assert.equal((await f.unassigned.refresh()).balance, -30)
       assert.equal((await f.budget.getFundingPoolCategory()).balance, 230)
       for (const [account, amount] of [[f.account, 110], [f.other, 120]] as const) {

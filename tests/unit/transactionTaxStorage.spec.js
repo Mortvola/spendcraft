@@ -235,7 +235,8 @@ async function patchFixture(input, { rawInput = input, invalidOwner = false, lat
     categoryId: 1, amount: '10.00' }]) }
   const functions = await productionFunctions({ from() { throw new Error(
     'Unexpected additional scope query') } })
-  const account = { id: 2, balance: 100, type: AccountType.Depository, tracking: TrackingType
+  const account = { id: 2, balanceCents: parseMoneyCents(encodeMonetaryAmount(100)),
+    type: AccountType.Depository, tracking: TrackingType
     .Transactions,
     startDate: DateTime.fromISO('2025-01-01'), async save() { throw new Error(
       'Tax-only Account write') } }
@@ -301,7 +302,8 @@ test.group('Actual tax PATCH controller with inert financial collaborators', () 
     assert.deepEqual(response.data.transaction.taxes.map(entry => entry.amount), ['1.00', '-0.12',
       '0.01'])
     assert.equal(f.database.categories, beforeCategories)
-    assert.equal(f.account.balance, 100); assert.equal(f.link.amount, 10)
+    assert.equal(Number(formatMoneyCents(f.account.balanceCents)), 100); assert.equal(
+      f.link.amount, 10)
     assert.isBelow(f.events.indexOf('budget.lock'), f.events.indexOf('transaction.read'))
     assert.deepEqual(f.events.slice(-3), ['save', 'log', 'commit'])
   })

@@ -23,6 +23,7 @@ async function method(file, name, context = {}) {
     ',')}) ${body})`
   return { body, run: runInNewContext(ts.transpileModule(expression,
     { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, { encodeMonetaryAmount,
+      formatMoneyCents,
       ...context }) }
 }
 const institutions = 'app/Controllers/Http/InstitutionController.ts'
@@ -37,7 +38,8 @@ async function offlineFixture({ competing = false, balances = [10], tracking = T
   const institution = { id: 1, syncDate: null, related: () => ({ create: async (values) => ({
     ...values, id: ++nextId, related: () => ({ create: async () => { statements++ } }),
     async updateStartingBalance(budget, suppliedPool) {
-      seen.push(suppliedPool); await Promise.resolve(); suppliedPool.balance += this.balance
+      seen.push(suppliedPool); await Promise.resolve(); suppliedPool.balance += Number(
+        formatMoneyCents(this.balanceCents))
     },
   }) }) }
   const budget = { id: 1, getFundingPoolCategory: async ({ client }) => {
@@ -198,7 +200,7 @@ test.group('Deletion Category effects in checked cents without DB', () => {
         assert.strictEqual(client, trx); return category
       } })
       assert.strictEqual(category.balance, shape === 'loan'
-        ? sign * 0.3 - sign * 0.1 - sign * 0.1 : sign * 0.1)
+        ? sign * 0.1 : sign * 0.1)
       assert.deepEqual(Array.from(result, row => ({ ...row })), [{ id: 1,
         balance: sign > 0 ? '0.10' : '-0.10' }])
       assert.equal(events.filter(event => event === 'account.delete').length, accounts.length)

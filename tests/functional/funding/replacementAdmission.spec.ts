@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '#common/moneyCents'
 import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 import {
   writeCanonicalTransactionFixture, writeHistoricalTransactionFixture,
@@ -69,7 +70,7 @@ test.group('Replacement admission persisted noninterference (prepared)', () => {
         'Linked institution' })
       for (let i = 0; i < (shape === 'multiple links' ? 2 : 1); i++) {
         const account = await institution.related('accounts').create({ name: `Linked${i}`,
-          balance: 100,
+          balanceCents: parseMoneyCents('100.00'),
           subtype: '', type: shape === 'Loan Account' ? AccountType.Loan : AccountType.Depository,
             tracking: TrackingType.Transactions,
           startDate: DateTime.fromISO('2025-01-01'), rate: 0, closed: false })
@@ -193,7 +194,7 @@ test.group('Replacement admission freshness and rollback (prepared)', () => {
           const institution = await f.budget.related('institutions').create({ name:
             'Shape institution' }, { client: owner })
           const account = await institution.related('accounts').create({ name: 'Shape account',
-            balance: 100,
+            balanceCents: parseMoneyCents('100.00'),
             subtype: '', type: AccountType.Depository, tracking: TrackingType.Transactions,
               startDate: DateTime.fromISO('2025-01-01'), rate: 0 }, { client: owner })
           await account.related('accountTransactions').create({ name: 'Shape link', amount: 2,

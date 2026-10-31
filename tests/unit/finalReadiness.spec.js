@@ -45,7 +45,7 @@ test.group('Final readiness forward deletion characterization without DB', () =>
     }
     const initialAccountBalance = scenario.categoryBalance ?? 100
     const account = { id: 1, type: 'Depository', tracking: 'Transactions',
-      balance: initialAccountBalance,
+      balanceCents: parseMoneyCents(encodeMonetaryAmount(initialAccountBalance)),
       startDate: DateTime.fromISO('2025-02-01'), async save() { events.push('account.save') },
       related() { return { async create(values) { link = { ...values, accountId: 1,
         pending: false }; return link } } } }
@@ -81,7 +81,8 @@ test.group('Final readiness forward deletion characterization without DB', () =>
       categories: [{ categoryId: 1, amount: scenario.amount }],
     }) }, logger: { error(error) { events.push(error.message) } } })
     const eligible = scenario.date >= '2025-02-01'
-    assert.strictEqual(account.balance, scenario.categoryBalance === 0.1 ? 0.3
+    assert.strictEqual(Number(formatMoneyCents(account.balanceCents)),
+      scenario.categoryBalance === 0.1 ? 0.3
       : scenario.categoryBalance === -0.1 ? -0.3 : 100 + (eligible ? scenario.amount : 0))
     assert.strictEqual(category.balance, scenario.categoryBalance === 0.1 ? 0.3
       : scenario.categoryBalance === -0.1 ? -0.3 : eligible ? scenario.amount : 0)
@@ -91,7 +92,8 @@ test.group('Final readiness forward deletion characterization without DB', () =>
     await remove({ auth: { user }, request: { params: () => ({ trxId: 1 }) }, logger: { error(
       error) { events.push(error.message) } } })
     assert.isTrue(transaction.deleted)
-    assert.strictEqual(account.balance, eligible ? initialAccountBalance : 100 - scenario.amount)
+    assert.strictEqual(Number(formatMoneyCents(account.balanceCents)),
+      eligible ? initialAccountBalance : 100 - scenario.amount)
     assert.strictEqual(category.balance, eligible ? initialBalance : -scenario.amount)
     assert.equal(events.filter((event) => event === 'gate').length, 2)
     assert.equal(events.filter((event) => event === 'commit').length, 2)

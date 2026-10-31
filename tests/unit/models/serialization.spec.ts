@@ -1,3 +1,5 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { addMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import AutoAssignmentCategory from '#models/AutoAssignmentCategory'
 import AutoAssignment from '#models/AutoAssignment'
 import Category from '#models/Category'
@@ -190,12 +192,50 @@ test.group('Transaction tax API strings', () => {
 
 
 test.group('Account balance API strings', () => {
-  test('formats balances without changing numeric models or nullable Plaid balances').with([
+  test('retains exact cents through arithmetic, persistence and API serialization', (
+    { assert }) => {
+    const account = Account.$createFromAdapterResult({ id: 1, balance: '0.10' })
+    if (!account) throw new Error('Account hydration failed')
+    account.balanceCents = addMoneyCents(account.balanceCents, parseMoneyCents('0.20'))
+    assert.strictEqual(account.balanceCents, 30)
+    const column = Account.$getColumn('balanceCents')
+    if (!column?.prepare) throw new Error('Missing balance prepare codec')
+    assert.strictEqual(column.columnName, 'balance')
+    assert.strictEqual(column.prepare(account.balanceCents, 'balanceCents', account), '0.30')
+    assert.strictEqual(account.serialize().balance, '0.30')
+    assert.notProperty(account.serialize(), 'balanceCents')
+    assert.notProperty(account.$attributes, 'balance')
+  })
+  test('hydrates signed and null balances directly into cents').with([
+    { stored: '-0.12', expected: -12 }, { stored: '0.00', expected: 0 },
+    { stored: null, expected: 0 }, { stored: '9999999999.99', expected: 999999999999 },
+  ]).run(({ assert }, { stored, expected }) => {
+    const account = Account.$createFromAdapterResult({ id: 1, balance: stored })
+    assert.strictEqual(account?.balanceCents, expected)
+    assert.isFalse(account?.$isDirty)
+  })
+  test('rejects malformed and unsafe database balances').with([
+    '1.005', 'NaN', 'Infinity', '-0.00', '90071992547409.92', 12.5,
+  ]).run(({ assert }, balance) => {
+    assert.throws(() => Account.$createFromAdapterResult({ id: 1, balance }))
+  })
+  test('rejects invalid runtime cents before persistence or serialization', ({ assert }) => {
+    const account = new Account()
+    const column = Account.$getColumn('balanceCents')
+    if (!column?.prepare || !column.serialize) throw new Error('Missing balance codecs')
+    for (const invalid of [0.1, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
+      assert.throws(() => column.prepare?.(invalid, 'balanceCents', account))
+      assert.throws(() => column.serialize?.(invalid, 'balanceCents', account))
+    }
+  })
+
+  test('formats cent balances without changing models or nullable Plaid balances').with([
     { balance: 12.5, plaidBalance: 0.3, expected: '12.50', plaid: '0.30' },
     { balance: -12.34, plaidBalance: -12.34, expected: '-12.34', plaid: '-12.34' },
     { balance: 0, plaidBalance: null, expected: '0.00', plaid: null },
   ]).run(({ assert }, value) => {
-    const account = new Account().merge({ id: 1, balance: value.balance, plaidBalance: value
+    const account = new Account().merge({ id: 1, balanceCents: parseMoneyCents(
+      encodeMonetaryAmount(value.balance)), plaidBalance: value
       .plaidBalance, rate: 1.25 })
     const before = globalThis.structuredClone(account.$attributes)
     for (const response of [account.serialize(), JSON.parse(JSON.stringify(account))]) {
@@ -204,16 +244,16 @@ test.group('Account balance API strings', () => {
       assert.strictEqual(response.rate, 1.25)
     }
     assert.deepEqual(account.$attributes, before)
-    assert.strictEqual(account.balance, value.balance)
+    assert.strictEqual(account.balanceCents, parseMoneyCents(encodeMonetaryAmount(value.balance)))
     assert.strictEqual(account.plaidBalance, value.plaidBalance)
   })
-  test('database hydration retains numbers and remains clean during response serialization', ({
+  test('database hydration retains cents and remains clean during response serialization', ({
     assert }) => {
     const account = Account.$createFromAdapterResult({ id: 1, balance: '12.50', plaid_balance:
       '-0.30' })
     assert.strictEqual(account?.serialize().balance, '12.50')
     assert.strictEqual(account?.serialize().plaidBalance, '-0.30')
-    assert.strictEqual(account?.balance, 12.5)
+    assert.strictEqual(account?.balanceCents, parseMoneyCents('12.50'))
     assert.strictEqual(account?.plaidBalance, -0.3)
     assert.isFalse(account?.$isDirty)
   })
@@ -223,7 +263,8 @@ test.group('Account balance API strings', () => {
 test('connected-account responses encode balances without changing model values', async ({
   assert }) => {
   const budget = new Budget()
-  const account = new Account().merge({ id: 1, balance: 12.5, plaidBalance: 0.3 })
+  const account = new Account().merge({ id: 1, balanceCents: parseMoneyCents('12.50'),
+    plaidBalance: 0.3 })
   account.$extras.pendingBalance = '0.00'
   const institution = new Institution().merge({ id: 2, name: 'Bank' })
   institution.$setRelated('accounts', [account])
@@ -235,7 +276,7 @@ test('connected-account responses encode balances without changing model values'
     assert.strictEqual(result[0].accounts[0].balance, '12.50')
     assert.strictEqual(result[0].accounts[0].plaidBalance, '0.30')
     assert.strictEqual(result[0].accounts[0].pendingBalance, '0.00')
-    assert.strictEqual(account.balance, 12.5)
+    assert.strictEqual(account?.balanceCents, parseMoneyCents('12.50'))
     assert.strictEqual(account.plaidBalance, 0.3)
     for (const [stored, expected] of [[null, '0.00'], ['-37.00', '-37.00'], ['12.50',
       '12.50']] as const) {

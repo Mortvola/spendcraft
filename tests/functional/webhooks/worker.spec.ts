@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '#common/moneyCents'
 import { test } from '@japa/runner'
 import { mock } from 'node:test'
 import { randomUUID } from 'node:crypto'
@@ -134,7 +135,7 @@ async function fixture() {
     const institution = await budget.related('institutions').create({ name: 'Worker bank',
       institutionId: id, accessToken: 'fake-token', plaidItemId: id, cursor: null })
     const account = await institution.related('accounts').create({
-      name: 'Worker checking', plaidAccountId: id, balance: 100,
+      name: 'Worker checking', plaidAccountId: id, balanceCents: parseMoneyCents('100.00'),
       type: AccountType.Depository, subtype: 'checking', tracking: TrackingType.Transactions,
       startDate: DateTime.fromISO('2025-01-01'), rate: 0, enabled: true, closed: false,
         initialized: true,
@@ -251,7 +252,7 @@ test.group('Plaid webhook worker', (group) => {
     assert.equal(bull.completed, 1)
     assert.isEmpty(bull.failed)
     assert.isEmpty(bull.workerErrors)
-    assert.equal((await Account.findOrFail(f.account.id)).balance, 90)
+    assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('90.00'))
     await f.unassigned.refresh()
     assert.equal(f.unassigned.balance, -10)
     await f.institution.refresh()
@@ -303,7 +304,7 @@ succeeds once', async ({ assert }) => {
     await process()
     assert.equal((await persistedJob(next.id)).state, 'completed')
     assert.deepEqual(fake.cursors, [null, 'c1', null])
-    assert.equal((await Account.findOrFail(f.account.id)).balance, 90)
+    assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('90.00'))
     await f.unassigned.refresh()
     assert.equal(f.unassigned.balance, -10)
     await f.institution.refresh()
@@ -373,7 +374,7 @@ succeeds once', async ({ assert }) => {
     const job = await enqueue()
     await process()
     assert.equal((await persistedJob(job.id)).state, 'completed')
-    assert.equal((await Account.findOrFail(f.account.id)).balance, 90)
+    assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('90.00'))
     await f.institution.refresh()
     assert.equal(f.institution.cursor, 'c1')
     assert.equal(push.calls, 1)

@@ -1,3 +1,4 @@
+import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import { transactionRequest } from '../../helpers/transactionRequest.js'
 // PREPARED ONLY: do not run without fresh task-specific DB authorization and
 // review of tests/bootstrap.ts destructive setup/cleanup safety.
@@ -34,7 +35,7 @@ async function fixture() {
     const institution = await budget.related('institutions').create({
       name: `Gate bank ${sequence}` })
     const account = await institution.related('accounts').create({ name: `Gate Account ${sequence}`,
-      balance: 100,
+      balanceCents: parseMoneyCents('100.00'),
       type: AccountType.Credit, subtype: 'credit card', tracking: TrackingType.Transactions,
         startDate: DateTime.fromISO('2025-01-01'),
       initialized: true, enabled: true, closed: false, rate: 0 })
@@ -104,7 +105,8 @@ async function state(f: Fixture) {
   const rows = await AccountTransaction.query().where('accountId', account.id).preload(
     'transaction').orderBy('id')
   const logs = await db.from('transaction_logs').where('application_id', f.budget.id).orderBy('id')
-  return { balance: account.balance, plaidBalance: account.plaidBalance, unassigned: unassigned
+  return { balance: Number(formatMoneyCents(account.balanceCents)),
+    plaidBalance: account.plaidBalance, unassigned: unassigned
     .balance, pool: pool.balance,
     rows: rows.map((row) => ({ amount: row.amount, pending: row.pending, type: row.transaction.type,
       deleted: row.transaction.deleted, version: row.transaction.version, categories: row
@@ -197,7 +199,8 @@ test.group('Bounded Account writer PostgreSQL serialization (prepared)', () => {
     const save = Account.prototype.save
     const failure = mock.method(Account.prototype, 'save', async function (this: Account) {
       const saved = await save.call(this)
-      if (this.id === f.account.id && !held && this.balance === 110) {
+      if (this.id === f.account.id && !held && Number(formatMoneyCents(
+        this.balanceCents)) === 110) {
         held = true
         if (!this.$trx) throw new Error('Missing owning transaction')
         const result = await this.$trx.rawQuery('SELECT pg_backend_pid() AS pid')
@@ -287,8 +290,9 @@ test.group('Bounded Account writer PostgreSQL serialization (prepared)', () => {
     try {
       await Budget.query({ client: owner }).where('id', f.budget.id).forUpdate().firstOrFail()
       await create(client, other, 5)
-      assert.equal((await Account.findOrFail(other.account.id)).balance, 105)
-      assert.equal((await Account.findOrFail(f.account.id)).balance, 100)
+      assert.equal((await Account.findOrFail(other.account.id)).balanceCents, parseMoneyCents(
+        '105.00'))
+      assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('100.00'))
       assert.equal((await other.budget.getUnassignedCategory()).balance, 5)
       assert.equal((await f.budget.getUnassignedCategory()).balance, 0)
       assert.equal((await other.budget.getFundingPoolCategory()).balance, 100)
@@ -343,7 +347,8 @@ Account', async ({ client, assert }) => {
     assert.equal(after.pool, 100)
     assert.lengthOf(after.rows.filter((row) => row.type !== 4 && !row.deleted), 2)
     assert.lengthOf(after.logs, 2)
-    assert.equal((await Account.findOrFail(foreign.account.id)).balance, 100)
+    assert.equal((await Account.findOrFail(foreign.account.id)).balanceCents, parseMoneyCents(
+      '100.00'))
     assert.lengthOf(await AccountTransaction.query().where('accountId', foreign.account.id), 1)
   })
 
@@ -352,7 +357,7 @@ Account', async ({ client, assert }) => {
     const f = await fixture()
     const other = kind === 'different Account' ? await db.transaction(async (trx) => {
       const account = await Account.create({ institutionId: f.institution.id, name:
-        'Other gate Account', balance: 100,
+        'Other gate Account', balanceCents: parseMoneyCents('100.00'),
         type: AccountType.Credit, subtype: 'credit card', tracking: TrackingType.Transactions,
         startDate: DateTime.fromISO('2025-01-01'), initialized: true, enabled: true, closed: false,
           rate: 0 }, { client: trx })
@@ -399,7 +404,7 @@ Account', async ({ client, assert }) => {
     assert.equal(after.pool, other ? 200 : 110)
     assert.lengthOf(after.rows.filter((row) => row.type === 5), 1)
     if (other) {
-      assert.equal((await Account.findOrFail(other.id)).balance, 105)
+      assert.equal((await Account.findOrFail(other.id)).balanceCents, parseMoneyCents('105.00'))
       assert.lengthOf(await AccountTransaction.query().where('accountId', other.id), 2)
     } else {
       assert.equal((await Account.findOrFail(f.account.id)).startDate.toISODate(), '2025-03-01')

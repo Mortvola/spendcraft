@@ -24,7 +24,8 @@ async function createDomain(label: string) {
     })
     const institution = await budget.related('institutions').create({ name: `${label} bank` })
     const account = await institution.related('accounts').create({
-      name: `${label} account`, balance: 100, type: AccountType.Depository,
+      name: `${label} account`,
+      balanceCents: parseMoneyCents('100.00'), type: AccountType.Depository,
       subtype: 'checking', tracking: TrackingType.Transactions,
       startDate: DateTime.fromISO('2025-01-01'), rate: 0, closed: false,
     })
@@ -94,9 +95,11 @@ test.group('Account transaction creation isolation', (group) => {
     const accountRow = await AccountTransaction.findByOrFail('transactionId', row.id)
     assert.equal(accountRow.accountId, fixture.own.account.id)
     assert.equal(accountRow.amount, 15)
-    assert.equal((await Account.findOrFail(fixture.own.account.id)).balance, 115)
+    assert.equal((await Account.findOrFail(fixture.own.account.id)).balanceCents,
+      parseMoneyCents('115.00'))
     assert.equal((await Category.findOrFail(fixture.own.category.id)).balance, 35)
-    assert.equal((await Account.findOrFail(fixture.foreign.account.id)).balance, 100)
+    assert.equal((await Account.findOrFail(fixture.foreign.account.id)).balanceCents,
+      parseMoneyCents('100.00'))
     assert.equal((await Category.findOrFail(fixture.foreign.category.id)).balance, 20)
   })
 
@@ -142,7 +145,8 @@ test.group('Account transaction creation isolation', (group) => {
     assert.deepEqual((await Transaction.findOrFail(response.body().transaction.id)).categories,
       categories)
     assert.equal((await Category.findOrFail(fixture.own.category.id)).balance, 35)
-    assert.equal((await Account.findOrFail(fixture.own.account.id)).balance, 115)
+    assert.equal((await Account.findOrFail(fixture.own.account.id)).balanceCents,
+      parseMoneyCents('115.00'))
   })
 
   test('empty categories use the budget-scoped unassigned category', async ({ client, assert }) => {
@@ -153,7 +157,8 @@ test.group('Account transaction creation isolation', (group) => {
         categories: [] })).accept('json').loginAs(fixture.shared)
     response.assertStatus(200)
     assert.equal((await Category.findOrFail(unassigned.id)).balance, before + 15)
-    assert.equal((await Account.findOrFail(fixture.own.account.id)).balance, 115)
+    assert.equal((await Account.findOrFail(fixture.own.account.id)).balanceCents,
+      parseMoneyCents('115.00'))
     assert.equal((await Transaction.findOrFail(response.body().transaction.id)).categories[0]
       .categoryId, unassigned.id)
   })

@@ -84,7 +84,7 @@ class Institution extends BaseModel {
           }
 
           if (!acct.initialized) {
-            acct.balance = acct.plaidBalance ?? 0
+            acct.balanceCents = parseMoneyCents(encodeMonetaryAmount(acct.plaidBalance ?? 0))
             acct.initialized = true;
 
             const startDate = acct.startDate.toISODate()
@@ -97,9 +97,9 @@ class Institution extends BaseModel {
             await acct.updateStartingBalance(budget, fundingPool)
             await fundingPool.save()
           } else {
-            acct.balance = Number(formatMoneyCents(addMoneyCents(
-              parseMoneyCents(encodeMonetaryAmount(acct.balance)),
-              parseMoneyCents(encodeMonetaryAmount(acct.$extras.addedSum ?? 0)))));
+            acct.balanceCents = addMoneyCents(
+              acct.balanceCents,
+              parseMoneyCents(encodeMonetaryAmount(acct.$extras.addedSum ?? 0)));
           }
            
           await acct.save();
@@ -148,7 +148,7 @@ class Institution extends BaseModel {
             type: plaidAccount.type as AccountType,
             institutionId: this.id,
             startDate: DateTime.now().startOf('month'),
-            balance: plaidAccount.balances.current ?? 0,
+            balanceCents: parseMoneyCents(encodeMonetaryAmount(plaidAccount.balances.current ?? 0)),
             plaidBalance: plaidAccount.balances.current,
             tracking: TrackingType.Transactions,
             enabled: true,

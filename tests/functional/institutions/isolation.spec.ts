@@ -31,7 +31,7 @@ async function createDomain(label: string) {
       plaidItemId: `item-${label}`, cursor: `cursor-${label}` })
     const account = await institution.related('accounts').create({
       name: `${label} account`, plaidAccountId: `provider-account-${label}-${sequence}`,
-        balance: 100, type: AccountType.Depository,
+        balanceCents: parseMoneyCents('100.00'), type: AccountType.Depository,
       subtype: 'checking', tracking: TrackingType.Transactions,
       startDate: DateTime.fromISO('2025-01-01'), rate: 0, closed: false,
     })
@@ -213,7 +213,7 @@ test.group('Institution isolation', (group) => {
       assert.equal(account.institutionId, body.id)
       assert.equal((await Institution.findOrFail(account.institutionId)).budgetId, fixture.own
         .budget.id)
-      assert.equal(account.balance, 75)
+      assert.equal(account.balanceCents, parseMoneyCents('75.00'))
       assert.equal(account.name, 'Provider returned account')
       assert.deepEqual((await Account.findOrFail(fixture.foreign.account.id)).$attributes,
         foreignBefore.$attributes)
@@ -306,7 +306,8 @@ test.group('Institution isolation', (group) => {
     created.assertStatus(200)
     assert.equal((await Account.findOrFail(created.body().data.account.id)).institutionId, fixture
       .own.institution.id)
-    assert.equal((await Account.findOrFail(created.body().data.account.id)).balance, 50)
+    assert.equal((await Account.findOrFail(created.body().data.account.id)).balanceCents,
+      parseMoneyCents('50.00'))
     assert.equal((await Institution.findOrFail(fixture.foreign.institution.id)).name,
       'foreign bank')
     assert.deepEqual(fake.calls, [])
@@ -341,7 +342,8 @@ test.group('Institution isolation', (group) => {
     assert.equal((await Institution.findOrFail(fixture.own.institution.id)).cursor, 'test-cursor')
     assert.equal((await Institution.findOrFail(fixture.foreign.institution.id)).cursor,
       foreignBefore.cursor)
-    assert.equal((await Account.findOrFail(fixture.foreign.account.id)).balance, 100)
+    assert.equal((await Account.findOrFail(fixture.foreign.account.id)).balanceCents,
+      parseMoneyCents('100.00'))
   })
 
   test('syncAll selects only connected institutions from the authenticated budget', async ({ client,
@@ -369,7 +371,8 @@ test.group('Institution isolation', (group) => {
     assert.isNull(institution.accessToken)
     assert.isNull(institution.cursor)
     assert.isNull((await Account.findOrFail(fixture.own.account.id)).plaidAccountId)
-    assert.equal((await Account.findOrFail(fixture.own.account.id)).balance, 100)
+    assert.equal((await Account.findOrFail(fixture.own.account.id)).balanceCents,
+      parseMoneyCents('100.00'))
     assert.equal((await Institution.findOrFail(fixture.foreign.institution.id)).accessToken,
       'test-token-foreign')
   })
@@ -398,7 +401,7 @@ test.group('Institution isolation', (group) => {
         await unassigned.merge({ balance: sign * 0.3 }).save()
         const other = await f.institution.related('accounts').create({ name: 'Second exact account',
           type: loan ? AccountType.Loan : AccountType.Depository, subtype: 'checking',
-          tracking: TrackingType.Transactions, balance: 0,
+          tracking: TrackingType.Transactions, balanceCents: parseMoneyCents('0.00'),
           startDate: DateTime.fromISO('2025-01-01'), rate: 0, closed: false })
         const transaction = await f.budget.related('transactions').create({
           date: DateTime.fromISO('2025-02-01'), type: TransactionType.MANUAL_TRANSACTION,
@@ -456,7 +459,8 @@ test.group('Institution isolation', (group) => {
       .id), 1)
     assert.isNull(await Transaction.find(fixture.own.transaction.id))
     assert.equal((await Category.findOrFail(fixture.own.category.id)).balance, 10)
-    assert.equal((await Account.findOrFail(fixture.foreign.account.id)).balance, 100)
+    assert.equal((await Account.findOrFail(fixture.foreign.account.id)).balanceCents,
+      parseMoneyCents('100.00'))
     assert.deepEqual(fake.calls, [{ method: 'removeItem', resource: 'test-token-own' }])
   })
 
@@ -472,7 +476,8 @@ test.group('Institution isolation', (group) => {
       .id), 1)
     assert.isNull(await Transaction.find(fixture.own.transaction.id))
     assert.equal((await Category.findOrFail(fixture.own.category.id)).balance, 10)
-    assert.equal((await Account.findOrFail(fixture.foreign.account.id)).balance, 100)
+    assert.equal((await Account.findOrFail(fixture.foreign.account.id)).balanceCents,
+      parseMoneyCents('100.00'))
     assert.deepEqual(fake.calls, [])
   })
 })

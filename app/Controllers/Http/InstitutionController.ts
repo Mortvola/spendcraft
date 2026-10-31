@@ -204,7 +204,7 @@ class InstitutionController {
       const accounts = await Promise.all(requestData.accounts.map(async (acct) => {
         const newAcct = await institution.related('accounts').create({
           name: acct.name,
-          balance: acct.balance,
+          balanceCents: parseMoneyCents(encodeMonetaryAmount(acct.balance)),
           type: acct.type,
           subtype: acct.subtype,
           tracking: acct.tracking,
@@ -217,8 +217,8 @@ class InstitutionController {
           case TrackingType.Balances:
             await newAcct.related('statements').create({
               startDate: newAcct.startDate, endDate: newAcct.startDate,
-              startingBalanceCents: parseMoneyCents(encodeMonetaryAmount(newAcct.balance)),
-              endingBalanceCents: parseMoneyCents(encodeMonetaryAmount(newAcct.balance)),
+              startingBalanceCents: newAcct.balanceCents,
+              endingBalanceCents: newAcct.balanceCents,
                 data: null,
             });
             break
@@ -249,7 +249,7 @@ class InstitutionController {
             subtype: acct.subtype,
             closed: acct.closed,
             tracking: acct.tracking,
-            balance: encodeMonetaryAmount(acct.balance),
+            balance: formatMoneyCents(acct.balanceCents),
             pendingBalance: '0.00',
             plaidBalance: null,
             startDate: acct.startDate.toISODate(),
@@ -531,7 +531,7 @@ class InstitutionController {
           type: plaidAccount.type as AccountType,
           institutionId: institution.id,
           startDate: DateTime.now().startOf('month'),
-          balance,
+          balanceCents: parseMoneyCents(encodeMonetaryAmount(balance ?? 0)),
           plaidBalance: balance,
           tracking: TrackingType.Transactions,
           enabled: true,
@@ -557,7 +557,7 @@ class InstitutionController {
           type: a.type,
           subtype: a.subtype,
           tracking: a.tracking,
-          balance: encodeMonetaryAmount(a.balance),
+          balance: formatMoneyCents(a.balanceCents),
           pendingBalance: '0.00',
           plaidBalance: a.plaidBalance == null ? null : encodeMonetaryAmount(a.plaidBalance),
           startDate,
@@ -608,7 +608,7 @@ class InstitutionController {
         name: requestData.name,
         institutionId: institution.id,
         startDate: start,
-        balance: requestData.balance,
+        balanceCents: parseMoneyCents(encodeMonetaryAmount(requestData.balance)),
         tracking: requestData.tracking as TrackingType,
         enabled: true,
         type: requestData.type,
@@ -623,8 +623,8 @@ class InstitutionController {
       if (acct.tracking === TrackingType.Balances) {
         await acct.related('statements').create({
           startDate: start, endDate: start,
-          startingBalanceCents: parseMoneyCents(encodeMonetaryAmount(acct.balance)),
-          endingBalanceCents: parseMoneyCents(encodeMonetaryAmount(acct.balance)), data: null,
+          startingBalanceCents: acct.balanceCents,
+          endingBalanceCents: acct.balanceCents, data: null,
         });
       }
       else {
@@ -653,7 +653,7 @@ class InstitutionController {
             type: acct.type,
             subtype: acct.subtype,
             tracking: acct.tracking,
-            balance: encodeMonetaryAmount(acct.balance),
+            balance: formatMoneyCents(acct.balanceCents),
             pendingBalance: '0.00',
             plaidBalance: acct.plaidBalance == null ? null : encodeMonetaryAmount(acct
               .plaidBalance),

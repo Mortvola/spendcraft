@@ -1,6 +1,7 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { transactionRequest } from '../../helpers/transactionRequest.js'
 import { statementRequest } from '../../helpers/statementRequest.js'
-import { addMoneyCents, parseMoneyCents } from '#common/moneyCents'
+import { formatMoneyCents, addMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import { test } from '@japa/runner'
 import type { ApiClient } from '@japa/api-client'
 import db from '@adonisjs/lucid/services/db'
@@ -25,7 +26,8 @@ async function createFixture() {
     })
     const institution = await budget.related('institutions').create({ name: 'Eligibility bank' })
     const account = await institution.related('accounts').create({
-      name: 'Eligibility account', balance: 100, type: AccountType.Depository, subtype: 'checking',
+      name: 'Eligibility account', balanceCents: parseMoneyCents('100.00'),
+        type: AccountType.Depository, subtype: 'checking',
       tracking: TrackingType.Transactions, startDate: DateTime.fromISO('2025-01-01'), rate: 0,
         closed: false,
     })
@@ -65,7 +67,7 @@ test.group('Statement transaction eligibility', (group) => {
     assert }) => {
     for (const amount of [0.1, 0.2, -0.1]) await createTransaction(client, amount)
     const before = await fixture.account.refresh()
-    const balance = before.balance
+    const balance = Number(formatMoneyCents(before.balanceCents))
     const created = await client.post(`/api/v1/account/${fixture.account.id}/statements`)
       .json({ ...period, startingBalance: '0.10', endingBalance: '0.30' })
       .accept('json').loginAs(fixture.user)
@@ -91,7 +93,8 @@ test.group('Statement transaction eligibility', (group) => {
     assert.strictEqual(patched.body().endingBalance, '0.00')
     assert.strictEqual(patched.body().credits, '0.30')
     assert.strictEqual(patched.body().debits, '-0.10')
-    assert.strictEqual((await fixture.account.refresh()).balance, balance)
+    assert.strictEqual((await fixture.account.refresh()).balanceCents, parseMoneyCents(
+      encodeMonetaryAmount(balance)))
   })
 
   async function register(client: ApiClient, pending = false): Promise<number[]> {

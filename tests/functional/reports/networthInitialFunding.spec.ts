@@ -1,4 +1,5 @@
-import { parseMoneyCents } from '#common/moneyCents'
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
@@ -30,7 +31,7 @@ test.group('Net-worth opening snapshots', (group) => {
         'Initial Funding bank' })
       const today = DateTime.utc().startOf('day')
       const account = await institution.related('accounts').create({ name: 'Transaction account',
-        balance: 100,
+        balanceCents: parseMoneyCents('100.00'),
         type: AccountType.Depository, subtype: 'checking', tracking: TrackingType.Transactions,
         startDate: today.minus({ days: 6 }), rate: 0, closed: false })
       return { budget, user, institution, today, account }
@@ -52,7 +53,8 @@ test.group('Net-worth opening snapshots', (group) => {
     const account = await Account.findOrFail(f.account.id)
     const associations = await account.related('accountTransactions').query().preload('transaction')
     console.log(JSON.stringify({ characterization: 'networth-initial', status: response.status(),
-      account: { balance: account.balance, startDate: account.startDate.toISODate() },
+      account: { balance: Number(formatMoneyCents(account.balanceCents)),
+        startDate: account.startDate.toISODate() },
       transactions: associations.map((row) => ({ amount: row.amount, date: row.transaction.date
         .toISODate(), type: row.transaction.type })),
       report: status === 200 ? response.body() : null }))
@@ -62,19 +64,20 @@ test.group('Net-worth opening snapshots', (group) => {
   test('Initial Funding provides signed opening snapshots; zero provides no date')
     .with([100, 0, -100]).run(async ({ client, assert }, amount) => {
       const f = await fixture()
-      await f.account.merge({ balance: amount }).save()
+      await f.account.merge({ balanceCents: parseMoneyCents(encodeMonetaryAmount(amount)) }).save()
       await movement(f, f.account.startDate, amount, TransactionType.STARTING_BALANCE)
       assert.deepEqual(await observe(client, f, 200), amount === 0
         ? [['date', 'Transaction account']]
         : [['date', 'Transaction account'], [f.account.startDate.toISODate(), amount.toFixed(2)]])
-      assert.equal((await Account.findOrFail(f.account.id)).balance, amount)
+      assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents(
+        encodeMonetaryAmount(amount)))
       assert.equal((await f.account.related('accountTransactions').query()).length, 1)
     })
 
   test('an account with no Initial Funding or ordinary transactions also has no plotted rows',
     async ({ client, assert }) => {
     const f = await fixture()
-    await f.account.merge({ balance: 0 }).save()
+    await f.account.merge({ balanceCents: parseMoneyCents('0.00') }).save()
     assert.deepEqual(await observe(client, f, 200), [['date', 'Transaction account']])
     assert.equal((await f.account.related('accountTransactions').query()).length, 0)
   })
@@ -104,7 +107,7 @@ test.group('Net-worth opening snapshots', (group) => {
       const f = await fixture()
       await movement(f, f.account.startDate, 100, TransactionType.STARTING_BALANCE)
       const other = await f.institution.related('accounts').create({ name: 'Other account',
-        balance: 50,
+        balanceCents: parseMoneyCents('50.00'),
         type: AccountType.Depository, subtype: 'checking', tracking, startDate: f.account.startDate,
           rate: 0, closed: false })
       const date = f.today.minus({ days: 2 })
@@ -132,7 +135,7 @@ test.group('Net-worth opening snapshots', (group) => {
       assert.equal(body[3][0], later.toISODate())
       assert.equal(body[3][body[0].indexOf('Transaction account')], '100.00')
       assert.equal(body[3][body[0].indexOf('Other account')], '50.00')
-      assert.equal((await Account.findOrFail(f.account.id)).balance, 100)
+      assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('100.00'))
     })
 
   test('old opening dates control grouping and provide opening points')
@@ -190,7 +193,8 @@ test.group('Net-worth opening snapshots', (group) => {
   test('old zero Initial Funding does not coarsen ordinary transaction dates', async ({ client,
     assert }) => {
     const f = await fixture()
-    await f.account.merge({ startDate: f.today.minus({ days: 4000 }), balance: 10 }).save()
+    await f.account.merge({ startDate: f.today.minus({ days: 4000 }),
+      balanceCents: parseMoneyCents('10.00') }).save()
     await movement(f, f.account.startDate, 0, TransactionType.STARTING_BALANCE)
     await movement(f, f.today, 10)
     assert.deepEqual(await observe(client, f, 200), [['date', 'Transaction account'], [f.today

@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '#common/moneyCents'
 import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { test } from '@japa/runner'
@@ -19,7 +20,8 @@ async function createFixture() {
     })
     const institution = await budget.related('institutions').create({ name: 'Lifecycle bank' })
     const account = await institution.related('accounts').create({
-      name: 'Lifecycle account', balance: 110, type: AccountType.Depository, subtype: 'checking',
+      name: 'Lifecycle account', balanceCents: parseMoneyCents('110.00'),
+        type: AccountType.Depository, subtype: 'checking',
       tracking: TrackingType.Transactions, startDate: DateTime.fromISO('2025-01-01'), rate: 0,
         closed: false,
     })

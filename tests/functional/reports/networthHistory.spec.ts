@@ -1,4 +1,5 @@
-import { parseMoneyCents } from '#common/moneyCents'
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
@@ -30,7 +31,7 @@ test.group('Net-worth history independence', (group) => {
         'History dependency bank' })
       const today = DateTime.utc().startOf('day')
       const account = await institution.related('accounts').create({ name: 'Transaction account',
-        balance: 100,
+        balanceCents: parseMoneyCents('100.00'),
         type: AccountType.Depository, subtype: 'checking', tracking: TrackingType.Transactions,
         startDate: today.minus({ days: 6 }), rate: 0, closed: false })
       return { budget, user, institution, today, account }
@@ -52,7 +53,8 @@ test.group('Net-worth history independence', (group) => {
     const history = await account.related('balanceHistory').query().orderBy('date')
     const transactions = await account.related('accountTransactions').query().preload('transaction')
     console.log(JSON.stringify({ characterization: 'networth-history', tracking: account.tracking,
-      startDate: account.startDate.toISODate(), currentBalance: account.balance,
+      startDate: account.startDate.toISODate(), currentBalance: Number(formatMoneyCents(
+        account.balanceCents)),
       history: history.map((row) => ({ date: row.date.toISODate(), balance: row.balance })),
       transactions: transactions.map((row) => ({ date: row.transaction.date.toISODate(), amount: row
         .amount, type: row.transaction.type })),
@@ -63,12 +65,14 @@ test.group('Net-worth history independence', (group) => {
   test('fractional transaction and Statement histories retain exact cents through gaps')
     .with([1, -1]).run(async ({ client, assert }, sign) => {
       const f = await fixture(), foreign = await fixture()
-      await f.account.merge({ balance: sign * 0.3 }).save()
+      await f.account.merge({ balanceCents: parseMoneyCents(encodeMonetaryAmount(
+        sign * 0.3)) }).save()
       await movement(f, f.account.startDate, sign * 0.1, TransactionType.STARTING_BALANCE)
       const movementDate = f.today.minus({ days: 5 })
       await movement(f, movementDate, sign * 0.2)
       const statementAccount = await f.institution.related('accounts').create({ name:
-        'Exact Statement account', balance: -sign * 0.1, type: AccountType.Depository,
+        'Exact Statement account', balanceCents: parseMoneyCents(encodeMonetaryAmount(
+          -sign * 0.1)), type: AccountType.Depository,
         subtype: 'checking', tracking: TrackingType.Balances, startDate: f.account.startDate,
         rate: 0, closed: false })
       const statementDate = f.today.minus({ days: 4 }), lastDate = f.today.minus({ days: 1 })
@@ -114,7 +118,7 @@ test.group('Net-worth history independence', (group) => {
       const history = await f.account.related('balanceHistory').create({ date: f.today.minus({
         days: daysAgo }), balance: 999999 })
       assert.deepEqual(await report(client, f), before)
-      assert.equal((await Account.findOrFail(f.account.id)).balance, 100)
+      assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('100.00'))
       await history.delete()
       assert.deepEqual(await report(client, f), before)
     })
@@ -192,7 +196,7 @@ test.group('Net-worth history independence', (group) => {
           '100.00'), data: null })
       if (mixed) {
         const account = await f.institution.related('accounts').create({ name:
-          'Second transaction account', balance: 50,
+          'Second transaction account', balanceCents: parseMoneyCents('50.00'),
           type: AccountType.Depository, subtype: 'checking', tracking: TrackingType.Transactions,
           startDate: f.today.minus({ days: 6 }), rate: 0, closed: false })
         const transaction = await f.budget.related('transactions').create({ date,

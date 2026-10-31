@@ -21,7 +21,8 @@ async function createFixture() {
     })
     const institution = await budget.related('institutions').create({ name: 'Invariant bank' })
     const account = await institution.related('accounts').create({
-      name: 'Invariant account', balance: 100, type: AccountType.Investment, subtype: 'IRA',
+      name: 'Invariant account', balanceCents: parseMoneyCents('100.00'),
+        type: AccountType.Investment, subtype: 'IRA',
       tracking: TrackingType.Transactions, startDate: DateTime.fromISO('2025-01-01'), rate: 0,
         closed: false,
     })

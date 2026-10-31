@@ -21,7 +21,8 @@ async function createFixture() {
     })
     const institution = await budget.related('institutions').create({ name: 'Statement bank' })
     const account = await institution.related('accounts').create({
-      name: 'Statement account', balance: 100, type: AccountType.Investment, subtype: 'IRA',
+      name: 'Statement account', balanceCents: parseMoneyCents('100.00'),
+        type: AccountType.Investment, subtype: 'IRA',
       tracking: TrackingType.Transactions, startDate: DateTime.fromISO('2025-01-01'), rate: 0,
         closed: false,
     })
@@ -43,7 +44,8 @@ test.group('Statement DELETE persisted-state characterization', () => {
       { tracking: TrackingType.Transactions, position: 'older', count: 2, amount: 0 },
     ]).run(async ({ client, assert }, scenario) => {
       const f = await createFixture()
-      await f.account.merge({ tracking: scenario.tracking, balance: 300 }).save()
+      await f.account.merge({ tracking: scenario.tracking, balanceCents: parseMoneyCents(
+        '300.00') }).save()
       const target = await f.account.related('statements').create({
         startDate: DateTime.fromISO('2025-02-01'), endDate: DateTime.fromISO('2025-02-28'),
         startingBalanceCents: parseMoneyCents('100.00'), endingBalanceCents: parseMoneyCents(
@@ -123,7 +125,8 @@ test.group('Statement DELETE persisted-state characterization', () => {
   test('late account persistence failure rolls back unassignment and deletion', async ({ client,
     assert }) => {
     const f = await createFixture()
-    await f.account.merge({ tracking: TrackingType.Balances, balance: 300 }).save()
+    await f.account.merge({ tracking: TrackingType.Balances, balanceCents: parseMoneyCents(
+      '300.00') }).save()
     const statement = await f.account.related('statements').create({
       startDate: DateTime.fromISO('2025-02-01'), endDate: DateTime.fromISO('2025-02-28'),
       startingBalanceCents: parseMoneyCents('100.00'), endingBalanceCents: parseMoneyCents(

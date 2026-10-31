@@ -163,7 +163,8 @@ async function openingFixture({ balance = 0.3, total = '0.20', poolBalance = 0.1
     async save() { events.push('transaction.save'); return this },
     useTransaction(client) { this.$trx = client; return this },
     fill(values) { Object.assign(this, values); return this } }
-  const account = { id: 1, type: loan ? 'Loan' : 'Credit', tracking: 'Transactions', balance,
+  const account = { id: 1, type: loan ? 'Loan' : 'Credit', tracking: 'Transactions',
+    balanceCents: parseMoneyCents(encodeMonetaryAmount(balance)),
     $trx: {}, startDate: { toISODate: () => '2025-01-01' }, related() { return {
       query() {
         let aggregate = false
@@ -198,17 +199,17 @@ test.group('Initial Funding checked cents without a database', () => {
         poolBalance: sign * 0.1, loan })
       await f.run()
       assert.deepEqual(f.events.find(event => Array.isArray(event) && event[0] === 'storage'),
-        ['storage', !loan])
+        ['storage', undefined])
       assert.strictEqual(f.link().amount, sign * 0.1)
       assert.strictEqual(f.pool.balance, sign * 0.2)
-      f.account.balance = sign * 0.4
+      f.account.balanceCents = parseMoneyCents(encodeMonetaryAmount(sign * 0.4))
       await f.run()
       assert.strictEqual(f.link().amount, sign * 0.2)
       assert.strictEqual(f.pool.balance, sign * 0.3)
       assert.strictEqual(f.transaction.categories[0].amount, sign * 0.2)
       await f.run()
       assert.strictEqual(f.pool.balance, sign * 0.3)
-      assert.strictEqual(f.account.balance, sign * 0.4)
+      assert.strictEqual(Number(formatMoneyCents(f.account.balanceCents)), sign * 0.4)
     })
 
   test('empty aggregate is zero', async ({ assert }) => {
@@ -333,13 +334,13 @@ test.group('Auto-assignment checked cents without a database', () => {
     assert.deepEqual(f.events, [])
   })
 
-  test('Loan-excluded allocations retain prior percentage rounding and balance arithmetic',
+  test('Loan allocations use shared checked-cent percentage rounding and residuals',
     async ({ assert }) => {
       const f = await assignmentFixture(0.29, [{ amount: 50, percentage: true },
         { amount: 50, percentage: true }], { loan: true })
       await f.run()
-      assert.deepEqual(f.transaction.categories.map(split => split.amount), [0.14, 0.15])
-      assert.strictEqual(f.balances[1].balance, 0.1 + 0.15)
+      assert.deepEqual(f.transaction.categories.map(split => split.amount), [0.15, 0.14])
+      assert.strictEqual(f.balances[1].balance, 0.24)
     })
 })
 

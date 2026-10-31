@@ -22,7 +22,7 @@ async function fixture() {
     const institution = await budget.related('institutions').create({ name:
       'Synthetic income bank' })
     const account = await institution.related('accounts').create({ name: 'Synthetic income account',
-      balance: 200,
+      balanceCents: parseMoneyCents('200.00'),
       type: AccountType.Investment, subtype: 'brokerage', tracking: TrackingType.Transactions,
       startDate: DateTime.fromISO('2026-01-01'), rate: 0, closed: false })
     const statement = await account.related('statements').create({ startDate: DateTime.fromISO(
@@ -137,7 +137,7 @@ test.group('Statement income decimal-string PostgreSQL acceptance', group => {
     for (const subtype of ['401k', 'Roth 401k', 'Roth', 'ira']) {
       const account = await institution.related('accounts').create({
         name: `Excluded ${subtype}`, subtype, type: AccountType.Investment,
-        tracking: TrackingType.Transactions, balance: 0,
+        tracking: TrackingType.Transactions, balanceCents: parseMoneyCents('0.00'),
         startDate: DateTime.fromISO('2026-01-01'), rate: 0, closed: false,
       })
       await createIncome(account, '2026-01-01', '2026-01-31', 100)

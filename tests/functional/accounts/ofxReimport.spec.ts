@@ -1,3 +1,5 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import { transactionRequest } from '../../helpers/transactionRequest.js'
 import financialAssert from 'node:assert/strict'
 import { mock } from 'node:test'
@@ -21,7 +23,8 @@ test.group('OFX reimport financial consistency', () => {
       const user = await budget.related('users').create({ username: `ofx-reimport-${++sequence}`,
         email: `ofx-reimport-${sequence}@example.com`, password: 'testPassw0rd' })
       const institution = await budget.related('institutions').create({ name: 'OFX bank' })
-      const account = await institution.related('accounts').create({ name: 'OFX card', balance: 0,
+      const account = await institution.related('accounts').create({ name: 'OFX card',
+        balanceCents: parseMoneyCents('0.00'),
         type: AccountType.Credit, subtype: 'credit card', tracking: TrackingType.Transactions,
         startDate: DateTime.fromISO('2025-02-01'), rate: 0, closed: false })
       const group = await budget.related('groups').create({ name: 'OFX allocations', type:
@@ -63,7 +66,8 @@ FX>`
     const history = await db.from('balance_histories').where('account_id', account.id).orderBy('id')
     const logs = await db.from('transaction_logs').where('application_id', f.budget.id).orderBy(
       'id')
-    const result = { balance: account.balance, plaidBalance: account.plaidBalance, categories,
+    const result = { balance: Number(formatMoneyCents(account.balanceCents)),
+      plaidBalance: account.plaidBalance, categories,
       history, logs, transactions: associations.map((a) => ({
       id: a.transaction.id, associationId: a.id, providerId: a.providerTransactionId, amount: a
         .amount,
@@ -142,18 +146,21 @@ FX>`
     .with([false, true].flatMap(loan => [1, -1].map(sign => ({ loan, sign }))))
     .run(async ({ client, assert }, { loan, sign }) => {
       const f = await fixture()
-      await f.account.merge({ balance: sign * 0.1,
+      await f.account.merge({ balanceCents: parseMoneyCents(encodeMonetaryAmount(sign * 0.1)),
         ...(loan ? { type: AccountType.Loan } : {}) }).save()
       const unassigned = await f.budget.getUnassignedCategory()
       await unassigned.merge({ balance: sign * 0.1 }).save()
       ;(await upload(client, f, sign * 0.2)).assertStatus(200)
-      assert.strictEqual((await Account.findOrFail(f.account.id)).balance, sign * 0.3)
+      assert.strictEqual((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents(
+        encodeMonetaryAmount(sign * 0.3)))
       await unassigned.refresh()
       assert.strictEqual(unassigned.balance, sign * 0.3)
       ;(await upload(client, f, sign * 0.2)).assertStatus(200)
-      assert.strictEqual((await Account.findOrFail(f.account.id)).balance, sign * 0.3)
+      assert.strictEqual((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents(
+        encodeMonetaryAmount(sign * 0.3)))
       ;(await upload(client, f, sign * 0.4)).assertStatus(200)
-      assert.strictEqual((await Account.findOrFail(f.account.id)).balance, sign * 0.5)
+      assert.strictEqual((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents(
+        encodeMonetaryAmount(sign * 0.5)))
       await unassigned.refresh()
       assert.strictEqual(unassigned.balance, sign * 0.5)
     })

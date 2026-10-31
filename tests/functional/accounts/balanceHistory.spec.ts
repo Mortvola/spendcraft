@@ -1,4 +1,4 @@
-import { formatMoneyCents } from '#common/moneyCents'
+import { parseMoneyCents, formatMoneyCents } from '#common/moneyCents'
 import { transactionRequest } from '../../helpers/transactionRequest.js'
 // Prepared only: requires fresh authorization and current independent DB safeguards.
 // Old tests encoded history->Account writes. Product deprecation removes that API
@@ -21,7 +21,7 @@ async function fixture(tracking = TrackingType.Transactions) {
     const institution = await budget.related('institutions').create({ name:
       'Legacy evidence bank' })
     const account = await institution.related('accounts').create({ name: 'Supported account',
-      balance: 100,
+      balanceCents: parseMoneyCents('100.00'),
       type: AccountType.Depository, subtype: 'checking', tracking, startDate: DateTime.fromISO(
         '2025-01-01'), rate: 0, closed: false })
     if (tracking === TrackingType.Transactions) {
@@ -76,7 +76,7 @@ test.group('BalanceHistory runtime deprecation (prepared)', () => {
       .json(transactionRequest({ date: '2025-02-10', name: 'Ordinary', amount: 10, categories: [
         ] })).loginAs(f.user)
     create.assertStatus(200)
-    assert.equal((await Account.findOrFail(f.account.id)).balance, 110)
+    assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('110.00'))
     const chart = await client.get(`/api/v1/account/${f.account.id}/balances`).loginAs(f.user)
     chart.assertStatus(200)
     assert.strictEqual(chart.body()[0].balance, '110.00')
@@ -86,10 +86,10 @@ test.group('BalanceHistory runtime deprecation (prepared)', () => {
     ;(await client.patch(`/api/v1/transaction/${target.transactionId}`).json(transactionRequest({
       version: 0, amount: 7,
       categories: [{ categoryId: unassigned.id, amount: 7 }] })).loginAs(f.user)).assertStatus(200)
-    assert.equal((await Account.findOrFail(f.account.id)).balance, 107)
+    assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('107.00'))
     ;(await client.delete(`/api/v1/transaction/${target.transactionId}`).loginAs(f.user))
       .assertStatus(200)
-    assert.equal((await Account.findOrFail(f.account.id)).balance, 100)
+    assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('100.00'))
     assert.deepEqual(await history(f), before)
   })
 
@@ -107,7 +107,7 @@ test.group('BalanceHistory runtime deprecation (prepared)', () => {
     const before = await history(f)
     ;(await client.patch(`/api/v1/account/${f.account.id}`).json({ startDate: '2025-02-01' })
       .loginAs(f.user)).assertStatus(200)
-    assert.equal((await Account.findOrFail(f.account.id)).balance, 100)
+    assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('100.00'))
     assert.deepEqual(await history(f), before)
     const pool = await f.budget.getFundingPoolCategory()
     assert.equal(pool.balance, 100)
@@ -130,7 +130,7 @@ test.group('BalanceHistory runtime deprecation (prepared)', () => {
       const id = route === 'new' ? response.body().data.accounts[0].id : response.body().data
         .account.id
       const account = await Account.findOrFail(id)
-      assert.equal(account.balance, 12)
+      assert.equal(account.balanceCents, parseMoneyCents('12.00'))
       const statements = await account.related('statements').query()
       assert.lengthOf(statements, tracking === TrackingType.Balances ? 1 : 0)
       if (statements[0]) assert.equal(Number(formatMoneyCents(statements[0].endingBalanceCents)),
@@ -141,7 +141,7 @@ test.group('BalanceHistory runtime deprecation (prepared)', () => {
       assert.equal((await f.budget.getFundingPoolCategory()).balance, route === 'new' &&
         tracking === TrackingType.Transactions ? 112 : 100)
       assert.deepEqual(await db.from('balance_histories').orderBy('id'), before)
-      assert.equal((await Account.findOrFail(f.account.id)).balance, 100)
+      assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('100.00'))
     })
 
   test('last-user Budget destruction retains only parent-cleanup history deletion', async ({ client,
@@ -154,6 +154,7 @@ test.group('BalanceHistory runtime deprecation (prepared)', () => {
     assert.isNull(await Budget.find(f.budget.id))
     assert.lengthOf(await history(f), 0)
     assert.deepEqual(await history(foreign), foreignBefore)
-    assert.equal((await Account.findOrFail(foreign.account.id)).balance, 100)
+    assert.equal((await Account.findOrFail(foreign.account.id)).balanceCents, parseMoneyCents(
+      '100.00'))
   })
 })

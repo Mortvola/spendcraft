@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '#common/moneyCents'
 import {
   writeCanonicalTransactionFixture, writeHistoricalTransactionFixture,
 } from '../../helpers/historicalTransactionFixture.js'
@@ -20,7 +21,8 @@ async function fixture() {
     const institution = await budget.related('institutions').create({ name: 'Report Accounts' })
     const account = await institution.related('accounts').create({ name: 'Closed pre-start Account',
       type: AccountType.Depository,
-      subtype: 'checking', balance: 100, tracking: TrackingType.Transactions,
+      subtype: 'checking', balanceCents: parseMoneyCents('100.00'),
+        tracking: TrackingType.Transactions,
       startDate: DateTime.fromISO('2026-01-01'), rate: 0, closed: true })
     const category = await budget.getAccountTransferCategory({ client: trx })
     return { budget, user, institution, account, category }
@@ -138,7 +140,8 @@ test.group('Income Vs Expenses transfer fan-out PostgreSQL acceptance', () => {
     const f = await fixture()
     const second = await f.institution.related('accounts').create({ name: 'Second',
       type: AccountType.Depository,
-      subtype: 'checking', balance: 0, tracking: TrackingType.Transactions,
+      subtype: 'checking', balanceCents: parseMoneyCents('0.00'),
+        tracking: TrackingType.Transactions,
       startDate: DateTime.fromISO('2026-01-01'), rate: 0, closed: false })
     const first = await movement(f, 50, [20, 30])
     await second.related('accountTransactions').create({ transactionId: first.transaction.id, name:

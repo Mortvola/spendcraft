@@ -22,7 +22,7 @@ async function createDomain(label: string) {
       email: `aggregate-${sequence}@example.com`, password: 'testPassw0rd' })
     const institution = await budget.related('institutions').create({ name: `${label} bank` })
     const account = await institution.related('accounts').create({ name: `${label} account`,
-      balance: 100,
+      balanceCents: parseMoneyCents('100.00'),
       type: AccountType.Depository, subtype: 'checking', tracking: TrackingType.Transactions,
       startDate: DateTime.fromISO('2025-01-01'), closed: false })
     const group = await budget.related('groups').create({ name: `${label} group`, type: 'Regular' })

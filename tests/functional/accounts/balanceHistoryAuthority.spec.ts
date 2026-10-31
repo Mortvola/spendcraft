@@ -1,3 +1,4 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { parseMoneyCents } from '#common/moneyCents'
 import { statementRequest } from '../../helpers/statementRequest.js'
 import { test } from '@japa/runner'
@@ -23,7 +24,8 @@ async function createFixture() {
     })
     const institution = await budget.related('institutions').create({ name: 'Statement bank' })
     const account = await institution.related('accounts').create({
-      name: 'Statement account', balance: 100, type: AccountType.Investment, subtype: 'IRA',
+      name: 'Statement account', balanceCents: parseMoneyCents('100.00'),
+        type: AccountType.Investment, subtype: 'IRA',
       tracking: TrackingType.Transactions, startDate: DateTime.fromISO('2025-01-01'), rate: 0,
         closed: false,
     })
@@ -95,7 +97,7 @@ test.group('Statement and balance-history authority characterization', (group) =
           }).accept('json').loginAs(f.user)
       response.assertStatus(404)
       assert.deepEqual(await snapshot(), before)
-      assert.equal((await Account.findOrFail(f.account.id)).balance, 100)
+      assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('100.00'))
     })
 
   test('Statement mutations derive balance without maintaining history')
@@ -117,7 +119,8 @@ test.group('Statement and balance-history authority characterization', (group) =
       response.assertStatus(200)
       const expected = operation === 'create' ? 250 : operation === 'ending-zero' || operation ===
         'delete-only' ? 0 : operation === 'delete-older' ? 100 : 50
-      assert.equal((await Account.findOrFail(f.account.id)).balance, expected)
+      assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents(
+        encodeMonetaryAmount(expected)))
       const after = await snapshot()
       assert.deepEqual(after[1], before[1])
       assert.deepEqual(after.slice(3), before.slice(3))
@@ -129,14 +132,14 @@ test.group('Statement and balance-history authority characterization', (group) =
     const history = await seedHistory()
     ;(await client.post(`/api/v1/account/${f.account.id}/balances`).json({ date: '2025-03-10',
       amount: 250 }).accept('json').loginAs(f.user)).assertStatus(404)
-    assert.equal((await Account.findOrFail(f.account.id)).balance, 100)
+    assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('100.00'))
     ;(await client.patch(`/api/v1/statements/${latest.id}`).json(statementRequest({
       endingBalance: 120 })).accept('json').loginAs(f.user)).assertStatus(200)
     const before = await snapshot()
     ;(await client.patch(`/api/v1/account/${f.account.id}/balances/${history.last.id}`).json({
       date: '2025-02-10', amount: 80 }).accept('json').loginAs(f.user)).assertStatus(404)
     assert.deepEqual(await snapshot(), before)
-    assert.equal((await Account.findOrFail(f.account.id)).balance, 120)
+    assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('120.00'))
   })
 
 })

@@ -225,7 +225,8 @@ async function lifecycle(input, options = {}) {
   owner.commit = async () => { events.push('commit') }; owner.rollback = async () => { events.push(
     'rollback') }
   const statement = hydrated({ ...data('1.00'), note: 'preserve' }).useTransaction(owner)
-  const account = { id: 2, balance: 200, tracking: options.tracking ?? TrackingType.Transactions,
+  const account = { id: 2, balanceCents: parseMoneyCents(encodeMonetaryAmount(200)),
+    tracking: options.tracking ?? TrackingType.Transactions,
     async save() { events.push('account.save') },
     related(name) { return name === 'statements' ? { create: async values => {
       events.push('create'); const row = new Sample().merge({ id: 1, accountId: 2, ...values })
@@ -322,7 +323,8 @@ test.group('Statement income production controllers (no database)', () => {
     .run(async ({ assert }, tracking) => {
       const f = await lifecycle({ data: data('-0.12') }, { tracking }), response = await f.operation
       assert.deepEqual(JSON.parse(f.writes[0].data), { ...data('-0.12'), note: 'preserve' })
-      assert.deepEqual(response.data, data('-0.12')); assert.equal(f.account.balance, 200)
+      assert.deepEqual(response.data, data('-0.12')); assert.equal(Number(formatMoneyCents(
+        f.account.balanceCents)), 200)
       assert.notProperty(f.writes[0], 'starting_balance'); assert.notProperty(f.writes[0],
         'ending_balance')
       assert.isTrue(f.events.indexOf('budget.acquired') < f.events.indexOf('statement.read'))

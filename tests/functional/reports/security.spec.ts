@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '#common/moneyCents'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
@@ -18,7 +19,8 @@ async function createDomain(label: string, existingBudget?: Budget) {
     })
     const institution = await budget.related('institutions').create({ name: `${label} bank` })
     const account = await institution.related('accounts').create({
-      name: `${label} account`, balance: 100, type: AccountType.Depository,
+      name: `${label} account`,
+      balanceCents: parseMoneyCents('100.00'), type: AccountType.Depository,
       subtype: 'checking', tracking: TrackingType.Transactions,
       startDate: DateTime.fromISO('2025-01-01'), rate: 0, closed: false,
     })
@@ -96,8 +98,9 @@ test.group('Report filter security', (group) => {
     'Long account name '.repeat(6),
   ]).run(async ({ client, assert }, name) => {
     await fixture.own.account.merge({ name }).save()
-    await fixture.second.account.merge({ name, balance: 200 }).save()
-    await fixture.foreign.account.merge({ name: 'FOREIGN PRIVATE ACCOUNT', balance: 987654 }).save()
+    await fixture.second.account.merge({ name, balanceCents: parseMoneyCents('200.00') }).save()
+    await fixture.foreign.account.merge({ name: 'FOREIGN PRIVATE ACCOUNT',
+      balanceCents: parseMoneyCents('987654.00') }).save()
     const date = DateTime.now().minus({ days: 1 }).startOf('day')
     for (const domain of [fixture.own, fixture.second, fixture.foreign]) {
       await domain.transaction.merge({ date }).save()

@@ -391,7 +391,7 @@ export default class TransactionsController {
         || requestData.statementId !== undefined
       ) {
         const replacementBalanceCents = !ordinary
-          ? subtractMoneyCents(parseMoneyCents(encodeMonetaryAmount(account.balance)),
+          ? subtractMoneyCents(account.balanceCents,
             parseMoneyCents(encodeMonetaryAmount(account.type === AccountType.Loan
               ? acctTrans.principle ?? 0 : acctTrans.amount))) : null;
 
@@ -425,9 +425,9 @@ export default class TransactionsController {
         await acctTrans.save();
 
         if (replacementBalanceCents !== null) {
-          account.balance = Number(formatMoneyCents(addMoneyCents(replacementBalanceCents,
+          account.balanceCents = addMoneyCents(replacementBalanceCents,
             parseMoneyCents(encodeMonetaryAmount(account.type === AccountType.Loan
-              ? acctTrans.principle ?? 0 : acctTrans.amount)))));
+              ? acctTrans.principle ?? 0 : acctTrans.amount)));
         }
 
         if (!ordinary) await account.save();
@@ -435,8 +435,8 @@ export default class TransactionsController {
 
       if (ordinary && accountDeltaCents !== 0) {
         const balanceCents = addMoneyCents(
-          parseMoneyCents(encodeMonetaryAmount(account.balance)), accountDeltaCents);
-        account.balance = Number(formatMoneyCents(balanceCents));
+          account.balanceCents, accountDeltaCents);
+        account.balanceCents = balanceCents;
         await account.save();
       }
 
@@ -517,7 +517,7 @@ export default class TransactionsController {
           categories: categoriesResult,
           acctBalances: [{
             id: account.id,
-            balance: encodeMonetaryAmount(account.balance),
+            balance: formatMoneyCents(account.balanceCents),
           }],
           statement: statement?.serialize() as StatementProps,
         },
@@ -672,21 +672,21 @@ export default class TransactionsController {
         if (!acctTransaction.pending) {
           if (account.type === AccountType.Loan) {
             const balanceCents = subtractMoneyCents(
-              parseMoneyCents(encodeMonetaryAmount(account.balance)),
+              account.balanceCents,
               parseMoneyCents(encodeMonetaryAmount(acctTransaction.principle ?? 0)));
-            account.balance = Number(formatMoneyCents(balanceCents));
+            account.balanceCents = balanceCents;
           }
           else {
             const balanceCents = subtractMoneyCents(
-              parseMoneyCents(encodeMonetaryAmount(account.balance)),
+              account.balanceCents,
               parseMoneyCents(encodeMonetaryAmount(acctTransaction.amount)));
-            account.balance = Number(formatMoneyCents(balanceCents));
+            account.balanceCents = balanceCents;
           }
 
           await account.save();
 
-          result.acctBalances.push({ id: account.id, balance: encodeMonetaryAmount(account
-            .balance) });
+          result.acctBalances.push({ id: account.id, balance: formatMoneyCents(
+            account.balanceCents) });
         }
       }
 

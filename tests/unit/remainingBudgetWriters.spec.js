@@ -1,3 +1,4 @@
+import { formatMoneyCents } from '#common/moneyCents'
 import { requestFundingStorage } from '../../app/services/fundingStorage.ts'
 import { encodeMonetaryAmount } from '../../app/services/categoryAmountCodec.ts'
 import { parseMoneyCents } from '../../common/moneyCents.ts'
@@ -26,7 +27,8 @@ async function method(file, name, context, dependencyLoader = false) {
   return runInNewContext(ts.transpileModule(`(async function(${member.parameters.map((p) => p
     .getText(ast)).join(',')}) ${body})`,
     { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, { requestFundingStorage,
-      encodeMonetaryAmount, parseMoneyCents, validateSubmittedTaxForecast, replaceTaxForecast,
+      encodeMonetaryAmount, parseMoneyCents, formatMoneyCents, validateSubmittedTaxForecast,
+        replaceTaxForecast,
       ...context })
 }
 const noop = async () => undefined
@@ -42,7 +44,8 @@ test.group('Remaining Budget writer characterization without DB', () => {
     const link = { providerTransactionId: 'purchase', amount: -5,
       merge(values) { Object.assign(this, values); return this }, save: async () => { events.push(
         'link.save') } }
-    const account = { plaidAccountId: 'provider-account', balance: 95,
+    const account = { plaidAccountId: 'provider-account', balanceCents: parseMoneyCents(
+      encodeMonetaryAmount(95)),
       merge(values) { Object.assign(this, values); return this }, save: async () => { events.push(
         'account.save') },
       related: () => ({ query: async () => [link] }) }
@@ -80,7 +83,7 @@ test.group('Remaining Budget writer characterization without DB', () => {
       'remote.remove', 'institution.save', 'account.save', 'link.save', 'commit'])
     assert.isNull(institution.cursor); assert.isNull(institution.accessToken); assert.isNull(link
       .providerTransactionId)
-    assert.equal(account.balance, 95); assert.equal(link.amount, -5)
+    assert.equal(Number(formatMoneyCents(account.balanceCents)), 95); assert.equal(link.amount, -5)
   })
 
   test('unlink rolls back a failed Budget lookup before any provider or identity work', async ({
@@ -721,9 +724,9 @@ for (const scenario of ['transactions', 'balances', 'missing-institution', 'stat
       if (scenario === 'missing-institution') assert.notInclude(events, 'account.save')
     } else {
       const result = await operation
-      assert.equal(result.data.account.balance, 10)
-      assert.equal(result.data.categories[0].balance, 80)
-      assert.equal(result.data.categories[1].balance, 5)
+      assert.equal(result.data.account.balance, '10.00')
+      assert.equal(result.data.categories[0].balance, '80.00')
+      assert.equal(result.data.categories[1].balance, '5.00')
       assert.equal(events.filter((event) => event === 'statement').length, scenario ===
         'balances' ? 1 : 0)
       assert.equal(events.at(-1), 'commit')

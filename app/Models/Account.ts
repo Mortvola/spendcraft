@@ -88,10 +88,11 @@ class Account extends BaseModel {
   public startDate: DateTime;
 
   @column({
-    consume: (value: string | null) => value === null ? 0 : parseFloat(value),
-    serialize: (value: number) => encodeMonetaryAmount(value),
+    columnName: 'balance', serializeAs: 'balance',
+    consume: (value: string | null) => parseMoneyCents(value ?? '0.00'),
+    prepare: formatMoneyCents, serialize: formatMoneyCents,
   })
-  public balance: number;
+  public balanceCents: MoneyCents;
 
   @column({
     consume: (value: string | null) => value === null ? value : parseFloat(value),
@@ -911,8 +912,8 @@ class Account extends BaseModel {
         }
       }
 
-      this.balance = Number(formatMoneyCents(addMoneyCents(
-        parseMoneyCents(encodeMonetaryAmount(this.balance)), sum)));
+      this.balanceCents = addMoneyCents(
+        this.balanceCents, sum);
       if (providerBalance !== undefined) this.plaidBalance = providerBalance;
 
       await this.save();
@@ -959,7 +960,7 @@ class Account extends BaseModel {
     // PostgreSQL SUM(numeric) retains the column's two-decimal scale. Parse its
     // decimal text directly so the aggregate never passes through dollar arithmetic.
     const startingBalanceCents = subtractMoneyCents(
-      parseMoneyCents(encodeMonetaryAmount(this.balance)),
+      this.balanceCents,
       parseMoneyCents(sum?.$extras.sum ?? '0.00'));
     const startingBalance = Number(formatMoneyCents(startingBalanceCents));
 

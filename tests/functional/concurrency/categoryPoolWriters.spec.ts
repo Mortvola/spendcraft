@@ -1,3 +1,4 @@
+import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { transactionRequest, categoryTransferRequest } from '../../helpers/transactionRequest.js'
 // Requires task-specific DB authorization and independent per-statement safeguards.
@@ -109,7 +110,8 @@ async function fixture() {
     const user = await budget.related('users').create({ username: `pool-gate-${++sequence}`,
       email: `pool-gate-${sequence}@example.com`, password: 'testPassw0rd' })
     const institution = await budget.related('institutions').create({ name: 'Existing bank' })
-    const account = await institution.related('accounts').create({ name: 'Existing', balance: 100,
+    const account = await institution.related('accounts').create({ name: 'Existing',
+      balanceCents: parseMoneyCents('100.00'),
       type: AccountType.Credit, subtype: 'credit card', tracking: TrackingType.Transactions,
       startDate: DateTime.fromISO('2025-01-01'), initialized: true, enabled: true, closed: false,
         rate: 0 })
@@ -272,10 +274,12 @@ test.group('Bounded offline Pool concurrency', (group) => {
       else await contend(f.pool.id, false, b, a)
       await pool(f, 90); equal((await Category.findOrFail(f.category.id)).balance, 20)
       await openings(f, 2)
-      equal((await Account.query().whereHas('institution', (q) => q.where('budgetId', f.budget.id))
-        .where('name', 'New offline').firstOrFail()).balance, 10)
+      equal(Number(formatMoneyCents((await Account.query().whereHas('institution', (q) =>
+        q.where('budgetId', f.budget.id))
+        .where('name', 'New offline').firstOrFail()).balanceCents)), 10)
       equal((await f.budget.related('transactions').query().where('type', 2)).length, 1)
-      equal((await f.institution.related('accounts').query().firstOrFail()).balance, 100)
+      equal(Number(formatMoneyCents((await f.institution.related('accounts').query(
+        ).firstOrFail()).balanceCents)), 100)
     })
   test('waiting initialization hydrates committed Pool80 through its owning transaction', async ({
     client }) => {
@@ -303,7 +307,8 @@ test.group('Bounded offline Pool concurrency', (group) => {
       20))
     await pool(f, 130); await openings(f, 3)
     deepStrictEqual((await Account.query().whereHas('institution', (q) => q.where('budgetId', f
-      .budget.id)).where('name', 'New offline').orderBy('balance')).map((row) => row.balance), [10,
+      .budget.id)).where('name', 'New offline').orderBy('balance')).map((row) => Number(
+        formatMoneyCents(row.balanceCents))), [10,
       20])
   })
   test('initialization composes with startDate opening change', async ({ client }) => {
@@ -314,7 +319,8 @@ test.group('Bounded offline Pool concurrency', (group) => {
         '2025-03-01' }).loginAs(f.user)
       response.assertStatus(200)
     })
-    await pool(f, 120); equal((await Account.findOrFail(f.account.id)).balance, 110)
+    await pool(f, 120); equal(Number(formatMoneyCents((await Account.findOrFail(
+      f.account.id)).balanceCents)), 110)
     equal((await Category.findOrFail(f.category.id)).balance, 0)
     const opening = await f.account.related('accountTransactions').query().whereHas('transaction', (
       q) => q.where('type', 4)).preload('transaction').firstOrFail()
@@ -326,7 +332,7 @@ test.group('Bounded offline Pool concurrency', (group) => {
       await contend(f.pool.id, false, () => initialize(client, f), () => sync(client, f))
       await pool(f,
         140) // initial provider Account120; posted−10; opening130 replaces100, plus offline10.
-      equal((await Account.findOrFail(f.account.id)).balance, 120)
+      equal(Number(formatMoneyCents((await Account.findOrFail(f.account.id)).balanceCents)), 120)
       equal((await f.institution.refresh()).cursor, 'c1')
       equal((await f.budget.getUnassignedCategory()).balance, -10)
     } finally { restore() }
@@ -504,8 +510,9 @@ test.group('Category deletion admission vs protected writers', (group) => {
         '2025-03-01' }).loginAs(f.user)
       response.assertStatus(200)
     }, () => remove(client, f, 409))
-    equal((await Category.findOrFail(f.category.id)).balance, 0); equal((await Account.findOrFail(f
-      .account.id)).balance, 110)
+    equal((await Category.findOrFail(f.category.id)).balance, 0); equal(Number(formatMoneyCents(
+      (await Account.findOrFail(f
+      .account.id)).balanceCents)), 110)
     await pool(f, 110)
   })
   test('same/different Category deletes serialize in one Budget').with([false, true]).run(async ({
@@ -521,7 +528,8 @@ test.group('Category deletion admission vs protected writers', (group) => {
     await contend(f.category.id, true, () => remove(client, f, 500), () => create(client, f), {
       rollback: true })
     equal((await Category.findOrFail(f.category.id)).balance, 10)
-    equal((await Account.findOrFail(f.account.id)).balance, 110); await pool(f, 100)
+    equal(Number(formatMoneyCents((await Account.findOrFail(f.account.id)).balanceCents)),
+      110); await pool(f, 100)
     equal((await f.budget.related('transactions').query().where('type', 5)).length, 1)
   })
   test('different-Budget Category deletion does not wait', async ({ client }) => {

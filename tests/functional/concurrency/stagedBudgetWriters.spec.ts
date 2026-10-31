@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '#common/moneyCents'
 import { encodeTaxForecast } from '#services/taxMonetaryCodec'
 import { categoryRequest } from '../../helpers/categoryRequest.js'
 import {
@@ -35,7 +36,8 @@ async function fixture() {
     const user = await budget.related('users').create({ username: `staged-gate-${++sequence}`,
       email: `staged-gate-${sequence}@example.com`, password: 'testPassw0rd' })
     const institution = await budget.related('institutions').create({ name: 'Offline fixture' })
-    const account = await institution.related('accounts').create({ name: 'Account', balance: 105,
+    const account = await institution.related('accounts').create({ name: 'Account',
+      balanceCents: parseMoneyCents('105.00'),
       type: AccountType.Depository, subtype: 'checking', tracking: TrackingType.Transactions,
       startDate: DateTime.fromISO('2025-01-01'), initialized: true, enabled: true, closed: false,
         rate: 0 })

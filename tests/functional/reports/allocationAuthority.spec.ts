@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '#common/moneyCents'
 import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { writeHistoricalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
@@ -22,7 +23,8 @@ async function createDomain(label: string, existingBudget?: Budget) {
     })
     const institution = await budget.related('institutions').create({ name: `${label} bank` })
     const account = await institution.related('accounts').create({
-      name: `${label} account`, balance: 100, type: AccountType.Depository,
+      name: `${label} account`,
+      balanceCents: parseMoneyCents('100.00'), type: AccountType.Depository,
       subtype: 'checking', tracking: TrackingType.Transactions,
       startDate: DateTime.fromISO('2025-01-01'), rate: 0, closed: false,
     })
