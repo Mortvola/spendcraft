@@ -1,3 +1,4 @@
+import { autoAssignmentAmount } from '#services/autoAssignmentAmount'
 import { fundingMetadataToCents, fundingRulesToCents } from '#services/fundingAmountCodec'
 import { categoryAllocationsToCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { addMoneyCents, parseMoneyCents } from '#common/moneyCents'
@@ -363,23 +364,22 @@ test('funding API serialization preserves percentages, nulls, metadata and numer
 })
 
 
-test('auto-assignment responses encode fixed dollars and preserve numeric model amounts', ({
+test('auto-assignment responses encode fixed cents and preserve numeric percentages', ({
   assert }) => {
-  for (const [amount, expected] of [[12.5, '12.50'], [-0.125, '-0.12'], [0.125, '0.13'],
+  for (const [, expected] of [[12.5, '12.50'], [-0.125, '-0.12'], [0.125, '0.13'],
     [1.005, '1.00'], [0.1 + 0.2, '0.30'], [-0, '0.00']] as const) {
     for (const percentage of [false, null, true]) {
       const rule = AutoAssignmentCategory.$createFromAdapterResult({ id: 1, category_id: 20,
-        amount: String(amount), percentage })
+        amount: expected, percentage })
       if (!rule) throw new Error('Expected hydrated rule')
       const before = globalThis.structuredClone(rule.$attributes)
-      assert.strictEqual(rule.amount, amount === 0 ? 0 : amount)
-      assert.strictEqual(rule.serialize().amount, percentage === true ? (
-        amount === 0 ? 0 : amount) : expected)
+      assert.deepEqual(rule.allocationAmount, autoAssignmentAmount(Number(expected), percentage))
+      assert.strictEqual(rule.serialize().amount, percentage === true ? Number(expected) : expected)
       assert.strictEqual(rule.serialize().percentage, percentage)
       const assignment = new AutoAssignment().merge({ id: 2 })
       assignment.$setRelated('categories', [rule])
       assert.strictEqual(JSON.parse(JSON.stringify(assignment)).categories[0].amount,
-        percentage === true ? (amount === 0 ? 0 : amount) : expected)
+        percentage === true ? Number(expected) : expected)
       assert.deepEqual(rule.$attributes, before)
       assert.isFalse(rule.$isDirty)
     }
@@ -573,4 +573,42 @@ test.group('Category funding target cent boundaries', () => {
       assert.throws(() => column.serialize?.(value, 'fundingAmountCents', row))
     }
   })
+})
+
+
+test('auto-assignment cent setters retain the amount column and safe mode changes',
+  ({ assert }) => {
+  const row = new AutoAssignmentCategory().merge({ percentage: false,
+    allocationAmount: autoAssignmentAmount(-0.125, false) })
+  assert.deepEqual(row.allocationAmount, { percentage: false,
+    amountCents: parseMoneyCents('-0.12') })
+  const column = AutoAssignmentCategory.$getColumn('allocationAmount')
+  if (!column?.prepare) throw new Error('Missing auto-assignment amount codec')
+  assert.strictEqual(column.columnName, 'amount')
+  assert.strictEqual(column.prepare(row.$getAttribute('allocationAmount'),
+    'allocationAmount', row), '-0.12')
+  assert.strictEqual(row.serialize().amount, '-0.12')
+  assert.notProperty(row.serialize(), 'allocationAmount')
+  row.merge({ allocationAmount: autoAssignmentAmount(12.755, true), percentage: true })
+  assert.deepEqual(row.allocationAmount, { percentage: true, amount: 12.76 })
+  assert.strictEqual(row.serialize().amount, 12.76)
+  assert.strictEqual(column.prepare(row.$getAttribute('allocationAmount'),
+    'allocationAmount', row), '12.76')
+  row.merge({ percentage: null, allocationAmount: autoAssignmentAmount(9999999999.99, false) })
+  assert.deepEqual(row.allocationAmount, { percentage: false,
+    amountCents: parseMoneyCents('9999999999.99') })
+  assert.strictEqual(row.serialize().percentage, null)
+  assert.strictEqual(row.serialize().amount, '9999999999.99')
+})
+
+test('auto-assignment storage and cent setters reject malformed or out-of-range values', ({
+  assert }) => {
+  for (const amount of ['1.005', '1.0', '-0.00', 'NaN', '10000000000.00', 12.5]) {
+    assert.throws(() => AutoAssignmentCategory.$createFromAdapterResult({ amount }))
+  }
+  const row = new AutoAssignmentCategory()
+  for (const amountCents of [0.1, NaN, Infinity, 1000000000000, Number.MAX_SAFE_INTEGER + 1]) {
+    // Exercise runtime validation at the public model boundary without asserting a cents brand.
+    assert.throws(() => Reflect.set(row, 'allocationAmount', { percentage: false, amountCents }))
+  }
 })

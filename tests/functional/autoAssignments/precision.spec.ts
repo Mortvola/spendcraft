@@ -1,3 +1,4 @@
+import { autoAssignmentAmount } from '#services/autoAssignmentAmount'
 import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
@@ -148,11 +149,12 @@ test.group('Auto-assignment numeric precision PostgreSQL acceptance', () => {
     const before = await db.from('auto_assignment_categories').orderBy('id')
     await assert.rejects(() => db.transaction(async trx => {
       const row = await AutoAssignmentCategory.create({
-        autoAssignmentId: rule.id, categoryId: f.categories[0].id, amount: 1.005,
+        autoAssignmentId: rule.id, categoryId: f.categories[0].id,
+          allocationAmount: autoAssignmentAmount(1.005, false),
       }, { client: trx })
       await trx.from('auto_assignment_categories').where('id', row.id).update({ percentage: null })
       const hydrated = await AutoAssignmentCategory.findOrFail(row.id, { client: trx })
-      assert.strictEqual(hydrated.amount, 1)
+      assert.deepEqual(hydrated.allocationAmount, autoAssignmentAmount(1, false))
       assert.strictEqual(hydrated.percentage, null)
       assert.strictEqual(hydrated.serialize().amount, '1.00')
       throw new Error('deliberate rollback')
@@ -188,8 +190,8 @@ amount::real')
       for (let i = 0; i < before.length; i++) {
         const expected = Math.round(before[i].amount * 100) / 100
         assert.strictEqual(after[i].amount, expected.toFixed(2))
-        assert.strictEqual((await AutoAssignmentCategory.findOrFail(after[i].id, { client: trx }))
-          .amount, expected)
+        assert.deepEqual((await AutoAssignmentCategory.findOrFail(after[i].id, { client: trx }))
+          .allocationAmount, autoAssignmentAmount(expected, before[i].percentage))
         assert.deepEqual({ ...after[i], amount: before[i].amount }, before[i])
       }
       assert.strictEqual(after[0].amount, '-0.12')
@@ -218,7 +220,8 @@ amount::real')
     const own = await fixture(), foreign = await fixture()
     const rule = await foreign.budget.related('autoAssignment').create({ name: 'Foreign',
       searchStrings: [] })
-    await rule.related('categories').create({ categoryId: foreign.categories[0].id, amount: 12.755,
+    await rule.related('categories').create({ categoryId: foreign.categories[0].id,
+      allocationAmount: autoAssignmentAmount(12.755, true),
       percentage: true })
     const before = await db.from('auto_assignment_categories').orderBy('id')
     const response = await client.patch(`/api/v1/auto-assignments/${rule.id}`).loginAs(own.user)
@@ -241,11 +244,13 @@ amount::real')
       f.account.useTransaction(trx)
       const rule = await f.budget.related('autoAssignment').create({ name: 'Precision',
         searchStrings: ['Precision match'] })
-      await rule.related('categories').create({ categoryId: f.categories[0].id, amount: scenario
-        .fixed, percentage: false })
+      await rule.related('categories').create({ categoryId: f.categories[0].id,
+        allocationAmount: autoAssignmentAmount(scenario
+        .fixed, false), percentage: false })
       for (const category of f.categories.slice(1)) {
-        await rule.related('categories').create({ categoryId: category.id, amount: scenario
-          .percentage, percentage: true })
+        await rule.related('categories').create({ categoryId: category.id,
+          allocationAmount: autoAssignmentAmount(scenario
+          .percentage, true), percentage: true })
       }
       await f.account.addOrUpdateTransaction(provider(scenario.amount), f.budget)
       transactionId = (await f.account.related('accountTransactions').query().firstOrFail())
@@ -269,7 +274,7 @@ test.group('Auto-assignment precision supplemental PostgreSQL acceptance', group
       const rule = await f.budget.related('autoAssignment').create({ name: 'Guard', searchStrings: [
         ] })
       const row = await rule.related('categories').create({ categoryId: f.categories[0].id,
-        amount: 1.25, percentage: true })
+        allocationAmount: autoAssignmentAmount(1.25, true), percentage: true })
       const before = await db.from('auto_assignment_categories').orderBy('id')
       await assert.rejects(() => db.transaction(async trx => {
         // Exercise the production USING guard under transactional test DDL; the
@@ -314,11 +319,13 @@ USING (${expression})`)
       f.account.useTransaction(trx)
       const rule = await f.budget.related('autoAssignment').create({ name: 'Fractional',
         searchStrings: ['Precision match'] })
-      await rule.related('categories').create({ categoryId: f.categories[0].id, amount: scenario
-        .fixed, percentage: false })
+      await rule.related('categories').create({ categoryId: f.categories[0].id,
+        allocationAmount: autoAssignmentAmount(scenario
+        .fixed, false), percentage: false })
       for (const category of f.categories.slice(1)) {
-        await rule.related('categories').create({ categoryId: category.id, amount: scenario
-          .percentage, percentage: true })
+        await rule.related('categories').create({ categoryId: category.id,
+          allocationAmount: autoAssignmentAmount(scenario
+          .percentage, true), percentage: true })
       }
       await f.account.addOrUpdateTransaction(provider(scenario.amount), f.budget)
       transactionId = (await f.account.related('accountTransactions').query().firstOrFail())
@@ -339,7 +346,8 @@ USING (${expression})`)
       await f.categories[0].merge({ balanceCents: parseMoneyCents('9999999999.99') }).save()
       const rule = await f.budget.related('autoAssignment').create({ name: 'Overflow',
         searchStrings: ['Precision match'] })
-      await rule.related('categories').create({ categoryId: f.categories[0].id, amount: 100,
+      await rule.related('categories').create({ categoryId: f.categories[0].id,
+        allocationAmount: autoAssignmentAmount(100, true),
         percentage: true })
       const tables = ['accounts', 'categories', 'transactions', 'account_transactions',
         'transaction_logs']

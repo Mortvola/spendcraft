@@ -1,3 +1,4 @@
+import { autoAssignmentAmount } from '#services/autoAssignmentAmount'
 import type { HttpContext } from '@adonisjs/core/http'
 import db from '@adonisjs/lucid/services/db';
 import AutoAssignment from '#app/Models/AutoAssignment';
@@ -86,7 +87,7 @@ export default class AutoAssignmentsController {
          
         await autoAssignment.related('categories').create({
           categoryId: category.categoryId,
-          amount: category.amount,
+          allocationAmount: autoAssignmentAmount(category.amount, category.percentage),
           percentage: category.percentage,
         })
       }
@@ -152,7 +153,7 @@ export default class AutoAssignmentsController {
            
           await autoAssignCategory.merge({
             categoryId: category.categoryId,
-            amount: category.amount,
+            allocationAmount: autoAssignmentAmount(category.amount, category.percentage),
             percentage: category.percentage,
           })
             .save()
@@ -161,7 +162,7 @@ export default class AutoAssignmentsController {
            
           const newAutoAssignCat = await autoAssignment.related('categories').create({
             categoryId: category.categoryId,
-            amount: category.amount,
+            allocationAmount: autoAssignmentAmount(category.amount, category.percentage),
             percentage: category.percentage,
           });
 

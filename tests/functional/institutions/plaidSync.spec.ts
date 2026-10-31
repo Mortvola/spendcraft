@@ -1,3 +1,4 @@
+import { autoAssignmentAmount } from '#services/autoAssignmentAmount'
 import { categoryAllocationsToCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import { test } from '@japa/runner'
@@ -238,7 +239,7 @@ test.group('Plaid sync characterization', (group) => {
     const assignment = await f.budget.related('autoAssignment').create({ name: 'Overflow',
       searchStrings: ['Provider purchase'] })
     await assignment.related('categories').create({ categoryId: f.unassigned.id,
-      amount: 9999999999.99, percentage: true })
+      allocationAmount: autoAssignmentAmount(9999999999.99, true), percentage: true })
     const before = await snapshot()
     fake.responses = [page(accounts(), 'unsafe-assignment', { added: [purchase('purchase', {
       amount: -9999999999.99 })] })]
@@ -925,7 +926,8 @@ modification').with([true, false]).run(async ({ client, assert }, entering) => {
       type: CategoryType.Regular, balanceCents: parseMoneyCents('0.00'), fundingCategories: [] })
     const assignment = await f.budget.related('autoAssignment').create({ name: 'Boundary rule',
       searchStrings: ['Provider purchase'] })
-    await assignment.related('categories').create({ categoryId: userCategory.id, amount: 100,
+    await assignment.related('categories').create({ categoryId: userCategory.id,
+      allocationAmount: autoAssignmentAmount(100, true),
       percentage: true })
     const oldDate = entering ? '2024-12-31' : '2025-01-01'
     const newDate = entering ? '2025-01-01' : '2024-12-31'

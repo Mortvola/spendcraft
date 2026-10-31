@@ -1,3 +1,4 @@
+import { autoAssignmentAmount } from '#services/autoAssignmentAmount'
 import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { transactionRequest, categoryTransferRequest } from '../../helpers/transactionRequest.js'
@@ -246,7 +247,8 @@ async function provider(f: Fixture, category = true, initial = false) {
   if (category) {
     const rule = await f.budget.related('autoAssignment').create({ name: 'Gate rule',
       searchStrings: ['Gate posting'] })
-    await rule.related('categories').create({ categoryId: f.category.id, amount: 100,
+    await rule.related('categories').create({ categoryId: f.category.id,
+      allocationAmount: autoAssignmentAmount(100, true),
       percentage: true })
   }
   const fake = new GateProvider(app.config.get('plaid'))

@@ -1,3 +1,4 @@
+import { autoAssignmentAmount } from '../../app/services/autoAssignmentAmount.ts'
 import {
   addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents, moneyCentsFromInteger,
 } from
@@ -293,7 +294,8 @@ async function assignmentFixture(amount, rules, { loan = false, eligible = true,
   const source = await method('app/Models/Account.ts', 'autoAssign')
   const events = []
   const categories = rules.map((rule, index) => ({ id: index + 1, categoryId: index + 1,
-    ...rule }))
+    ...rule, get allocationAmount() { return autoAssignmentAmount(rule.amount,
+      rule.percentage === true) } }))
   const balances = categories.map(category => ({ id: category.id, name: `Category ${category.id}`,
     balanceCents, async save() { events.push(['category.save', this.id]) },
     related() { return { query: () => ({ firstOrFail: async () => ({ type: 'NoGroup' }) }) } } }))

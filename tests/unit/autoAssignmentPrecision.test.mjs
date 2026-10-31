@@ -3,7 +3,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { URL } from 'node:url'
-import { roundAutoAssignmentAmount } from '../../app/services/autoAssignmentAmount.ts'
+import { roundAutoAssignmentAmount, autoAssignmentAmount } from
+  '../../app/services/autoAssignmentAmount.ts'
 import Model from '../../app/Models/AutoAssignmentCategory.ts'
 import Migration, { historicalAmountExpression } from
   '../../database/migrations/1792100000000_auto_assignment_amount_numeric.ts'
@@ -39,18 +40,20 @@ for (const [name, validator] of [['CREATE', addAutoAssignment], ['PATCH', update
     }
   })
 }
-test('actual model normalizes dirty money, prepares exact decimal text and hydrates numeric APIs', (
-  ) => {
-  const row = new Model(); row.amount = -0.125; row.percentage = true
-  Model.roundAmount(row)
-  assert.equal(row.amount, -0.12); assert.equal(typeof row.serialize().amount, 'number')
-  const column = Model.$getColumn('amount')
-  assert.equal(column.prepare(-0.125), '-0.12')
-  assert.equal(column.consume('12.75'), 12.75)
-  assert.equal(column.consume(12.75), 12.75)
-  row.percentage = false; row.amount = 10.255; Model.roundAmount(row)
-  assert.equal(row.amount, Math.round(10.255 * 100) / 100); assert.equal(row.percentage, false)
+test('actual model retains fixed cents and numeric percentages with canonical persistence', () => {
+  const row = new Model().merge({ allocationAmount: autoAssignmentAmount(-0.125, true),
+    percentage: true })
+  assert.deepEqual(row.allocationAmount, { percentage: true, amount: -0.12 })
+  assert.equal(typeof row.serialize().amount, 'number')
+  const column = Model.$getColumn('allocationAmount')
+  assert.equal(column.prepare('-0.12'), '-0.12')
+  assert.equal(column.consume('12.75'), '12.75')
+  assert.throws(() => column.consume(12.75))
+  row.merge({ allocationAmount: autoAssignmentAmount(10.255, false), percentage: false })
+  assert.deepEqual(row.allocationAmount, autoAssignmentAmount(10.255, false))
+  assert.equal(row.serialize().amount, '10.26')
 })
+
 const historical = (amount = -0.125, extra = {}) => ({ id: 1, auto_assignment_id: 2, category_id: 3,
   amount, percentage: null, real_hex: 'be000000', ...extra })
 test(

@@ -1,3 +1,4 @@
+import { autoAssignmentAmount } from '#services/autoAssignmentAmount'
 import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { parseMoneyCents, formatMoneyCents } from '#common/moneyCents'
 import PlaidItemCleanupService from '#services/plaidItemCleanup'
@@ -389,7 +390,8 @@ effects').with(['manual', 'sync all', 'command', 'webhook']).run(async ({ client
     if (allocation === 'automatic') {
       const rule = await budget.related('autoAssignment').create({ name: 'Response rule',
         searchStrings: ['Provider purchase'] })
-      await rule.related('categories').create({ categoryId: assigned.id, amount: 100,
+      await rule.related('categories').create({ categoryId: assigned.id,
+        allocationAmount: autoAssignmentAmount(100, true),
         percentage: true })
     }
     const provider = providerAccount(accountId)

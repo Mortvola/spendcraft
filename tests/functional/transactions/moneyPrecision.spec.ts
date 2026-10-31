@@ -1,3 +1,4 @@
+import { autoAssignmentAmount } from '#services/autoAssignmentAmount'
 import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import { transactionRequest, categoryTransferRequest } from '../../helpers/transactionRequest.js'
 import { categoryRequest } from '../../helpers/categoryRequest.js'
@@ -82,12 +83,13 @@ test.group('Monetary persistence and allocation regressions', () => {
           'Mixed-unit regression', searchStrings: ['Precision match'] })
         // Equal values in each ordering group avoid assuming an unspecified tie order.
         for (const [index, amount] of scenario.fixed.entries()) {
-          await rule.related('categories').create({ categoryId: f.categories[index].id, amount,
+          await rule.related('categories').create({ categoryId: f.categories[index].id,
+            allocationAmount: autoAssignmentAmount(amount, false),
             percentage: false })
         }
         for (const [index, amount] of scenario.percentages.entries()) {
           await rule.related('categories').create({ categoryId: f.categories[scenario.fixed.length +
-            index].id, amount, percentage: true })
+            index].id, allocationAmount: autoAssignmentAmount(amount, true), percentage: true })
         }
         const [accountDeltaCents, unassignedDeltaCents] = await f.account.addOrUpdateTransaction(
           provider(scenario.amount), f.budget)
@@ -372,9 +374,11 @@ precision')
         const rule = await f.budget.related('autoAssignment').create({ name: 'Precision rule',
           searchStrings: ['Precision match'] })
         if (scenario.fixed !== 0) await rule.related('categories').create({ categoryId: f
-          .categories[0].id, amount: scenario.fixed, percentage: false })
+          .categories[0].id, allocationAmount: autoAssignmentAmount(scenario.fixed, false),
+            percentage: false })
         for (const category of f.categories.slice(1)) await rule.related('categories').create({
-          categoryId: category.id, amount: 50, percentage: true })
+          categoryId: category.id, allocationAmount: autoAssignmentAmount(50, true),
+            percentage: true })
         await f.account.addOrUpdateTransaction(provider(scenario.amount), f.budget)
         transactionId = (await f.account.related('accountTransactions').query().firstOrFail())
           .transactionId
@@ -399,8 +403,9 @@ precision')
     const rule = await f.budget.related('autoAssignment').create({ name: 'Large fixed rule',
       searchStrings: ['Large fixed'] })
     const entry = await rule.related('categories').create({ categoryId: f.categories[0].id,
-      amount, percentage: false })
-    await rule.related('categories').create({ categoryId: f.categories[1].id, amount: 0.01,
+      allocationAmount: autoAssignmentAmount(amount, false), percentage: false })
+    await rule.related('categories').create({ categoryId: f.categories[1].id,
+      allocationAmount: autoAssignmentAmount(0.01, false),
       percentage: false })
     const persisted = await rule.related('categories').query().where('id', entry.id).firstOrFail()
     const storage = await db.from('auto_assignment_categories').where('id', entry.id)
@@ -415,8 +420,7 @@ precision')
         .transactionId
     })
     const transaction = await Transaction.findOrFail(transactionId)
-    assert.isNumber(persisted.amount)
-    assert.equal(persisted.amount, amount)
+    assert.deepEqual(persisted.allocationAmount, autoAssignmentAmount(amount, false))
     assert.equal(storage.stored_value, amount.toFixed(2))
     assert.deepEqual(transaction.categories.map(split => Number(formatMoneyCents(
       split.amountCents))), [amount, 0.01])

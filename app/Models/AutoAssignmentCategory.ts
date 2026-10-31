@@ -1,14 +1,10 @@
-import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { DateTime } from 'luxon'
-import { BaseModel, column, beforeSave } from '@adonisjs/lucid/orm'
-import { roundAutoAssignmentAmount } from '#services/autoAssignmentAmount'
+import { BaseModel, column } from '@adonisjs/lucid/orm'
+import { parseMoneyCents, formatMoneyCents } from '#common/moneyCents'
+import { encodeAutoAssignmentAmount, storedAutoAssignmentAmount,
+  type AutoAssignmentAmount } from '#services/autoAssignmentAmount'
 
 export default class AutoAssignmentCategory extends BaseModel {
-  @beforeSave()
-  public static roundAmount(row: AutoAssignmentCategory) {
-    if (Object.hasOwn(row.$dirty, 'amount')) row.amount = roundAutoAssignmentAmount(row.amount)
-  }
-
   @column({ isPrimary: true })
   public id: number
 
@@ -25,13 +21,22 @@ export default class AutoAssignmentCategory extends BaseModel {
   public categoryId: number
 
   @column({
-    consume: (value: string) => parseFloat(value),
-    prepare: (value: number) => roundAutoAssignmentAmount(value).toFixed(2),
-    serialize: (value: number, _attribute, model) => model.$attributes
-      .percentage === true ? value : encodeMonetaryAmount(value),
+    columnName: 'amount', serializeAs: 'amount',
+    consume: storedAutoAssignmentAmount,
+    prepare: storedAutoAssignmentAmount,
+    serialize: (value: AutoAssignmentAmount) => value.percentage ? value.amount
+      : formatMoneyCents(value.amountCents),
   })
-  public amount: number
+  public get allocationAmount(): AutoAssignmentAmount {
+    const stored = storedAutoAssignmentAmount(this.$getAttribute('allocationAmount'))
+    return this.percentage === true ? { percentage: true, amount: Number(stored) }
+      : { percentage: false, amountCents: parseMoneyCents(stored) }
+  }
+
+  public set allocationAmount(value: AutoAssignmentAmount) {
+    this.$setAttribute('allocationAmount', encodeAutoAssignmentAmount(value))
+  }
 
   @column()
-  public percentage: boolean
+  public percentage: boolean | null
 }

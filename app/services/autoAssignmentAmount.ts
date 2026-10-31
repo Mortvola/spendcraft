@@ -1,3 +1,4 @@
+import { formatMoneyCents, parseMoneyCents, type MoneyCents } from '#common/moneyCents'
 import { Exception } from '@adonisjs/core/exceptions'
 
 // Percentage points and fixed dollars share scale, not allocation semantics.
@@ -10,4 +11,26 @@ export function roundAutoAssignmentAmount(value: unknown): number {
     throw new Exception('Auto-assignment amount exceeds numeric(12,2)', { status: 422 })
   }
   return cents === 0 ? 0 : cents / 100
+}
+
+export type AutoAssignmentAmount = { percentage: true, amount: number }
+  | { percentage: false, amountCents: MoneyCents }
+
+export function autoAssignmentAmount(value: unknown, percentage: boolean | null = false):
+  AutoAssignmentAmount {
+  const rounded = roundAutoAssignmentAmount(value)
+  return percentage === true ? { percentage: true, amount: rounded }
+    : { percentage: false, amountCents: parseMoneyCents(rounded.toFixed(2)) }
+}
+
+export function storedAutoAssignmentAmount(value: unknown): string {
+  const cents = parseMoneyCents(value)
+  if (Math.abs(cents) > 999999999999) throw new Exception(
+    'Auto-assignment amount exceeds numeric(12,2)', { status: 422 })
+  return formatMoneyCents(cents)
+}
+
+export function encodeAutoAssignmentAmount(value: AutoAssignmentAmount): string {
+  return value.percentage ? roundAutoAssignmentAmount(value.amount).toFixed(2)
+    : storedAutoAssignmentAmount(formatMoneyCents(value.amountCents))
 }

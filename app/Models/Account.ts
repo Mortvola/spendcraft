@@ -312,9 +312,10 @@ class Account extends BaseModel {
 
       for (let i = 0; i < categories.length; i += 1) {
         const cat = categories[i];
-        let amountCents = cat.percentage
-          ? moneyCentsFromInteger(Math.round(percentageBaseCents * (cat.amount / 100)))
-          : parseMoneyCents(encodeMonetaryAmount(cat.amount));
+        const allocation = cat.allocationAmount;
+        let amountCents = allocation.percentage
+          ? moneyCentsFromInteger(Math.round(percentageBaseCents * (allocation.amount / 100)))
+          : allocation.amountCents;
         if (!cat.percentage) {
           percentageBaseCents = subtractMoneyCents(percentageBaseCents, amountCents);
         }

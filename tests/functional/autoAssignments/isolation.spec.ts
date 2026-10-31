@@ -1,3 +1,4 @@
+import { autoAssignmentAmount } from '#services/autoAssignmentAmount'
 import { categoryAllocationsToCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { parseMoneyCents } from '#common/moneyCents'
 import { test } from '@japa/runner'
@@ -62,11 +63,11 @@ test.group('Auto-assignment isolation', (group) => {
     foreignId = foreign.id
     otherId = other.id
     ownChild = (await own.related('categories').create({ categoryId: fixture.own.category.id,
-      amount: 10, percentage: false })).id
+      allocationAmount: autoAssignmentAmount(10, false), percentage: false })).id
     foreignChild = (await foreign.related('categories').create({ categoryId: fixture.foreign
-      .category.id, amount: 15, percentage: false })).id
+      .category.id, allocationAmount: autoAssignmentAmount(15, false), percentage: false })).id
     otherChild = (await other.related('categories').create({ categoryId: fixture.own.category.id,
-      amount: 20, percentage: false })).id
+      allocationAmount: autoAssignmentAmount(20, false), percentage: false })).id
   })
 
   async function state() {
