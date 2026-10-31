@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '#common/moneyCents'
 import { test } from '@japa/runner'
 import { mock } from 'node:test'
 import db from '@adonisjs/lucid/services/db'
@@ -17,7 +18,7 @@ async function fixture() {
   const group = await budget.related('groups').create({ name: 'Rollback ordering', type:
     'Regular' })
   const category = await group.related('categories').create({ name: 'Original', type: CategoryType
-    .Regular, balance: 0, fundingCategories: [] })
+    .Regular, balanceCents: parseMoneyCents('0.00'), fundingCategories: [] })
   return { budget, category }
 }
 

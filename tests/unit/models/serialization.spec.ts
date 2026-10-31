@@ -293,10 +293,11 @@ test('connected-account responses encode balances without changing model values'
 
 test('Category responses encode balances while runtime values remain numeric', ({ assert }) => {
   for (const [amount, expected] of [[12.5, '12.50'], [-0.3, '-0.30'], [0, '0.00']] as const) {
-    const category = new Category().merge({ id: 1, balance: amount, fundingAmount: 5 })
+    const category = new Category().merge({ id: 1, balanceCents: parseMoneyCents(
+      encodeMonetaryAmount(amount)), fundingAmount: 5 })
     assert.strictEqual(category.serialize().balance, expected)
     assert.strictEqual(JSON.parse(JSON.stringify(category)).balance, expected)
-    assert.strictEqual(category.balance, amount)
+    assert.strictEqual(category.balanceCents, parseMoneyCents(encodeMonetaryAmount(amount)))
     assert.strictEqual(category.serialize().fundingAmount, '5.00')
   }
 })
@@ -369,3 +370,49 @@ test('AccountTransaction principal serialization preserves numeric models and nu
 })
 
 
+
+
+test.group('Category balance cents and API compatibility', () => {
+  test('hydrates cents, adds exactly and preserves the database/API balance field', (
+    { assert }) => {
+    const category = Category.$createFromAdapterResult({ id: 1, balance: '0.10',
+      funding_amount: '12.75' })
+    if (!category) throw new Error('Category hydration failed')
+    assert.isFalse(category.$isDirty)
+    category.balanceCents = addMoneyCents(category.balanceCents, parseMoneyCents('0.20'))
+    assert.strictEqual(category.balanceCents, 30)
+    const column = Category.$getColumn('balanceCents')
+    if (!column?.prepare) throw new Error('Missing balance codec')
+    assert.strictEqual(column.columnName, 'balance')
+    assert.strictEqual(column.prepare(category.balanceCents, 'balanceCents', category), '0.30')
+    assert.strictEqual(category.serialize().balance, '0.30')
+    assert.notProperty(category.serialize(), 'balanceCents')
+    assert.notProperty(category.$attributes, 'balance')
+    assert.strictEqual(category.fundingAmount, 12.75)
+    assert.strictEqual(category.serialize().fundingAmount, '12.75')
+  })
+  test('hydrates signed and zero balances without a dollar-number intermediate').with([
+    { stored: '-0.12', expected: -12 }, { stored: '0.00', expected: 0 },
+    { stored: '9999999999.99', expected: 999999999999 },
+  ]).run(({ assert }, { stored, expected }) => {
+    const category = Category.$createFromAdapterResult({ id: 1, balance: stored })
+    assert.strictEqual(category?.balanceCents, expected)
+    assert.strictEqual(category?.serialize().balance, stored)
+    assert.isFalse(category?.$isDirty)
+  })
+  test('rejects malformed or unsafe stored balances').with([
+    '1.005', '-0.00', 'NaN', 'Infinity', '90071992547409.92', 12.5, null,
+  ]).run(({ assert }, balance) => {
+    assert.throws(() => Category.$createFromAdapterResult({ id: 1, balance }))
+  })
+  test('rejects invalid runtime cents at persistence and serialization boundaries', (
+    { assert }) => {
+    const category = new Category()
+    const column = Category.$getColumn('balanceCents')
+    if (!column?.prepare || !column.serialize) throw new Error('Missing balance codecs')
+    for (const value of [0.1, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
+      assert.throws(() => column.prepare?.(value, 'balanceCents', category))
+      assert.throws(() => column.serialize?.(value, 'balanceCents', category))
+    }
+  })
+})

@@ -1,3 +1,5 @@
+import { subtractMoneyCents, addMoneyCents, formatMoneyCents,
+  parseMoneyCents } from '#common/moneyCents'
 import { requestFundingStorage } from '../../app/services/fundingStorage.ts'
 import { test } from '@japa/runner'
 import { readFile } from 'node:fs/promises'
@@ -35,7 +37,8 @@ async function harness(shape = {}, request = {}) {
   const log = []
   const trx = { commit: async () => { log.push('commit') }, rollback: async () => { log.push(
     'rollback') } }
-  const categories = new Map([1, 2].map((id) => [id, { id, balance: id === 1 ? 10 : -10,
+  const categories = new Map([1, 2].map((id) => [id, { id, balanceCents: parseMoneyCents(
+    encodeMonetaryAmount(id === 1 ? 10 : -10)),
     save: async () => { log.push('category.save') } }]))
   const target = { id: 10, budgetId: 1, deleted: false, type: 2, date: DateTime.fromISO(
     '2025-03-01'),
@@ -44,7 +47,7 @@ async function harness(shape = {}, request = {}) {
     save: async () => { log.push('target.save') }, serialize() { return { id: this.id, date: this
       .date.toISODate(), type: this.type, categories: this.categories } } }
   const before = JSON.stringify({ target: { ...target }, balances: [...categories].map(([id, c]) =>
-    [id, c.balance]) })
+    [id, Number(formatMoneyCents(c.balanceCents))]) })
   const budget = { id: 1, getFundingPoolCategory: async () => ({ id: 2 }), related: () => ({
     query: () => {
     const filters = []
@@ -72,7 +75,9 @@ async function harness(shape = {}, request = {}) {
   const instrumented = source.transfer.replace(reversal, `observeReversal(); ${reversal}`)
     .replace(application, `observeApplication(); ${application}`)
   const transfer = runInNewContext(instrumented, {
-    encodeMonetaryAmount, requestFundingStorage, observeReversal: () => { log.push('reverse') },
+    subtractMoneyCents, addMoneyCents, parseMoneyCents, formatMoneyCents, encodeMonetaryAmount,
+      requestFundingStorage,
+    observeReversal: () => { log.push('reverse') },
       observeApplication: () => { log.push('apply') },
     validateCategoryConservation, validateStoredCategoryConservation: async () => undefined,
     TransactionType, DateTime, Exception: Rejection, updateCategoryTransfer: {},
@@ -86,10 +91,7 @@ async function harness(shape = {}, request = {}) {
       return { where() { return this }, first: async () => { log.push('accounts.read');
         return target.links ? { id: 1 } : null } }
     } },
-    db: { transaction: async () => trx, from: () => ({ useTransaction(client) { if (
-      client !== trx) throw new Error('Loan read escaped transaction'); return this },
-      join() { return this }, where() { return this }, select() { return this }, first: async () =>
-        { log.push('loans.read'); return target.loan ? { id: 1 } : null } }) },
+    db: { transaction: async () => trx },
     budgetCategories: (id, { client }) => { if (id !== 1 || client !== trx) throw new Error(
       'Category read escaped transaction')
       return { where(key, value) { this.id = value; return this }, firstOrFail() { return categories
@@ -101,7 +103,7 @@ async function harness(shape = {}, request = {}) {
     validateUsing: async () => ({ date: '2025-03-01', type: 2, categories: [{ categoryId: 1,
       amount: 20 }, { categoryId: 2, amount: -20 }], ...request }) } })
   const snapshot = () => JSON.stringify({ target: { ...target }, balances: [...categories].map(([id,
-    c]) => [id, c.balance]) })
+    c]) => [id, Number(formatMoneyCents(c.balanceCents))]) })
   return { run, log, target, categories, before, snapshot }
 }
 const invalid = [
@@ -116,7 +118,6 @@ const invalid = [
   { name: 'one Account link', shape: { links: 1 }, status: 422 },
   { name: 'multiple Account links', shape: { links: 2 }, status: 422 },
   { name: 'Loan Account link', shape: { links: 1, accountType: 'loan' }, status: 422 },
-  { name: 'legacy Loan ownership', shape: { loan: true }, status: 422 },
   ...[null, {}, [], [null], [{ categoryId: '1', amount: 10 }], [{ categoryId: 1, amount: '10' }], [{
     categoryId: 1, amount: NaN }]]
     .map((categories, index) => ({ name: `unreadable allocations${index}`, shape: { categories },
@@ -144,10 +145,11 @@ test.group('Funding/rebalance replacement admission without DB', () => {
     await f.run()
     assert.equal(f.target.date.toISODate(), type === 2 ? '2025-03-01' : '2025-04-01')
     assert.equal(f.target.type, type)
-    assert.equal(f.categories.get(1).balance, 20); assert.equal(f.categories.get(2).balance, -20)
-    assert.isBelow(f.log.indexOf('loans.read'), f.log.indexOf('target.merge'))
+    assert.equal(f.categories.get(1).balanceCents, parseMoneyCents('20.00')); assert.equal(
+      f.categories.get(2).balanceCents, parseMoneyCents('-20.00'))
+    assert.isBelow(f.log.indexOf('accounts.read'), f.log.indexOf('target.merge'))
     assert.include(f.log, 'commit')
-    assert.isBelow(f.log.indexOf('loans.read'), f.log.indexOf('reverse'))
+    assert.isBelow(f.log.indexOf('accounts.read'), f.log.indexOf('reverse'))
     assert.include(f.log, 'apply')
   })
 
@@ -157,8 +159,8 @@ test.group('Funding/rebalance replacement admission without DB', () => {
       amount: 5 },
       { categoryId: 2, amount: -10 }, { categoryId: 2, amount: 0 }] })
     await f.run()
-    assert.equal(f.categories.get(1).balance, 20)
-    assert.equal(f.categories.get(2).balance, -20)
+    assert.equal(f.categories.get(1).balanceCents, parseMoneyCents('20.00'))
+    assert.equal(f.categories.get(2).balanceCents, parseMoneyCents('-20.00'))
   })
 
   test('number artifacts are not treated as a legacy-money admission failure', async ({ assert }) =>
@@ -173,7 +175,7 @@ test.group('Funding/rebalance replacement admission without DB', () => {
     const f = await harness({}, { date: '2025-04-01' })
     await assert.rejects(f.run, 'The date of a funding transaction cannot be changed.')
     assert.equal(f.snapshot(), f.before)
-    assert.include(f.log, 'loans.read'); assert.notInclude(f.log, 'category.save')
+    assert.include(f.log, 'accounts.read'); assert.notInclude(f.log, 'category.save')
   })
 
   test('waiter admits committed target state rather than a pre-gate shape').with(['deleted', 'type',

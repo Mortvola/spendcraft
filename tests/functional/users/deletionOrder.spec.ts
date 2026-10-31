@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '#common/moneyCents'
 import { test } from '@japa/runner'
 import { mock } from 'node:test'
 import db from '@adonisjs/lucid/services/db'
@@ -23,9 +24,10 @@ async function fixture(multiple = false) {
     const group = await budget.related('groups').create({ name: 'Deletion ordering', type:
       'Regular' })
     const first = await group.related('categories').create({ name: 'Held category',
-      type: CategoryType.Regular, balance: 0, fundingCategories: [] })
+      type: CategoryType.Regular, balanceCents: parseMoneyCents('0.00'), fundingCategories: [] })
     const second = multiple ? await group.related('categories').create({ name: 'Sibling category',
-      type: CategoryType.Regular, balance: 0, fundingCategories: [] }) : null
+      type: CategoryType.Regular, balanceCents: parseMoneyCents('0.00'),
+        fundingCategories: [] }) : null
     return { budget, user, group, first, second }
   })
 }

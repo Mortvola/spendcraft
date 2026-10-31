@@ -36,7 +36,8 @@ test.group('Final readiness forward deletion characterization without DB', () =>
     const trx = { async commit() { events.push('commit') }, async rollback() { events.push(
       'rollback') } }
     const initialBalance = scenario.categoryBalance ?? 0
-    const category = { id: 1, type: 'Regular', balance: initialBalance, async save() { events.push(
+    const category = { id: 1, type: 'Regular', balanceCents: parseMoneyCents(
+      encodeMonetaryAmount(initialBalance)), async save() { events.push(
       'category.save') } }
     let transaction, link
     function query(row) {
@@ -84,8 +85,9 @@ test.group('Final readiness forward deletion characterization without DB', () =>
     assert.strictEqual(Number(formatMoneyCents(account.balanceCents)),
       scenario.categoryBalance === 0.1 ? 0.3
       : scenario.categoryBalance === -0.1 ? -0.3 : 100 + (eligible ? scenario.amount : 0))
-    assert.strictEqual(category.balance, scenario.categoryBalance === 0.1 ? 0.3
-      : scenario.categoryBalance === -0.1 ? -0.3 : eligible ? scenario.amount : 0)
+    assert.strictEqual(category.balanceCents, parseMoneyCents(encodeMonetaryAmount(
+      scenario.categoryBalance === 0.1 ? 0.3
+      : scenario.categoryBalance === -0.1 ? -0.3 : eligible ? scenario.amount : 0)))
     // Exercise the existing Unassigned fallback for an empty historical split list.
     if (scenario.empty) transaction.categories = []
     const remove = await method('app/Controllers/Http/TransactionsController.ts', 'delete', globals)
@@ -94,7 +96,8 @@ test.group('Final readiness forward deletion characterization without DB', () =>
     assert.isTrue(transaction.deleted)
     assert.strictEqual(Number(formatMoneyCents(account.balanceCents)),
       eligible ? initialAccountBalance : 100 - scenario.amount)
-    assert.strictEqual(category.balance, eligible ? initialBalance : -scenario.amount)
+    assert.strictEqual(category.balanceCents, parseMoneyCents(encodeMonetaryAmount(
+      eligible ? initialBalance : -scenario.amount)))
     assert.equal(events.filter((event) => event === 'gate').length, 2)
     assert.equal(events.filter((event) => event === 'commit').length, 2)
   })

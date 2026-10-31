@@ -135,7 +135,8 @@ test.group('Plaid sync characterization', (group) => {
     .run(async ({ client, assert }, { loan, sign }) => {
       await f.account.merge({ balanceCents: parseMoneyCents(encodeMonetaryAmount(sign * 0.1)),
         ...(loan ? { type: AccountType.Loan } : {}) }).save()
-      await f.unassigned.merge({ balance: sign * 0.1 }).save()
+      await f.unassigned.merge({ balanceCents: parseMoneyCents(encodeMonetaryAmount(
+        sign * 0.1)) }).save()
       fake.responses = [page(accounts(), 'fraction-1', { added: [purchase('first', {
         amount: -sign * 0.2 })], has_more: true }), page(accounts(), 'fraction-2', {
         added: [purchase('second', { amount: -sign * 0.1 })] })]
@@ -143,14 +144,16 @@ test.group('Plaid sync characterization', (group) => {
       assert.strictEqual((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents(
         encodeMonetaryAmount(sign * 0.4)))
       await f.unassigned.refresh()
-      assert.strictEqual(f.unassigned.balance, sign * 0.4)
+      assert.strictEqual(f.unassigned.balanceCents, parseMoneyCents(encodeMonetaryAmount(
+        sign * 0.4)))
       fake.responses = [page(accounts(), 'fraction-3', { modified: [purchase('first', {
         amount: -sign * 0.4 })] })]
       ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
       assert.strictEqual((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents(
         encodeMonetaryAmount(sign * 0.6)))
       await f.unassigned.refresh()
-      assert.strictEqual(f.unassigned.balance, sign * 0.6)
+      assert.strictEqual(f.unassigned.balanceCents, parseMoneyCents(encodeMonetaryAmount(
+        sign * 0.6)))
       const { transaction } = await local('first')
       assert.strictEqual(transaction.categories[0].amount, sign * 0.4)
       const stored = await db.from('transactions').where('id', transaction.id).firstOrFail()
@@ -168,7 +171,8 @@ test.group('Plaid sync characterization', (group) => {
       assert.strictEqual((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents(
         encodeMonetaryAmount(sign * 0.1)))
       await f.unassigned.refresh()
-      assert.strictEqual(f.unassigned.balance, sign * 0.1)
+      assert.strictEqual(f.unassigned.balanceCents, parseMoneyCents(encodeMonetaryAmount(
+        sign * 0.1)))
     })
 
   test('unsafe imported Account effects roll back provider state', async ({ client, assert }) => {
@@ -202,7 +206,8 @@ test.group('Plaid sync characterization', (group) => {
       const categories = []
       for (const rule of scenario.rules) {
         const category = await group.related('categories').create({ name: 'Exact split',
-          type: CategoryType.Regular, balance: 0.1, fundingCategories: [] })
+          type: CategoryType.Regular, balanceCents: parseMoneyCents('0.10'),
+            fundingCategories: [] })
         categories.push(category)
         await assignment.related('categories').create({ ...rule, categoryId: category.id })
       }
@@ -215,12 +220,13 @@ test.group('Plaid sync characterization', (group) => {
         category => category.id))
       for (let index = 0; index < categories.length; index++) {
         await categories[index].refresh()
-        assert.strictEqual(categories[index].balance, scenario.balances[index])
+        assert.strictEqual(categories[index].balanceCents, parseMoneyCents(encodeMonetaryAmount(
+          scenario.balances[index])))
       }
       assert.strictEqual((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents(
         encodeMonetaryAmount(scenario.accountBalance)))
       await f.unassigned.refresh()
-      assert.strictEqual(f.unassigned.balance, 0)
+      assert.strictEqual(f.unassigned.balanceCents, parseMoneyCents('0.00'))
       assert.strictEqual((await Account.findOrFail(f.other.id)).balanceCents, parseMoneyCents(
         '100.00'))
     })
@@ -277,7 +283,7 @@ test.group('Plaid sync characterization', (group) => {
     assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents(
       encodeMonetaryAmount(100 - count * 10)))
     await f.unassigned.refresh()
-    assert.equal(f.unassigned.balance, -count * 10)
+    assert.equal(f.unassigned.balanceCents, parseMoneyCents(encodeMonetaryAmount(-count * 10)))
     assert.lengthOf(await f.account.related('accountTransactions').query(), count)
     for (let i = 0; i < count; i++) {
       const { at, transaction } = await local(`purchase-${i}`)
@@ -305,7 +311,7 @@ test.group('Plaid sync characterization', (group) => {
     assert.isTrue(at.pending)
     assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('100.00'))
     await f.unassigned.refresh()
-    assert.equal(f.unassigned.balance, -10)
+    assert.equal(f.unassigned.balanceCents, parseMoneyCents('-10.00'))
   })
 
   test('multiple accounts and pages use the requested cursor and intended account identities',
@@ -320,7 +326,7 @@ test.group('Plaid sync characterization', (group) => {
     assert.equal((await AccountTransaction.query().where('providerTransactionId', 'other')
       .firstOrFail()).accountId, f.other.id)
     await f.unassigned.refresh()
-    assert.equal(f.unassigned.balance, 10)
+    assert.equal(f.unassigned.balanceCents, parseMoneyCents('10.00'))
     await f.institution.refresh()
     assert.equal(f.institution.cursor, 'c2')
   })
@@ -347,7 +353,7 @@ test.group('Plaid sync characterization', (group) => {
     assert.lengthOf(await f.account.related('accountTransactions').query(), 1)
     assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('90.00'))
     await f.unassigned.refresh()
-    assert.equal(f.unassigned.balance, -10)
+    assert.equal(f.unassigned.balanceCents, parseMoneyCents('-10.00'))
   })
 
   test('identical advancing-cursor replay does not create a modification version or log', async ({
@@ -363,7 +369,7 @@ test.group('Plaid sync characterization', (group) => {
     const userGroup = await f.budget.related('groups').create({ name: 'Replay allocations', type:
       'Regular' })
     const userCategory = await userGroup.related('categories').create({ name: 'Replay category',
-      type: CategoryType.Regular, balance: -10, fundingCategories: [] })
+      type: CategoryType.Regular, balanceCents: parseMoneyCents('-10.00'), fundingCategories: [] })
     before.transaction.categories = [{ categoryId: userCategory.id, amount: -10, comment:
       'Replay split' }]
     before.transaction.comment = 'Replay memo'
@@ -372,7 +378,7 @@ test.group('Plaid sync characterization', (group) => {
     before.at.statementId = f.statement.id
     await before.at.save()
     await f.unassigned.refresh()
-    f.unassigned.balance = 0
+    f.unassigned.balanceCents = parseMoneyCents('0.00')
     await f.unassigned.save()
     const state = await snapshot()
     const logs = await before.transaction.related('transactionLog').query()
@@ -467,7 +473,8 @@ test.group('Plaid sync characterization', (group) => {
     assert.equal(Math.round(transaction.categories.reduce((sum, category) => sum + category.amount,
       0) * 100), Math.round(-newAmount * 100))
     await f.unassigned.refresh()
-    assert.equal(Math.round(f.unassigned.balance * 100), Math.round(-newAmount * 100))
+    assert.equal(Math.round(Number(formatMoneyCents(f.unassigned.balanceCents)) * 100),
+      Math.round(-newAmount * 100))
     assert.equal(Math.round(Number(formatMoneyCents((await Account.findOrFail(
       f.account.id)).balanceCents)) * 100), Math.round((
       100 - newAmount) * 100))
@@ -502,7 +509,7 @@ test.group('Plaid sync characterization', (group) => {
     const userGroup = await f.budget.related('groups').create({ name: 'Local allocations', type:
       'Regular' })
     const userCategory = await userGroup.related('categories').create({ name: 'User category',
-      type: CategoryType.Regular, balance: -10, fundingCategories: [] })
+      type: CategoryType.Regular, balanceCents: parseMoneyCents('-10.00'), fundingCategories: [] })
     before.transaction.categories = [{ categoryId: userCategory.id, amount: -10, comment:
       'User split' }]
     before.transaction.comment = 'User memo'
@@ -511,7 +518,7 @@ test.group('Plaid sync characterization', (group) => {
     before.at.statementId = f.statement.id
     await before.at.save()
     await f.unassigned.refresh()
-    f.unassigned.balance = 0
+    f.unassigned.balanceCents = parseMoneyCents('0.00')
     await f.unassigned.save()
     fake.responses = [page(accounts(), 'c2', { modified: [purchase('purchase', { amount })] })]
     ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
@@ -525,8 +532,8 @@ test.group('Plaid sync characterization', (group) => {
     assert.equal(after.at.statementId, f.statement.id)
     await userCategory.refresh()
     await f.unassigned.refresh()
-    assert.equal(userCategory.balance, -10)
-    assert.equal(f.unassigned.balance, 10 - amount)
+    assert.equal(userCategory.balanceCents, parseMoneyCents('-10.00'))
+    assert.equal(f.unassigned.balanceCents, parseMoneyCents(encodeMonetaryAmount(10 - amount)))
     assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents(
       encodeMonetaryAmount(100 - amount)))
   })
@@ -562,7 +569,7 @@ NOT VALID`)
     assert.lengthOf(await after.transaction.related('transactionLog').query(), 2)
     assert.deepEqual(after.transaction.categories, [{ categoryId: f.unassigned.id, amount: -15 }])
     await f.unassigned.refresh()
-    assert.equal(f.unassigned.balance, -15)
+    assert.equal(f.unassigned.balanceCents, parseMoneyCents('-15.00'))
     assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('85.00'))
     await f.institution.refresh()
     assert.equal(f.institution.cursor, 'c2')
@@ -616,7 +623,7 @@ harmless').with([10, -10]).run(async ({ client, assert }, amount) => {
     assert.equal(after.at.statementId, f.statement.id)
     assert.isTrue(after.transaction.deleted)
     await f.unassigned.refresh()
-    assert.equal(f.unassigned.balance, 0)
+    assert.equal(f.unassigned.balanceCents, parseMoneyCents('0.00'))
     const state = await snapshot()
     fake.responses = [page(accounts(), 'c3', { removed })]
     ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
@@ -652,7 +659,7 @@ harmless').with([10, -10]).run(async ({ client, assert }, amount) => {
     assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents(
       encodeMonetaryAmount(100 - amount)))
     await f.unassigned.refresh()
-    assert.equal(f.unassigned.balance, -amount)
+    assert.equal(f.unassigned.balanceCents, parseMoneyCents(encodeMonetaryAmount(-amount)))
     fake.responses = [page(accounts(), 'c3', { added: [posted] })]
     ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
     assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents(
@@ -682,7 +689,7 @@ harmless').with([10, -10]).run(async ({ client, assert }, amount) => {
     const userGroup = await f.budget.related('groups').create({ name: 'Metadata allocations', type:
       'Regular' })
     const userCategory = await userGroup.related('categories').create({ name: 'Metadata category',
-      type: CategoryType.Regular, balance: -10, fundingCategories: [] })
+      type: CategoryType.Regular, balanceCents: parseMoneyCents('-10.00'), fundingCategories: [] })
     before.transaction.categories = [{ categoryId: userCategory.id, amount: -10, comment:
       'Metadata split' }]
     before.transaction.comment = 'Local metadata memo'
@@ -691,7 +698,7 @@ harmless').with([10, -10]).run(async ({ client, assert }, amount) => {
     before.at.statementId = f.statement.id
     await before.at.save()
     await f.unassigned.refresh()
-    f.unassigned.balance = 0
+    f.unassigned.balanceCents = parseMoneyCents('0.00')
     await f.unassigned.save()
     const oldState = await snapshot()
     const oldLogs = await before.transaction.related('transactionLog').query()
@@ -719,8 +726,9 @@ harmless').with([10, -10]).run(async ({ client, assert }, amount) => {
     assert.deepEqual(after.transaction.categories, expectedCategories)
     await userCategory.refresh()
     await f.unassigned.refresh()
-    assert.equal(userCategory.balance, -10)
-    assert.equal(f.unassigned.balance, 10 - modified.amount)
+    assert.equal(userCategory.balanceCents, parseMoneyCents('-10.00'))
+    assert.equal(f.unassigned.balanceCents, parseMoneyCents(encodeMonetaryAmount(
+      10 - modified.amount)))
     assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents(
       encodeMonetaryAmount(100 - modified.amount)))
     assert.deepEqual((await snapshot()).statements, oldState.statements)
@@ -781,7 +789,7 @@ date').with([
     assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents(
       encodeMonetaryAmount(100 + (pending ? 0 : applied))))
     await f.unassigned.refresh()
-    assert.equal(f.unassigned.balance, applied)
+    assert.equal(f.unassigned.balanceCents, parseMoneyCents(encodeMonetaryAmount(applied)))
   })
 
   test('date and amount modifications apply the complete old-to-new eligibility transition').with([
@@ -819,7 +827,7 @@ date').with([
     assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents(
       encodeMonetaryAmount(100 + oldApplied)))
     await f.unassigned.refresh()
-    assert.equal(f.unassigned.balance, oldApplied)
+    assert.equal(f.unassigned.balanceCents, parseMoneyCents(encodeMonetaryAmount(oldApplied)))
     const modified = purchase('purchase', { date: newDate, amount: newAmount })
     fake.responses = [page(accounts(), 'c2', { modified: [modified] })]
     ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
@@ -838,7 +846,7 @@ date').with([
     assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents(
       encodeMonetaryAmount(100 + applied)))
     await f.unassigned.refresh()
-    assert.equal(f.unassigned.balance, applied)
+    assert.equal(f.unassigned.balanceCents, parseMoneyCents(encodeMonetaryAmount(applied)))
     const financial = await snapshot()
     fake.responses = [page(accounts(), 'c3', { modified: [modified] })]
     ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
@@ -861,7 +869,8 @@ eligible').with([true, false]).run(async ({ client, assert }, entering) => {
     const userGroup = await f.budget.related('groups').create({ name: 'Boundary allocations', type:
       'Regular' })
     const userCategory = await userGroup.related('categories').create({ name: 'Boundary category',
-      type: CategoryType.Regular, balance: entering ? 0 : -10, fundingCategories: [] })
+      type: CategoryType.Regular, balanceCents: parseMoneyCents(encodeMonetaryAmount(
+        entering ? 0 : -10)), fundingCategories: [] })
     before.transaction.categories = [{ categoryId: userCategory.id, amount: -10, comment:
       'Custom split' }]
     before.transaction.comment = 'Custom memo'
@@ -870,7 +879,7 @@ eligible').with([true, false]).run(async ({ client, assert }, entering) => {
     before.at.statementId = f.statement.id
     await before.at.save()
     await f.unassigned.refresh()
-    f.unassigned.balance = 0
+    f.unassigned.balanceCents = parseMoneyCents('0.00')
     await f.unassigned.save()
     fake.responses = [page(accounts(), 'c2', { modified: [purchase('purchase', { date: newDate,
       amount: 15 })] })]
@@ -885,8 +894,10 @@ eligible').with([true, false]).run(async ({ client, assert }, entering) => {
     assert.deepEqual(after.transaction.taxes, [{ type: 'local', amount: 3 }])
     await userCategory.refresh()
     await f.unassigned.refresh()
-    assert.equal(userCategory.balance, entering ? -10 : 0)
-    assert.equal(f.unassigned.balance, entering ? -5 : 0)
+    assert.equal(userCategory.balanceCents, parseMoneyCents(encodeMonetaryAmount(
+      entering ? -10 : 0)))
+    assert.equal(f.unassigned.balanceCents, parseMoneyCents(encodeMonetaryAmount(
+      entering ? -5 : 0)))
     assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents(
       encodeMonetaryAmount(entering ? 85 : 100)))
   })
@@ -897,7 +908,7 @@ modification').with([true, false]).run(async ({ client, assert }, entering) => {
     const userGroup = await f.budget.related('groups').create({ name:
       'Automatic boundary allocations', type: 'Regular' })
     const userCategory = await userGroup.related('categories').create({ name: 'Automatic category',
-      type: CategoryType.Regular, balance: 0, fundingCategories: [] })
+      type: CategoryType.Regular, balanceCents: parseMoneyCents('0.00'), fundingCategories: [] })
     const assignment = await f.budget.related('autoAssignment').create({ name: 'Boundary rule',
       searchStrings: ['Provider purchase'] })
     await assignment.related('categories').create({ categoryId: userCategory.id, amount: 100,
@@ -909,7 +920,8 @@ modification').with([true, false]).run(async ({ client, assert }, entering) => {
     const before = await local()
     assert.deepEqual(before.transaction.categories, [{ categoryId: userCategory.id, amount: -10 }])
     await userCategory.refresh()
-    assert.equal(userCategory.balance, entering ? 0 : -10)
+    assert.equal(userCategory.balanceCents, parseMoneyCents(encodeMonetaryAmount(
+      entering ? 0 : -10)))
     fake.responses = [page(accounts(), 'c2', { modified: [purchase('purchase', { date: newDate,
       amount: 15 })] })]
     ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
@@ -920,8 +932,10 @@ modification').with([true, false]).run(async ({ client, assert }, entering) => {
       categoryId: f.unassigned.id, amount: -5 }])
     await userCategory.refresh()
     await f.unassigned.refresh()
-    assert.equal(userCategory.balance, entering ? -10 : 0)
-    assert.equal(f.unassigned.balance, entering ? -5 : 0)
+    assert.equal(userCategory.balanceCents, parseMoneyCents(encodeMonetaryAmount(
+      entering ? -10 : 0)))
+    assert.equal(f.unassigned.balanceCents, parseMoneyCents(encodeMonetaryAmount(
+      entering ? -5 : 0)))
     assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents(
       encodeMonetaryAmount(entering ? 85 : 100)))
   })
@@ -939,12 +953,13 @@ modification').with([true, false]).run(async ({ client, assert }, entering) => {
     const userGroup = await f.budget.related('groups').create({ name: 'Rollback allocations', type:
       'Regular' })
     const userCategory = await userGroup.related('categories').create({ name: 'Rollback category',
-      type: CategoryType.Regular, balance: entering ? 0 : -10, fundingCategories: [] })
+      type: CategoryType.Regular, balanceCents: parseMoneyCents(encodeMonetaryAmount(
+        entering ? 0 : -10)), fundingCategories: [] })
     before.transaction.categories = [{ categoryId: userCategory.id, amount: -10, comment:
       'Rollback split' }]
     await before.transaction.save()
     await f.unassigned.refresh()
-    f.unassigned.balance = 0
+    f.unassigned.balanceCents = parseMoneyCents('0.00')
     await f.unassigned.save()
     const state = await snapshot()
     const constraint = 'plaid_boundary_cursor_failure'
@@ -972,9 +987,11 @@ NOT VALID`)
     assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents(
       encodeMonetaryAmount(entering ? 85 : 100)))
     await f.unassigned.refresh()
-    assert.equal(f.unassigned.balance, entering ? -5 : 0)
+    assert.equal(f.unassigned.balanceCents, parseMoneyCents(encodeMonetaryAmount(
+      entering ? -5 : 0)))
     await userCategory.refresh()
-    assert.equal(userCategory.balance, entering ? -10 : 0)
+    assert.equal(userCategory.balanceCents, parseMoneyCents(encodeMonetaryAmount(
+      entering ? -10 : 0)))
     assert.deepEqual(after.transaction.categories, [{ categoryId: userCategory.id, amount: -10,
       comment: 'Rollback split' }, { categoryId: f.unassigned.id, amount: -5 }])
     await f.institution.refresh()
@@ -995,7 +1012,7 @@ NOT VALID`)
     assert.isTrue(after.transaction.deleted)
     assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('100.00'))
     await f.unassigned.refresh()
-    assert.equal(f.unassigned.balance, 0)
+    assert.equal(f.unassigned.balanceCents, parseMoneyCents('0.00'))
   })
 
   test('removing pending data reverses category effects without changing the posted balance',
@@ -1008,7 +1025,7 @@ NOT VALID`)
     assert.isTrue((await local('pending')).transaction.deleted)
     assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('100.00'))
     await f.unassigned.refresh()
-    assert.equal(f.unassigned.balance, 0)
+    assert.equal(f.unassigned.balanceCents, parseMoneyCents('0.00'))
   })
 
   test('replayed addition after removal does not resurrect a deleted provider identity', async ({
@@ -1039,9 +1056,9 @@ NOT VALID`)
     assert.lengthOf(records, 2)
     assert.equal(records.reduce((sum, row) => sum + row.amount, 0), 100)
     const fundingPool = await f.budget.getFundingPoolCategory()
-    assert.equal(fundingPool.balance, 110)
+    assert.equal(fundingPool.balanceCents, parseMoneyCents('110.00'))
     await f.unassigned.refresh()
-    assert.equal(f.unassigned.balance, -10)
+    assert.equal(f.unassigned.balanceCents, parseMoneyCents('-10.00'))
   })
 
   test(
@@ -1054,10 +1071,10 @@ NOT VALID`)
     before.transaction.categories = [{ categoryId: fundingPool.id, amount: -10, comment:
       'User allocation' }]
     await before.transaction.save()
-    fundingPool.balance = -10
+    fundingPool.balanceCents = parseMoneyCents('-10.00')
     await fundingPool.save()
     await f.unassigned.refresh()
-    f.unassigned.balance = 0
+    f.unassigned.balanceCents = parseMoneyCents('0.00')
     await f.unassigned.save()
     fake.responses = [page(accounts(), 'c2', { added: [purchase('posted', { amount: 15,
       pending_transaction_id: 'pending' })] })]
@@ -1067,8 +1084,8 @@ NOT VALID`)
       comment: 'User allocation' }, { categoryId: f.unassigned.id, amount: -5 }])
     await fundingPool.refresh()
     await f.unassigned.refresh()
-    assert.equal(fundingPool.balance, -10)
-    assert.equal(f.unassigned.balance, -5)
+    assert.equal(fundingPool.balanceCents, parseMoneyCents('-10.00'))
+    assert.equal(f.unassigned.balanceCents, parseMoneyCents('-5.00'))
     assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('85.00'))
   })
 
@@ -1116,7 +1133,7 @@ converges').with(['page1', 'api2', 'page2', 'cursor']).run(async ({ client, asse
     assert.deepEqual((await snapshot()).statements, before.statements)
     assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('70.00'))
     await f.unassigned.refresh()
-    assert.equal(f.unassigned.balance, -30)
+    assert.equal(f.unassigned.balanceCents, parseMoneyCents('-30.00'))
     await f.institution.refresh()
     assert.equal(f.institution.cursor, 'c2')
   })
@@ -1154,7 +1171,7 @@ converges').with(['page1', 'api2', 'page2', 'cursor']).run(async ({ client, asse
     assert.lengthOf(await f.other.related('accountTransactions').query(), 1)
     assert.equal((await Account.findOrFail(f.other.id)).balanceCents, parseMoneyCents('90.00'))
     assert.equal((await Institution.findOrFail(f.institution.id)).cursor, 'mixed-cursor')
-    assert.equal((await f.budget.getUnassignedCategory()).balance, -10)
+    assert.equal((await f.budget.getUnassignedCategory()).balanceCents, parseMoneyCents('-10.00'))
   })
 
   test('mixed sync failure rolls back eligible processing and cursor without touching balance mode',
@@ -1210,7 +1227,7 @@ untouched', async ({ client, assert }) => {
       ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
       const before = await local()
       await f.unassigned.refresh()
-      const categoryBefore = f.unassigned.balance
+      const categoryBefore = Number(formatMoneyCents(f.unassigned.balanceCents))
       fake.responses = [page(accounts(), 'eligibility-c2', { modified: [purchase('purchase', { date,
         pending: !pending })] })]
       ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
@@ -1223,7 +1240,7 @@ untouched', async ({ client, assert }) => {
         encodeMonetaryAmount(100 + (date >= '2025-01-01' &&
         pending ? -10 : 0))))
       await f.unassigned.refresh()
-      assert.equal(f.unassigned.balance, categoryBefore)
+      assert.equal(f.unassigned.balanceCents, parseMoneyCents(encodeMonetaryAmount(categoryBefore)))
       assert.equal(categoryBefore, date >= '2025-01-01' ? -10 : 0)
     })
 

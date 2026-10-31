@@ -1,3 +1,4 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { mock } from 'node:test'
 import { parseMoneyCents } from '#common/moneyCents'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
@@ -37,7 +38,8 @@ async function createDomain(label: string) {
     })
     const group = await budget.related('groups').create({ name: `${label} group`, type: 'Regular' })
     const category = await group.related('categories').create({
-      name: `${label} category`, type: CategoryType.Regular, balance: 20, fundingCategories: [],
+      name: `${label} category`, type: CategoryType.Regular,
+      balanceCents: parseMoneyCents('20.00'), fundingCategories: [],
     })
     const transaction = await budget.related('transactions').create({
       date: DateTime.fromISO('2025-02-01'), type: TransactionType.MANUAL_TRANSACTION,
@@ -391,14 +393,16 @@ test.group('Institution isolation', (group) => {
     .run(async ({ client, assert }, { operation, sign, loan }) => {
       const f = fixture.own
       if (loan) await f.account.merge({ type: AccountType.Loan }).save()
-      await f.category.merge({ balance: sign * 0.3 }).save()
+      await f.category.merge({ balanceCents: parseMoneyCents(encodeMonetaryAmount(
+        sign * 0.3)) }).save()
       await f.accountTransaction.merge({ amount: sign * 0.2 }).save()
       await db.from('transactions').where('id', f.transaction.id).update({ categories:
         JSON.stringify([{ categoryId: f.category.id, amount: sign > 0 ? '0.10' : '-0.10' },
           { categoryId: f.category.id, amount: sign > 0 ? '0.10' : '-0.10' }]) })
       const unassigned = await f.budget.getUnassignedCategory()
       if (operation === 'institution') {
-        await unassigned.merge({ balance: sign * 0.3 }).save()
+        await unassigned.merge({ balanceCents: parseMoneyCents(encodeMonetaryAmount(
+          sign * 0.3)) }).save()
         const other = await f.institution.related('accounts').create({ name: 'Second exact account',
           type: loan ? AccountType.Loan : AccountType.Depository, subtype: 'checking',
           tracking: TrackingType.Transactions, balanceCents: parseMoneyCents('0.00'),
@@ -416,9 +420,11 @@ test.group('Institution isolation', (group) => {
       const response = await client.delete(`/api/v1/institution/${f.institution.id}${suffix}`)
         .loginAs(fixture.shared)
       response.assertStatus(200)
-      assert.strictEqual((await Category.findOrFail(f.category.id)).balance, sign * 0.1)
+      assert.strictEqual((await Category.findOrFail(f.category.id)).balanceCents,
+        parseMoneyCents(encodeMonetaryAmount(sign * 0.1)))
       if (operation === 'institution') {
-        assert.strictEqual((await Category.findOrFail(unassigned.id)).balance, sign * 0.1)
+        assert.strictEqual((await Category.findOrFail(unassigned.id)).balanceCents,
+          parseMoneyCents(encodeMonetaryAmount(sign * 0.1)))
         assert.lengthOf(await Account.query().where('institutionId', f.institution.id), 0)
       }
       assert.strictEqual(response.body().find((row: { id: number }) => row.id === f.category.id)
@@ -458,7 +464,8 @@ test.group('Institution isolation', (group) => {
     assert.lengthOf(await db.from('balance_histories').where('account_id', fixture.foreign.account
       .id), 1)
     assert.isNull(await Transaction.find(fixture.own.transaction.id))
-    assert.equal((await Category.findOrFail(fixture.own.category.id)).balance, 10)
+    assert.equal((await Category.findOrFail(fixture.own.category.id)).balanceCents,
+      parseMoneyCents('10.00'))
     assert.equal((await Account.findOrFail(fixture.foreign.account.id)).balanceCents,
       parseMoneyCents('100.00'))
     assert.deepEqual(fake.calls, [{ method: 'removeItem', resource: 'test-token-own' }])
@@ -475,7 +482,8 @@ test.group('Institution isolation', (group) => {
     assert.lengthOf(await db.from('balance_histories').where('account_id', fixture.foreign.account
       .id), 1)
     assert.isNull(await Transaction.find(fixture.own.transaction.id))
-    assert.equal((await Category.findOrFail(fixture.own.category.id)).balance, 10)
+    assert.equal((await Category.findOrFail(fixture.own.category.id)).balanceCents,
+      parseMoneyCents('10.00'))
     assert.equal((await Account.findOrFail(fixture.foreign.account.id)).balanceCents,
       parseMoneyCents('100.00'))
     assert.deepEqual(fake.calls, [])

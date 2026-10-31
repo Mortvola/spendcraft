@@ -90,7 +90,8 @@ async function monthlySummary(balance, extras) {
   }
   visit(source)
   const query = { whereHas() { return this }, joinRaw() { return this },
-    then(resolve, reject) { return Promise.resolve([{ id: 1, name: 'Summary', balance,
+    then(resolve, reject) { return Promise.resolve([{ id: 1, name: 'Summary',
+      balanceCents: parseMoneyCents(encodeMonetaryAmount(balance)),
       $extras: extras }]).then(resolve, reject) } }
   const get = runInNewContext(ts.transpileModule(`(async function(${method.parameters.map(p =>
     p.getText(source)).join(',')}) ${method.body.getText(source)})`, {
@@ -144,9 +145,15 @@ async function fundingProposal(changes = {}) {
     ts.forEachChild(node, visit)
   }
   visit(source)
-  const category = { id: 1, balance: 0, fundingAmount: 0.29, useGoal: true, suspended: false,
+  const normalized = { ...changes }
+  if (Object.hasOwn(normalized, 'balance')) {
+    normalized.balanceCents = parseMoneyCents(encodeMonetaryAmount(normalized.balance))
+    delete normalized.balance
+  }
+  const category = { id: 1, balanceCents: parseMoneyCents('0.00'), fundingAmount: 0.29,
+    useGoal: true, suspended: false,
     goalDate: DateTime.fromISO('2025-04-01'), recurrence: 2, $extras: {}, fundingCategories: [],
-    includeFundingTransfers: false, ...changes }
+    includeFundingTransfers: false, ...normalized }
   const before = JSON.stringify(category)
   const query = { whereHas() { return this }, joinRaw: async () => [category] }
   const calculate = runInNewContext(ts.transpileModule(`(async function(date) ${method.body

@@ -1,7 +1,8 @@
 import { categoryNonzeroAllocationSql, encodeMonetaryAmount } from
   '../../app/services/categoryAmountCodec.ts'
 import { test } from '@japa/runner'
-import { parseMoneyCents, subtractMoneyCents, formatMoneyCents } from '../../common/moneyCents.ts'
+import { addMoneyCents, parseMoneyCents, subtractMoneyCents,
+  formatMoneyCents } from '../../common/moneyCents.ts'
 import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
@@ -33,19 +34,20 @@ async function offlineFixture({ competing = false, balances = [10], tracking = T
   .Transactions } = {}) {
   let storedPool = 100; let saves = 0; let nextId = 0; let gated = false; let statements = 0
   const owner = { commit: noop, rollback: noop }
-  const pool = { id: 5, balance: -999, async save() { saves++; storedPool = this.balance } }
+  const pool = { id: 5, balanceCents: parseMoneyCents('-999.00'), async save(
+    ) { saves++; storedPool = Number(formatMoneyCents(this.balanceCents)) } }
   const seen = []
   const institution = { id: 1, syncDate: null, related: () => ({ create: async (values) => ({
     ...values, id: ++nextId, related: () => ({ create: async () => { statements++ } }),
     async updateStartingBalance(budget, suppliedPool) {
-      seen.push(suppliedPool); await Promise.resolve(); suppliedPool.balance += Number(
-        formatMoneyCents(this.balanceCents))
+      seen.push(suppliedPool); await Promise.resolve(
+        ); suppliedPool.balanceCents = addMoneyCents(suppliedPool.balanceCents, this.balanceCents)
     },
   }) }) }
   const budget = { id: 1, getFundingPoolCategory: async ({ client }) => {
     if (!gated || client !== owner) throw new Error(
       'Pool read outside acquired gate/owning transaction')
-    pool.balance = storedPool; return pool
+    pool.balanceCents = parseMoneyCents(encodeMonetaryAmount(storedPool)); return pool
   }, related: () => ({ create: async () => institution }) }
   const user = { useTransaction(trx) { if (trx !== owner) throw new Error(
     'Wrong user transaction') },
@@ -172,7 +174,8 @@ test.group('Deletion Category effects in checked cents without DB', () => {
     .run(async ({ assert }, { shape, sign }) => {
       const events = []
       const trx = {}
-      const category = { id: 1, balance: sign * (shape === 'multiple' ? 0.4 : 0.3),
+      const category = { id: 1, balanceCents: parseMoneyCents(encodeMonetaryAmount(sign * (
+        shape === 'multiple' ? 0.4 : 0.3))),
         async save() { events.push('category.save') } }
       const accounts = Array.from({ length: shape === 'multiple' ? 2 : 1 }, (_, index) => ({
         id: index + 1, type: shape === 'loan' ? AccountType.Loan : AccountType.Depository,
@@ -199,8 +202,9 @@ test.group('Deletion Category effects in checked cents without DB', () => {
       const result = await run(accounts, { $trx: trx, async getUnassignedCategory({ client }) {
         assert.strictEqual(client, trx); return category
       } })
-      assert.strictEqual(category.balance, shape === 'loan'
-        ? sign * 0.1 : sign * 0.1)
+      assert.strictEqual(category.balanceCents, parseMoneyCents(encodeMonetaryAmount(
+        shape === 'loan'
+        ? sign * 0.1 : sign * 0.1)))
       assert.deepEqual(Array.from(result, row => ({ ...row })), [{ id: 1,
         balance: sign > 0 ? '0.10' : '-0.10' }])
       assert.equal(events.filter(event => event === 'account.delete').length, accounts.length)

@@ -1,3 +1,4 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { parseMoneyCents, formatMoneyCents } from '#common/moneyCents'
 import { transactionRequest } from '../../helpers/transactionRequest.js'
 // Prepared only: requires fresh authorization and current independent DB safeguards.
@@ -110,7 +111,7 @@ test.group('BalanceHistory runtime deprecation (prepared)', () => {
     assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('100.00'))
     assert.deepEqual(await history(f), before)
     const pool = await f.budget.getFundingPoolCategory()
-    assert.equal(pool.balance, 100)
+    assert.equal(pool.balanceCents, parseMoneyCents('100.00'))
   })
 
   test('offline initialization creates no history and preserves route-specific financial state')
@@ -138,8 +139,9 @@ test.group('BalanceHistory runtime deprecation (prepared)', () => {
       const openings = await account.related('accountTransactions').query().whereHas('transaction',
         (query) => query.where('type', 4))
       assert.lengthOf(openings, route === 'new' && tracking === TrackingType.Transactions ? 1 : 0)
-      assert.equal((await f.budget.getFundingPoolCategory()).balance, route === 'new' &&
-        tracking === TrackingType.Transactions ? 112 : 100)
+      assert.equal((await f.budget.getFundingPoolCategory()).balanceCents, parseMoneyCents(
+        encodeMonetaryAmount(route === 'new' &&
+        tracking === TrackingType.Transactions ? 112 : 100)))
       assert.deepEqual(await db.from('balance_histories').orderBy('id'), before)
       assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('100.00'))
     })

@@ -293,8 +293,8 @@ class Institution extends BaseModel {
         await Institution.updateAccountBalances(budget, accounts, plaidAccounts);
 
         const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
-        unassigned.balance = Number(formatMoneyCents(addMoneyCents(
-          parseMoneyCents(encodeMonetaryAmount(unassigned.balance)), unassignedSum)));
+        unassigned.balanceCents = addMoneyCents(
+          unassigned.balanceCents, unassignedSum);
         await unassigned.save();
 
         this.cursor = nextCursor;

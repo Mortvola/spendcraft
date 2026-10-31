@@ -1,4 +1,5 @@
-import { parseMoneyCents } from '#common/moneyCents'
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { test } from '@japa/runner'
@@ -28,9 +29,9 @@ async function createFixture() {
     const group = await budget.related('groups').create({ name: 'Lifecycle group', type:
       'Regular' })
     const first = await group.related('categories').create({ name: 'First', type: CategoryType
-      .Regular, balance: 10, fundingCategories: [] })
+      .Regular, balanceCents: parseMoneyCents('10.00'), fundingCategories: [] })
     const second = await group.related('categories').create({ name: 'Second', type: CategoryType
-      .Regular, balance: 0, fundingCategories: [] })
+      .Regular, balanceCents: parseMoneyCents('0.00'), fundingCategories: [] })
     const transaction = await budget.related('transactions').create({
       date: DateTime.fromISO('2025-02-01'), type: TransactionType.MANUAL_TRANSACTION,
       version: 0, deleted: false, sortOrder: 0, categories: [{ categoryId: first.id, amount: 10 }],
@@ -86,23 +87,28 @@ test.group('Category transfer conservation', (group) => {
       .REBALANCE_TRANSACTION
     const before = await state()
     const debitId = scenario === 'funding' ? pool.id : fixture.first.id
-    const initialDebitBalance = (await Category.findOrFail(debitId)).balance
+    const initialDebitBalance = Number(formatMoneyCents((await Category.findOrFail(
+      debitId)).balanceCents))
     const created = await client.post('/api/v1/category-transfer')
       .json(categoryTransferRequest({ date: '2025-03-01', type, categories })).accept('json')
         .loginAs(fixture.user)
     created.assertStatus(200)
     const id = created.body().data.transaction.id
     assert.deepEqual((await Transaction.findOrFail(id)).categories, categories)
-    assert.equal((await Category.findOrFail(debitId)).balance, initialDebitBalance - amount)
-    assert.equal((await Category.findOrFail(fixture.second.id)).balance, amount)
+    assert.equal((await Category.findOrFail(debitId)).balanceCents, parseMoneyCents(
+      encodeMonetaryAmount(initialDebitBalance - amount)))
+    assert.equal((await Category.findOrFail(fixture.second.id)).balanceCents, parseMoneyCents(
+      encodeMonetaryAmount(amount)))
     const replacementDate = type === TransactionType.FUNDING_TRANSACTION ? '2025-03-01' :
       '2025-03-02'
     const updated = await client.patch(`/api/v1/category-transfer/${id}`)
       .json(categoryTransferRequest({ date: replacementDate, type, categories })).accept('json')
         .loginAs(fixture.user)
     updated.assertStatus(200)
-    assert.equal((await Category.findOrFail(debitId)).balance, initialDebitBalance - amount)
-    assert.equal((await Category.findOrFail(fixture.second.id)).balance, amount)
+    assert.equal((await Category.findOrFail(debitId)).balanceCents, parseMoneyCents(
+      encodeMonetaryAmount(initialDebitBalance - amount)))
+    assert.equal((await Category.findOrFail(fixture.second.id)).balanceCents, parseMoneyCents(
+      encodeMonetaryAmount(amount)))
     assert.equal((await Transaction.findOrFail(id)).date.toISODate(), replacementDate)
     const after = await state()
     assert.deepEqual(after.slice(2), before.slice(2))
@@ -118,8 +124,8 @@ test.group('Category transfer conservation', (group) => {
         amount: 10 }],
     })
     await writeCanonicalTransactionFixture(existing)
-    await fixture.first.merge({ balance: 0 }).save()
-    await fixture.second.merge({ balance: 10 }).save()
+    await fixture.first.merge({ balanceCents: parseMoneyCents('0.00') }).save()
+    await fixture.second.merge({ balanceCents: parseMoneyCents('10.00') }).save()
     const before = await state()
     const categories = scenario === 'multi'
       ? [{ categoryId: fixture.first.id, amount: -4 }, { categoryId: fixture.first.id, amount: -6 },
@@ -157,8 +163,8 @@ test.group('Category transfer conservation', (group) => {
         amount: 5 }],
     })
     await writeCanonicalTransactionFixture(existing)
-    await fixture.first.merge({ balance: 5 }).save()
-    await fixture.second.merge({ balance: 5 }).save()
+    await fixture.first.merge({ balanceCents: parseMoneyCents('5.00') }).save()
+    await fixture.second.merge({ balanceCents: parseMoneyCents('5.00') }).save()
     const before = await state()
     await db.rawQuery(
       'ALTER TABLE categories ADD CONSTRAINT transfer_test_failure CHECK (balance <> 20) NOT VALID')

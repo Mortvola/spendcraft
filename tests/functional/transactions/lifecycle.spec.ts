@@ -33,9 +33,9 @@ async function createFixture() {
     const group = await budget.related('groups').create({ name: 'Lifecycle group', type:
       'Regular' })
     const first = await group.related('categories').create({ name: 'First', type: CategoryType
-      .Regular, balance: 10, fundingCategories: [] })
+      .Regular, balanceCents: parseMoneyCents('10.00'), fundingCategories: [] })
     const second = await group.related('categories').create({ name: 'Second', type: CategoryType
-      .Regular, balance: 0, fundingCategories: [] })
+      .Regular, balanceCents: parseMoneyCents('0.00'), fundingCategories: [] })
     const transaction = await budget.related('transactions').create({
       date: DateTime.fromISO('2025-02-01'), type: TransactionType.MANUAL_TRANSACTION,
       version: 0, deleted: false, sortOrder: 0, categories: [{ categoryId: first.id, amount: 10 }],
@@ -74,7 +74,7 @@ test.group('Ordinary transaction lifecycle', (group) => {
         : fixture.first
       const negative = mode === 'negative'
       const initial = negative ? -0.1 : 0.1
-      await category.merge({ balance: initial }).save()
+      await category.merge({ balanceCents: parseMoneyCents(encodeMonetaryAmount(initial)) }).save()
       await fixture.account.merge({ balanceCents: parseMoneyCents(encodeMonetaryAmount(
         initial)) }).save()
       const accountBefore = Number(formatMoneyCents((await Account.findOrFail(
@@ -89,14 +89,16 @@ test.group('Ordinary transaction lifecycle', (group) => {
       assert.strictEqual((await Account.findOrFail(fixture.account.id)).balanceCents,
         parseMoneyCents(encodeMonetaryAmount(negative ? -0.3 : 0.3)))
       assert.strictEqual(created.body().acctBalances[0].balance, negative ? '-0.30' : '0.30')
-      assert.strictEqual((await Category.findOrFail(category.id)).balance, negative ? -0.3 : 0.3)
+      assert.strictEqual((await Category.findOrFail(category.id)).balanceCents, parseMoneyCents(
+        encodeMonetaryAmount(negative ? -0.3 : 0.3)))
       assert.strictEqual(created.body().categories.find((row: { id: number }) => row.id ===
         category.id).balance, negative ? '-0.30' : '0.30')
       const id = created.body().transaction.id
       const removed = await client.delete(`/api/v1/transaction/${id}`).accept('json')
         .loginAs(fixture.user)
       removed.assertStatus(200)
-      assert.strictEqual((await Category.findOrFail(category.id)).balance, initial)
+      assert.strictEqual((await Category.findOrFail(category.id)).balanceCents, parseMoneyCents(
+        encodeMonetaryAmount(initial)))
       assert.strictEqual(removed.body().data.categories.find((row: { id: number }) => row.id ===
         category.id).balance, negative ? '-0.10' : '0.10')
       assert.strictEqual((await Account.findOrFail(fixture.account.id)).balanceCents,
@@ -117,7 +119,8 @@ test.group('Ordinary transaction lifecycle', (group) => {
         await fixture.accountTransaction.useTransaction(trx).merge({ amount: sign * 0.2 }).save()
         await fixture.account.useTransaction(trx).merge({ balanceCents: parseMoneyCents(
           encodeMonetaryAmount(sign * 0.1)) }).save()
-        await fixture.first.useTransaction(trx).merge({ balance: sign * 0.2 }).save()
+        await fixture.first.useTransaction(trx).merge({ balanceCents: parseMoneyCents(
+          encodeMonetaryAmount(sign * 0.2)) }).save()
       })
       for (const [version, amount] of [negative ? '-0.40' : '0.40',
         negative ? '-0.20' : '0.20'].entries()) {
@@ -145,7 +148,8 @@ test.group('Ordinary transaction lifecycle', (group) => {
       await fixture.accountTransaction.useTransaction(trx).merge({ amount: 0.3 }).save()
       await fixture.account.useTransaction(trx).merge({ balanceCents: parseMoneyCents(
         '100.30') }).save()
-      await fixture.first.useTransaction(trx).merge({ balance: 0.3 }).save()
+      await fixture.first.useTransaction(trx).merge({ balanceCents: parseMoneyCents(
+        '0.30') }).save()
     })
     const categoryBefore = await db.from('categories').where('id', id).firstOrFail()
     const accountBefore = await db.from('accounts').where('id', fixture.account.id).firstOrFail()
@@ -172,8 +176,10 @@ test.group('Ordinary transaction lifecycle', (group) => {
         { categoryId: fixture.second.id, amount: 0.2 },
       ] }).save()
       await fixture.accountTransaction.useTransaction(trx).merge({ amount: 0.3 }).save()
-      await fixture.first.useTransaction(trx).merge({ balance: 0.1 }).save()
-      await fixture.second.useTransaction(trx).merge({ balance: 0.2 }).save()
+      await fixture.first.useTransaction(trx).merge({ balanceCents: parseMoneyCents(
+        '0.10') }).save()
+      await fixture.second.useTransaction(trx).merge({ balanceCents: parseMoneyCents(
+        '0.20') }).save()
     })
     const accountBefore = await db.from('accounts').where('id', fixture.account.id).firstOrFail()
     const categories = [{ categoryId: fixture.first.id, amount: '0.10' },
@@ -181,8 +187,10 @@ test.group('Ordinary transaction lifecycle', (group) => {
     const response = await client.patch(`/api/v1/transaction/${fixture.transaction.id}`)
       .json({ version: 0, categories }).accept('json').loginAs(fixture.user)
     response.assertStatus(200)
-    assert.strictEqual((await Category.findOrFail(fixture.first.id)).balance, 0.3)
-    assert.strictEqual((await Category.findOrFail(fixture.second.id)).balance, 0)
+    assert.strictEqual((await Category.findOrFail(fixture.first.id)).balanceCents,
+      parseMoneyCents('0.30'))
+    assert.strictEqual((await Category.findOrFail(fixture.second.id)).balanceCents,
+      parseMoneyCents('0.00'))
     const raw = await db.from('transactions').where('id', fixture.transaction.id).firstOrFail()
     assert.deepEqual(raw.categories, categories)
     assert.deepEqual(await db.from('accounts').where('id', fixture.account.id).firstOrFail(),
@@ -196,7 +204,8 @@ test.group('Ordinary transaction lifecycle', (group) => {
     .run(async ({ client, assert }, { type, sign, pending }) => {
       await fixture.account.merge({ balanceCents: parseMoneyCents(encodeMonetaryAmount(
         sign * 0.1)) }).save()
-      await fixture.first.merge({ balance: sign * 0.2 }).save()
+      await fixture.first.merge({ balanceCents: parseMoneyCents(encodeMonetaryAmount(
+        sign * 0.2)) }).save()
       await fixture.accountTransaction.merge({ amount: sign * 0.2, pending }).save()
       await writeHistoricalTransactionFixture(fixture.transaction, { type, categories: [
         { categoryId: fixture.first.id, amount: type === TransactionType.TRANSFER_TRANSACTION
@@ -225,7 +234,8 @@ test.group('Ordinary transaction lifecycle', (group) => {
       removed.assertStatus(200)
       assert.strictEqual((await Account.findOrFail(fixture.account.id)).balanceCents,
         parseMoneyCents(encodeMonetaryAmount(pending ? sign * 0.1 : -sign * 0.1)))
-      assert.strictEqual((await Category.findOrFail(fixture.second.id)).balance, 0)
+      assert.strictEqual((await Category.findOrFail(fixture.second.id)).balanceCents,
+        parseMoneyCents('0.00'))
     })
 
   test('special Account-linked balance overflow rolls back the full mutation')
@@ -250,7 +260,7 @@ test.group('Ordinary transaction lifecycle', (group) => {
     .run(async ({ client, assert }, { exclusion, sign }) => {
       await fixture.account.merge({ balanceCents: parseMoneyCents(encodeMonetaryAmount(sign * 0.1)),
         ...(exclusion === 'account' ? { type: AccountType.Loan } : {}) }).save()
-      await fixture.first.merge({ balance: sign * 0.1,
+      await fixture.first.merge({ balanceCents: parseMoneyCents(encodeMonetaryAmount(sign * 0.1)),
         ...(exclusion === 'category' ? { type: CategoryType.Loan } : {}) }).save()
       const amount = sign > 0 ? '0.20' : '-0.20'
       const created = await client.post(`/api/v1/account/${fixture.account.id}/transactions`)
@@ -260,7 +270,8 @@ test.group('Ordinary transaction lifecycle', (group) => {
         .loginAs(fixture.user)
       created.assertStatus(200)
       const id: number = created.body().transaction.id
-      assert.strictEqual((await Category.findOrFail(fixture.first.id)).balance, sign * 0.3)
+      assert.strictEqual((await Category.findOrFail(fixture.first.id)).balanceCents,
+        parseMoneyCents(encodeMonetaryAmount(sign * 0.3)))
       for (const [version, value] of ['0.40', '0.20'].entries()) {
         const split = version === 0 ? '0.20' : '0.10'
         const response = await client.patch(`/api/v1/transaction/${id}`).json({ version,
@@ -269,8 +280,8 @@ test.group('Ordinary transaction lifecycle', (group) => {
             { categoryId: fixture.first.id, amount: sign < 0 ? `-${split}` : split }] })
           .loginAs(fixture.user)
         response.assertStatus(200)
-        assert.strictEqual((await Category.findOrFail(fixture.first.id)).balance,
-          sign * (version === 0 ? 0.5 : 0.3))
+        assert.strictEqual((await Category.findOrFail(fixture.first.id)).balanceCents,
+          parseMoneyCents(encodeMonetaryAmount(sign * (version === 0 ? 0.5 : 0.3))))
       }
       const stored = await db.from('transactions').where('id', id).firstOrFail()
       assert.isTrue(stored.categories.every((split: { amount: unknown }) => typeof split.amount ===
@@ -281,23 +292,26 @@ test.group('Ordinary transaction lifecycle', (group) => {
       assert.deepEqual((await db.from('transactions').where('id', id).firstOrFail()).categories,
         stored.categories)
       ;(await client.delete(`/api/v1/transaction/${id}`).loginAs(fixture.user)).assertStatus(200)
-      assert.strictEqual((await Category.findOrFail(fixture.first.id)).balance, sign * 0.1)
+      assert.strictEqual((await Category.findOrFail(fixture.first.id)).balanceCents,
+        parseMoneyCents(encodeMonetaryAmount(sign * 0.1)))
       assert.strictEqual((await Account.findOrFail(fixture.account.id)).balanceCents,
         parseMoneyCents(encodeMonetaryAmount(sign * 0.1)))
-      assert.strictEqual((await Category.findOrFail(fixture.second.id)).balance, 0)
+      assert.strictEqual((await Category.findOrFail(fixture.second.id)).balanceCents,
+        parseMoneyCents('0.00'))
     })
 
   test('Loan-excluded empty allocations preserve exact Unassigned fallback effects', async ({
     client, assert }) => {
     await fixture.account.merge({ type: AccountType.Loan }).save()
     const unassigned = await fixture.budget.getUnassignedCategory()
-    await unassigned.merge({ balance: 0.1 }).save()
+    await unassigned.merge({ balanceCents: parseMoneyCents('0.10') }).save()
     const created = await client.post(`/api/v1/account/${fixture.account.id}/transactions`)
       .json({ date: '2025-03-01', name: 'Empty excluded', amount: '0.20', principle: '0.00',
         categories: [] }).loginAs(fixture.user)
     created.assertStatus(200)
     const id: number = created.body().transaction.id
-    assert.strictEqual((await Category.findOrFail(unassigned.id)).balance, 0.3)
+    assert.strictEqual((await Category.findOrFail(unassigned.id)).balanceCents, parseMoneyCents(
+      '0.30'))
     await db.from('transactions').where('id', id).update({ categories: '[]' })
     const metadata = await client.patch(`/api/v1/transaction/${id}`)
       .json({ version: 0, name: 'Preserve empty history' }).loginAs(fixture.user)
@@ -306,16 +320,18 @@ test.group('Ordinary transaction lifecycle', (group) => {
     const patched = await client.patch(`/api/v1/transaction/${id}`)
       .json({ version: 1, amount: '0.40', categories: [] }).loginAs(fixture.user)
     patched.assertStatus(200)
-    assert.strictEqual((await Category.findOrFail(unassigned.id)).balance, 0.5)
+    assert.strictEqual((await Category.findOrFail(unassigned.id)).balanceCents, parseMoneyCents(
+      '0.50'))
     await db.from('transactions').where('id', id).update({ categories: '[]' })
     ;(await client.delete(`/api/v1/transaction/${id}`).loginAs(fixture.user)).assertStatus(200)
-    assert.strictEqual((await Category.findOrFail(unassigned.id)).balance, 0.1)
+    assert.strictEqual((await Category.findOrFail(unassigned.id)).balanceCents, parseMoneyCents(
+      '0.10'))
   })
 
   test('Loan-excluded Category overflow rolls back the entire mutation')
     .with(['create', 'patch', 'delete']).run(async ({ client, assert }, operation) => {
       await fixture.account.merge({ type: AccountType.Loan }).save()
-      await fixture.first.merge({ balance: 9999999999.99 }).save()
+      await fixture.first.merge({ balanceCents: parseMoneyCents('9999999999.99') }).save()
       await fixture.accountTransaction.merge({ amount: operation === 'delete' ? -0.01 : 0.2,
         principle: 0 }).save()
       await writeHistoricalTransactionFixture(fixture.transaction, { categories: [
@@ -367,7 +383,8 @@ test.group('Ordinary transaction lifecycle', (group) => {
         parseMoneyCents(encodeMonetaryAmount(sign * 0.1)))
       assert.strictEqual(removed.body().data.acctBalances[0].balance,
         sign < 0 ? '-0.10' : '0.10')
-      assert.strictEqual((await Category.findOrFail(fixture.first.id)).balance, 10)
+      assert.strictEqual((await Category.findOrFail(fixture.first.id)).balanceCents,
+        parseMoneyCents('10.00'))
     })
 
   test('Loan principal balance overflow rolls back the complete mutation')
@@ -416,7 +433,8 @@ test.group('Ordinary transaction lifecycle', (group) => {
     assert.strictEqual(updated.body().data.transaction.accountTransaction.principle, '-0.12')
     assert.strictEqual((await Account.findOrFail(fixture.account.id)).balanceCents,
       parseMoneyCents('109.88'))
-    assert.strictEqual((await Category.findOrFail(fixture.first.id)).balance, 10)
+    assert.strictEqual((await Category.findOrFail(fixture.first.id)).balanceCents,
+      parseMoneyCents('10.00'))
   })
 
   test('CREATE and PATCH reject noncanonical money before financial mutation').with([
@@ -461,9 +479,11 @@ test.group('Ordinary transaction lifecycle', (group) => {
     assert.equal(transaction.budgetId, fixture.budget.id)
     assert.equal((await Account.findOrFail(fixture.account.id)).balanceCents, parseMoneyCents(
       encodeMonetaryAmount(110 + amount)))
-    assert.equal((await Category.findOrFail(fixture.first.id)).balance, 10 + categories[0].amount)
-    assert.equal((await Category.findOrFail(fixture.second.id)).balance, scenario ===
-      'multiple' ? 13 : 0)
+    assert.equal((await Category.findOrFail(fixture.first.id)).balanceCents, parseMoneyCents(
+      encodeMonetaryAmount(10 + categories[0].amount)))
+    assert.equal((await Category.findOrFail(fixture.second.id)).balanceCents, parseMoneyCents(
+      encodeMonetaryAmount(scenario ===
+      'multiple' ? 13 : 0)))
   })
 
   test('updates reverse old splits and apply replacement state').with(['amount', 'category',
@@ -473,8 +493,8 @@ test.group('Ordinary transaction lifecycle', (group) => {
       await writeHistoricalTransactionFixture(fixture.transaction, { categories: [{
         categoryId: fixture.first.id, amount: 4 }, { categoryId: fixture.second.id, amount: 6 }] })
       await writeCanonicalTransactionFixture(fixture.transaction)
-      await fixture.first.merge({ balance: 4 }).save()
-      await fixture.second.merge({ balance: 6 }).save()
+      await fixture.first.merge({ balanceCents: parseMoneyCents('4.00') }).save()
+      await fixture.second.merge({ balanceCents: parseMoneyCents('6.00') }).save()
     }
     const amount = scenario === 'amount' ? 25 : 10
     const categories = scenario === 'category' || scenario === 'multiple-to-single'
@@ -495,10 +515,12 @@ test.group('Ordinary transaction lifecycle', (group) => {
     assert.equal(accountTransaction.amount, amount)
     assert.equal((await Account.findOrFail(fixture.account.id)).balanceCents, parseMoneyCents(
       encodeMonetaryAmount(100 + amount)))
-    assert.equal((await Category.findOrFail(fixture.first.id)).balance, categories.filter((c) => c
-      .categoryId === fixture.first.id).reduce((sum, c) => sum + c.amount, 0))
-    assert.equal((await Category.findOrFail(fixture.second.id)).balance, categories.filter((c) => c
-      .categoryId === fixture.second.id).reduce((sum, c) => sum + c.amount, 0))
+    assert.equal((await Category.findOrFail(fixture.first.id)).balanceCents, parseMoneyCents(
+      encodeMonetaryAmount(categories.filter((c) => c
+      .categoryId === fixture.first.id).reduce((sum, c) => sum + c.amount, 0))))
+    assert.equal((await Category.findOrFail(fixture.second.id)).balanceCents, parseMoneyCents(
+      encodeMonetaryAmount(categories.filter((c) => c
+      .categoryId === fixture.second.id).reduce((sum, c) => sum + c.amount, 0))))
     if (scenario === 'date') assert.equal(transaction.date.toISODate(), '2025-03-01')
     if (scenario === 'metadata') {
       assert.equal(accountTransaction.name, 'New payee')
@@ -583,7 +605,8 @@ test.group('Ordinary transaction lifecycle', (group) => {
     assert.isTrue((await Transaction.findOrFail(fixture.transaction.id)).deleted)
     assert.equal((await Account.findOrFail(fixture.account.id)).balanceCents, parseMoneyCents(
       '100.00'))
-    assert.equal((await Category.findOrFail(fixture.first.id)).balance, 0)
+    assert.equal((await Category.findOrFail(fixture.first.id)).balanceCents, parseMoneyCents(
+      '0.00'))
     assert.equal((await AccountTransaction.findOrFail(fixture.accountTransaction.id)).transactionId,
       fixture.transaction.id)
   })

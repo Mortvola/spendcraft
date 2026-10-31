@@ -269,20 +269,20 @@ export default class AccountsController {
           .firstOrFail();
 
         const balanceCents = addMoneyCents(
-          parseMoneyCents(encodeMonetaryAmount(category.balance)),
+          category.balanceCents,
           parseMoneyCents(encodeMonetaryAmount(split.amount)));
-        category.balance = Number(formatMoneyCents(balanceCents));
+        category.balanceCents = balanceCents;
 
         await category.save();
 
         const balance = categoryBalances.find((b) => b.id === category.id);
 
         if (balance) {
-          balance.balance = encodeMonetaryAmount(category.balance);
+          balance.balance = formatMoneyCents(category.balanceCents);
         }
         else {
-          categoryBalances.push({ id: split.categoryId, balance: encodeMonetaryAmount(category
-            .balance) });
+          categoryBalances.push({ id: split.categoryId, balance: formatMoneyCents(
+            category.balanceCents) });
         }
       }
 
@@ -385,8 +385,8 @@ export default class AccountsController {
           for (const [categoryId, cents] of deltas) {
             const category = await Category.query({ client: trx }).where('id', categoryId)
               .whereHas('group', (query) => query.where('budgetId', budget.id)).firstOrFail();
-            category.balance = Number(formatMoneyCents(addMoneyCents(
-              parseMoneyCents(encodeMonetaryAmount(category.balance)), cents)));
+            category.balanceCents = addMoneyCents(
+              category.balanceCents, cents);
             await category.save();
           }
         }

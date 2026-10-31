@@ -240,7 +240,7 @@ export default class TransactionsController {
         const newSplits = nominalNew.length > 0 ? nominalNew
           : [{ categoryId: unassignedCat.id, amount: requestData.amount ?? acctTrans.amount }];
         if (hasCategoryStorage(transaction)) {
-          // Models still expose dollars outside this slice. Convert at the calculation boundary.
+          // Allocation amounts remain numeric runtime values; convert them at this boundary.
           const centAllocations = (splits: typeof oldSplits) => splits.map(split => ({
             categoryId: split.categoryId,
             amountCents: parseMoneyCents(encodeMonetaryAmount(split.amount)),
@@ -252,9 +252,9 @@ export default class TransactionsController {
             const category = await budgetCategories(budget.id, { client: trx }).where('id',
               categoryId).firstOrFail();
             const balanceCents = addMoneyCents(
-              parseMoneyCents(encodeMonetaryAmount(category.balance)), delta);
+              category.balanceCents, delta);
             const balance = formatMoneyCents(balanceCents);
-            category.balance = Number(balance);
+            category.balanceCents = balanceCents;
             await category.save();
             categoriesResult.push({ id: category.id, balance });
           }
@@ -265,11 +265,11 @@ export default class TransactionsController {
             if (delta === 0) continue;
             const category = await budgetCategories(budget.id, { client: trx }).where('id',
               categoryId).firstOrFail();
-            category.balance = Number(formatMoneyCents(addMoneyCents(
-              parseMoneyCents(encodeMonetaryAmount(category.balance)), delta)));
+            category.balanceCents = addMoneyCents(
+              category.balanceCents, delta);
             await category.save();
-            categoriesResult.push({ id: category.id, balance: encodeMonetaryAmount(category
-              .balance) });
+            categoriesResult.push({ id: category.id, balance: formatMoneyCents(
+              category.balanceCents) });
           }
         }
       }
@@ -294,16 +294,16 @@ export default class TransactionsController {
             const category = await budgetCategories(budget.id, { client: trx }).where('id',
               transCategory.categoryId).firstOrFail();
 
-            category.balance = Number(formatMoneyCents(subtractMoneyCents(
-              parseMoneyCents(encodeMonetaryAmount(category.balance)),
-              parseMoneyCents(encodeMonetaryAmount(transCategory.amount)))));
+            category.balanceCents = subtractMoneyCents(
+              category.balanceCents,
+              parseMoneyCents(encodeMonetaryAmount(transCategory.amount)));
 
              
             await category.save();
 
             categoriesResult.push({
               id: category.id,
-              balance: encodeMonetaryAmount(category.balance),
+              balance: formatMoneyCents(category.balanceCents),
             });
           }
 
@@ -312,15 +312,15 @@ export default class TransactionsController {
         else if (account.tracking === TrackingType.Transactions) {
           // There are no category splits. Debit the 'Unassigned' category
           if (requestData.amount !== undefined) {
-            unassigned.balance = Number(formatMoneyCents(subtractMoneyCents(
-              parseMoneyCents(encodeMonetaryAmount(unassigned.balance)),
-              parseMoneyCents(encodeMonetaryAmount(acctTrans.amount)))));
+            unassigned.balanceCents = subtractMoneyCents(
+              unassigned.balanceCents,
+              parseMoneyCents(encodeMonetaryAmount(acctTrans.amount)));
             await unassigned.save();
           }
 
           categoriesResult.push({
             id: unassigned.id,
-            balance: encodeMonetaryAmount(unassigned.balance),
+            balance: formatMoneyCents(unassigned.balanceCents),
           });
         }
 
@@ -332,9 +332,9 @@ export default class TransactionsController {
             const category = await budgetCategories(budget.id, { client: trx }).where('id',
               transCategory.categoryId).firstOrFail();
 
-            category.balance = Number(formatMoneyCents(addMoneyCents(
-              parseMoneyCents(encodeMonetaryAmount(category.balance)),
-              parseMoneyCents(encodeMonetaryAmount(transCategory.amount)))));
+            category.balanceCents = addMoneyCents(
+              category.balanceCents,
+              parseMoneyCents(encodeMonetaryAmount(transCategory.amount)));
 
              
             await category.save();
@@ -347,12 +347,12 @@ export default class TransactionsController {
             // If the category is already in the array then simply update the amount.
             // Otherwise, add the category and amount to the array.
             if (index !== -1) {
-              categoriesResult[index].balance = encodeMonetaryAmount(category.balance);
+              categoriesResult[index].balance = formatMoneyCents(category.balanceCents);
             }
             else {
               categoriesResult.push({
                 id: category.id,
-                balance: encodeMonetaryAmount(category.balance),
+                balance: formatMoneyCents(category.balanceCents),
               });
             }
           }
@@ -360,21 +360,21 @@ export default class TransactionsController {
         else if (account.tracking === TrackingType.Transactions) {
           // There are no category splits. Debit the 'Unassigned' category
           if (requestData.amount !== undefined) {
-            unassigned.balance = Number(formatMoneyCents(addMoneyCents(
-              parseMoneyCents(encodeMonetaryAmount(unassigned.balance)),
-              parseMoneyCents(encodeMonetaryAmount(requestData.amount)))));
+            unassigned.balanceCents = addMoneyCents(
+              unassigned.balanceCents,
+              parseMoneyCents(encodeMonetaryAmount(requestData.amount)));
             await unassigned.save();
           }
 
           const index = categoriesResult.findIndex((c) => c.id === unassigned.id);
 
           if (index !== -1) {
-            categoriesResult[index].balance = encodeMonetaryAmount(unassigned.balance);
+            categoriesResult[index].balance = formatMoneyCents(unassigned.balanceCents);
           }
           else {
             categoriesResult.push({
               id: unassigned.id,
-              balance: encodeMonetaryAmount(unassigned.balance),
+              balance: formatMoneyCents(unassigned.balanceCents),
             });
           }
         }
@@ -623,12 +623,12 @@ export default class TransactionsController {
           const unassignedCat = await budget.getUnassignedCategory({ client: trx });
 
           const balanceCents = subtractMoneyCents(
-            parseMoneyCents(encodeMonetaryAmount(unassignedCat.balance)),
+            unassignedCat.balanceCents,
             parseMoneyCents(encodeMonetaryAmount(acctTransaction.amount)));
-          unassignedCat.balance = Number(formatMoneyCents(balanceCents));
+          unassignedCat.balanceCents = balanceCents;
 
-          result.categories.push({ id: unassignedCat.id, balance: encodeMonetaryAmount(unassignedCat
-            .balance) });
+          result.categories.push({ id: unassignedCat.id, balance: formatMoneyCents(
+            unassignedCat.balanceCents) });
 
           await unassignedCat.save();
         }
@@ -641,18 +641,18 @@ export default class TransactionsController {
             .categoryId).firstOrFail();
 
           const balanceCents = subtractMoneyCents(
-            parseMoneyCents(encodeMonetaryAmount(category.balance)),
+            category.balanceCents,
             parseMoneyCents(encodeMonetaryAmount(trxCat.amount)));
-          category.balance = Number(formatMoneyCents(balanceCents));
+          category.balanceCents = balanceCents;
 
           const balance = result.categories.find((b) => b.id === category.id);
 
           if (balance) {
-            balance.balance = encodeMonetaryAmount(category.balance);
+            balance.balance = formatMoneyCents(category.balanceCents);
           }
           else {
-            result.categories.push({ id: category.id, balance: encodeMonetaryAmount(category
-              .balance) });
+            result.categories.push({ id: category.id, balance: formatMoneyCents(
+              category.balanceCents) });
           }
 
           

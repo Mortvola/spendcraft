@@ -41,7 +41,8 @@ async function fixture() {
   const links = []
   const categories = new Map()
   function category(id, balance = 0) {
-    const row = { id, balance, async save() { calls.push(['category', id, this.balance]) } }
+    const row = { id, balanceCents: parseMoneyCents(encodeMonetaryAmount(balance)), async save(
+      ) { calls.push(['category', id, Number(formatMoneyCents(this.balanceCents))]) } }
     categories.set(id, row)
     return row
   }
@@ -119,15 +120,17 @@ test.group('OFX accounting and provider balance independence', () => {
       const f = await fixture()
       if (loan) f.account.type = 'loan'
       f.account.balanceCents = parseMoneyCents(encodeMonetaryAmount(sign * 0.1))
-      f.categories.get(1).balance = sign * 0.1
+      f.categories.get(1).balanceCents = parseMoneyCents(encodeMonetaryAmount(sign * 0.1))
       await f.run([{ amount: sign * 0.2 }], '')
       assert.strictEqual(Number(formatMoneyCents(f.account.balanceCents)), sign * 0.3)
-      assert.strictEqual(f.categories.get(1).balance, sign * 0.3)
+      assert.strictEqual(f.categories.get(1).balanceCents, parseMoneyCents(encodeMonetaryAmount(
+        sign * 0.3)))
       await f.run([{ amount: sign * 0.2 }], '')
       assert.strictEqual(Number(formatMoneyCents(f.account.balanceCents)), sign * 0.3)
       await f.run([{ amount: sign * 0.4 }], '')
       assert.strictEqual(Number(formatMoneyCents(f.account.balanceCents)), sign * 0.5)
-      assert.strictEqual(f.categories.get(1).balance, sign * 0.5)
+      assert.strictEqual(f.categories.get(1).balanceCents, parseMoneyCents(encodeMonetaryAmount(
+        sign * 0.5)))
     })
 
   test('Loan imports round balance effects without altering provider values', async ({ assert }) =>
@@ -156,7 +159,7 @@ test.group('OFX accounting and provider balance independence', () => {
     await f.run([{}], '')
     assert.equal(Number(formatMoneyCents(f.account.balanceCents)), 950)
     assert.equal(f.account.plaidBalance, 1400)
-    assert.equal(f.categories.get(1).balance, -50)
+    assert.equal(f.categories.get(1).balanceCents, parseMoneyCents('-50.00'))
     assert.deepInclude(f.calls, ['opening', 950])
   })
 
@@ -180,7 +183,7 @@ test.group('OFX accounting and provider balance independence', () => {
     await f.run([{}], '<LEDGERBAL><BALAMT>1600</LEDGERBAL>')
     assert.equal(Number(formatMoneyCents(f.account.balanceCents)), 950); assert.equal(
       f.account.plaidBalance, 1600)
-    assert.equal(f.categories.get(1).balance, -50)
+    assert.equal(f.categories.get(1).balanceCents, parseMoneyCents('-50.00'))
     assert.lengthOf(f.links, count)
   })
 
@@ -189,7 +192,7 @@ test.group('OFX accounting and provider balance independence', () => {
     await f.run([{ amount: 10 }], '')
     await f.run([{ amount: 15 }], '')
     assert.equal(Number(formatMoneyCents(f.account.balanceCents)), 1015)
-    assert.equal(f.categories.get(1).balance, 15)
+    assert.equal(f.categories.get(1).balanceCents, parseMoneyCents('15.00'))
   })
 
   test('date crossings independently remove and add Account and Category effects', async ({
@@ -197,13 +200,13 @@ test.group('OFX accounting and provider balance independence', () => {
     const f = await fixture()
     await f.run([{ amount: 10, date: '20250110' }], '')
     assert.equal(Number(formatMoneyCents(f.account.balanceCents)), 1000); assert.equal(
-      f.categories.get(1).balance, 0)
+      f.categories.get(1).balanceCents, parseMoneyCents('0.00'))
     await f.run([{ amount: 10, date: '20250201' }], '')
     assert.equal(Number(formatMoneyCents(f.account.balanceCents)), 1010); assert.equal(
-      f.categories.get(1).balance, 10)
+      f.categories.get(1).balanceCents, parseMoneyCents('10.00'))
     await f.run([{ amount: 10, date: '20250131' }], '')
     assert.equal(Number(formatMoneyCents(f.account.balanceCents)), 1000); assert.equal(
-      f.categories.get(1).balance, 0)
+      f.categories.get(1).balanceCents, parseMoneyCents('0.00'))
   })
 
   test('matched pending status suppresses Account only', async ({ assert }) => {
@@ -212,7 +215,7 @@ test.group('OFX accounting and provider balance independence', () => {
     f.links[0].pending = true
     await f.run([{ amount: 15 }], '')
     assert.equal(Number(formatMoneyCents(f.account.balanceCents)), 1000)
-    assert.equal(f.categories.get(1).balance, 15)
+    assert.equal(f.categories.get(1).balanceCents, parseMoneyCents('15.00'))
     assert.isTrue(f.links[0].pending)
   })
 
@@ -221,11 +224,11 @@ test.group('OFX accounting and provider balance independence', () => {
     await f.run([{ amount: 10 }], '')
     f.links[0].transaction.deleted = true
     f.account.balanceCents = parseMoneyCents(encodeMonetaryAmount(1000)); f.categories.get(
-      1).balance = 0
+      1).balanceCents = parseMoneyCents('0.00')
     await f.run([{ amount: 15 }], '')
     await f.run([{ amount: 15 }], '')
     assert.equal(Number(formatMoneyCents(f.account.balanceCents)), 1015); assert.equal(
-      f.categories.get(1).balance, 15)
+      f.categories.get(1).balanceCents, parseMoneyCents('15.00'))
     assert.isFalse(f.links[0].transaction.deleted)
   })
 
@@ -234,11 +237,12 @@ test.group('OFX accounting and provider balance independence', () => {
     const f = await fixture()
     await f.run([{ amount: 10 }], '')
     const explicit = { categoryId: 3, amount: 4, comment: 'User allocation' }
-    f.category(3, 4); f.categories.get(1).balance = 6
+    f.category(3, 4); f.categories.get(1).balanceCents = parseMoneyCents('6.00')
     f.links[0].transaction.categories = [explicit, { categoryId: 1, amount: 6 }]
     await f.run([{ amount: 15 }], '')
     assert.deepEqual(f.links[0].transaction.categories[0], explicit)
-    assert.equal(f.categories.get(3).balance, 4); assert.equal(f.categories.get(1).balance, 11)
+    assert.equal(f.categories.get(3).balanceCents, parseMoneyCents('4.00')); assert.equal(
+      f.categories.get(1).balanceCents, parseMoneyCents('11.00'))
   })
 
   test('ambiguous later identity fails before earlier row can mutate', async ({ assert }) => {
@@ -261,7 +265,7 @@ test.group('OFX accounting and provider balance independence', () => {
     const f = await fixture()
     await f.run([{ amount: 10 }, { amount: 10 }], '')
     assert.equal(Number(formatMoneyCents(f.account.balanceCents)), 1010); assert.equal(
-      f.categories.get(1).balance, 10)
+      f.categories.get(1).balanceCents, parseMoneyCents('10.00'))
     assert.lengthOf(f.links, 1)
   })
 
@@ -273,11 +277,11 @@ test.group('OFX accounting and provider balance independence', () => {
       await f.run([{ amount: 10 }], '')
       f.links[0].transaction.deleted = true; f.links[0].pending = scenario.pending
       f.account.balanceCents = parseMoneyCents(encodeMonetaryAmount(1000)); f.categories.get(
-        1).balance = 0
+        1).balanceCents = parseMoneyCents('0.00')
       await f.run([{ amount: 15, date: scenario.date }], '')
       assert.equal(Number(formatMoneyCents(f.account.balanceCents)), 1000); assert.equal(
-        f.categories.get(1).balance, scenario
-        .category)
+        f.categories.get(1).balanceCents, parseMoneyCents(encodeMonetaryAmount(scenario
+        .category)))
     })
 
   test('default XML parser identifier normalization remains unchanged', ({ assert }) => {

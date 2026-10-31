@@ -106,8 +106,8 @@ async function state(f: Fixture) {
     'transaction').orderBy('id')
   const logs = await db.from('transaction_logs').where('application_id', f.budget.id).orderBy('id')
   return { balance: Number(formatMoneyCents(account.balanceCents)),
-    plaidBalance: account.plaidBalance, unassigned: unassigned
-    .balance, pool: pool.balance,
+    plaidBalance: account.plaidBalance, unassigned: Number(formatMoneyCents(
+      unassigned.balanceCents)), pool: Number(formatMoneyCents(pool.balanceCents)),
     rows: rows.map((row) => ({ amount: row.amount, pending: row.pending, type: row.transaction.type,
       deleted: row.transaction.deleted, version: row.transaction.version, categories: row
         .transaction.categories })), logs }
@@ -293,9 +293,11 @@ test.group('Bounded Account writer PostgreSQL serialization (prepared)', () => {
       assert.equal((await Account.findOrFail(other.account.id)).balanceCents, parseMoneyCents(
         '105.00'))
       assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('100.00'))
-      assert.equal((await other.budget.getUnassignedCategory()).balance, 5)
-      assert.equal((await f.budget.getUnassignedCategory()).balance, 0)
-      assert.equal((await other.budget.getFundingPoolCategory()).balance, 100)
+      assert.equal((await other.budget.getUnassignedCategory()).balanceCents, parseMoneyCents(
+        '5.00'))
+      assert.equal((await f.budget.getUnassignedCategory()).balanceCents, parseMoneyCents('0.00'))
+      assert.equal((await other.budget.getFundingPoolCategory()).balanceCents, parseMoneyCents(
+        '100.00'))
       assert.lengthOf(await AccountTransaction.query().where('accountId', other.account.id), 2)
     } finally { await owner.rollback() }
   })

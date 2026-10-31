@@ -1,3 +1,4 @@
+import { formatMoneyCents } from '#common/moneyCents';
 import { CategoryType } from '#common/ResponseTypes';
 import { DateTime } from 'luxon';
 import { BaseCommand } from "@adonisjs/core/ace";
@@ -63,7 +64,8 @@ export default class GoalTest extends BaseCommand {
 
      
     for (const b of bills) {
-      console.log(`${b.name}, ${b.fundingAmount}, ${b.balance}, ${b.$extras.goalDate.toISODate()}`)
+      console.log(`${b.name}, ${b.fundingAmount}, ${formatMoneyCents(
+        b.balanceCents)}, ${b.$extras.goalDate.toISODate()}`)
     }
   }
 }

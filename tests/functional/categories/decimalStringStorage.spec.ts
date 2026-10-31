@@ -29,7 +29,7 @@ async function fixture() {
     const group = await budget.related('groups').create({ name: 'Cent storage', type: 'Regular' })
     const category = await group.related('categories').create({ name: 'First', type: CategoryType
       .Regular,
-      balance: 0, fundingCategories: [] })
+      balanceCents: parseMoneyCents('0.00'), fundingCategories: [] })
     const pool = await budget.getFundingPoolCategory({ client: trx })
     return { budget, user, institution, account, category, pool }
   })
@@ -126,7 +126,8 @@ test.group('Transaction Category decimal-string storage (prepared)', () => {
     assert.strictEqual(response.body().transaction.accountTransaction.amount, '-1.12')
     assert.strictEqual(response.body().transaction.categories[0].amount, '-1.12')
     assert.strictEqual((await raw(response.body().transaction.id)).categories[0].amount, '-1.12')
-    assert.strictEqual((await Category.findOrFail(f.category.id)).balance, -1.12)
+    assert.strictEqual((await Category.findOrFail(f.category.id)).balanceCents, parseMoneyCents(
+      '-1.12'))
   })
 
   test('invalid input, overflow and round-after-sum reject atomically').with(['overflow', 'missing',
@@ -253,7 +254,8 @@ test.group('Transaction Category decimal-string storage (prepared)', () => {
           .id}` : `/api/v1/institution/${f.institution.id}`
       const removed = await client.delete(path).loginAs(f.user).accept('json')
       removed.assertStatus(200)
-      assert.strictEqual((await Category.findOrFail(f.category.id)).balance, 0)
+      assert.strictEqual((await Category.findOrFail(f.category.id)).balanceCents,
+        parseMoneyCents('0.00'))
       if (kind === 'transaction') {
         assert.isTrue((await raw(id)).deleted)
         assert.strictEqual((await raw(id)).categories[0].amount, '1.00')

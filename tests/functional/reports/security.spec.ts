@@ -26,7 +26,8 @@ async function createDomain(label: string, existingBudget?: Budget) {
     })
     const group = await budget.related('groups').create({ name: `${label} group`, type: 'Regular' })
     const category = await group.related('categories').create({
-      name: `${label} category`, type: CategoryType.Regular, balance: 20, fundingCategories: [],
+      name: `${label} category`, type: CategoryType.Regular,
+      balanceCents: parseMoneyCents('20.00'), fundingCategories: [],
     })
     const transaction = await budget.related('transactions').create({
       date: DateTime.fromISO('2025-02-01'), type: TransactionType.MANUAL_TRANSACTION,

@@ -30,7 +30,8 @@ async function createDomain(label: string, existingBudget?: Budget) {
     })
     const group = await budget.related('groups').create({ name: `${label} group`, type: 'Regular' })
     const category = await group.related('categories').create({
-      name: `${label} category`, type: CategoryType.Regular, balance: 20, fundingCategories: [],
+      name: `${label} category`, type: CategoryType.Regular,
+      balanceCents: parseMoneyCents('20.00'), fundingCategories: [],
     })
     const transaction = await budget.related('transactions').create({
       date: DateTime.fromISO('2025-02-01'), type: TransactionType.MANUAL_TRANSACTION,
@@ -148,7 +149,7 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
     async ({ client, assert }) => {
       const own = await createDomain('history-exact'), foreign = await createDomain('history-other')
       const empty = await own.group.related('categories').create({ name: 'Empty history',
-        type: CategoryType.Regular, balance: 0, fundingCategories: [] })
+        type: CategoryType.Regular, balanceCents: parseMoneyCents('0.00'), fundingCategories: [] })
       for (const [date, amount] of [['2025-02-01', 0.1], ['2025-02-28', 0.2],
         ['2025-02-15', -0.2], ['2025-01-31', -0.1]] as const) {
         const transaction = await own.budget.related('transactions').create({
@@ -339,7 +340,7 @@ accountless nominal rows', async ({ client, assert }) => {
     const f = await createDomain('names')
     await f.category.merge({ name: 'B current' }).save()
     const other = await f.group.related('categories').create({ name: 'A current', type: CategoryType
-      .Regular, balance: 0, fundingCategories: [] })
+      .Regular, balanceCents: parseMoneyCents('0.00'), fundingCategories: [] })
     await writeHistoricalTransactionFixture(f.transaction, { categories: [{ categoryId: f.category
       .id, amount: 20 }, { categoryId: f.category.id, amount: 30 }, { categoryId: other.id,
       amount: 4 }] })
@@ -365,7 +366,7 @@ accountless nominal rows', async ({ client, assert }) => {
     const f = await createDomain('replacement')
     const pool = await f.budget.getFundingPoolCategory()
     const unassigned = await f.budget.getUnassignedCategory()
-    await pool.merge({ balance: 100 }).save()
+    await pool.merge({ balanceCents: parseMoneyCents('100.00') }).save()
     const first = await client.post('/api/v1/category-transfer').json(categoryTransferRequest({
       date: '2025-01-31', type: 2,
       categories: [{ categoryId: f.category.id, amount: 3 }, { categoryId: pool.id, amount: -

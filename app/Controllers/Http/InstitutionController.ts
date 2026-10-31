@@ -146,7 +146,7 @@ class InstitutionController {
           syncDate: connectedInstitution.syncDate,
           accounts: connectedInstitution.accounts,
           categories: categories.map((category) => ({ id: category.id,
-            balance: encodeMonetaryAmount(category.balance) })),
+            balance: formatMoneyCents(category.balanceCents) })),
         }
       };
     }
@@ -256,7 +256,7 @@ class InstitutionController {
             rate: acct.rate,
           })),
           categories: [
-            { id: fundingPool.id, balance: encodeMonetaryAmount(fundingPool.balance) },
+            { id: fundingPool.id, balance: formatMoneyCents(fundingPool.balanceCents) },
           ],
         }
       };
@@ -565,8 +565,8 @@ class InstitutionController {
         };
       }),
       categories: [
-        { id: fundingPool.id, balance: encodeMonetaryAmount(fundingPool.balance) },
-        { id: unassigned.id, balance: encodeMonetaryAmount(unassigned.balance) },
+        { id: fundingPool.id, balance: formatMoneyCents(fundingPool.balanceCents) },
+        { id: unassigned.id, balance: formatMoneyCents(unassigned.balanceCents) },
       ],
     };
 
@@ -662,8 +662,8 @@ class InstitutionController {
             plaidId: acct.plaidAccountId,
           },
           categories: [
-            { id: fundingPool.id, balance: encodeMonetaryAmount(fundingPool.balance) },
-            { id: unassigned.id, balance: encodeMonetaryAmount(unassigned.balance) },
+            { id: fundingPool.id, balance: formatMoneyCents(fundingPool.balanceCents) },
+            { id: unassigned.id, balance: formatMoneyCents(unassigned.balanceCents) },
           ],
         }
       }
@@ -924,20 +924,20 @@ class InstitutionController {
                
               const unassignedCat = await budget.getUnassignedCategory({ client: budget.$trx });
 
-              unassignedCat.balance = Number(formatMoneyCents(subtractMoneyCents(
-                parseMoneyCents(encodeMonetaryAmount(unassignedCat.balance)),
-                parseMoneyCents(encodeMonetaryAmount(acctTran.amount)))));
+              unassignedCat.balanceCents = subtractMoneyCents(
+                unassignedCat.balanceCents,
+                parseMoneyCents(encodeMonetaryAmount(acctTran.amount)));
 
               await unassignedCat.save();
 
               const catBalance = categoryBalances.find((cb) => cb.id === unassignedCat.id);
 
               if (catBalance) {
-                catBalance.balance = encodeMonetaryAmount(unassignedCat.balance);
+                catBalance.balance = formatMoneyCents(unassignedCat.balanceCents);
               }
               else {
-                categoryBalances.push({ id: unassignedCat.id, balance: encodeMonetaryAmount(
-                  unassignedCat.balance) })
+                categoryBalances.push({ id: unassignedCat.id, balance: formatMoneyCents(
+                  unassignedCat.balanceCents) })
               }
             }
           }
@@ -948,9 +948,9 @@ class InstitutionController {
               const category = await Category.find(tc.categoryId, { client: budget.$trx });
 
               if (category) {
-                category.balance = Number(formatMoneyCents(subtractMoneyCents(
-                  parseMoneyCents(encodeMonetaryAmount(category.balance)),
-                  parseMoneyCents(encodeMonetaryAmount(tc.amount)))));
+                category.balanceCents = subtractMoneyCents(
+                  category.balanceCents,
+                  parseMoneyCents(encodeMonetaryAmount(tc.amount)));
 
                  
                 await category.save();
@@ -958,11 +958,11 @@ class InstitutionController {
                 const catBalance = categoryBalances.find((cb) => cb.id === category.id);
 
                 if (catBalance) {
-                  catBalance.balance = encodeMonetaryAmount(category.balance);
+                  catBalance.balance = formatMoneyCents(category.balanceCents);
                 }
                 else {
-                  categoryBalances.push({ id: category.id, balance: encodeMonetaryAmount(category
-                    .balance) })
+                  categoryBalances.push({ id: category.id, balance: formatMoneyCents(
+                    category.balanceCents) })
                 }
               }
 

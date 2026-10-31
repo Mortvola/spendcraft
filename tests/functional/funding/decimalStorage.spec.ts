@@ -1,3 +1,5 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { parseMoneyCents } from '#common/moneyCents'
 import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 import { categoryRequest } from '../../helpers/categoryRequest.js'
 // Requires explicit authorization for localhost:5432/spendcraft_test
@@ -22,7 +24,7 @@ async function fixture() {
       'Regular' })
     const category = await group.related('categories').create({ name: 'Destination',
       type: CategoryType.Bill,
-      balance: 0, useGoal: false, fundingCategories: [] })
+      balanceCents: parseMoneyCents('0.00'), useGoal: false, fundingCategories: [] })
     const pool = await budget.getFundingPoolCategory({ client: trx })
     return { budget, user, group, category, pool }
   })
@@ -40,8 +42,9 @@ test.group('Funding decimal-string PostgreSQL acceptance', () => {
       const foreign = await fixture()
       const foreignBefore = await db.from('categories').whereIn('id', [foreign.category.id,
         foreign.pool.id]).orderBy('id')
-      await f.category.merge({ balance: sign * 0.1 }).save()
-      await f.pool.merge({ balance: sign * 0.1 }).save()
+      await f.category.merge({ balanceCents: parseMoneyCents(encodeMonetaryAmount(
+        sign * 0.1)) }).save()
+      await f.pool.merge({ balanceCents: parseMoneyCents(encodeMonetaryAmount(sign * 0.1)) }).save()
       const body = (replacement: boolean) => categoryTransferRequest({ type, date: '2025-02-01',
         categories: [{ categoryId: f.category.id, amount: sign * 0.1 },
           { categoryId: f.category.id, amount: sign * (replacement ? 0.3 : 0.1) },
@@ -54,10 +57,10 @@ test.group('Funding decimal-string PostgreSQL acceptance', () => {
         const response = await client.patch(`/api/v1/category-transfer/${id}`)
           .json(body(replacement)).loginAs(f.user)
         response.assertStatus(200)
-        assert.strictEqual((await Category.findOrFail(f.category.id)).balance,
-          sign * (replacement ? 0.5 : 0.3))
-        assert.strictEqual((await Category.findOrFail(f.pool.id)).balance,
-          sign * (replacement ? -0.3 : -0.1))
+        assert.strictEqual((await Category.findOrFail(f.category.id)).balanceCents,
+          parseMoneyCents(encodeMonetaryAmount(sign * (replacement ? 0.5 : 0.3))))
+        assert.strictEqual((await Category.findOrFail(f.pool.id)).balanceCents, parseMoneyCents(
+          encodeMonetaryAmount(sign * (replacement ? -0.3 : -0.1))))
         assert.strictEqual(response.body().data.balances.find((row: { id: number }) => row.id ===
           f.category.id).balance, sign < 0 ? (replacement ? '-0.50' : '-0.30')
             : (replacement ? '0.50' : '0.30'))
@@ -72,7 +75,7 @@ test.group('Funding decimal-string PostgreSQL acceptance', () => {
   test('out-of-range resulting balance rolls back funding and all financial writes', async ({
     client, assert }) => {
     const f = await fixture()
-    await f.category.merge({ balance: 9999999999.99 }).save()
+    await f.category.merge({ balanceCents: parseMoneyCents('9999999999.99') }).save()
     const before = await balances()
     const transactions = await db.from('transactions').orderBy('id')
     const response = await client.post('/api/v1/category-transfer').loginAs(f.user)

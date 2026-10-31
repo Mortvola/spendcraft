@@ -80,7 +80,7 @@ async function fixture() {
     const empty = await budget.related('groups').create({ name: 'Empty group', type: 'Regular' })
     const category = await group.related('categories').create({ name: 'Pair category',
       type: CategoryType.Regular,
-      balance: 5, fundingCategories: [], useGoal: false, recurrence: 1 })
+      balanceCents: parseMoneyCents('5.00'), fundingCategories: [], useGoal: false, recurrence: 1 })
     const transaction = await budget.related('transactions').create({ date: DateTime.fromISO(
       '2025-02-01'),
       type: TransactionType.MANUAL_TRANSACTION, categories: [{ categoryId: category.id,
@@ -113,8 +113,8 @@ test.group('Staged real writer pair PostgreSQL regressions', (group) => {
         row instanceof Account && row.id === f.account.id,
         scenario.postingFirst ? posting : deletion, scenario.postingFirst ? deletion : posting)
       assert.isNull(await Account.find(f.account.id))
-      assert.equal((await Category.findOrFail(f.category.id)).balance, 0)
-      assert.equal((await Category.findOrFail(pool.id)).balance, pool.balance)
+      assert.equal((await Category.findOrFail(f.category.id)).balanceCents, parseMoneyCents('0.00'))
+      assert.equal((await Category.findOrFail(pool.id)).balanceCents, pool.balanceCents)
       assert.lengthOf(await db.from('transactions').where('application_id', f.budget.id), 0)
       assert.lengthOf(await db.from('account_transactions').where('account_id', f.account.id), 0)
       if (scenario.institution) assert.isNull(await Institution.find(f.institution.id))
@@ -132,7 +132,7 @@ test.group('Staged real writer pair PostgreSQL regressions', (group) => {
         categories: [{ categoryId: f.category.id, amount: 5 }] })).loginAs(f.user).then((r) => r
           .assertStatus(200)), true)
     assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('110.00'))
-    assert.equal((await Category.findOrFail(f.category.id)).balance, 10)
+    assert.equal((await Category.findOrFail(f.category.id)).balanceCents, parseMoneyCents('10.00'))
     assert.lengthOf(await db.from('transactions').where('application_id', f.budget.id), 2)
     assert.lengthOf(await db.from('account_transactions').where('account_id', f.account.id), 2)
   })
@@ -206,6 +206,6 @@ test.group('Staged real writer pair PostgreSQL regressions', (group) => {
         .cursor)
       assert.equal(syncCalls, syncFirst ? 1 : 0)
       assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('105.00'))
-      assert.equal((await Category.findOrFail(f.category.id)).balance, 5)
+      assert.equal((await Category.findOrFail(f.category.id)).balanceCents, parseMoneyCents('5.00'))
     })
 })

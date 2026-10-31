@@ -1,4 +1,4 @@
-import { parseMoneyCents, type MoneyCents } from '#common/moneyCents';
+import { formatMoneyCents, parseMoneyCents, type MoneyCents } from '#common/moneyCents';
 import { serializeFundingRules } from '#services/fundingAmountCodec';
 import { encodeMonetaryAmount, categoryNonzeroAllocationSql } from '#services/categoryAmountCodec';
 import { consumeFundingStorage, prepareFundingStorage, finishFundingStorage,
@@ -43,10 +43,10 @@ export default class Category extends BaseModel {
   public name: string;
 
   @column({
-    consume: (value: string) => parseFloat(value),
-    serialize: (value: number) => encodeMonetaryAmount(value),
+    columnName: 'balance', serializeAs: 'balance',
+    consume: parseMoneyCents, prepare: formatMoneyCents, serialize: formatMoneyCents,
   })
-  public balance: number;
+  public balanceCents: MoneyCents;
 
   @column()
   public type: CategoryType;

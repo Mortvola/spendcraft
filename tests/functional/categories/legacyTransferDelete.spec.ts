@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '#common/moneyCents'
 import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 // Requires fresh task-specific database authorization and current safeguards.
 import { test } from '@japa/runner'
@@ -18,9 +19,9 @@ async function fixture() {
     const group = await budget.related('groups').create({ name: 'Legacy deletion boundary', type:
       'Regular' })
     const category = await group.related('categories').create({ name: 'Destination',
-      type: CategoryType.Regular, balance: 0, fundingCategories: [] })
+      type: CategoryType.Regular, balanceCents: parseMoneyCents('0.00'), fundingCategories: [] })
     const pool = await budget.getFundingPoolCategory({ client: trx })
-    await pool.merge({ balance: 100 }).save()
+    await pool.merge({ balanceCents: parseMoneyCents('100.00') }).save()
     return { budget, user, group, category, pool }
   })
 }
@@ -60,7 +61,7 @@ test.group('Legacy CategoryTransfer DELETE removed', (group) => {
     .with(['own', 'foreign', 'missing', 'collection', 'plural', 'nested'])
     .run(async ({ client, assert }, kind) => {
       const own = await fixture(); const foreign = await fixture()
-      await foreign.category.merge({ balance: 100 }).save()
+      await foreign.category.merge({ balanceCents: parseMoneyCents('100.00') }).save()
       const ownId = await seedRetainedHistory(own.category.id, own.pool.id)
       const foreignId = await seedRetainedHistory(foreign.category.id, foreign.pool.id)
       const id = kind === 'foreign' ? foreignId ?? foreign.category.id : kind ===
@@ -78,7 +79,8 @@ test.group('Legacy CategoryTransfer DELETE removed', (group) => {
         response.assertStatus(404)
         assert.equal(saves.mock.callCount(), 0)
       } finally { saves.mock.restore() }
-      assert.equal((await Category.findOrFail(foreign.category.id)).balance, 100)
+      assert.equal((await Category.findOrFail(foreign.category.id)).balanceCents,
+        parseMoneyCents('100.00'))
       assert.deepEqual(await financialState(), before)
       assert.deepEqual(await history(), legacy)
     })
@@ -95,18 +97,20 @@ test.group('Legacy CategoryTransfer DELETE removed', (group) => {
           .user)
       created.assertStatus(200)
       const id = created.body().data.transaction.id
-      assert.equal((await Category.findOrFail(f.category.id)).balance, 10)
-      assert.equal((await Category.findOrFail(f.pool.id)).balance, 90)
+      assert.equal((await Category.findOrFail(f.category.id)).balanceCents, parseMoneyCents(
+        '10.00'))
+      assert.equal((await Category.findOrFail(f.pool.id)).balanceCents, parseMoneyCents('90.00'))
       const changed = await client.patch(`/api/v1/category-transfer/${id}`)
         .json(categoryTransferRequest({ type, date: type === 2 ? '2025-03-01' : '2025-04-01',
           categories: rows(20) })).loginAs(f.user)
       changed.assertStatus(200)
-      assert.equal((await Category.findOrFail(f.category.id)).balance, 20)
-      assert.equal((await Category.findOrFail(f.pool.id)).balance, 80)
+      assert.equal((await Category.findOrFail(f.category.id)).balanceCents, parseMoneyCents(
+        '20.00'))
+      assert.equal((await Category.findOrFail(f.pool.id)).balanceCents, parseMoneyCents('80.00'))
       const removed = await client.delete(`/api/v1/transaction/${id}`).loginAs(f.user)
       removed.assertStatus(200)
-      assert.equal((await Category.findOrFail(f.category.id)).balance, 0)
-      assert.equal((await Category.findOrFail(f.pool.id)).balance, 100)
+      assert.equal((await Category.findOrFail(f.category.id)).balanceCents, parseMoneyCents('0.00'))
+      assert.equal((await Category.findOrFail(f.pool.id)).balanceCents, parseMoneyCents('100.00'))
       assert.deepEqual(await history(), legacy)
     })
 

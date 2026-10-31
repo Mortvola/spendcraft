@@ -57,7 +57,7 @@ test.group('Current Transaction Category string compatibility — no DB', () => 
     .run(async ({ assert }, scenario) => {
       const owner = {}, date = { toISODate: () => '2025-01-01' }
       let row, link, queries = 0, saves = 0
-      const pool = { id: 99, balance: 5 }
+      const pool = { id: 99, balanceCents: parseMoneyCents('5.00') }
       const existing = { id: 3, amount: 75, merge(values) { Object.assign(this, values);
         return this },
         async save() { return this }, related() { return { query: () => ({ firstOrFail: async () =>
@@ -91,9 +91,11 @@ test.group('Current Transaction Category string compatibility — no DB', () => 
       assert.strictEqual(row.categories[0].amount, 75)
       if (scenario === 'new') {
         assert.equal(row.type, 4); assert.strictEqual(row.date, date)
-        assert.equal(link.amount, 75); assert.equal(pool.balance, 80); assert.equal(saves, 1)
+        assert.equal(link.amount, 75); assert.equal(pool.balanceCents, parseMoneyCents(
+          '80.00')); assert.equal(saves, 1)
       } else {
-        assert.equal(pool.balance, 5); assert.equal(row.categories[0].comment, 'keep'); assert
+        assert.equal(pool.balanceCents, parseMoneyCents('5.00')); assert.equal(
+          row.categories[0].comment, 'keep'); assert
           .equal(saves, 2)
       }
     })

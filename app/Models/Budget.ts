@@ -147,7 +147,7 @@ export default class Budget extends BaseModel {
       .fill({
         name: 'Unassigned',
         type: CategoryType.Unassigned,
-        balance: 0,
+        balanceCents: parseMoneyCents('0.00'),
         groupId: systemGroup.id,
       })
       .save();
@@ -157,7 +157,7 @@ export default class Budget extends BaseModel {
       .fill({
         name: 'Funding Pool',
         type: CategoryType.FundingPool,
-        balance: 0,
+        balanceCents: parseMoneyCents('0.00'),
         groupId: systemGroup.id,
       })
       .save();
@@ -167,7 +167,7 @@ export default class Budget extends BaseModel {
       .fill({
         name: 'Account Transfer',
         type: CategoryType.AccountTransfer,
-        balance: 0,
+        balanceCents: parseMoneyCents('0.00'),
         groupId: systemGroup.id,
       })
       .save();
@@ -216,7 +216,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: food.id,
         name: 'Groceries',
-        balance: 0.0,
+        balanceCents: parseMoneyCents('0.00'),
       })
       .save();
 
@@ -225,7 +225,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: food.id,
         name: 'Dining Out',
-        balance: 0.0,
+        balanceCents: parseMoneyCents('0.00'),
       })
       .save();
 
@@ -241,7 +241,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: noGroup.id,
         name: 'Entertainment',
-        balance: 0.0,
+        balanceCents: parseMoneyCents('0.00'),
       })
       .save();
 
@@ -250,7 +250,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: noGroup.id,
         name: 'Miscellaneous',
-        balance: 0.0,
+        balanceCents: parseMoneyCents('0.00'),
       })
       .save();
 
@@ -269,7 +269,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: homeImprovement.id,
         name: 'Maintenance',
-        balance: 0.0,
+        balanceCents: parseMoneyCents('0.00'),
       })
       .save();
 
@@ -278,7 +278,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: homeImprovement.id,
         name: 'Furniture',
-        balance: 0.0,
+        balanceCents: parseMoneyCents('0.00'),
       })
       .save();
 
@@ -287,7 +287,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: homeImprovement.id,
         name: 'Other',
-        balance: 0.0,
+        balanceCents: parseMoneyCents('0.00'),
       })
       .save();
 
@@ -306,7 +306,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: healthCare.id,
         name: 'Medical',
-        balance: 0.0,
+        balanceCents: parseMoneyCents('0.00'),
       })
       .save();
 
@@ -315,7 +315,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: healthCare.id,
         name: 'Dental',
-        balance: 0.0,
+        balanceCents: parseMoneyCents('0.00'),
       })
       .save();
 
@@ -324,7 +324,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: healthCare.id,
         name: 'Vision',
-        balance: 0.0,
+        balanceCents: parseMoneyCents('0.00'),
       })
       .save();
 
@@ -343,7 +343,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: insurance.id,
         name: 'Medical',
-        balance: 0.0,
+        balanceCents: parseMoneyCents('0.00'),
       })
       .save();
 
@@ -352,7 +352,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: insurance.id,
         name: 'Dental',
-        balance: 0.0,
+        balanceCents: parseMoneyCents('0.00'),
       })
       .save();
 
@@ -361,7 +361,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: insurance.id,
         name: 'Vision',
-        balance: 0.0,
+        balanceCents: parseMoneyCents('0.00'),
       })
       .save();
 
@@ -370,7 +370,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: insurance.id,
         name: 'House/Car',
-        balance: 0.0,
+        balanceCents: parseMoneyCents('0.00'),
       })
       .save();
 
@@ -389,7 +389,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: bills.id,
         name: 'Electric',
-        balance: 0.0,
+        balanceCents: parseMoneyCents('0.00'),
       })
       .save();
 
@@ -398,7 +398,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: bills.id,
         name: 'Natural Gas',
-        balance: 0.0,
+        balanceCents: parseMoneyCents('0.00'),
       })
       .save();
 
@@ -407,7 +407,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: bills.id,
         name: 'Garbage/Recycling',
-        balance: 0.0,
+        balanceCents: parseMoneyCents('0.00'),
       })
       .save();
 
@@ -426,7 +426,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: taxes.id,
         name: 'Federal',
-        balance: 0.0,
+        balanceCents: parseMoneyCents('0.00'),
       })
       .save();
 
@@ -435,7 +435,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: taxes.id,
         name: 'State',
-        balance: 0.0,
+        balanceCents: parseMoneyCents('0.00'),
       })
       .save();
 
@@ -444,7 +444,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: taxes.id,
         name: 'Property',
-        balance: 0.0,
+        balanceCents: parseMoneyCents('0.00'),
       })
       .save();
 
@@ -453,7 +453,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: taxes.id,
         name: 'Preparation Fees',
-        balance: 0.0,
+        balanceCents: parseMoneyCents('0.00'),
       })
       .save();
 
@@ -472,7 +472,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: car.id,
         name: 'Gasoline',
-        balance: 0.0,
+        balanceCents: parseMoneyCents('0.00'),
       })
       .save();
 
@@ -481,7 +481,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: car.id,
         name: 'Maintenance',
-        balance: 0.0,
+        balanceCents: parseMoneyCents('0.00'),
       })
       .save();
 
@@ -490,7 +490,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: car.id,
         name: 'Registration',
-        balance: 0.0,
+        balanceCents: parseMoneyCents('0.00'),
       })
       .save();
   }
@@ -548,7 +548,7 @@ amount decimal)
 
           const futureTrxCents = parseMoneyCents(cat.$extras.sum ?? '0.00');
           const goalCents = parseMoneyCents(encodeMonetaryAmount(cat.fundingAmount));
-          const balanceCents = parseMoneyCents(encodeMonetaryAmount(cat.balance));
+          const balanceCents = cat.balanceCents;
           const goalDiffCents = subtractMoneyCents(goalCents,
             subtractMoneyCents(balanceCents, futureTrxCents));
           const monthlyCents = goalDiffCents > 0

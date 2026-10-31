@@ -227,7 +227,7 @@ class CategoriesController {
           id: c.id,
           name: c.name,
           balance: formatMoneyCents(subtractMoneyCents(
-            parseMoneyCents(encodeMonetaryAmount(c.balance)), aggregateCents(c.$extras.sum))),
+            c.balanceCents, aggregateCents(c.$extras.sum))),
           previousSum: formatMoneyCents(aggregateCents(c.$extras.previousSum)),
           previousFunding: formatMoneyCents(aggregateCents(c.$extras.previousFunding)),
           previousBaseAmount: formatMoneyCents(aggregateCents(c.$extras.previousBaseAmount)),
@@ -432,7 +432,7 @@ class CategoriesController {
           type: requestData.type ?? CategoryType.Regular,
           groupId: parseInt(groupId, 10),
           name: requestData.name,
-          balance: 0,
+          balanceCents: parseMoneyCents('0.00'),
           fundingAmount: requestData.fundingAmount ?? 0,
           includeFundingTransfers: requestData.type === CategoryType.Bill ? false : requestData
             .includeFundingTransfers,
@@ -585,7 +585,7 @@ class CategoriesController {
 
     const cat = await budgetCategories(budget.id).where('id', categoryId).firstOrFail();
 
-    result.balance = encodeMonetaryAmount(cat.balance);
+    result.balance = formatMoneyCents(cat.balanceCents);
 
     result.transactions = (await cat.transactions(
       budget, request.qs().limit, request.qs().offset,
@@ -766,13 +766,13 @@ class CategoriesController {
         const category = await budgetCategories(budget.id, { client: trx }).where('id', categoryId)
           .firstOrFail();
 
-        category.balance = Number(formatMoneyCents(addMoneyCents(
-          parseMoneyCents(encodeMonetaryAmount(category.balance)), delta)));
+        category.balanceCents = addMoneyCents(
+          category.balanceCents, delta);
 
          
         await category.save();
 
-        result.balances.push({ id: category.id, balance: encodeMonetaryAmount(category.balance) });
+        result.balances.push({ id: category.id, balance: formatMoneyCents(category.balanceCents) });
       }
 
       result.transaction = transaction.serialize(transactionFields);

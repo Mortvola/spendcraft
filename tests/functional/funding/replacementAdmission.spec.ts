@@ -22,9 +22,9 @@ async function fixture(type = TransactionType.FUNDING_TRANSACTION) {
       email: `admission-${sequence}@example.com`, password: 'testPassw0rd' })
     const group = await budget.related('groups').create({ name: 'Admission', type: 'Regular' })
     const category = await group.related('categories').create({ name: 'Destination',
-      type: CategoryType.Regular, balance: 2, fundingCategories: [] })
+      type: CategoryType.Regular, balanceCents: parseMoneyCents('2.00'), fundingCategories: [] })
     const pool = await budget.getFundingPoolCategory({ client: trx })
-    await pool.merge({ balance: 8 }).save()
+    await pool.merge({ balanceCents: parseMoneyCents('8.00') }).save()
     const rows = (amount: number) => [{ categoryId: category.id, amount, baseAmount: amount,
       fundingCategories: [{ categoryId: pool.id, amount: 100, percentage: true }],
         includeFundingTransfers: false },
@@ -125,8 +125,8 @@ test.group('Replacement admission persisted noninterference (prepared)', () => {
       .json(categoryTransferRequest({ type: 2, date: '2025-03-01', categories: f.rows(3) })).accept(
         'json').loginAs(f.user)
     accepted.assertStatus(200)
-    assert.equal((await Category.findOrFail(f.category.id)).balance, 3)
-    assert.equal((await Category.findOrFail(f.pool.id)).balance, 7)
+    assert.equal((await Category.findOrFail(f.category.id)).balanceCents, parseMoneyCents('3.00'))
+    assert.equal((await Category.findOrFail(f.pool.id)).balanceCents, parseMoneyCents('7.00'))
     assert.equal((await Transaction.findOrFail(f.target.id)).date.toISODate(), '2025-03-01')
   })
 
@@ -148,8 +148,8 @@ test.group('Replacement admission persisted noninterference (prepared)', () => {
     const stored = await db.from('transactions').where('id', target.id).firstOrFail()
     assert.isTrue(stored.categories.every((row: { amount: unknown }) =>
       typeof row.amount === 'string'))
-    assert.equal((await Category.findOrFail(f.category.id)).balance, 3)
-    assert.equal((await Category.findOrFail(f.pool.id)).balance, 7)
+    assert.equal((await Category.findOrFail(f.category.id)).balanceCents, parseMoneyCents('3.00'))
+    assert.equal((await Category.findOrFail(f.pool.id)).balanceCents, parseMoneyCents('7.00'))
   })
 })
 
@@ -204,8 +204,9 @@ test.group('Replacement admission freshness and rollback (prepared)', () => {
         const committed = await state()
         await request
         assert.deepEqual(await state(), committed)
-        assert.equal((await Category.findOrFail(f.category.id)).balance, 2)
-        assert.equal((await Category.findOrFail(f.pool.id)).balance, 8)
+        assert.equal((await Category.findOrFail(f.category.id)).balanceCents, parseMoneyCents(
+          '2.00'))
+        assert.equal((await Category.findOrFail(f.pool.id)).balanceCents, parseMoneyCents('8.00'))
       } finally {
         if (!owner.isCompleted) await owner.rollback()
         if (request) await Promise.allSettled([request])
@@ -250,8 +251,8 @@ test.group('Replacement admission freshness and rollback (prepared)', () => {
     const target = await Transaction.findOrFail(f.target.id)
     assert.isTrue(target.deleted); assert.equal(target.date.toISODate(), '2025-03-01')
     assert.deepEqual(target.categories, f.rows(2))
-    assert.equal((await Category.findOrFail(f.category.id)).balance, 0)
-    assert.equal((await Category.findOrFail(f.pool.id)).balance, 10)
+    assert.equal((await Category.findOrFail(f.category.id)).balanceCents, parseMoneyCents('0.00'))
+    assert.equal((await Category.findOrFail(f.pool.id)).balanceCents, parseMoneyCents('10.00'))
   })
 
   test('valid concurrent replacements compose, or roll back late, for each lifecycle')
@@ -291,8 +292,8 @@ test.group('Replacement admission freshness and rollback (prepared)', () => {
           .restore()
       }
       await first; await second
-      assert.equal((await Category.findOrFail(f.category.id)).balance, 4)
-      assert.equal((await Category.findOrFail(f.pool.id)).balance, 6)
+      assert.equal((await Category.findOrFail(f.category.id)).balanceCents, parseMoneyCents('4.00'))
+      assert.equal((await Category.findOrFail(f.pool.id)).balanceCents, parseMoneyCents('6.00'))
       const target = await Transaction.findOrFail(f.target.id)
       assert.deepEqual(target.categories, f.rows(4))
       assert.equal(target.date.toISODate(), scenario.type === 2 ? '2025-03-01' : '2025-05-01')
@@ -326,8 +327,10 @@ test.group('Replacement admission freshness and rollback (prepared)', () => {
         .json(categoryTransferRequest({ type: 2, date: '2025-03-01', categories: second.rows(3) }))
           .loginAs(second.user)
       response.assertStatus(200)
-      assert.equal((await Category.findOrFail(second.category.id)).balance, 3)
-      assert.equal((await Category.findOrFail(first.category.id)).balance, 2)
+      assert.equal((await Category.findOrFail(second.category.id)).balanceCents,
+        parseMoneyCents('3.00'))
+      assert.equal((await Category.findOrFail(first.category.id)).balanceCents, parseMoneyCents(
+        '2.00'))
     } finally { await owner.rollback() }
   })
 })

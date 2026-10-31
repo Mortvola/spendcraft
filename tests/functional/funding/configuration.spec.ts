@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '#common/moneyCents'
 import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 import { categoryRequest } from '../../helpers/categoryRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
@@ -21,10 +22,10 @@ async function fixture() {
     const group = await budget.related('groups').create({ name: 'Configuration', type: 'Regular' })
     const category = await group.related('categories').create({ name: 'Destination',
       type: CategoryType.Bill,
-      balance: 0, useGoal: false, fundingCategories: [] })
+      balanceCents: parseMoneyCents('0.00'), useGoal: false, fundingCategories: [] })
     const source = await group.related('categories').create({ name: 'Source', type: CategoryType
       .Regular,
-      balance: 100, useGoal: false, fundingCategories: [] })
+      balanceCents: parseMoneyCents('100.00'), useGoal: false, fundingCategories: [] })
     const pool = await budget.getFundingPoolCategory({ client: trx })
     const categories = [{ categoryId: category.id, amount: 10, fundingCategories: [{
       categoryId: source.id, amount: 100, percentage: true }] }, { categoryId: source.id, amount: -

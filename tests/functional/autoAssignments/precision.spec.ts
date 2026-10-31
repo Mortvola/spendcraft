@@ -27,7 +27,8 @@ async function fixture() {
     const categories = []
     for (const name of ['Fixed', 'First percentage', 'Last percentage']) {
       categories.push(await group.related('categories').create({ name, type: CategoryType.Regular,
-        balance: 0, fundingAmount: 0, useGoal: false, recurrence: 1, fundingCategories: [] }))
+        balanceCents: parseMoneyCents('0.00'), fundingAmount: 0, useGoal: false, recurrence: 1,
+          fundingCategories: [] }))
     }
     return { budget, user, account, categories }
   })
@@ -330,7 +331,7 @@ USING (${expression})`)
     .with([false, true]).run(async ({ assert }, loan) => {
       const f = await fixture()
       if (loan) await f.account.merge({ type: AccountType.Loan }).save()
-      await f.categories[0].merge({ balance: 9999999999.99 }).save()
+      await f.categories[0].merge({ balanceCents: parseMoneyCents('9999999999.99') }).save()
       const rule = await f.budget.related('autoAssignment').create({ name: 'Overflow',
         searchStrings: ['Precision match'] })
       await rule.related('categories').create({ categoryId: f.categories[0].id, amount: 100,

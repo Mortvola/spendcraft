@@ -86,9 +86,11 @@ async function assertBalances(f: Fixture, expected: number, provider: number, ca
   if (Number(raw.rows[0].balance) !== expected || Number(raw.rows[0]
     .plaid_balance) !== provider) throw new Error('Raw persistence disagrees')
   const unassigned = await Category.findOrFail(f.unassigned.id)
-  if (unassigned.balance !== category) throw new Error('Category effect disagrees')
+  if (Number(formatMoneyCents(unassigned.balanceCents)) !== category) throw new Error(
+    'Category effect disagrees')
   const pool = await Category.findOrFail(f.pool.id)
-  if (pool.balance !== 1000) throw new Error('Provider ledger contaminated Pool')
+  if (Number(formatMoneyCents(pool.balanceCents)) !== 1000) throw new Error(
+    'Provider ledger contaminated Pool')
   const opening = await account.related('accountTransactions').query()
     .whereHas('transaction', (query) => query.where('type', 4)).preload('transaction').firstOrFail()
   if (opening.amount !== 1000 || opening.transaction.categories[0].amount !== 1000) throw new Error(
@@ -114,11 +116,13 @@ test.group('OFX independent accounting and provider balance (prepared)', () => {
       })
       // Keep the existing opening row: replacing it exercises the exact delta path.
       const first = await adjust(sign * 0.1)
-      assert.strictEqual(first.pool.balance, sign * 0.1)
+      assert.strictEqual(first.pool.balanceCents, parseMoneyCents(encodeMonetaryAmount(sign * 0.1)))
       const second = await adjust(sign * 0.3)
-      assert.strictEqual(second.pool.balance, sign * 0.3)
+      assert.strictEqual(second.pool.balanceCents, parseMoneyCents(encodeMonetaryAmount(
+        sign * 0.3)))
       const repeated = await adjust(sign * 0.3)
-      assert.strictEqual(repeated.pool.balance, sign * 0.3)
+      assert.strictEqual(repeated.pool.balanceCents, parseMoneyCents(encodeMonetaryAmount(
+        sign * 0.3)))
       const opening = await repeated.account.related('accountTransactions').query()
         .whereHas('transaction', query => query.where('type', 4)).firstOrFail()
       assert.strictEqual(opening.amount, sign * 0.3)

@@ -34,7 +34,8 @@ async function createDomain(label: string) {
     })
     const group = await budget.related('groups').create({ name: `${label} group`, type: 'Regular' })
     const category = await group.related('categories').create({
-      name: `${label} category`, type: CategoryType.Regular, balance: 20, fundingCategories: [],
+      name: `${label} category`, type: CategoryType.Regular,
+      balanceCents: parseMoneyCents('20.00'), fundingCategories: [],
     })
     const transaction = await budget.related('transactions').create({
       date: DateTime.fromISO('2025-02-01'), type: TransactionType.MANUAL_TRANSACTION,
@@ -120,7 +121,8 @@ test.group('Transaction budget isolation', (group) => {
     response.assertStatus(200)
     assert.equal((await Account.findOrFail(fixture.own.account.id)).balanceCents,
       parseMoneyCents('105.00'))
-    assert.equal((await Category.findOrFail(fixture.own.category.id)).balance, 25)
+    assert.equal((await Category.findOrFail(fixture.own.category.id)).balanceCents,
+      parseMoneyCents('25.00'))
     assert.equal((await Transaction.findOrFail(fixture.own.transaction.id)).version, 1)
     assert.equal((await AccountTransaction.findOrFail(fixture.own.accountTransaction.id)).name,
       'Updated purchase')
@@ -216,7 +218,8 @@ test.group('Transaction budget isolation', (group) => {
     assert.isTrue((await Transaction.findOrFail(fixture.own.transaction.id)).deleted)
     assert.equal((await Account.findOrFail(fixture.own.account.id)).balanceCents,
       parseMoneyCents('90.00'))
-    assert.equal((await Category.findOrFail(fixture.own.category.id)).balance, 10)
+    assert.equal((await Category.findOrFail(fixture.own.category.id)).balanceCents,
+      parseMoneyCents('10.00'))
   })
 
   test('stored foreign categories cannot participate in update or deletion').with(['patch',

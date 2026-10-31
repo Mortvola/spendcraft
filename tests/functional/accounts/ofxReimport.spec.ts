@@ -30,9 +30,9 @@ test.group('OFX reimport financial consistency', () => {
       const group = await budget.related('groups').create({ name: 'OFX allocations', type:
         'Regular' })
       const first = await group.related('categories').create({ name: 'First', type: CategoryType
-        .Regular, balance: 0, fundingCategories: [] })
+        .Regular, balanceCents: parseMoneyCents('0.00'), fundingCategories: [] })
       const second = await group.related('categories').create({ name: 'Second', type: CategoryType
-        .Regular, balance: 0, fundingCategories: [] })
+        .Regular, balanceCents: parseMoneyCents('0.00'), fundingCategories: [] })
       return { budget, user, account, first, second }
     })
   }
@@ -149,12 +149,13 @@ FX>`
       await f.account.merge({ balanceCents: parseMoneyCents(encodeMonetaryAmount(sign * 0.1)),
         ...(loan ? { type: AccountType.Loan } : {}) }).save()
       const unassigned = await f.budget.getUnassignedCategory()
-      await unassigned.merge({ balance: sign * 0.1 }).save()
+      await unassigned.merge({ balanceCents: parseMoneyCents(encodeMonetaryAmount(
+        sign * 0.1)) }).save()
       ;(await upload(client, f, sign * 0.2)).assertStatus(200)
       assert.strictEqual((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents(
         encodeMonetaryAmount(sign * 0.3)))
       await unassigned.refresh()
-      assert.strictEqual(unassigned.balance, sign * 0.3)
+      assert.strictEqual(unassigned.balanceCents, parseMoneyCents(encodeMonetaryAmount(sign * 0.3)))
       ;(await upload(client, f, sign * 0.2)).assertStatus(200)
       assert.strictEqual((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents(
         encodeMonetaryAmount(sign * 0.3)))
@@ -162,7 +163,7 @@ FX>`
       assert.strictEqual((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents(
         encodeMonetaryAmount(sign * 0.5)))
       await unassigned.refresh()
-      assert.strictEqual(unassigned.balance, sign * 0.5)
+      assert.strictEqual(unassigned.balanceCents, parseMoneyCents(encodeMonetaryAmount(sign * 0.5)))
     })
 
   test('first import and identical replay preserve identities and financial effects', async ({

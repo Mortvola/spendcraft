@@ -27,7 +27,7 @@ async function fixture() {
     const group = await budget.related('groups').create({ name: 'Tax storage', type: 'Regular' })
     const category = await group.related('categories').create({ name: 'Tax storage',
       type: CategoryType.Regular,
-      balance: 0, fundingCategories: [] })
+      balanceCents: parseMoneyCents('0.00'), fundingCategories: [] })
     const target = await Transaction.create({ budgetId: budget.id, type: 5, version: 0,
       date: DateTime.fromISO('2025-02-01'), categories: [{ categoryId: category.id, amount: 10 }],
         taxes: [] }, { client: trx })

@@ -73,7 +73,7 @@ test.group('Transaction Category storage boundary — approved CREATE admission'
       }
       const budget = { id: 1, getFundingPoolCategory: async () => ({ id: 2 }) }
       const categories = new Map([1, 2].map((id) => [id, {
-        id, balance: 0.1, async save() { events.push('category.save') },
+        id, balanceCents: parseMoneyCents('0.10'), async save() { events.push('category.save') },
       }]))
       const handler = await transferHandler({
         DateTime, TransactionType, Exception, updateCategoryTransfer, encodeMonetaryAmount,
@@ -138,8 +138,8 @@ test.group('Transaction Category storage boundary — approved CREATE admission'
       assert.equal(created.type, type)
       assert.equal(created.budgetId, 1)
       assert.equal(response.data.transaction.type, type)
-      assert.strictEqual(categories.get(1).balance, 0.3)
-      assert.strictEqual(categories.get(2).balance, -0.1)
+      assert.strictEqual(categories.get(1).balanceCents, parseMoneyCents('0.30'))
+      assert.strictEqual(categories.get(2).balanceCents, parseMoneyCents('-0.10'))
       assert.include(events, 'commit')
       assert.notInclude(events, 'rollback')
       assert.isBelow(events.indexOf('budget.gate'), events.indexOf('transaction.create'))

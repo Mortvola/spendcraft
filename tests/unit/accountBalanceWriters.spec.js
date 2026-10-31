@@ -127,7 +127,8 @@ test.group('Provider concurrency behavior without a database', () => {
     const events = []
     const budget = { $trx: {}, async getFundingPoolCategory(options) {
       assert.strictEqual(options.client, this.$trx)
-      return { balance: persistedPool, async save() { persistedPool = this.balance } }
+      return { balanceCents: parseMoneyCents(encodeMonetaryAmount(persistedPool)), async save(
+        ) { persistedPool = Number(formatMoneyCents(this.balanceCents)) } }
     } }
     const accounts = [1, 2].map((id) => ({
       tracking: 'Transactions', type: 'Depository', plaidAccountId: String(id), initialized: false,
@@ -136,7 +137,8 @@ test.group('Provider concurrency behavior without a database', () => {
         assert.strictEqual(owner, budget)
         events.push(`opening-${id}`)
         await Promise.resolve()
-        pool.balance += id
+        pool.balanceCents = addMoneyCents(pool.balanceCents, parseMoneyCents(
+          encodeMonetaryAmount(id)))
       },
       async save() { events.push(`save-${id}`) },
     }))
@@ -177,7 +179,7 @@ async function openingFixture({ balance = 0.3, total = '0.20', poolBalance = 0.1
         related() { return { query: () => ({ firstOrFail: async () => transaction }) } } }
         return link },
     } } }
-  const pool = { id: 9, balance: poolBalance }
+  const pool = { id: 9, balanceCents: parseMoneyCents(encodeMonetaryAmount(poolBalance)) }
   const run = runInNewContext(ts.transpileModule(`(async function(${source.parameters}) ${source
     .body})`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, {
     addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents, encodeMonetaryAmount,
@@ -201,14 +203,14 @@ test.group('Initial Funding checked cents without a database', () => {
       assert.deepEqual(f.events.find(event => Array.isArray(event) && event[0] === 'storage'),
         ['storage', undefined])
       assert.strictEqual(f.link().amount, sign * 0.1)
-      assert.strictEqual(f.pool.balance, sign * 0.2)
+      assert.strictEqual(f.pool.balanceCents, parseMoneyCents(encodeMonetaryAmount(sign * 0.2)))
       f.account.balanceCents = parseMoneyCents(encodeMonetaryAmount(sign * 0.4))
       await f.run()
       assert.strictEqual(f.link().amount, sign * 0.2)
-      assert.strictEqual(f.pool.balance, sign * 0.3)
+      assert.strictEqual(f.pool.balanceCents, parseMoneyCents(encodeMonetaryAmount(sign * 0.3)))
       assert.strictEqual(f.transaction.categories[0].amount, sign * 0.2)
       await f.run()
-      assert.strictEqual(f.pool.balance, sign * 0.3)
+      assert.strictEqual(f.pool.balanceCents, parseMoneyCents(encodeMonetaryAmount(sign * 0.3)))
       assert.strictEqual(Number(formatMoneyCents(f.account.balanceCents)), sign * 0.4)
     })
 
@@ -216,7 +218,7 @@ test.group('Initial Funding checked cents without a database', () => {
     const f = await openingFixture({ balance: 0, total: null, poolBalance: 0 })
     await f.run()
     assert.strictEqual(f.link().amount, 0)
-    assert.strictEqual(f.pool.balance, 0)
+    assert.strictEqual(f.pool.balanceCents, parseMoneyCents('0.00'))
   })
 
   test('malformed or unsafe aggregates reject before persistence')
@@ -224,26 +226,27 @@ test.group('Initial Funding checked cents without a database', () => {
       const f = await openingFixture({ total })
       await assert.rejects(f.run)
       assert.deepEqual(f.events, [])
-      assert.strictEqual(f.pool.balance, 0.1)
+      assert.strictEqual(f.pool.balanceCents, parseMoneyCents('0.10'))
     })
 
   test('Loan opening rejects a subcent SQL aggregate before persistence', async ({ assert }) => {
     const f = await openingFixture({ loan: true, balance: 0.1, total: '0.005', poolBalance: 0 })
     await assert.rejects(f.run)
     assert.deepEqual(f.events, [])
-    assert.strictEqual(f.pool.balance, 0)
+    assert.strictEqual(f.pool.balanceCents, parseMoneyCents('0.00'))
   })
 })
 
 
 async function assignmentFixture(amount, rules, { loan = false, eligible = true,
-  balance = 0.1, matched = true } = {}) {
+  balance = 0.1, balanceCents = parseMoneyCents(encodeMonetaryAmount(balance)),
+    matched = true } = {}) {
   const source = await method('app/Models/Account.ts', 'autoAssign')
   const events = []
   const categories = rules.map((rule, index) => ({ id: index + 1, categoryId: index + 1,
     ...rule }))
   const balances = categories.map(category => ({ id: category.id, name: `Category ${category.id}`,
-    balance, async save() { events.push(['category.save', this.id]) },
+    balanceCents, async save() { events.push(['category.save', this.id]) },
     related() { return { query: () => ({ firstOrFail: async () => ({ type: 'NoGroup' }) }) } } }))
   const trx = {}
   const account = { type: loan ? 'Loan' : 'Credit', $trx: trx, startDate: 1 }
@@ -301,8 +304,8 @@ test.group('Auto-assignment checked cents without a database', () => {
         encodeMonetaryAmount(split.amount)))), parseMoneyCents(encodeMonetaryAmount(scenario
         .amount)))
       for (let i = 0; i < f.balances.length; i++) {
-        assert.strictEqual(f.balances[i].balance, Number(formatMoneyCents(addMoneyCents(
-          parseMoneyCents('0.10'), parseMoneyCents(encodeMonetaryAmount(scenario.expected[i]))))))
+        assert.strictEqual(f.balances[i].balanceCents, addMoneyCents(
+          parseMoneyCents('0.10'), parseMoneyCents(encodeMonetaryAmount(scenario.expected[i]))))
       }
       assert.include(f.events, 'CASE WHEN percentage THEN 1 ELSE 0 END')
     })
@@ -312,7 +315,8 @@ test.group('Auto-assignment checked cents without a database', () => {
       { amount: Infinity, rules: [{ amount: 100, percentage: true }] },
       { amount: 0.1, rules: [{ amount: Infinity, percentage: true }] },
       { amount: 9999999999.99, rules: [{ amount: 9999999999.99, percentage: true }] },
-      { amount: 0.1, rules: [{ amount: 100, percentage: true }], balance: Number.MAX_SAFE_INTEGER },
+      { amount: 0.1, rules: [{ amount: 100, percentage: true }],
+        balanceCents: Number.MAX_SAFE_INTEGER },
       { amount: 0.1, rules: [{ amount: Number.MAX_SAFE_INTEGER }] },
     ]).run(async ({ assert }, scenario) => {
       const f = await assignmentFixture(scenario.amount, scenario.rules, scenario)
@@ -324,7 +328,7 @@ test.group('Auto-assignment checked cents without a database', () => {
   test('pre-start-date allocations do not change Category balances', async ({ assert }) => {
     const f = await assignmentFixture(0.2, [{ amount: 100, percentage: true }], { eligible: false })
     await f.run()
-    assert.strictEqual(f.balances[0].balance, 0.1)
+    assert.strictEqual(f.balances[0].balanceCents, parseMoneyCents('0.10'))
     assert.strictEqual(f.transaction.categories[0].amount, 0.2)
   })
 
@@ -340,7 +344,7 @@ test.group('Auto-assignment checked cents without a database', () => {
         { amount: 50, percentage: true }], { loan: true })
       await f.run()
       assert.deepEqual(f.transaction.categories.map(split => split.amount), [0.15, 0.14])
-      assert.strictEqual(f.balances[1].balance, 0.24)
+      assert.strictEqual(f.balances[1].balanceCents, parseMoneyCents('0.24'))
     })
 })
 
@@ -351,7 +355,8 @@ async function startDateFixture({ amount = 0.2, balance = 0.3, earlier = false,
   const events = []
   const trx = { async commit() { events.push('commit') },
     async rollback() { events.push('rollback') } }
-  const category = { balance, async save() { events.push('category.save') } }
+  const category = { balanceCents: parseMoneyCents(encodeMonetaryAmount(balance)), async save(
+    ) { events.push('category.save') } }
   const account = { type: loan ? 'Loan' : 'Credit', tracking: 'Transactions',
     startDate: DateTime.fromISO(earlier ? '2025-02-01' : '2025-01-01'),
     async save() { events.push('account.save') },
@@ -396,7 +401,8 @@ test.group('Account start-date checked cents without a database', () => {
   ]).run(async ({ assert }, scenario) => {
     const f = await startDateFixture(scenario)
     await f.run()
-    assert.strictEqual(f.category.balance, scenario.expected)
+    assert.strictEqual(f.category.balanceCents, parseMoneyCents(encodeMonetaryAmount(
+      scenario.expected)))
     assert.strictEqual(f.events.at(-1), 'commit')
   })
 

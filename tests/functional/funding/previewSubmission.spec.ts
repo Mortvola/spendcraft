@@ -1,3 +1,4 @@
+import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 import { canonicalCategoryAllocations, encodeMonetaryAmount, encodeCategoryAllocations,
   monetaryAmountCents, checkedCentSum } from '#services/categoryAmountCodec'
@@ -25,11 +26,12 @@ async function fixture() {
     const group = await budget.related('groups').create({ name: 'Preview', type: 'Regular' })
     const categories = []
     for (const name of ['A', 'B', 'C']) categories.push(await group.related('categories').create({
-      name, type: CategoryType.Regular, balance: 0, fundingAmount: 1, useGoal: false,
+      name, type: CategoryType.Regular, balanceCents: parseMoneyCents('0.00'), fundingAmount: 1,
+        useGoal: false,
       recurrence: 1, fundingCategories: [], includeFundingTransfers: false, suspended: false,
     }))
     const pool = await budget.getFundingPoolCategory({ client: trx })
-    await pool.merge({ balance: 10 }).save()
+    await pool.merge({ balanceCents: parseMoneyCents('10.00') }).save()
     return { budget, user, categories, pool }
   })
 }
@@ -66,7 +68,8 @@ test.group('Funding preview/submission persisted equality', () => {
           amount: 50, percentage: true }] } }
       if (scenario === 'negative' || scenario === 'zero') inputs = { [a.id]: input(scenario ===
         'negative' ? -1 : 0) }
-      if (scenario === 'low Pool') await f.pool.merge({ balance: 1 }).save()
+      if (scenario === 'low Pool') await f.pool.merge({ balanceCents: parseMoneyCents(
+        '1.00') }).save()
       if (scenario === 'goal' || scenario === 'mixed goal') {
         await a.merge({ useGoal: true, goalDate: DateTime.fromISO('2025-04-01'), fundingAmount: 120,
           recurrence: 3 }).save()
@@ -83,8 +86,8 @@ test.group('Funding preview/submission persisted equality', () => {
             percentage: true }] } }
       }
       const rows = calculateFunding(inputs, f.pool.id)
-      const before = new Map([f.pool, ...f.categories].map((category) => [category.id, category
-        .balance]))
+      const before = new Map([f.pool, ...f.categories].map((category) => [category.id, Number(
+        formatMoneyCents(category.balanceCents))]))
       const snapshot = await db.from('accounts').orderBy('id')
       const response = await client.post('/api/v1/category-transfer').json(categoryTransferRequest({
         date: '2025-03-01', type: TransactionType.FUNDING_TRANSACTION,
@@ -93,8 +96,8 @@ test.group('Funding preview/submission persisted equality', () => {
         // Individually rounded nonconserving cents / absent Pool are rejected by approved policy.
         response.assertStatus(422)
         assert.lengthOf(await Transaction.query().where('budgetId', f.budget.id), 0)
-        for (const [id, initial] of before) assert.equal((await Category.findOrFail(id)).balance,
-          initial)
+        for (const [id, initial] of before) assert.equal((await Category.findOrFail(
+          id)).balanceCents, parseMoneyCents(encodeMonetaryAmount(initial)))
         return
       }
       response.assertStatus(200)
@@ -110,7 +113,8 @@ test.group('Funding preview/submission persisted equality', () => {
         // scale, without asserting a future exact representation for JSON.
         const expected = Math.round((initial + fundingCategoryEffect(canonicalCategoryAllocations(
           rows), id)) * 100) / 100
-        assert.equal((await Category.findOrFail(id)).balance, expected)
+        assert.equal((await Category.findOrFail(id)).balanceCents, parseMoneyCents(
+          encodeMonetaryAmount(expected)))
         const rawCategory = await db.from('categories').select('balance').where('id', id).first()
         assert.equal(Number(rawCategory.balance), expected)
         // The API encodes the existing runtime calculation at the response boundary.
@@ -126,9 +130,10 @@ test.group('Funding preview/submission persisted equality', () => {
         categoryTransferRequest({ date: '2025-03-01',
         type: TransactionType.FUNDING_TRANSACTION, categories: rows })).loginAs(f.user)
       replaced.assertStatus(200)
-      for (const [id, initial] of before) assert.equal((await Category.findOrFail(id)).balance,
-        Math.round((initial + fundingCategoryEffect(canonicalCategoryAllocations(rows), id)) *
-          100) / 100)
+      for (const [id, initial] of before) assert.equal((await Category.findOrFail(
+        id)).balanceCents, parseMoneyCents(encodeMonetaryAmount(Math.round((
+          initial + fundingCategoryEffect(canonicalCategoryAllocations(rows), id)) *
+          100) / 100)))
       // Report current persisted net rows after the real create/replacement workflow.
       const history = await client.get('/api/v1/reports/funding-history').loginAs(f.user)
       history.assertStatus(200)
@@ -152,15 +157,15 @@ test.group('Funding preview/submission persisted equality', () => {
     const rows = calculateFunding({ [a.id]: { baseAmount: 2, includeFundingTransfers: false,
       fundingCategories: [{ categoryId: f.pool.id, amount: 100, percentage: true }] } }, f.pool.id)
     // Another committed operation changes financial/configuration state after preview.
-    await a.merge({ balance: 5, fundingAmount: 99 }).save()
-    await f.pool.merge({ balance: 20 }).save()
+    await a.merge({ balanceCents: parseMoneyCents('5.00'), fundingAmount: 99 }).save()
+    await f.pool.merge({ balanceCents: parseMoneyCents('20.00') }).save()
     const response = await client.post('/api/v1/category-transfer').json(categoryTransferRequest({
       date: '2025-03-01', type: 2, categories: rows })).loginAs(f.user)
     response.assertStatus(200)
     assert.deepEqual((await Transaction.findOrFail(response.body().data.transaction.id)).categories,
       rows)
-    assert.equal((await Category.findOrFail(a.id)).balance, 7)
-    assert.equal((await Category.findOrFail(f.pool.id)).balance, 18)
+    assert.equal((await Category.findOrFail(a.id)).balanceCents, parseMoneyCents('7.00'))
+    assert.equal((await Category.findOrFail(f.pool.id)).balanceCents, parseMoneyCents('18.00'))
   })
 
   test('server still rejects unbalanced client funding without partial persistence', async ({
@@ -173,8 +178,9 @@ test.group('Funding preview/submission persisted equality', () => {
       date: '2025-03-01', type: 2, categories: rows })).loginAs(f.user)
     assert.isAtLeast(response.status(), 400)
     assert.isBelow(response.status(), 500)
-    assert.equal((await Category.findOrFail(f.categories[0].id)).balance, 0)
-    assert.equal((await Category.findOrFail(f.pool.id)).balance, 10)
+    assert.equal((await Category.findOrFail(f.categories[0].id)).balanceCents, parseMoneyCents(
+      '0.00'))
+    assert.equal((await Category.findOrFail(f.pool.id)).balanceCents, parseMoneyCents('10.00'))
     assert.lengthOf(await Transaction.query().where('budgetId', f.budget.id), 0)
   })
 
@@ -268,11 +274,14 @@ test.group('Funding preview/posting serialization', () => {
       }
       await first
       await second
-      assert.equal((await Category.findOrFail(a.id)).balance, kind === 'funding' ? 3 : kind ===
-        'rollback' ? 2 : 0)
-      assert.equal((await Category.findOrFail(b.id)).balance, kind === 'rebalance' ? 1 : 0)
-      assert.equal((await Category.findOrFail(f.pool.id)).balance, kind ===
-        'funding' ? 7 : kind === 'rollback' ? 8 : 9)
+      assert.equal((await Category.findOrFail(a.id)).balanceCents, parseMoneyCents(
+        encodeMonetaryAmount(kind === 'funding' ? 3 : kind ===
+        'rollback' ? 2 : 0)))
+      assert.equal((await Category.findOrFail(b.id)).balanceCents, parseMoneyCents(
+        encodeMonetaryAmount(kind === 'rebalance' ? 1 : 0)))
+      assert.equal((await Category.findOrFail(f.pool.id)).balanceCents, parseMoneyCents(
+        encodeMonetaryAmount(kind ===
+        'funding' ? 7 : kind === 'rollback' ? 8 : 9)))
       assert.lengthOf(await Transaction.query().where('budgetId', f.budget.id), kind ===
         'rollback' ? 1 : 2)
     })
@@ -291,8 +300,10 @@ test.group('Funding preview/posting serialization', () => {
       const response = await client.post('/api/v1/category-transfer').json(categoryTransferRequest({
         date: '2025-03-01', type: 2, categories: rows })).loginAs(second.user)
       response.assertStatus(200)
-      assert.equal((await Category.findOrFail(second.pool.id)).balance, 9)
-      assert.equal((await Category.findOrFail(first.pool.id)).balance, 10)
+      assert.equal((await Category.findOrFail(second.pool.id)).balanceCents, parseMoneyCents(
+        '9.00'))
+      assert.equal((await Category.findOrFail(first.pool.id)).balanceCents, parseMoneyCents(
+        '10.00'))
     } finally { await owner.rollback() }
   })
 })
@@ -311,7 +322,8 @@ account for reversal')
       const created = await client.post('/api/v1/category-transfer').json(categoryTransferRequest({
         date: '2025-03-01', type: 2, categories: oldRows })).loginAs(f.user)
       created.assertStatus(200)
-      const currentPool = (await Category.findOrFail(f.pool.id)).balance
+      const currentPool = Number(formatMoneyCents((await Category.findOrFail(
+        f.pool.id)).balanceCents))
       assert.equal(currentPool, 8)
       const info = await client.get('/api/v1/categories?date=2025-03-01').loginAs(f.user)
       info.assertStatus(200)
@@ -328,8 +340,9 @@ account for reversal')
         .json(categoryTransferRequest({ date: '2025-04-01', type: 2, categories: newRows }))
           .loginAs(f.user)
       rejected.assertStatus(422)
-      assert.equal((await Category.findOrFail(f.pool.id)).balance, currentPool)
-      assert.equal((await Category.findOrFail(a.id)).balance, 2)
+      assert.equal((await Category.findOrFail(f.pool.id)).balanceCents, parseMoneyCents(
+        encodeMonetaryAmount(currentPool)))
+      assert.equal((await Category.findOrFail(a.id)).balanceCents, parseMoneyCents('2.00'))
       assert.equal((await Transaction.findOrFail(created.body().data.transaction.id)).date
         .toISODate(), '2025-03-01')
       const response = await client.patch(`/api/v1/category-transfer/${created.body().data
@@ -337,8 +350,10 @@ account for reversal')
         .json(categoryTransferRequest({ date: '2025-03-01', type: 2, categories: newRows }))
           .loginAs(f.user)
       response.assertStatus(200)
-      assert.equal((await Category.findOrFail(f.pool.id)).balance, projectedPool)
-      assert.equal((await Category.findOrFail(a.id)).balance, projectedCategory)
+      assert.equal((await Category.findOrFail(f.pool.id)).balanceCents, parseMoneyCents(
+        encodeMonetaryAmount(projectedPool)))
+      assert.equal((await Category.findOrFail(a.id)).balanceCents, parseMoneyCents(
+        encodeMonetaryAmount(projectedCategory)))
       assert.equal(additionalWithdrawal, amount - 2)
       assert.deepEqual((await Transaction.findOrFail(created.body().data.transaction.id))
         .categories, newRows)
@@ -415,10 +430,12 @@ test.group('Immutable funding date verification', () => {
       replaced.assertStatus(200)
       assert.deepEqual(await read(), original)
       assert.deepEqual(await balances(), before)
-      assert.equal((await Category.findOrFail(a.id)).balance, Math.round((initial +
-        fundingCategoryEffect(canonicalCategoryAllocations(rows), a.id)) * 100) / 100)
-      assert.equal((await Category.findOrFail(f.pool.id)).balance, Math.round((10 +
-        fundingCategoryEffect(canonicalCategoryAllocations(rows), f.pool.id)) * 100) / 100)
+      assert.equal((await Category.findOrFail(a.id)).balanceCents, parseMoneyCents(
+        encodeMonetaryAmount(Math.round((initial +
+        fundingCategoryEffect(canonicalCategoryAllocations(rows), a.id)) * 100) / 100)))
+      assert.equal((await Category.findOrFail(f.pool.id)).balanceCents, parseMoneyCents(
+        encodeMonetaryAmount(Math.round((10 +
+        fundingCategoryEffect(canonicalCategoryAllocations(rows), f.pool.id)) * 100) / 100)))
       assert.equal(rows[0].baseAmount, base)
       if (rule === 'transfer') assert.equal(original.categories[0].amount, '0.30')
     })
@@ -466,8 +483,9 @@ test.group('Immutable funding date verification', () => {
       categoryTransferRequest({ date: '2025-04-01', type: 3, categories })).loginAs(f.user)
     response.assertStatus(200)
     assert.equal((await Transaction.findOrFail(id)).date.toISODate(), '2025-04-01')
-    assert.equal((await Category.findOrFail(f.categories[0].id)).balance, 1)
-    assert.equal((await Category.findOrFail(f.pool.id)).balance, 9)
+    assert.equal((await Category.findOrFail(f.categories[0].id)).balanceCents, parseMoneyCents(
+      '1.00'))
+    assert.equal((await Category.findOrFail(f.pool.id)).balanceCents, parseMoneyCents('9.00'))
   })
 })
 
@@ -525,8 +543,8 @@ test.group('Immutable funding replacement serialization', () => {
       const transaction = await Transaction.findOrFail(id)
       assert.equal(transaction.date.toISODate(), '2025-03-17')
       assert.deepEqual(transaction.categories, rows(kind === 'other writer' ? 3 : 4))
-      assert.equal((await Category.findOrFail(a.id)).balance, 4)
-      assert.equal((await Category.findOrFail(f.pool.id)).balance, 6)
+      assert.equal((await Category.findOrFail(a.id)).balanceCents, parseMoneyCents('4.00'))
+      assert.equal((await Category.findOrFail(f.pool.id)).balanceCents, parseMoneyCents('6.00'))
       assert.lengthOf(await Transaction.query().where('budgetId', f.budget.id), kind ===
         'other writer' ? 2 : 1)
     })
@@ -574,7 +592,8 @@ test.group('Immutable funding date ownership and lifecycle isolation', () => {
     assert.equal(transaction.date.toISODate(), '2025-03-17')
     assert.deepEqual(transaction.categories, decodeFundingMetadata(encodeFundingMetadata(
       canonicalCategoryAllocations(rows))))
-    assert.equal((await Category.findOrFail(f.categories[0].id)).balance, 0)
-    assert.equal((await Category.findOrFail(f.pool.id)).balance, 10)
+    assert.equal((await Category.findOrFail(f.categories[0].id)).balanceCents, parseMoneyCents(
+      '0.00'))
+    assert.equal((await Category.findOrFail(f.pool.id)).balanceCents, parseMoneyCents('10.00'))
   })
 })

@@ -28,11 +28,13 @@ async function createDomain(label: string) {
     const group = await budget.related('groups').create({ name: `${label} group`, type: 'Regular' })
     const first = await group.related('categories').create({ name: `${label} first`,
       type: CategoryType.Regular,
-      balance: 200, fundingAmount: 300, useGoal: true, goalDate: DateTime.fromISO('2025-03-01'),
+      balanceCents: parseMoneyCents('200.00'), fundingAmount: 300, useGoal: true,
+        goalDate: DateTime.fromISO('2025-03-01'),
       recurrence: 1, suspended: false, fundingCategories: [] })
     const second = await group.related('categories').create({ name: `${label} second`,
       type: CategoryType.Regular,
-      balance: 50, fundingAmount: 120, useGoal: true, goalDate: DateTime.fromISO('2025-03-01'),
+      balanceCents: parseMoneyCents('50.00'), fundingAmount: 120, useGoal: true,
+        goalDate: DateTime.fromISO('2025-03-01'),
       recurrence: 1, suspended: false, fundingCategories: [] })
     const transactions = []
     for (const entry of [
@@ -148,8 +150,10 @@ direction`)
 
   test('fractional historical balances remain exact through helper and API')
     .with([1, -1]).run(async ({ client, assert }, sign) => {
-      await a.first.merge({ balance: sign * 0.3 }).save()
-      await a.second.merge({ balance: -sign * 0.1 }).save()
+      await a.first.merge({ balanceCents: parseMoneyCents(encodeMonetaryAmount(
+        sign * 0.3)) }).save()
+      await a.second.merge({ balanceCents: parseMoneyCents(encodeMonetaryAmount(
+        -sign * 0.1)) }).save()
       for (const [index, amount] of [[0, sign * 0.1], [1, sign * 0.1]] as const) {
         await db.from('transactions').where('id', a.transactions[index].id).update({
           categories: JSON.stringify([{ categoryId: a.first.id,
@@ -173,7 +177,8 @@ direction`)
 
   test('monthly summary preserves exact signed totals and previous-month boundaries')
     .with([1, -1]).run(async ({ client, assert }, sign) => {
-      await a.first.merge({ balance: sign * 0.3 }).save()
+      await a.first.merge({ balanceCents: parseMoneyCents(encodeMonetaryAmount(
+        sign * 0.3)) }).save()
       for (const [index, amount] of [[0, 0.1], [1, 0.1], [2, 0.2], [3, 0.3]] as const) {
         await db.from('transactions').where('id', a.transactions[index].id).update({
           categories: JSON.stringify([{ categoryId: a.first.id,

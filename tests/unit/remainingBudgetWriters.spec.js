@@ -464,7 +464,7 @@ for (const action of ['deleteGroup', 'addCategory', 'updateCategory']) {
       const waiting = new Promise((resolve) => { entered = resolve })
       const failure = new Error('validation failed')
       class FakeCategory {
-        balance = 42
+        balanceCents = parseMoneyCents('42.00')
         useTransaction(client) { assert.strictEqual(client, owner); this.client = client;
           return this }
         fill(values) { Object.assign(this, values); return this }
@@ -530,7 +530,8 @@ for (const action of ['deleteGroup', 'addCategory', 'updateCategory']) {
           else assert.include(events, 'delete')
         } else {
           assert.equal(result.data.name, 'Fresh'); assert.include(events, 'funding.authorized')
-          assert.equal(result.data.balance, action === 'addCategory' ? '0.00' : '42.00')
+          assert.equal(result.data.balanceCents, parseMoneyCents(
+            action === 'addCategory' ? '0.00' : '42.00'))
           assert.include(events, 'save')
         }
       }
@@ -549,7 +550,7 @@ for (const failure of [undefined, 'budget', 'cascade']) {
       .push('rollback') } }
     const budget = { id: 7, $trx: owner }
     const account = { id: 20 }
-    const balances = [{ id: 9, balance: 45 }]
+    const balances = [{ id: 9, balanceCents: parseMoneyCents('45.00') }]
     const run = await method('app/Controllers/Http/InstitutionController.ts', 'deleteAccount', {
       db: { transaction: async () => owner },
       budgetInstitutions(id, { client }) {
@@ -606,7 +607,7 @@ for (const scenario of ['offline', 'online', 'budget-failure', 'remote-failure',
       .push('rollback') } }
     const budget = { id: 7, $trx: owner }
     const accounts = [{ id: 20 }]
-    const balances = [{ id: 9, balance: 45 }]
+    const balances = [{ id: 9, balanceCents: parseMoneyCents('45.00') }]
     const institution = { accessToken: scenario === 'offline' ? null : 'stale-token',
       institutionId: 'bank',
       related: () => ({ query: () => ({ useTransaction(trx) {
@@ -667,8 +668,8 @@ for (const scenario of ['transactions', 'balances', 'missing-institution', 'stat
     const waiting = new Promise((resolve) => { entered = resolve })
     const owner = { commit: async () => { events.push('commit') }, rollback: async () => { events
       .push('rollback') } }
-    const pool = { id: 1, balance: 100 }
-    const unassigned = { id: 2, balance: 5 }
+    const pool = { id: 1, balanceCents: parseMoneyCents('100.00') }
+    const unassigned = { id: 2, balanceCents: parseMoneyCents('5.00') }
     const budget = {
       async getFundingPoolCategory({ client }) {
         assert.strictEqual(client, owner); assert.include(events, 'acquired'); events.push('pool');
@@ -715,7 +716,8 @@ for (const scenario of ['transactions', 'balances', 'missing-institution', 'stat
     } })
     await waiting
     assert.deepEqual(events, [])
-    pool.balance = 80 // A preceding writer commits while this operation waits.
+    pool.balanceCents = parseMoneyCents(
+      '80.00') // A preceding writer commits while this operation waits.
     release()
     if (scenario === 'missing-institution' || scenario === 'statement-failure') {
       await assert.rejects(() => operation, scenario === 'missing-institution' ? 'not found' :
@@ -731,7 +733,8 @@ for (const scenario of ['transactions', 'balances', 'missing-institution', 'stat
         'balances' ? 1 : 0)
       assert.equal(events.at(-1), 'commit')
     }
-    assert.equal(pool.balance, 80); assert.equal(unassigned.balance, 5)
+    assert.equal(pool.balanceCents, parseMoneyCents('80.00')); assert.equal(
+      unassigned.balanceCents, parseMoneyCents('5.00'))
   })
 }
 

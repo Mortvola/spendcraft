@@ -45,7 +45,8 @@ async function fixture() {
     const empty = await budget.related('groups').create({ name: 'Empty', type: 'Regular' })
     const category = await group.related('categories').create({ name: 'Target', type: CategoryType
       .Regular,
-      balance: 5, fundingAmount: 5, fundingCategories: [], useGoal: false, recurrence: 1 })
+      balanceCents: parseMoneyCents('5.00'), fundingAmount: 5, fundingCategories: [],
+        useGoal: false, recurrence: 1 })
     // Known current eligible applied effect; no historical reversal acceptance inferred.
     const transaction = await budget.related('transactions').create({ date: DateTime.fromISO(
       '2025-02-01'),
@@ -153,7 +154,7 @@ test.group('Staged Budget writers PostgreSQL acceptance', (group) => {
           result.assertStatus(operation === 'deleteGroup' ? 204 : 200)
           if (!['deleteUser', 'deleteAccount', 'deleteInstitution'].includes(operation)) {
             const fresh = await Category.findOrFail(target.category.id)
-            assert.equal(fresh.balance, 5)
+            assert.equal(fresh.balanceCents, parseMoneyCents('5.00'))
             assert.equal(fresh.fundingAmount, ordering === 'commit' ? 37 : 5)
           }
           if (operation === 'tax') {
@@ -263,7 +264,7 @@ test.group('Staged Budget writers PostgreSQL acceptance', (group) => {
       const fresh = await Category.findOrFail(f.category.id)
       assert.equal(fresh.name, values[1].name); assert.equal(fresh.fundingAmount, values[1]
         .fundingAmount)
-      assert.equal(fresh.balance, 5)
+      assert.equal(fresh.balanceCents, parseMoneyCents('5.00'))
     })
 
 
@@ -315,7 +316,8 @@ test.group('Staged Budget writers PostgreSQL acceptance', (group) => {
           assert.equal(fresh.plaidItemId, 'provider-item'); assert.equal(fresh.accessToken, token)
           assert.equal(fresh.cursor, 'preserve-cursor')
         }
-        assert.equal((await Category.findOrFail(f.category.id)).balance, 5)
+        assert.equal((await Category.findOrFail(f.category.id)).balanceCents, parseMoneyCents(
+          '5.00'))
       } finally {
         if (!trx.isCompleted) await trx.rollback()
         if (pending) await Promise.allSettled([pending])
@@ -348,7 +350,7 @@ test.group('Staged Budget writers PostgreSQL acceptance', (group) => {
       await trx.commit(); await deadline(pending)
       const row = await db.from('transactions').where('id', f.transaction.id).first()
       assert.deepEqual(row.categories, [{ categoryId: f.category.id, amount: 5 }])
-      assert.equal((await Category.findOrFail(f.category.id)).balance, 5)
+      assert.equal((await Category.findOrFail(f.category.id)).balanceCents, parseMoneyCents('5.00'))
     } finally {
       if (!trx.isCompleted) await trx.rollback()
       if (pending) await Promise.allSettled([pending])

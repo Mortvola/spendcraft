@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '#common/moneyCents'
 import { test } from '@japa/runner'
 import { mock } from 'node:test'
 import db from '@adonisjs/lucid/services/db'
@@ -21,9 +22,9 @@ test.group('Category deletion transaction lifecycle', (group) => {
       const categoryGroup = await budget.related('groups').create({ name: 'Lifecycle', type:
         'Regular' })
       const blocked = await categoryGroup.related('categories').create({ name: 'Referenced',
-        type: CategoryType.Regular, balance: 10, fundingCategories: [] })
+        type: CategoryType.Regular, balanceCents: parseMoneyCents('10.00'), fundingCategories: [] })
       const empty = await categoryGroup.related('categories').create({ name: 'Empty',
-        type: CategoryType.Regular, balance: 0, fundingCategories: [] })
+        type: CategoryType.Regular, balanceCents: parseMoneyCents('0.00'), fundingCategories: [] })
       await budget.related('transactions').create({ date: DateTime.fromISO('2025-02-10'),
         type: TransactionType.MANUAL_TRANSACTION,
         categories: [{ categoryId: blocked.id, amount: 10 }], taxes: [], version: 0, deleted: false,
@@ -63,7 +64,7 @@ test.group('Category deletion transaction lifecycle', (group) => {
     ;(await remove(client, f.blocked.id)).assertStatus(409)
     assert.lengthOf(captured, 1)
     assert.isTrue(captured[0].isCompleted)
-    assert.equal((await Category.findOrFail(f.blocked.id)).balance, 10)
+    assert.equal((await Category.findOrFail(f.blocked.id)).balanceCents, parseMoneyCents('10.00'))
   })
 
   test('repeated blocked deletes complete distinct transactions', async ({ client, assert }) => {

@@ -43,7 +43,7 @@ test.group('Balance-tracked invariant enforcement', (group) => {
     const owner = await f.budget.related('groups').create({ name: 'Invariant categories', type:
       'Regular' })
     category = await owner.related('categories').create({ name: 'Explicit allocation',
-      type: CategoryType.Regular, balance: 0, fundingCategories: [] })
+      type: CategoryType.Regular, balanceCents: parseMoneyCents('0.00'), fundingCategories: [] })
   })
 
   async function snapshot() {
@@ -85,7 +85,7 @@ test.group('Balance-tracked invariant enforcement', (group) => {
       sortOrder: 0, categories: [{ categoryId: category.id, amount: 10 }], taxes: [] })
     await f.account.related('accountTransactions').create({ transactionId: transaction.id,
       amount: 10, name: 'Historical invalid row', pending: false, provider: 'NONE' })
-    await category.merge({ balance: 10 }).save()
+    await category.merge({ balanceCents: parseMoneyCents('10.00') }).save()
     const before = await snapshot()
     const response = await client.patch(`/api/v1/transaction/${transaction.id}`).json(
       transactionRequest({ version: 0, amount: 20, categories: [{ categoryId: category.id,
@@ -157,7 +157,7 @@ Test movement</STMTTRN></BANKTRANLIST>'
       sortOrder: 0, categories: [{ categoryId: category.id, amount: 10 }], taxes: [] })
     await f.account.related('accountTransactions').create({ transactionId: transaction.id,
       amount: 10, name: 'Historical invalid delete', pending: false, provider: 'NONE' })
-    await category.merge({ balance: 10 }).save()
+    await category.merge({ balanceCents: parseMoneyCents('10.00') }).save()
     const before = await snapshot()
     const response = await client.delete(`/api/v1/transaction/${transaction.id}`).accept('json')
       .loginAs(f.user)

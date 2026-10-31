@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '#common/moneyCents'
 import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 import { categoryRequest } from '../../helpers/categoryRequest.js'
 import {
@@ -31,12 +32,14 @@ async function createDomain(label: string) {
     const emptyGroup = await budget.related('groups').create({ name: `${label} empty group`,
       type: GroupType.Regular })
     const category = await group.related('categories').create({ name: `${label} category`,
-      type: CategoryType.Regular, balance: 100, fundingCategories: [] })
+      type: CategoryType.Regular, balanceCents: parseMoneyCents('100.00'), fundingCategories: [] })
     const otherCategory = await otherGroup.related('categories').create({
-      name: `${label} other category`, type: CategoryType.Regular, balance: 50, fundingCategories: [
+      name: `${label} other category`, type: CategoryType.Regular,
+      balanceCents: parseMoneyCents('50.00'), fundingCategories: [
       ] })
     const unusedCategory = await otherGroup.related('categories').create({
-      name: `${label} unused category`, type: CategoryType.Regular, balance: 0, fundingCategories: [
+      name: `${label} unused category`, type: CategoryType.Regular,
+      balanceCents: parseMoneyCents('0.00'), fundingCategories: [
       ] })
     const transaction = await budget.related('transactions').create({
       date: DateTime.fromISO('2025-02-01'), type: TransactionType.REBALANCE_TRANSACTION,
@@ -224,7 +227,7 @@ test.group('Group/category/transfer isolation', (group) => {
     const category = await Category.findOrFail(fixture.own.category.id)
     assert.equal(category.groupId, destination.id)
     assert.equal(category.name, 'Updated category')
-    assert.equal(category.balance, 100)
+    assert.equal(category.balanceCents, parseMoneyCents('100.00'))
     assert.deepEqual(category.fundingCategories, [funding(fixture.own.otherCategory.id)])
     assert.equal(response.body().data.groupId, destination.id)
     // Only the updated category's metadata may change; all other persisted state is identical.
@@ -281,8 +284,10 @@ test.group('Group/category/transfer isolation', (group) => {
       .id])))
       .accept('json').loginAs(fixture.shared)
     created.assertStatus(200)
-    assert.equal((await Category.findOrFail(fixture.own.category.id)).balance, 90)
-    assert.equal((await Category.findOrFail(fixture.own.otherCategory.id)).balance, 60)
+    assert.equal((await Category.findOrFail(fixture.own.category.id)).balanceCents,
+      parseMoneyCents('90.00'))
+    assert.equal((await Category.findOrFail(fixture.own.otherCategory.id)).balanceCents,
+      parseMoneyCents('60.00'))
     const id: number = created.body().data.transaction.id
     const updated = await client.patch(`/api/v1/category-transfer/${id}`).json(
       categoryTransferRequest({ date: '2025-03-02', type: TransactionType.REBALANCE_TRANSACTION,
@@ -290,10 +295,13 @@ test.group('Group/category/transfer isolation', (group) => {
         .category.id, amount: -10 }, { categoryId: fixture.own.otherCategory.id, amount: 15 }] }))
       .accept('json').loginAs(fixture.shared)
     updated.assertStatus(200)
-    assert.equal((await Category.findOrFail(fixture.own.category.id)).balance, 85)
-    assert.equal((await Category.findOrFail(fixture.own.otherCategory.id)).balance, 65)
+    assert.equal((await Category.findOrFail(fixture.own.category.id)).balanceCents,
+      parseMoneyCents('85.00'))
+    assert.equal((await Category.findOrFail(fixture.own.otherCategory.id)).balanceCents,
+      parseMoneyCents('65.00'))
     assert.equal((await Transaction.findOrFail(id)).budgetId, fixture.own.budget.id)
-    assert.equal((await Category.findOrFail(fixture.foreign.category.id)).balance, 100)
+    assert.equal((await Category.findOrFail(fixture.foreign.category.id)).balanceCents,
+      parseMoneyCents('100.00'))
   })
 
   test('rejects unsafe stored transfer references before undoing balances').with(['split',
@@ -326,7 +334,8 @@ test.group('Group/category/transfer isolation', (group) => {
     assert.equal(transaction.budgetId, fixture.own.budget.id)
     assert.notEqual(transaction.id, fixture.foreign.transaction.id)
     assert.notProperty(transaction.categories[0], 'id')
-    assert.equal((await Category.findOrFail(fixture.foreign.category.id)).balance, 100)
+    assert.equal((await Category.findOrFail(fixture.foreign.category.id)).balanceCents,
+      parseMoneyCents('100.00'))
   })
 
   test('legacy transfer tables are absent from the configured schema', async ({ assert }) => {

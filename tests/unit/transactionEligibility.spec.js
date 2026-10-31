@@ -36,8 +36,9 @@ async function patchFixture({ date = dates[1], pending = false, amount = 10, spl
   const events = []
   const trx = { async commit() { events.push('commit') }, async rollback() { events.push(
     'rollback') } }
-  const categories = new Map([1, 2, 3].map((id) => [id, { id, balance: 0,
-    async save() { events.push(['category', id, this.balance]) }, async transactionsCount() {
+  const categories = new Map([1, 2, 3].map((id) => [id, { id, balanceCents: parseMoneyCents('0.00'),
+    async save() { events.push(['category', id, Number(formatMoneyCents(this.balanceCents))]) },
+      async transactionsCount() {
       return 1 } }]))
   const eligible = date >= dates[1]
   const account = { id: 1, type: 'Depository', tracking: 'Transactions', startDate: boundary,
@@ -57,10 +58,12 @@ async function patchFixture({ date = dates[1], pending = false, amount = 10, spl
       return name === 'accountTransaction' ? { query: () => query(link) }
         : { async create() { events.push('log') } }
     } }
-  if (eligible) for (const split of transaction.categories) categories.get(split.categoryId)
-    .balance += split.amount
+  if (eligible) for (const split of transaction.categories) categories.get(
+    split.categoryId).balanceCents = addMoneyCents(categories.get(
+      split.categoryId).balanceCents, parseMoneyCents(encodeMonetaryAmount(split.amount)))
   for (const category of categories.values()) {
-    category.balance = Number(encodeMonetaryAmount(category.balance))
+    category.balanceCents = parseMoneyCents(encodeMonetaryAmount(Number(encodeMonetaryAmount(
+      Number(formatMoneyCents(category.balanceCents))))))
   }
   function query(row) {
     return { where() { return this }, andWhere() { return this }, whereHas() { return this },
@@ -154,7 +157,7 @@ test.group('Ordinary eligibility and real PATCH effects without DB', () => {
     const f = await patchFixture({ amount: 0.3,
       splits: [{ categoryId: 1, amount: 0.1 }, { categoryId: 1, amount: 0.2 }] })
     await f.run({ categories: [{ categoryId: 1, amount: 0.3 }] })
-    assert.strictEqual(f.categories.get(1).balance, 0.3)
+    assert.strictEqual(f.categories.get(1).balanceCents, parseMoneyCents('0.30'))
     assert.isFalse(f.events.some(event => Array.isArray(event) && event[0] === 'category'))
     assert.isFalse(f.events.some(event => Array.isArray(event) && event[0] === 'account'))
     assert.deepEqual(f.transaction.categories, [{ categoryId: 1, amount: 0.3 }])
@@ -164,7 +167,8 @@ test.group('Ordinary eligibility and real PATCH effects without DB', () => {
     .run(async ({ assert }, sign) => {
       const f = await patchFixture({ amount: sign * 0.1 })
       await f.run({ amount: sign * 0.3, categories: [{ categoryId: 1, amount: sign * 0.3 }] })
-      assert.strictEqual(f.categories.get(1).balance, sign * 0.3)
+      assert.strictEqual(f.categories.get(1).balanceCents, parseMoneyCents(encodeMonetaryAmount(
+        sign * 0.3)))
       assert.deepEqual(f.events.filter(event => Array.isArray(event) && event[0] === 'category'),
         [['category', 1, sign * 0.3]])
     })
@@ -198,8 +202,8 @@ test.group('Ordinary eligibility and real PATCH effects without DB', () => {
   test('excluded Loan allocations preserve replacement and Account effects', async ({ assert }) => {
     const f = await patchFixture({ excluded: true })
     await f.run({ categories: [{ categoryId: 2, amount: 10 }] })
-    assert.equal(f.categories.get(1).balance, 0)
-    assert.equal(f.categories.get(2).balance, 10)
+    assert.equal(f.categories.get(1).balanceCents, parseMoneyCents('0.00'))
+    assert.equal(f.categories.get(2).balanceCents, parseMoneyCents('10.00'))
     assert.equal(Number(formatMoneyCents(f.account.balanceCents)), 110)
   })
   for (const pending of [false, true]) for (const amount of [-10, 0, 10]) {
@@ -210,7 +214,8 @@ test.group('Ordinary eligibility and real PATCH effects without DB', () => {
         const eligible = date >= dates[1]
         assert.equal(Number(formatMoneyCents(f.account.balanceCents)), 100 + (
           eligible && !pending ? amount : 0))
-        assert.equal(f.categories.get(1).balance, eligible ? amount : 0)
+        assert.equal(f.categories.get(1).balanceCents, parseMoneyCents(encodeMonetaryAmount(
+          eligible ? amount : 0)))
       }
       assert.equal(f.link.amount, amount)
       assert.equal(f.events.filter((event) => event === 'log').length, 3)
@@ -224,19 +229,19 @@ nominal splits', async ({ assert }) => {
     const categories = [{ categoryId: 2, amount: 7 }, { categoryId: 2, amount: 13 }]
     await f.run({ amount: 20, categories, date: DateTime.fromISO(dates[0]) })
     assert.equal(Number(formatMoneyCents(f.account.balanceCents)), 100)
-    assert.equal(f.categories.get(1).balance, 0)
-    assert.equal(f.categories.get(2).balance, 0)
+    assert.equal(f.categories.get(1).balanceCents, parseMoneyCents('0.00'))
+    assert.equal(f.categories.get(2).balanceCents, parseMoneyCents('0.00'))
     assert.deepEqual(f.transaction.categories, categories)
     await f.run({ date: boundary })
     assert.equal(Number(formatMoneyCents(f.account.balanceCents)), 120)
-    assert.equal(f.categories.get(2).balance, 20)
+    assert.equal(f.categories.get(2).balanceCents, parseMoneyCents('20.00'))
   })
   test('actual PATCH categories-only and metadata-only do not touch Account balance', async ({
     assert }) => {
     const f = await patchFixture()
     await f.run({ categories: [{ categoryId: 2, amount: 10 }] })
-    assert.equal(f.categories.get(1).balance, 0)
-    assert.equal(f.categories.get(2).balance, 10)
+    assert.equal(f.categories.get(1).balanceCents, parseMoneyCents('0.00'))
+    assert.equal(f.categories.get(2).balanceCents, parseMoneyCents('10.00'))
     await f.run({ name: 'Renamed', comment: 'Only metadata', statementId: null })
     assert.equal(Number(formatMoneyCents(f.account.balanceCents)), 110)
     assert.isFalse(f.events.some((event) => Array.isArray(event) && event[0] === 'account'))
@@ -247,7 +252,7 @@ nominal splits', async ({ assert }) => {
     await assert.rejects(() => f.run({ amount: 20 }),
       'The sum of the categories does not match the transaction amount.')
     assert.equal(Number(formatMoneyCents(f.account.balanceCents)), 110)
-    assert.equal(f.categories.get(1).balance, 10)
+    assert.equal(f.categories.get(1).balanceCents, parseMoneyCents('10.00'))
     assert.include(f.events, 'rollback')
   })
   test('actual pending amount replacement changes only eligible Category effects', async ({
@@ -255,15 +260,15 @@ nominal splits', async ({ assert }) => {
     const f = await patchFixture({ pending: true })
     await f.run({ amount: 20, categories: [{ categoryId: 1, amount: 20 }] })
     assert.equal(Number(formatMoneyCents(f.account.balanceCents)), 100)
-    assert.equal(f.categories.get(1).balance, 20)
+    assert.equal(f.categories.get(1).balanceCents, parseMoneyCents('20.00'))
   })
   test('actual PATCH ineligible amount and allocations persist without financial effects', async ({
     assert }) => {
     const f = await patchFixture({ date: dates[0] })
     await f.run({ amount: -20, categories: [{ categoryId: 2, amount: -20 }] })
     assert.equal(Number(formatMoneyCents(f.account.balanceCents)), 100)
-    assert.equal(f.categories.get(1).balance, 0)
-    assert.equal(f.categories.get(2).balance, 0)
+    assert.equal(f.categories.get(1).balanceCents, parseMoneyCents('0.00'))
+    assert.equal(f.categories.get(2).balanceCents, parseMoneyCents('0.00'))
     assert.equal(f.link.amount, -20)
   })
 })
@@ -275,7 +280,7 @@ test.group('Real manual CREATE before/equal/after boundary without DB', () => {
       const trx = { async commit() { events.push('commit') }, async rollback() { events.push(
         'rollback') } }
       const initialBalance = Math.abs(amount) === 0.2 ? 0.1 : 20
-      const category = { id: 1, balance: initialBalance,
+      const category = { id: 1, balanceCents: parseMoneyCents(encodeMonetaryAmount(initialBalance)),
         async save() { events.push('category') } }
       let persisted
       const initialAccountBalance = Math.abs(amount) === 0.2 ? 0.1 : 100
@@ -320,7 +325,7 @@ test.group('Real manual CREATE before/equal/after boundary without DB', () => {
       assert.strictEqual(Number(formatMoneyCents(account.balanceCents)), expectedAccount)
       const expected = date < dates[1] ? initialBalance
         : amount === 0.2 ? 0.3 : amount === -0.2 ? -0.1 : 20 + amount
-      assert.strictEqual(category.balance, expected)
+      assert.strictEqual(category.balanceCents, parseMoneyCents(encodeMonetaryAmount(expected)))
       assert.equal(persisted.categories[0].amount, amount)
       assert.equal(persisted.date.toISODate(), date)
       assert.equal(events[0], 'gate')
@@ -418,13 +423,15 @@ test('excluded numeric PATCH allocations retain exact signed balances across dup
   .with([1, -1]).run(async ({ assert }, sign) => {
     const f = await patchFixture({ excluded: true, amount: sign * 0.2,
       splits: [{ categoryId: 1, amount: sign * 0.1 }, { categoryId: 1, amount: sign * 0.1 }] })
-    f.categories.get(1).balance = sign * 0.3
+    f.categories.get(1).balanceCents = parseMoneyCents(encodeMonetaryAmount(sign * 0.3))
     await f.run({ amount: sign * 0.4, categories: [{ categoryId: 1, amount: sign * 0.2 },
       { categoryId: 1, amount: sign * 0.2 }] })
-    assert.strictEqual(f.categories.get(1).balance, sign * 0.5)
+    assert.strictEqual(f.categories.get(1).balanceCents, parseMoneyCents(encodeMonetaryAmount(
+      sign * 0.5)))
     await f.run({ amount: sign * 0.2, categories: [{ categoryId: 1, amount: sign * 0.1 },
       { categoryId: 1, amount: sign * 0.1 }] })
-    assert.strictEqual(f.categories.get(1).balance, sign * 0.3)
+    assert.strictEqual(f.categories.get(1).balanceCents, parseMoneyCents(encodeMonetaryAmount(
+      sign * 0.3)))
     assert.isTrue(f.transaction.categories.every(split => typeof split.amount === 'number'))
   })
 
@@ -432,9 +439,10 @@ test('excluded metadata-only PATCH preserves historical subcent numeric allocati
   assert }) => {
   const f = await patchFixture({ excluded: true, amount: 0.125 })
   const original = globalThis.structuredClone(f.transaction.categories)
-  const balance = f.categories.get(1).balance
+  const balance = Number(formatMoneyCents(f.categories.get(1).balanceCents))
   await f.run({ name: 'Metadata only' })
   assert.deepEqual(f.transaction.categories, original)
-  assert.strictEqual(f.categories.get(1).balance, balance)
+  assert.strictEqual(f.categories.get(1).balanceCents, parseMoneyCents(encodeMonetaryAmount(
+    balance)))
   assert.isFalse(f.events.some(event => Array.isArray(event) && event[0] === 'category'))
 })

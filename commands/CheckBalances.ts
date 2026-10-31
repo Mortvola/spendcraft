@@ -1,3 +1,5 @@
+import { parseMoneyCents, formatMoneyCents, subtractMoneyCents } from '#common/moneyCents';
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
 import db from '@adonisjs/lucid/services/db';
 import Category from '#app/Models/Category';
 import Budget from '#app/Models/Budget';
@@ -89,7 +91,7 @@ amount decimal)
          
         for (const cat of categories) {
           const transSum = (cat.$extras.trans_sum === null ? 0 : parseFloat(cat.$extras.trans_sum));
-          if (Math.round(cat.balance * 100) !== Math.round(transSum * 100)) {
+          if (cat.balanceCents !== Math.round(transSum * 100)) {
             failures.push({
               category: cat,
               transSum,
@@ -112,11 +114,11 @@ amount decimal)
            
           for (const failure of app.failures) {
             const { category, transSum } = failure;
-            const difference = (Math.round(category.balance * 100) - Math.round(transSum * 100)) /
-              100.0;
+            const difference = formatMoneyCents(subtractMoneyCents(category.balanceCents,
+              parseMoneyCents(encodeMonetaryAmount(transSum))));
             this.logger.info(`\t"${category.group.name}:${category.name}" (${category
-              .id}): ${category.balance.toFixed(2)}, Transactions: ${transSum.toFixed(
-              2)}, difference: ${difference.toFixed(2)}`);
+              .id}): ${formatMoneyCents(category.balanceCents)}, Transactions: ${transSum.toFixed(
+              2)}, difference: ${difference}`);
 
             issuesFound += 1;
 
@@ -127,7 +129,7 @@ amount decimal)
             }
 
             if (fix || this.fix) {
-              category.balance = transSum;
+              category.balanceCents = parseMoneyCents(encodeMonetaryAmount(transSum));
 
                
               await category.save();
@@ -258,7 +260,7 @@ amount decimal)
   //           const difference = account.balance - transSum;
    
   // this.logger.info(`\t"${account.name}" (${account.id}): ${account.balance.toFixed(2)},
-  // Transactions: ${transSum.toFixed(2)}, difference: ${difference.toFixed(2)}`);
+  // Transactions: ${transSum.toFixed(2)}, difference: ${difference}`);
 
   //           if (this.fix) {
   //             account.balance = transSum;

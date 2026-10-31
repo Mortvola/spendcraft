@@ -1,4 +1,5 @@
-import { parseMoneyCents } from '#common/moneyCents'
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import { transactionRequest } from '../../helpers/transactionRequest.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
@@ -31,7 +32,8 @@ async function createDomain(label: string) {
     })
     const group = await budget.related('groups').create({ name: `${label} group`, type: 'Regular' })
     const category = await group.related('categories').create({
-      name: `${label} category`, type: CategoryType.Regular, balance: 20, fundingCategories: [],
+      name: `${label} category`, type: CategoryType.Regular,
+      balanceCents: parseMoneyCents('20.00'), fundingCategories: [],
     })
     const transaction = await budget.related('transactions').create({
       date: DateTime.fromISO('2025-02-01'), type: TransactionType.MANUAL_TRANSACTION,
@@ -97,10 +99,12 @@ test.group('Account transaction creation isolation', (group) => {
     assert.equal(accountRow.amount, 15)
     assert.equal((await Account.findOrFail(fixture.own.account.id)).balanceCents,
       parseMoneyCents('115.00'))
-    assert.equal((await Category.findOrFail(fixture.own.category.id)).balance, 35)
+    assert.equal((await Category.findOrFail(fixture.own.category.id)).balanceCents,
+      parseMoneyCents('35.00'))
     assert.equal((await Account.findOrFail(fixture.foreign.account.id)).balanceCents,
       parseMoneyCents('100.00'))
-    assert.equal((await Category.findOrFail(fixture.foreign.category.id)).balance, 20)
+    assert.equal((await Category.findOrFail(fixture.foreign.category.id)).balanceCents,
+      parseMoneyCents('20.00'))
   })
 
   const rejected = [
@@ -144,19 +148,21 @@ test.group('Account transaction creation isolation', (group) => {
     response.assertStatus(200)
     assert.deepEqual((await Transaction.findOrFail(response.body().transaction.id)).categories,
       categories)
-    assert.equal((await Category.findOrFail(fixture.own.category.id)).balance, 35)
+    assert.equal((await Category.findOrFail(fixture.own.category.id)).balanceCents,
+      parseMoneyCents('35.00'))
     assert.equal((await Account.findOrFail(fixture.own.account.id)).balanceCents,
       parseMoneyCents('115.00'))
   })
 
   test('empty categories use the budget-scoped unassigned category', async ({ client, assert }) => {
     const unassigned = await fixture.own.budget.getUnassignedCategory()
-    const before = unassigned.balance
+    const before = Number(formatMoneyCents(unassigned.balanceCents))
     const response = await client.post(`/api/v1/account/${fixture.own.account.id}/transactions`)
       .json(transactionRequest({ date: '2025-03-01', name: 'Unassigned purchase', amount: 15,
         categories: [] })).accept('json').loginAs(fixture.shared)
     response.assertStatus(200)
-    assert.equal((await Category.findOrFail(unassigned.id)).balance, before + 15)
+    assert.equal((await Category.findOrFail(unassigned.id)).balanceCents, parseMoneyCents(
+      encodeMonetaryAmount(before + 15)))
     assert.equal((await Account.findOrFail(fixture.own.account.id)).balanceCents,
       parseMoneyCents('115.00'))
     assert.equal((await Transaction.findOrFail(response.body().transaction.id)).categories[0]

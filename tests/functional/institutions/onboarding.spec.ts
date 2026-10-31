@@ -282,10 +282,11 @@ test.group('Plaid staged onboarding characterization', (group) => {
     }
     const categories = [await budget.getFundingPoolCategory(), await budget.getUnassignedCategory()]
     for (const category of categories) assert.deepInclude(response.body().data.categories, {
-      id: category.id, balance: category.balance.toFixed(2) })
+      id: category.id, balance: Number(formatMoneyCents(category.balanceCents)).toFixed(2) })
     for (const returned of response.body().data.categories) {
       const category = await Category.findOrFail(returned.id)
-      assert.strictEqual(returned.balance, category.balance.toFixed(2))
+      assert.strictEqual(returned.balance, Number(formatMoneyCents(
+        category.balanceCents)).toFixed(2))
       assert.equal((await category.related('group').query().firstOrFail()).budgetId, budget.id)
     }
     assert.lengthOf(await budget.getConnectedAccounts(), 1)
@@ -361,8 +362,8 @@ effects').with(['manual', 'sync all', 'command', 'webhook']).run(async ({ client
       'providerTransactionId', 'purchase').firstOrFail()
     assert.equal(purchase.amount, -10)
     assert.equal((await Account.findOrFail(account.id)).balanceCents, parseMoneyCents('100.00'))
-    assert.equal((await budget.getUnassignedCategory()).balance, -10)
-    assert.equal((await budget.getFundingPoolCategory()).balance, 110)
+    assert.equal((await budget.getUnassignedCategory()).balanceCents, parseMoneyCents('-10.00'))
+    assert.equal((await budget.getFundingPoolCategory()).balanceCents, parseMoneyCents('110.00'))
     const recovered = await snapshot()
     responses = [success()]
     ;(await client.post(`/api/v1/institution/${inst.id}/accounts/${account.id}/transactions/sync`)
@@ -373,7 +374,7 @@ effects').with(['manual', 'sync all', 'command', 'webhook']).run(async ({ client
     assert.lengthOf(await Institution.query().where('budgetId', budget.id), 1)
     assert.lengthOf(await inst.related('accounts').query(), 1)
     assert.equal((await Account.findOrFail(account.id)).balanceCents, parseMoneyCents('100.00'))
-    assert.equal((await budget.getUnassignedCategory()).balance, -10)
+    assert.equal((await budget.getUnassignedCategory()).balanceCents, parseMoneyCents('-10.00'))
     assert.notInclude(logs.join(''), token)
   })
 
@@ -382,9 +383,9 @@ effects').with(['manual', 'sync all', 'command', 'webhook']).run(async ({ client
     const group = await budget.related('groups').create({ name: 'Response allocations', type:
       'Regular' })
     const assigned = await group.related('categories').create({ name: 'Assigned', type: CategoryType
-      .Regular, balance: 0, fundingCategories: [] })
+      .Regular, balanceCents: parseMoneyCents('0.00'), fundingCategories: [] })
     const untouched = await group.related('categories').create({ name: 'Untouched',
-      type: CategoryType.Regular, balance: 0, fundingCategories: [] })
+      type: CategoryType.Regular, balanceCents: parseMoneyCents('0.00'), fundingCategories: [] })
     if (allocation === 'automatic') {
       const rule = await budget.related('autoAssignment').create({ name: 'Response rule',
         searchStrings: ['Provider purchase'] })
@@ -413,15 +414,18 @@ effects').with(['manual', 'sync all', 'command', 'webhook']).run(async ({ client
     const funding = await budget.getFundingPoolCategory()
     await assigned.refresh()
     await untouched.refresh()
-    assert.equal(unassigned.balance, allocation === 'unassigned' || allocation === 'pending' ? -
-      37 : 0)
-    assert.equal(assigned.balance, allocation === 'automatic' ? -37 : 0)
-    assert.equal(untouched.balance, 0)
-    assert.equal(funding.balance, allocation === 'before start' || allocation ===
-      'pending' ? 175 : 212)
+    assert.equal(unassigned.balanceCents, parseMoneyCents(encodeMonetaryAmount(
+      allocation === 'unassigned' || allocation === 'pending' ? -
+      37 : 0)))
+    assert.equal(assigned.balanceCents, parseMoneyCents(encodeMonetaryAmount(
+      allocation === 'automatic' ? -37 : 0)))
+    assert.equal(untouched.balanceCents, parseMoneyCents('0.00'))
+    assert.equal(funding.balanceCents, parseMoneyCents(encodeMonetaryAmount(
+      allocation === 'before start' || allocation ===
+      'pending' ? 175 : 212)))
     for (const category of [unassigned, funding, assigned, untouched]) {
-      assert.deepInclude(response.body().data.categories, { id: category.id, balance: category
-        .balance.toFixed(2) })
+      assert.deepInclude(response.body().data.categories, { id: category.id, balance: Number(
+        formatMoneyCents(category.balanceCents)).toFixed(2) })
     }
     assert.strictEqual(response.body().data.accounts[0].balance, Number(formatMoneyCents(
       account.balanceCents)).toFixed(2))

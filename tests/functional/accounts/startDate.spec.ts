@@ -1,3 +1,4 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { parseMoneyCents, formatMoneyCents } from '#common/moneyCents'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { test } from '@japa/runner'
@@ -39,9 +40,11 @@ test.group('Account start-date characterization', () => {
       const group = await f.budget.related('groups').create({ name: 'Exact boundaries',
         type: 'Regular' })
       const category = await group.related('categories').create({ name: 'Exact Category',
-        type: CategoryType.Regular, balance: sign * 0.4, fundingCategories: [] })
+        type: CategoryType.Regular, balanceCents: parseMoneyCents(encodeMonetaryAmount(
+          sign * 0.4)), fundingCategories: [] })
       const unassigned = await f.budget.getUnassignedCategory()
-      await unassigned.merge({ balance: sign * 0.3 }).save()
+      await unassigned.merge({ balanceCents: parseMoneyCents(encodeMonetaryAmount(
+        sign * 0.3)) }).save()
       for (const [amount, pending, categories] of [
         [sign * 0.2, false, [{ categoryId: category.id, amount: sign * 0.1 },
           { categoryId: category.id, amount: sign * 0.1 }]],
@@ -60,10 +63,10 @@ test.group('Account start-date characterization', () => {
       for (const date of ['2025-02-01', '2025-02-01', '2025-01-01']) {
         ;(await client.patch(`/api/v1/account/${f.account.id}`).json({ startDate: date })
           .loginAs(f.user)).assertStatus(200)
-        assert.strictEqual((await Category.findOrFail(category.id)).balance,
-          date === '2025-01-01' ? sign * 0.4 : sign * 0.1)
-        assert.strictEqual((await Category.findOrFail(unassigned.id)).balance,
-          date === '2025-01-01' ? sign * 0.3 : sign * 0.1)
+        assert.strictEqual((await Category.findOrFail(category.id)).balanceCents,
+          parseMoneyCents(encodeMonetaryAmount(date === '2025-01-01' ? sign * 0.4 : sign * 0.1)))
+        assert.strictEqual((await Category.findOrFail(unassigned.id)).balanceCents,
+          parseMoneyCents(encodeMonetaryAmount(date === '2025-01-01' ? sign * 0.3 : sign * 0.1)))
         assert.strictEqual((await Account.findOrFail(f.account.id)).balanceCents,
           parseMoneyCents('100.00'))
       }
@@ -80,7 +83,8 @@ test.group('Account start-date characterization', () => {
       const group = await f.budget.related('groups').create({ name: 'Boundary group', type:
         'Regular' })
       const category = await group.related('categories').create({
-        name: 'Boundary category', type: CategoryType.Regular, balance: 0, fundingCategories: [],
+        name: 'Boundary category', type: CategoryType.Regular, balanceCents: parseMoneyCents(
+          '0.00'), fundingCategories: [],
       })
       const movements = [
         { date: '2024-12-31', amount: 20, categories: [{ categoryId: category.id, amount: 20 }] },
@@ -107,8 +111,10 @@ test.group('Account start-date characterization', () => {
         })
       }
       // Seed existing allocations consistently with the original inclusive boundary.
-      await category.merge({ balance: tracking === TrackingType.Transactions ? 16.2 : 0 }).save()
-      await unassigned.merge({ balance: tracking === TrackingType.Transactions ? 0.3 : 0 }).save()
+      await category.merge({ balanceCents: parseMoneyCents(encodeMonetaryAmount(
+        tracking === TrackingType.Transactions ? 16.2 : 0)) }).save()
+      await unassigned.merge({ balanceCents: parseMoneyCents(encodeMonetaryAmount(
+        tracking === TrackingType.Transactions ? 0.3 : 0)) }).save()
       let initialId: number | undefined
       const originals = await db.from('transactions').whereIn('id', ids).orderBy('id')
       const rows = await db.from('account_transactions').whereIn('transaction_id', ids).orderBy(
@@ -129,21 +135,25 @@ test.group('Account start-date characterization', () => {
         const initialRow = await AccountTransaction.findByOrFail('transactionId', initial.id)
         if (initialId === undefined) initialId = initial.id
         assert.equal(initial.id, initialId)
-        assert.equal((await Category.findOrFail(category.id)).balance, date ===
-          '2025-01-01' ? 16.2 : 7.05)
-        assert.equal((await Category.findOrFail(unassigned.id)).balance, date ===
-          '2025-01-01' ? 0.3 : 0)
+        assert.equal((await Category.findOrFail(category.id)).balanceCents, parseMoneyCents(
+          encodeMonetaryAmount(date ===
+          '2025-01-01' ? 16.2 : 7.05)))
+        assert.equal((await Category.findOrFail(unassigned.id)).balanceCents, parseMoneyCents(
+          encodeMonetaryAmount(date ===
+          '2025-01-01' ? 0.3 : 0)))
         assert.equal(initial.date.toISODate(), date)
         const applicableCents = movements.filter((movement) => movement.date >= date)
           .reduce((sum, movement) => sum + Math.round(movement.amount * 100), 0)
         assert.equal(Math.round(initialRow.amount * 100), 10000 - applicableCents)
         assert.equal(Math.round(initial.categories[0].amount * 100), 10000 - applicableCents)
-        assert.equal(Math.round((await Category.findOrFail(funding.id)).balance * 100), 10000 -
+        assert.equal(Math.round(Number(formatMoneyCents((await Category.findOrFail(
+          funding.id)).balanceCents)) * 100), 10000 -
           applicableCents)
         if (tracking === TrackingType.Transactions) {
           const balances = await Category.query().whereIn('id', [funding.id, category.id, unassigned
             .id])
-          const totalCents = balances.reduce((sum, item) => sum + Math.round(item.balance * 100), 0)
+          const totalCents = balances.reduce((sum, item) => sum + Math.round(Number(
+            formatMoneyCents(item.balanceCents)) * 100), 0)
           // Crossing allocations and Initial Funding must conserve the preserved account balance.
           assert.equal(totalCents, 10000)
         }
@@ -160,7 +170,7 @@ test.group('Account start-date characterization', () => {
     await db.transaction(async (trx) => {
       f.account.useTransaction(trx)
       const unassigned = await f.budget.getUnassignedCategory({ client: trx })
-      unassigned.balance = 10
+      unassigned.balanceCents = parseMoneyCents('10.00')
       await unassigned.save()
       const transaction = await f.budget.related('transactions').create({
         date: DateTime.fromISO('2025-01-15'), type: TransactionType.MANUAL_TRANSACTION,
@@ -291,7 +301,7 @@ preserves Account balance', async ({ client, assert }) => {
         version: 0, deleted: false, sortOrder: 0, categories: [{ categoryId: category.id, amount }],
           taxes: [] })
     }
-    await category.merge({ balance: 33 }).save()
+    await category.merge({ balanceCents: parseMoneyCents('33.00') }).save()
     // Create opening from the supported active/nonpending signed sum (20), not
     // the Category-eligible sum (30); all fixture writes use the test safeguard.
     await db.transaction(async (trx) => {
@@ -306,13 +316,15 @@ preserves Account balance', async ({ client, assert }) => {
       response.assertStatus(200)
       const raw = await db.from('accounts').where('id', f.account.id).firstOrFail()
       assert.equal(Number(raw.balance), 100)
-      assert.equal((await Category.findOrFail(category.id)).balance, date === '2025-01-01' ? 33 : 3)
+      assert.equal((await Category.findOrFail(category.id)).balanceCents, parseMoneyCents(
+        encodeMonetaryAmount(date === '2025-01-01' ? 33 : 3)))
       const opening = await AccountTransaction.query().where('accountId', f.account.id)
         .whereHas('transaction', (query) => query.where('type', TransactionType.STARTING_BALANCE))
           .preload('transaction').firstOrFail()
       assert.equal(opening.transaction.date.toISODate(), date)
       assert.equal(opening.amount, date === '2025-01-01' ? 80 : 100)
-      assert.equal((await Category.findOrFail(pool.id)).balance, opening.amount)
+      assert.equal((await Category.findOrFail(pool.id)).balanceCents, parseMoneyCents(
+        encodeMonetaryAmount(opening.amount)))
       assert.lengthOf(await AccountTransaction.query().where('accountId', f.account.id), 4)
     }
   })
@@ -335,7 +347,7 @@ test.group('Opening signed-sum verification', () => {
         await f.account.related('accountTransactions').create({ transactionId: transaction.id,
           name: 'Signed sum', amount, pending: false, provider: 'NONE' })
       }
-      await unassigned.merge({ balance: 10 }).save()
+      await unassigned.merge({ balanceCents: parseMoneyCents('10.00') }).save()
       const before = await db.from('accounts').select('balance').where('id', f.account.id)
         .firstOrFail()
       for (let i = 0; i < 2; i++) {
@@ -352,8 +364,9 @@ test.group('Opening signed-sum verification', () => {
         assert.equal(Number(raw.amount), 90)
         assert.equal(opening.transaction.date.toISODate(), '2025-02-01')
         const pool = await f.budget.getFundingPoolCategory()
-        assert.equal(pool.balance, 90)
-        assert.equal((await Category.findOrFail(unassigned.id)).balance, 10)
+        assert.equal(pool.balanceCents, parseMoneyCents('90.00'))
+        assert.equal((await Category.findOrFail(unassigned.id)).balanceCents, parseMoneyCents(
+          '10.00'))
       }
     })
 })

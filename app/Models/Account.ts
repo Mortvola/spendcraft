@@ -324,8 +324,8 @@ class Account extends BaseModel {
 
         const category = await Category.findOrFail(cat.categoryId, { client: this.$trx });
         if (transaction.date >= this.startDate) {
-          category.balance = Number(formatMoneyCents(addMoneyCents(
-            parseMoneyCents(encodeMonetaryAmount(category.balance)), amountCents)));
+          category.balanceCents = addMoneyCents(
+            category.balanceCents, amountCents);
         }
 
         await category.save()
@@ -489,9 +489,9 @@ class Account extends BaseModel {
           else {
             const category = await Category.findOrFail(allocation.categoryId, { client: this
               .$trx });
-            category.balance = Number(formatMoneyCents(addMoneyCents(
-              parseMoneyCents(encodeMonetaryAmount(category.balance)),
-              parseMoneyCents(encodeMonetaryAmount(effect)))));
+            category.balanceCents = addMoneyCents(
+              category.balanceCents,
+              parseMoneyCents(encodeMonetaryAmount(effect)));
             await category.save();
           }
         }
@@ -631,9 +631,9 @@ class Account extends BaseModel {
         if (transaction.date >= this.startDate) {
          
           const category = await Category.findOrFail(tc.categoryId, { client: transaction.$trx });
-          category.balance = Number(formatMoneyCents(subtractMoneyCents(
-            parseMoneyCents(encodeMonetaryAmount(category.balance)),
-            parseMoneyCents(encodeMonetaryAmount(tc.amount)))));
+          category.balanceCents = subtractMoneyCents(
+            category.balanceCents,
+            parseMoneyCents(encodeMonetaryAmount(tc.amount)));
            
           await category.save();
         }
@@ -805,8 +805,8 @@ class Account extends BaseModel {
             client: this.$trx })
             .where('id', categoryId).whereHas('group', (group) => group.where('budgetId', budget
               .id)).firstOrFail();
-          category.balance = Number(formatMoneyCents(addMoneyCents(
-            parseMoneyCents(encodeMonetaryAmount(category.balance)), cents)));
+          category.balanceCents = addMoneyCents(
+            category.balanceCents, cents);
           await category.save();
         }
       };
@@ -998,8 +998,8 @@ class Account extends BaseModel {
         logger.info(`Initial funding for account ${this.id} changed by ${delta}`);
       }
 
-      fundingPool.balance = Number(formatMoneyCents(addMoneyCents(
-        parseMoneyCents(encodeMonetaryAmount(fundingPool.balance)), deltaCents)));
+      fundingPool.balanceCents = addMoneyCents(
+        fundingPool.balanceCents, deltaCents);
     }
     else {
       const transaction = await requestCategoryStorage(new Transaction())
@@ -1021,8 +1021,8 @@ class Account extends BaseModel {
       });
 
       await validateStoredCategoryConservation(transaction);
-      fundingPool.balance = Number(formatMoneyCents(addMoneyCents(
-        parseMoneyCents(encodeMonetaryAmount(fundingPool.balance)), startingBalanceCents)));
+      fundingPool.balanceCents = addMoneyCents(
+        fundingPool.balanceCents, startingBalanceCents);
     }
   }
 }
