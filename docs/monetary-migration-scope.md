@@ -1,30 +1,52 @@
 # Monetary storage/API migration scope
 
-## Approved deprecation boundary
+## Current status
 
-**Loans and the entire `transaction_categories` architecture are deprecated and excluded from the exact-money migration, regardless of where they are referenced.**
+The approved exact-cent JSON storage conversions are complete, including historical conversion.
+Active monetary APIs use canonical two-decimal `DecimalMoneyString` amounts. Fixed-dollar inputs
+use strings; percentage-mode values and interest rates remain numeric.
 
-This product decision supersedes earlier inventory, compatibility and preservation recommendations concerning these features. It applies to the complete Loan feature and every reader, writer, relationship, query, report, helper and API dependency using transaction_categories, including non-Loan uses.
+The identified non-tax monetary arithmetic has moved to checked integer `MoneyCents` on the client
+and server. Exact decimal database storage remains in place; integer-cent runtime arithmetic does
+not require another database representation migration. See the
+[storage inventory and arithmetic status](remaining-monetary-storage-inventory.md) for boundaries
+and the latest verified release.
 
-Do not classify their fields as active monetary storage or their data as monetary authority. Do not design exact-money encodings, compatibility adapters, fallback logic or data migration for them. Do not include them in the active migration sequence or acceptance matrix. Preserving legacy Loan ownership evidence is not a requirement of the new monetary architecture. Deprecated storage must not dictate current Transaction JSON, nondeprecated relational money or API contracts.
+## Active Loan Accounts and deprecated storage
 
-Prior accepted Loan persistence and legacy-admission verification remains historical evidence of existing behavior, not an obligation to migrate or retain the deprecated feature. Earlier monetary-field catalogs mentioning Loan fields or transaction_categories describe existing source only; those entries are excluded from the active inventory.
+The earlier blanket Loan exclusion in this document has been superseded by subsequent approved
+cleanup and shared monetary changes. Active Loan Accounts use `accounts`, `account_transactions`
+and Transaction JSON through the shared exact-money paths, including principal amounts. They are
+not excluded merely because their Account type is Loan.
 
-## Shared-code dependencies requiring separate retirement
+The deprecated `loans`, `loan_transactions` and `transaction_categories` tables are not monetary
+authorities for the active application. Their models and active dependencies were retired; historical
+schema migrations remain. Deprecated Loan-category exclusions no longer control current JSON
+encoding. This documentation does not authorize dropping legacy tables or deleting historical data.
+BalanceHistory remains outside the active migration scope. Plaid diagnostic logs preserve the
+provider's received representation.
 
-Current source still contains these dependencies. Recording them does not promote them to active monetary authorities or authorize changing them.
+## Preserved accounting behavior
 
-| Source | Existing dependency | Migration disposition |
-| --- | --- | --- |
-| app/Controllers/Http/ReportController.ts, budgetProgress | Both funding and activity queries consume transaction_categories | Deprecated report functionality requiring separate retirement; exclude its legacy query/aggregation from active exact-money design and acceptance |
-| app/Controllers/Http/CategoriesController.ts, transfer replacement admission | loan_transactions joins transaction_categories to detect legacy Loan ownership | Deprecated structural dependency requiring separate retirement; no legacy-ownership adapter or preservation requirement for the new architecture. The surrounding nondeprecated funding/rebalance lifecycle is not deprecated by this decision |
-| Complete Loan feature, including Loan-specific branches in otherwise shared Account/Transaction/Category code | Loan models, settings, principal/payment paths, APIs and UI/typing references | Exclude Loan-specific behavior and fields. Identify shared-code boundaries during inventory; do not silently change or remove those branches |
-| Generated schema, migrations, legacy audit tooling, tests and historical documentation | Schema/history or diagnostic references | Retain unchanged; not an active storage authority or required migration acceptance case |
+Monetary representation changes preserve existing signs, allocation ordering, residual-cent
+assignment, funding formulas, conservation validation and Budget transaction boundaries. Storage
+readers require canonical strings at migrated leaves; ordinary reads do not rewrite historical JSON.
+Missing/null semantics and unrelated JSON properties remain preserved.
 
-Category, Funding History and Income Vs. Expenses already use their separately approved JSON allocation/deduction authorities. No new report authority, replacement implementation or compatibility layer is approved here. Nondeprecated amounts remain in scope even if adjacent to deprecated Loan fields; for example, AccountTransaction.amount is not excluded merely because the same model also contains Loan-specific principle data.
+Percentage calculations do not turn percentages into money. Auto-assignment allocation rounding
+and funding-goal period division now operate exactly on integer cents, with half ties toward positive
+infinity. Input quantization retains its approved JavaScript rounding policy.
 
-## Runtime and historical boundary
+## Deferred tax arithmetic
 
-Leave existing Loan and transaction_categories code, tables, migrations and historical data unchanged. This decision does not itself remove an endpoint, alter report output, bypass admission, modify a foreign key, rewrite JSON or repair balances. Retirement of reachable functionality and physical removal each require separate approval. Inventory may flag a dependency for that work; it must not implement a replacement or fallback.
+Tax worksheet calculations retain their existing intermediate floating-point precision. Canonical
+Tax storage/API amounts and cent-valued attribution/editing boundaries do not imply that the tax
+formulas themselves have been converted. Further tax arithmetic work is deferred and requires a
+separately scoped change; no tax-formula or rounding-policy change is authorized by this document.
 
-No database connection, destructive operation, runtime correction, monetary representation change, schema migration, historical repair, deployment or commit is part of recording this decision.
+## Operational boundary
+
+Keep active codecs, migrations, financial regression tests and ordinary installation/rollback
+procedures. Migration-only conversion/recovery tooling and compatibility profiles have been retired.
+This scope record does not authorize a database connection, historical repair, schema change,
+deployment, legacy-table deletion or application behavior change.
