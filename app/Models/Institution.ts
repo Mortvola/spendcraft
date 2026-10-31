@@ -116,7 +116,6 @@ class Institution extends BaseModel {
     plaidAccounts: Plaid.AccountBase[],
   ) {
     let unassignedSum = parseMoneyCents('0.00');
-    let excludedUnassignedSum = 0;
 
     // for (let i = 0; i < transactions.length; i += 1) {
     //   const transaction: Plaid.Transaction = transactions[i];
@@ -170,15 +169,14 @@ class Institution extends BaseModel {
         parseMoneyCents(encodeMonetaryAmount(amount)))));
 
       if (acct.tracking === TrackingType.Transactions) {
-        if (acct.type === AccountType.Loan) excludedUnassignedSum += unassignedAmount;
-        else unassignedSum = addMoneyCents(unassignedSum,
+        unassignedSum = addMoneyCents(unassignedSum,
           parseMoneyCents(encodeMonetaryAmount(unassignedAmount)));
       }
 
       acct.$extras.modified = true;
     }
 
-    return { unassignedSum, excludedUnassignedSum };
+    return { unassignedSum };
   }
 
    
@@ -241,7 +239,6 @@ class Institution extends BaseModel {
 
       let nextCursor = this.cursor;
       let unassignedSum = parseMoneyCents('0.00');
-      let excludedUnassignedSum = 0;
       let more = true;
 
       while (more) {
@@ -281,7 +278,6 @@ class Institution extends BaseModel {
           const effects = await this.addOrUpdateTransactions(budget, transactions, accounts,
             plaidAccounts);
           unassignedSum = addMoneyCents(unassignedSum, effects.unassignedSum);
-          excludedUnassignedSum += effects.excludedUnassignedSum;
 
           // Process removed transactions
           await this.removeTransactions(response.removed, accounts);
@@ -299,7 +295,6 @@ class Institution extends BaseModel {
         const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
         unassigned.balance = Number(formatMoneyCents(addMoneyCents(
           parseMoneyCents(encodeMonetaryAmount(unassigned.balance)), unassignedSum)));
-        if (excludedUnassignedSum !== 0) unassigned.balance += excludedUnassignedSum;
         await unassigned.save();
 
         this.cursor = nextCursor;

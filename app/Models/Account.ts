@@ -471,12 +471,11 @@ class Account extends BaseModel {
       // categories matches the transaction amount.
       const trxCats = transaction.categories;
 
-      const delta = this.type === AccountType.Loan ? newAmount - trxCats.reduce((sum, category) =>
-        sum + category.amount, 0)
-        : Number(formatMoneyCents(subtractMoneyCents(
-          parseMoneyCents(encodeMonetaryAmount(newAmount)),
-          addMoneyCents(...trxCats.map((category) => parseMoneyCents(encodeMonetaryAmount(
-            category.amount)))))));
+      const deltaCents = subtractMoneyCents(
+        parseMoneyCents(encodeMonetaryAmount(newAmount)),
+        addMoneyCents(...trxCats.map((category) => parseMoneyCents(encodeMonetaryAmount(
+          category.amount)))));
+      const delta = Number(formatMoneyCents(deltaCents));
 
       if (delta !== 0) {
         // If there is an unassigned transaction category
@@ -486,10 +485,8 @@ class Account extends BaseModel {
         const unnassignedTrxCat = trxCats.find((tc) => tc.categoryId === unassigned.id);
 
         if (unnassignedTrxCat) {
-          unnassignedTrxCat.amount = this.type === AccountType.Loan
-            ? unnassignedTrxCat.amount + delta : Number(formatMoneyCents(addMoneyCents(
-              parseMoneyCents(encodeMonetaryAmount(unnassignedTrxCat.amount)),
-              parseMoneyCents(encodeMonetaryAmount(delta)))));
+          unnassignedTrxCat.amount = Number(formatMoneyCents(addMoneyCents(
+            parseMoneyCents(encodeMonetaryAmount(unnassignedTrxCat.amount)), deltaCents)));
         }
         else {
           transaction.categories.push({ categoryId: unassigned.id, amount: delta })
@@ -509,18 +506,16 @@ class Account extends BaseModel {
         for (const allocation of appliedCategories) {
           const effect = direction * allocation.amount;
           if (allocation.categoryId === unassigned.id) {
-            unassignedAmount = this.type === AccountType.Loan ? unassignedAmount + effect
-              : Number(formatMoneyCents(addMoneyCents(
-                parseMoneyCents(encodeMonetaryAmount(unassignedAmount)),
-                parseMoneyCents(encodeMonetaryAmount(effect)))));
+            unassignedAmount = Number(formatMoneyCents(addMoneyCents(
+              parseMoneyCents(encodeMonetaryAmount(unassignedAmount)),
+              parseMoneyCents(encodeMonetaryAmount(effect)))));
           }
           else {
             const category = await Category.findOrFail(allocation.categoryId, { client: this
               .$trx });
-            category.balance = this.type === AccountType.Loan ? category.balance + effect
-              : Number(formatMoneyCents(addMoneyCents(
-                parseMoneyCents(encodeMonetaryAmount(category.balance)),
-                parseMoneyCents(encodeMonetaryAmount(effect)))));
+            category.balance = Number(formatMoneyCents(addMoneyCents(
+              parseMoneyCents(encodeMonetaryAmount(category.balance)),
+              parseMoneyCents(encodeMonetaryAmount(effect)))));
             await category.save();
           }
         }

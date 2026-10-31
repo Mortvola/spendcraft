@@ -784,7 +784,12 @@ date').with([
     { oldDate: '2024-12-31', newDate: '2025-01-01', oldAmount: 0, newAmount: 10 },
     { oldDate: '2025-01-01', newDate: '2024-12-31', oldAmount: 10, newAmount: 0 },
     { oldDate: '2024-12-30', newDate: '2024-12-31', oldAmount: 10, newAmount: 0 },
-  ]).run(async ({ client, assert }, { oldDate, newDate, oldAmount, newAmount }) => {
+    { oldDate: '2024-12-31', newDate: '2025-01-01', oldAmount: 0.1, newAmount: 0.3 },
+    { oldDate: '2025-01-01', newDate: '2024-12-31', oldAmount: -0.3, newAmount: -0.1 },
+  ].flatMap(transition => [false, true].map(loan => ({ ...transition, loan })))).run(async ({
+    client, assert }, { oldDate, newDate, oldAmount, newAmount, loan }) => {
+    if (loan) await f.account.merge({ type: AccountType.Loan }).save()
+
     fake.responses = [page(accounts(), 'c1', { added: [purchase('purchase', { date: oldDate,
       amount: oldAmount })] })]
     ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
