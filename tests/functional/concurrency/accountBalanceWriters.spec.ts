@@ -111,8 +111,8 @@ async function state(f: Fixture) {
       unassigned.balanceCents)), pool: Number(formatMoneyCents(pool.balanceCents)),
     rows: rows.map((row) => ({ amount: Number(formatMoneyCents(row.amountCents)),
        pending: row.pending, type: row.transaction.type,
-      deleted: row.transaction.deleted, version: row.transaction.version, categories: row
-        .transaction.categories })), logs }
+      deleted: row.transaction.deleted, version: row.transaction.version,
+        categories: row.transaction.categories })), logs }
 }
 
 test.group('Bounded Account writer PostgreSQL serialization (prepared)', () => {

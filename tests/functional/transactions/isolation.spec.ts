@@ -1,3 +1,4 @@
+import { categoryAllocationsToCents } from '#services/categoryAmountCodec'
 import { parseMoneyCents } from '#common/moneyCents'
 import { transactionRequest } from '../../helpers/transactionRequest.js'
 import {
@@ -40,7 +41,7 @@ async function createDomain(label: string) {
     const transaction = await budget.related('transactions').create({
       date: DateTime.fromISO('2025-02-01'), type: TransactionType.MANUAL_TRANSACTION,
       version: 0, deleted: false, sortOrder: 0, comment: `${label} private comment`,
-      categories: [{ categoryId: category.id, amount: 10 }], taxes: [],
+      categories: categoryAllocationsToCents([{ categoryId: category.id, amount: 10 }]), taxes: [],
     })
     await writeCanonicalTransactionFixture(transaction)
     const accountTransaction = await account.related('accountTransactions').create({

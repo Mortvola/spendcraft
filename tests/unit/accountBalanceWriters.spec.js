@@ -256,7 +256,8 @@ test.group('Initial Funding checked cents without a database', () => {
       await f.run()
       assert.strictEqual(f.link().amountCents, parseMoneyCents(encodeMonetaryAmount(sign * 0.2)))
       assert.strictEqual(f.pool.balanceCents, parseMoneyCents(encodeMonetaryAmount(sign * 0.3)))
-      assert.strictEqual(f.transaction.categories[0].amount, sign * 0.2)
+      assert.strictEqual(f.transaction.categories[0].amountCents,
+        parseMoneyCents(encodeMonetaryAmount(sign * 0.2)))
       await f.run()
       assert.strictEqual(f.pool.balanceCents, parseMoneyCents(encodeMonetaryAmount(sign * 0.3)))
       assert.strictEqual(Number(formatMoneyCents(f.account.balanceCents)), sign * 0.4)
@@ -346,11 +347,13 @@ test.group('Auto-assignment checked cents without a database', () => {
     ]).run(async ({ assert }, scenario) => {
       const f = await assignmentFixture(scenario.amount, scenario.rules)
       assert.isTrue(await f.run())
-      assert.deepEqual(f.transaction.categories.map(split => split.amount), scenario.expected)
+      assert.deepEqual(f.transaction.categories.map(split => Number(formatMoneyCents(
+        split.amountCents))), scenario.expected)
       assert.deepEqual(f.transaction.categories.map(split => split.categoryId), scenario.rules
         .map((_, index) => index + 1))
       assert.strictEqual(addMoneyCents(...f.transaction.categories.map(split => parseMoneyCents(
-        encodeMonetaryAmount(split.amount)))), parseMoneyCents(encodeMonetaryAmount(scenario
+        encodeMonetaryAmount(Number(formatMoneyCents(split.amountCents)))))),
+          parseMoneyCents(encodeMonetaryAmount(scenario
         .amount)))
       for (let i = 0; i < f.balances.length; i++) {
         assert.strictEqual(f.balances[i].balanceCents, addMoneyCents(
@@ -378,7 +381,7 @@ test.group('Auto-assignment checked cents without a database', () => {
     const f = await assignmentFixture(0.2, [{ amount: 100, percentage: true }], { eligible: false })
     await f.run()
     assert.strictEqual(f.balances[0].balanceCents, parseMoneyCents('0.10'))
-    assert.strictEqual(f.transaction.categories[0].amount, 0.2)
+    assert.strictEqual(f.transaction.categories[0].amountCents, parseMoneyCents('0.20'))
   })
 
   test('unmatched assignment leaves allocations untouched', async ({ assert }) => {
@@ -392,7 +395,8 @@ test.group('Auto-assignment checked cents without a database', () => {
       const f = await assignmentFixture(0.29, [{ amount: 50, percentage: true },
         { amount: 50, percentage: true }], { loan: true })
       await f.run()
-      assert.deepEqual(f.transaction.categories.map(split => split.amount), [0.15, 0.14])
+      assert.deepEqual(f.transaction.categories.map(split => Number(formatMoneyCents(
+        split.amountCents))), [0.15, 0.14])
       assert.strictEqual(f.balances[1].balanceCents, parseMoneyCents('0.24'))
     })
 })
@@ -412,7 +416,8 @@ async function startDateFixture({ amount = 0.2, balance = 0.3, earlier = false,
     async updateStartingBalance() { events.push('opening') },
     related() { return { query() { return { if() { return this }, whereHas() { return this },
       async preload() { return Array.from({ length: duplicate ? 2 : 1 }, () => ({ amount,
-        transaction: { categories: [{ categoryId: 1, amount }] } })) },
+        transaction: { categories: [{ categoryId: 1,
+          amountCents: parseMoneyCents(encodeMonetaryAmount(amount)) }] } })) },
     } } } } }
   const pool = { async save() { events.push('pool.save') } }
   const budget = { useTransaction() { events.push('budget.bound') },

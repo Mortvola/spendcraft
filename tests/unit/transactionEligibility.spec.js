@@ -1,4 +1,4 @@
-import { encodeMonetaryAmount, canonicalCategoryAllocations } from
+import { encodeMonetaryAmount, canonicalCategoryAllocations, categoryAllocationsToCents } from
   '../../app/services/categoryAmountCodec.ts'
 import { addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents } from
   '../../common/moneyCents.ts'
@@ -10,7 +10,8 @@ import ts from 'typescript'
 import {
   accountEligible, categoryEligible, categoryEffectDeltas, excludedCategoryEffectDeltas,
 } from '../../app/services/transactionEligibility.ts'
-import { validateTransactionSplits } from '../../app/validation/transactionSplits.ts'
+import { validateTransactionSplits,
+  validateCentTransactionSplits } from '../../app/validation/transactionSplits.ts'
 
 const boundary = DateTime.fromISO('2025-02-01')
 const dates = ['2025-01-31', '2025-02-01', '2025-02-02']
@@ -50,7 +51,8 @@ async function patchFixture({ date = dates[1], pending = false, amount = 10, spl
     merge(data) { Object.assign(this, data); return this }, async save() { events.push('link') },
     related() { return { query: () => query(account) } } }
   const transaction = { id: 1, budgetId: 1, version: 0, type: 5, deleted: false,
-    date: DateTime.fromISO(date), categories: splits ?? [{ categoryId: 1, amount }], $attributes: {
+    date: DateTime.fromISO(date),
+    categories: categoryAllocationsToCents(splits ?? [{ categoryId: 1, amount }]), $attributes: {
       },
     merge(data) { Object.assign(this, data); return this }, async save() { events.push(
       'transaction') },
@@ -61,7 +63,7 @@ async function patchFixture({ date = dates[1], pending = false, amount = 10, spl
     } }
   if (eligible) for (const split of transaction.categories) categories.get(
     split.categoryId).balanceCents = addMoneyCents(categories.get(
-      split.categoryId).balanceCents, parseMoneyCents(encodeMonetaryAmount(split.amount)))
+      split.categoryId).balanceCents, split.amountCents)
   for (const category of categories.values()) {
     category.balanceCents = parseMoneyCents(encodeMonetaryAmount(Number(encodeMonetaryAmount(
       Number(formatMoneyCents(category.balanceCents))))))
@@ -77,7 +79,7 @@ async function patchFixture({ date = dates[1], pending = false, amount = 10, spl
   const user = { username: 'Test', useTransaction() {
     /* The query adapters independently assert the owning transaction. */ }, related() { return {
     query: () => query(budget) } } }
-  const globals = { encodeMonetaryAmount, canonicalCategoryAllocations,
+  const globals = { encodeMonetaryAmount, canonicalCategoryAllocations, categoryAllocationsToCents,
     addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents,
     hasCategoryStorage: () => activeStorage,
     excludeCategoryStorage: () => { activeStorage = false },
@@ -92,7 +94,8 @@ async function patchFixture({ date = dates[1], pending = false, amount = 10, spl
       if (options.client !== trx) throw new Error('Unbound category')
       return { ...query(), where(_field, id) { return query(categories.get(id)) } }
     },
-    validateTransactionSplits, updateTransaction: {}, transactionFields: {},
+    validateTransactionSplits, validateCentTransactionSplits, updateTransaction: {},
+      transactionFields: {},
     getAccountTransactionChanges: (_old, _new, previous) => previous,
     getChanges: (_old, _next, changes) => changes, db: { transaction: async () => trx },
   }
@@ -162,7 +165,8 @@ test.group('Ordinary eligibility and real PATCH effects without DB', () => {
     assert.strictEqual(f.categories.get(1).balanceCents, parseMoneyCents('0.30'))
     assert.isFalse(f.events.some(event => Array.isArray(event) && event[0] === 'category'))
     assert.isFalse(f.events.some(event => Array.isArray(event) && event[0] === 'account'))
-    assert.deepEqual(f.transaction.categories, [{ categoryId: 1, amount: 0.3 }])
+    assert.deepEqual(f.transaction.categories, [{ categoryId: 1,
+      amountCents: parseMoneyCents('0.30') }])
     assert.equal(f.events.at(-1), 'commit')
   })
   test('PATCH applies fractional positive and negative deltas in cents').with([1, -1])
@@ -233,7 +237,7 @@ nominal splits', async ({ assert }) => {
     assert.equal(Number(formatMoneyCents(f.account.balanceCents)), 100)
     assert.equal(f.categories.get(1).balanceCents, parseMoneyCents('0.00'))
     assert.equal(f.categories.get(2).balanceCents, parseMoneyCents('0.00'))
-    assert.deepEqual(f.transaction.categories, categories)
+    assert.deepEqual(f.transaction.categories, categoryAllocationsToCents(categories))
     await f.run({ date: boundary })
     assert.equal(Number(formatMoneyCents(f.account.balanceCents)), 120)
     assert.equal(f.categories.get(2).balanceCents, parseMoneyCents('20.00'))
@@ -314,7 +318,8 @@ test.group('Real manual CREATE before/equal/after boundary without DB', () => {
         Category: { query({ client }) { assert.strictEqual(client, trx); return query(category) } },
         budgetAccounts(_id, { client }) { assert.strictEqual(client, trx); events.push(
           'account read'); return query(account) },
-        validateTransactionSplits, addTransaction: {}, transactionFields: {}, db: {
+        validateTransactionSplits, categoryAllocationsToCents, addTransaction: {},
+          transactionFields: {}, db: {
           transaction: async () => trx },
       })
       await create({ auth: { user }, request: { params: () => ({ acctId: 1 }),
@@ -328,7 +333,8 @@ test.group('Real manual CREATE before/equal/after boundary without DB', () => {
       const expected = date < dates[1] ? initialBalance
         : amount === 0.2 ? 0.3 : amount === -0.2 ? -0.1 : 20 + amount
       assert.strictEqual(category.balanceCents, parseMoneyCents(encodeMonetaryAmount(expected)))
-      assert.equal(persisted.categories[0].amount, amount)
+      assert.equal(persisted.categories[0].amountCents,
+        parseMoneyCents(encodeMonetaryAmount(amount)))
       assert.equal(persisted.date.toISODate(), date)
       assert.equal(events[0], 'gate')
       if (date < dates[1]) assert.notInclude(events, 'category')
@@ -434,7 +440,7 @@ test('excluded numeric PATCH allocations retain exact signed balances across dup
       { categoryId: 1, amount: sign * 0.1 }] })
     assert.strictEqual(f.categories.get(1).balanceCents, parseMoneyCents(encodeMonetaryAmount(
       sign * 0.3)))
-    assert.isTrue(f.transaction.categories.every(split => typeof split.amount === 'number'))
+    assert.isTrue(f.transaction.categories.every(split => Number.isSafeInteger(split.amountCents)))
   })
 
 test('excluded metadata-only PATCH preserves historical subcent numeric allocations', async ({

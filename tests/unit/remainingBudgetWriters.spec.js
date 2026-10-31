@@ -162,7 +162,8 @@ next', async ({ assert }) => {
     release()
     await operation
     assert.deepEqual(stored.categories, [{ categoryId: 20, amount: 10 }])
-    assert.equal(second.categories[0].categoryId, 99); assert.equal(second.categories[0].amount, 12)
+    assert.equal(second.categories[0].categoryId,
+      99); assert.equal(second.categories[0].amountCents, parseMoneyCents('12.00'))
     assert.deepEqual(events, ['gate1', 'read1', 'commit1', 'gate2', 'read2', 'save2', 'commit2',
       'budget: 2, count: 1'])
   })

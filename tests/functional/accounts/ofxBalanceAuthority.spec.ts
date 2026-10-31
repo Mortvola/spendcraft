@@ -99,7 +99,8 @@ async function assertBalances(f: Fixture, expected: number, provider: number, ca
   const opening = await account.related('accountTransactions').query()
     .whereHas('transaction', (query) => query.where('type', 4)).preload('transaction').firstOrFail()
   if (opening.amountCents !== parseMoneyCents('1000.00')
-    || opening.transaction.categories[0].amount !== 1000) throw new Error(
+    || Number(formatMoneyCents(
+      opening.transaction.categories[0].amountCents)) !== 1000) throw new Error(
     'Provider ledger contaminated opening')
 }
 
@@ -133,7 +134,8 @@ test.group('OFX independent accounting and provider balance (prepared)', () => {
         .whereHas('transaction', query => query.where('type', 4)).firstOrFail()
       assert.strictEqual(opening.amountCents, parseMoneyCents(encodeMonetaryAmount(sign * 0.3)))
       const transaction = await opening.related('transaction').query().firstOrFail()
-      assert.strictEqual(transaction.categories[0].amount, sign * 0.3)
+      assert.strictEqual(Number(formatMoneyCents(transaction.categories[0].amountCents)),
+        sign * 0.3)
       const raw = await db.from('transactions').where('id', transaction.id).firstOrFail()
       assert.strictEqual(typeof raw.categories[0].amount, 'string')
     })

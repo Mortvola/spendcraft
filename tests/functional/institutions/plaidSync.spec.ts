@@ -1,4 +1,4 @@
-import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { categoryAllocationsToCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import { test } from '@japa/runner'
 import app from '@adonisjs/core/services/app'
@@ -155,7 +155,8 @@ test.group('Plaid sync characterization', (group) => {
       assert.strictEqual(f.unassigned.balanceCents, parseMoneyCents(encodeMonetaryAmount(
         sign * 0.6)))
       const { transaction } = await local('first')
-      assert.strictEqual(transaction.categories[0].amount, sign * 0.4)
+      assert.strictEqual(Number(formatMoneyCents(transaction.categories[0].amountCents)),
+        sign * 0.4)
       const stored = await db.from('transactions').where('id', transaction.id).firstOrFail()
       assert.isTrue(stored.categories.every((split: { amount: unknown }) => typeof split.amount
         === 'string'))
@@ -215,7 +216,8 @@ test.group('Plaid sync characterization', (group) => {
         amount: -scenario.amount })] })]
       ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
       const { transaction } = await local()
-      assert.deepEqual(transaction.categories.map(split => split.amount), scenario.expected)
+      assert.deepEqual(transaction.categories.map(split => Number(formatMoneyCents(
+        split.amountCents))), scenario.expected)
       assert.deepEqual(transaction.categories.map(split => split.categoryId), categories.map(
         category => category.id))
       for (let index = 0; index < categories.length; index++) {
@@ -291,7 +293,8 @@ test.group('Plaid sync characterization', (group) => {
       assert.isFalse(at.pending)
       assert.isNull(at.statementId)
       assert.isFalse(transaction.deleted)
-      assert.deepEqual(transaction.categories, [{ categoryId: f.unassigned.id, amount: -10 }])
+      assert.deepEqual(transaction.categories,
+        categoryAllocationsToCents([{ categoryId: f.unassigned.id, amount: -10 }]))
     }
     const categoryReport = await client.get('/api/v1/reports/category').qs({ c: f.unassigned.id })
       .loginAs(f.user)
@@ -370,8 +373,9 @@ test.group('Plaid sync characterization', (group) => {
       'Regular' })
     const userCategory = await userGroup.related('categories').create({ name: 'Replay category',
       type: CategoryType.Regular, balanceCents: parseMoneyCents('-10.00'), fundingCategories: [] })
-    before.transaction.categories = [{ categoryId: userCategory.id, amount: -10, comment:
-      'Replay split' }]
+    before.transaction.categories = categoryAllocationsToCents([{ categoryId: userCategory.id,
+      amount: -10, comment:
+      'Replay split' }])
     before.transaction.comment = 'Replay memo'
     before.transaction.taxes = [{ type: 'local', amount: 3 }]
     await before.transaction.save()
@@ -470,7 +474,8 @@ test.group('Plaid sync characterization', (group) => {
     assert.equal(at.providerTransactionId, 'purchase')
     assert.equal(at.statementId, f.statement.id)
     assert.equal(at.amountCents, parseMoneyCents(encodeMonetaryAmount(-newAmount)))
-    assert.equal(Math.round(transaction.categories.reduce((sum, category) => sum + category.amount,
+    assert.equal(Math.round(transaction.categories.reduce((sum,
+      category) => sum + Number(formatMoneyCents(category.amountCents)),
       0) * 100), Math.round(-newAmount * 100))
     await f.unassigned.refresh()
     assert.equal(Math.round(Number(formatMoneyCents(f.unassigned.balanceCents)) * 100),
@@ -511,8 +516,9 @@ test.group('Plaid sync characterization', (group) => {
       'Regular' })
     const userCategory = await userGroup.related('categories').create({ name: 'User category',
       type: CategoryType.Regular, balanceCents: parseMoneyCents('-10.00'), fundingCategories: [] })
-    before.transaction.categories = [{ categoryId: userCategory.id, amount: -10, comment:
-      'User split' }]
+    before.transaction.categories = categoryAllocationsToCents([{ categoryId: userCategory.id,
+      amount: -10, comment:
+      'User split' }])
     before.transaction.comment = 'User memo'
     before.transaction.taxes = [{ type: 'local', amount: 3 }]
     await before.transaction.save()
@@ -524,10 +530,10 @@ test.group('Plaid sync characterization', (group) => {
     fake.responses = [page(accounts(), 'c2', { modified: [purchase('purchase', { amount })] })]
     ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
     const after = await local()
-    assert.deepEqual(after.transaction.categories, [
+    assert.deepEqual(after.transaction.categories, categoryAllocationsToCents([
       { categoryId: userCategory.id, amount: -10, comment: 'User split' },
       { categoryId: f.unassigned.id, amount: 10 - amount },
-    ])
+    ]))
     assert.equal(after.transaction.comment, 'User memo')
     assert.deepEqual(after.transaction.taxes, [{ type: 'local', amount: 3 }])
     assert.equal(after.at.statementId, f.statement.id)
@@ -568,7 +574,8 @@ NOT VALID`)
     assert.equal(after.at.statementId, f.statement.id)
     assert.equal(after.transaction.version, before.transaction.version + 1)
     assert.lengthOf(await after.transaction.related('transactionLog').query(), 2)
-    assert.deepEqual(after.transaction.categories, [{ categoryId: f.unassigned.id, amount: -15 }])
+    assert.deepEqual(after.transaction.categories,
+      categoryAllocationsToCents([{ categoryId: f.unassigned.id, amount: -15 }]))
     await f.unassigned.refresh()
     assert.equal(f.unassigned.balanceCents, parseMoneyCents('-15.00'))
     assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('85.00'))
@@ -655,7 +662,8 @@ harmless').with([10, -10]).run(async ({ client, assert }, amount) => {
     assert.isFalse(after.at.pending)
     assert.equal(after.transaction.comment, 'Pending local memo')
     assert.equal(after.at.statementId, f.statement.id)
-    assert.equal(after.transaction.categories.reduce((sum, category) => sum + category.amount, 0), -
+    assert.equal(after.transaction.categories.reduce((sum,
+      category) => sum + Number(formatMoneyCents(category.amountCents)), 0), -
       amount)
     assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents(
       encodeMonetaryAmount(100 - amount)))
@@ -691,8 +699,9 @@ harmless').with([10, -10]).run(async ({ client, assert }, amount) => {
       'Regular' })
     const userCategory = await userGroup.related('categories').create({ name: 'Metadata category',
       type: CategoryType.Regular, balanceCents: parseMoneyCents('-10.00'), fundingCategories: [] })
-    before.transaction.categories = [{ categoryId: userCategory.id, amount: -10, comment:
-      'Metadata split' }]
+    before.transaction.categories = categoryAllocationsToCents([{ categoryId: userCategory.id,
+      amount: -10, comment:
+      'Metadata split' }])
     before.transaction.comment = 'Local metadata memo'
     before.transaction.taxes = [{ type: 'local', amount: 3 }]
     await before.transaction.save()
@@ -720,10 +729,10 @@ harmless').with([10, -10]).run(async ({ client, assert }, amount) => {
     assert.equal(after.transaction.date.toISODate(), modified.date)
     assert.equal(after.transaction.comment, 'Local metadata memo')
     assert.deepEqual(after.transaction.taxes, [{ type: 'local', amount: 3 }])
-    const expectedCategories: Transaction['categories'] = [{ categoryId: userCategory.id, amount: -
-      10, comment: 'Metadata split' }]
-    if (modified.amount !== 10) expectedCategories.push({ categoryId: f.unassigned.id, amount: 10 -
-      modified.amount })
+    const expectedCategories: Transaction['categories'] = categoryAllocationsToCents([
+      { categoryId: userCategory.id, amount: -10, comment: 'Metadata split' }])
+    if (modified.amount !== 10) expectedCategories.push({ categoryId: f.unassigned.id,
+      amountCents: parseMoneyCents(encodeMonetaryAmount(10 - modified.amount)) })
     assert.deepEqual(after.transaction.categories, expectedCategories)
     await userCategory.refresh()
     await f.unassigned.refresh()
@@ -785,7 +794,8 @@ date').with([
     assert.equal(at.amountCents, parseMoneyCents(encodeMonetaryAmount(-amount)))
     assert.isFalse(transaction.deleted)
     assert.equal(transaction.date.toISODate(), date)
-    assert.deepEqual(transaction.categories, [{ categoryId: f.unassigned.id, amount: -amount }])
+    assert.deepEqual(transaction.categories,
+      categoryAllocationsToCents([{ categoryId: f.unassigned.id, amount: -amount }]))
     const applied = date >= '2025-01-01' ? -amount : 0
     assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents(
       encodeMonetaryAmount(100 + (pending ? 0 : applied))))
@@ -841,8 +851,9 @@ date').with([
     assert.equal(after.transaction.date.toISODate(), newDate)
     assert.equal(after.transaction.comment, 'Boundary local memo')
     assert.deepEqual(after.transaction.taxes, [{ type: 'local', amount: 3 }])
-    assert.deepEqual(after.transaction.categories, [{ categoryId: f.unassigned.id,
-      amount: newAmount === 0 ? 0 : -newAmount, comment: 'Boundary split' }])
+    assert.deepEqual(after.transaction.categories,
+      categoryAllocationsToCents([{ categoryId: f.unassigned.id,
+      amount: newAmount === 0 ? 0 : -newAmount, comment: 'Boundary split' }]))
     const applied = newDate >= '2025-01-01' ? -newAmount : 0
     assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents(
       encodeMonetaryAmount(100 + applied)))
@@ -872,8 +883,9 @@ eligible').with([true, false]).run(async ({ client, assert }, entering) => {
     const userCategory = await userGroup.related('categories').create({ name: 'Boundary category',
       type: CategoryType.Regular, balanceCents: parseMoneyCents(encodeMonetaryAmount(
         entering ? 0 : -10)), fundingCategories: [] })
-    before.transaction.categories = [{ categoryId: userCategory.id, amount: -10, comment:
-      'Custom split' }]
+    before.transaction.categories = categoryAllocationsToCents([{ categoryId: userCategory.id,
+      amount: -10, comment:
+      'Custom split' }])
     before.transaction.comment = 'Custom memo'
     before.transaction.taxes = [{ type: 'local', amount: 3 }]
     await before.transaction.save()
@@ -886,8 +898,9 @@ eligible').with([true, false]).run(async ({ client, assert }, entering) => {
       amount: 15 })] })]
     ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
     const after = await local()
-    assert.deepEqual(after.transaction.categories, [{ categoryId: userCategory.id, amount: -10,
-      comment: 'Custom split' }, { categoryId: f.unassigned.id, amount: -5 }])
+    assert.deepEqual(after.transaction.categories,
+      categoryAllocationsToCents([{ categoryId: userCategory.id, amount: -10,
+      comment: 'Custom split' }, { categoryId: f.unassigned.id, amount: -5 }]))
     assert.equal(after.transaction.id, before.transaction.id)
     assert.equal(after.at.id, before.at.id)
     assert.equal(after.at.statementId, f.statement.id)
@@ -919,7 +932,8 @@ modification').with([true, false]).run(async ({ client, assert }, entering) => {
     fake.responses = [page(accounts(), 'c1', { added: [purchase('purchase', { date: oldDate })] })]
     ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
     const before = await local()
-    assert.deepEqual(before.transaction.categories, [{ categoryId: userCategory.id, amount: -10 }])
+    assert.deepEqual(before.transaction.categories,
+      categoryAllocationsToCents([{ categoryId: userCategory.id, amount: -10 }]))
     await userCategory.refresh()
     assert.equal(userCategory.balanceCents, parseMoneyCents(encodeMonetaryAmount(
       entering ? 0 : -10)))
@@ -929,8 +943,9 @@ modification').with([true, false]).run(async ({ client, assert }, entering) => {
     const after = await local()
     assert.equal(after.at.id, before.at.id)
     assert.equal(after.transaction.id, before.transaction.id)
-    assert.deepEqual(after.transaction.categories, [{ categoryId: userCategory.id, amount: -10 }, {
-      categoryId: f.unassigned.id, amount: -5 }])
+    assert.deepEqual(after.transaction.categories,
+      categoryAllocationsToCents([{ categoryId: userCategory.id, amount: -10 }, {
+      categoryId: f.unassigned.id, amount: -5 }]))
     await userCategory.refresh()
     await f.unassigned.refresh()
     assert.equal(userCategory.balanceCents, parseMoneyCents(encodeMonetaryAmount(
@@ -956,8 +971,9 @@ modification').with([true, false]).run(async ({ client, assert }, entering) => {
     const userCategory = await userGroup.related('categories').create({ name: 'Rollback category',
       type: CategoryType.Regular, balanceCents: parseMoneyCents(encodeMonetaryAmount(
         entering ? 0 : -10)), fundingCategories: [] })
-    before.transaction.categories = [{ categoryId: userCategory.id, amount: -10, comment:
-      'Rollback split' }]
+    before.transaction.categories = categoryAllocationsToCents([{ categoryId: userCategory.id,
+      amount: -10, comment:
+      'Rollback split' }])
     await before.transaction.save()
     await f.unassigned.refresh()
     f.unassigned.balanceCents = parseMoneyCents('0.00')
@@ -993,8 +1009,9 @@ NOT VALID`)
     await userCategory.refresh()
     assert.equal(userCategory.balanceCents, parseMoneyCents(encodeMonetaryAmount(
       entering ? -10 : 0)))
-    assert.deepEqual(after.transaction.categories, [{ categoryId: userCategory.id, amount: -10,
-      comment: 'Rollback split' }, { categoryId: f.unassigned.id, amount: -5 }])
+    assert.deepEqual(after.transaction.categories,
+      categoryAllocationsToCents([{ categoryId: userCategory.id, amount: -10,
+      comment: 'Rollback split' }, { categoryId: f.unassigned.id, amount: -5 }]))
     await f.institution.refresh()
     assert.equal(f.institution.cursor, 'c2')
   })
@@ -1070,8 +1087,9 @@ NOT VALID`)
     ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
     const before = await local('pending')
     const fundingPool = await f.budget.getFundingPoolCategory()
-    before.transaction.categories = [{ categoryId: fundingPool.id, amount: -10, comment:
-      'User allocation' }]
+    before.transaction.categories = categoryAllocationsToCents([{ categoryId: fundingPool.id,
+      amount: -10, comment:
+      'User allocation' }])
     await before.transaction.save()
     fundingPool.balanceCents = parseMoneyCents('-10.00')
     await fundingPool.save()
@@ -1082,8 +1100,9 @@ NOT VALID`)
       pending_transaction_id: 'pending' })] })]
     ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
     const after = await local('posted')
-    assert.deepEqual(after.transaction.categories, [{ categoryId: fundingPool.id, amount: -10,
-      comment: 'User allocation' }, { categoryId: f.unassigned.id, amount: -5 }])
+    assert.deepEqual(after.transaction.categories,
+      categoryAllocationsToCents([{ categoryId: fundingPool.id, amount: -10,
+      comment: 'User allocation' }, { categoryId: f.unassigned.id, amount: -5 }]))
     await fundingPool.refresh()
     await f.unassigned.refresh()
     assert.equal(fundingPool.balanceCents, parseMoneyCents('-10.00'))
@@ -1129,7 +1148,8 @@ converges').with(['page1', 'api2', 'page2', 'cursor']).run(async ({ client, asse
       assert.isNull(at.statementId)
       assert.isFalse(transaction.deleted)
       assert.equal(transaction.version, 0)
-      assert.deepEqual(transaction.categories, [{ categoryId: f.unassigned.id, amount }])
+      assert.deepEqual(transaction.categories,
+        categoryAllocationsToCents([{ categoryId: f.unassigned.id, amount }]))
       assert.lengthOf(await transaction.related('transactionLog').query(), 1)
     }
     assert.deepEqual((await snapshot()).statements, before.statements)

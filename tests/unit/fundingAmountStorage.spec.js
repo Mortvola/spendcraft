@@ -8,7 +8,7 @@ import { consumeFundingStorage, requestFundingStorage, stageFundingStorage,
 import { bindResolvedCategoryStorage, prepareCategoryStorage, stageCategoryStorage,
   finishCategoryStorageSave } from '../../app/services/categoryStorageBinding.ts'
 import {
-  validateCategoryConservation, encodeCategoryAllocations,
+  validateCategoryConservation, encodeCategoryAllocations, categoryAllocationsToCents,
 } from '../../app/services/categoryAmountCodec.ts'
 import { updateCategoryTransfer } from '../../app/validation/Validators/categoryTransfer.ts'
 import { calculateFunding, fundingCalculationInputs } from
@@ -51,7 +51,8 @@ test.group('Funding JSON storage (no database)', () => {
       && ['bindCategoryStorage', 'prepareNewCategoryStorage'].includes(node.name?.text))
       .map(node => node.getText(source).replace(/^export\s+/, '')).join('\n')
     const owner = new EventEmitter(), queries = []
-    const raw = scenario === 'create' ? allocation(1.005) : allocation('1.00')
+    const raw = scenario === 'create' ? categoryAllocationsToCents(allocation(1.005))
+      : allocation('1.00')
     const row = new Sample().merge({ categories: raw })
     row.id = 1; row.type = scenario === 'linked Loan' ? 0 : 2; row.budgetId = 7
     row.$isPersisted = scenario !== 'create'; row.$hydrateOriginals()
@@ -75,7 +76,7 @@ test.group('Funding JSON storage (no database)', () => {
     })
     if (scenario === 'replacement') {
       await scope.bindCategoryStorage([row])
-      row.categories = allocation(3)
+      row.categories = categoryAllocationsToCents(allocation(3))
     } else if (scenario === 'read' || scenario === 'linked Loan') {
       await scope.bindCategoryStorage([row])
       assert.strictEqual(row.categories[0].baseAmount, 1)

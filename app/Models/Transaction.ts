@@ -1,6 +1,7 @@
 import { serializeFundingMetadata } from '#services/fundingAmountCodec';
 import { encodeTaxAttributions } from '#services/taxAmountCodec';
-import { encodeCategoryAllocations } from '#services/categoryAmountCodec';
+import { encodeCategoryAllocations,
+  type CentCategoryAllocation } from '#services/categoryAmountCodec';
 import { bindTaxStorage, prepareTaxStorageSave } from '#services/transactionTaxStorage';
 import { prepareTaxStorage, finishTaxStorageSave } from '#services/taxStorageBinding';
 import { prepareCategoryStorage, finishCategoryStorageSave } from
@@ -18,9 +19,7 @@ import Budget from '#app/Models/Budget';
 import TransactionLog from './TransactionLog.js';
 import type { HasMany, BelongsTo, HasOne } from "@adonisjs/lucid/types/relations";
 
-interface TransCategory {
-  categoryId: number,
-  amount: number,
+interface TransCategory extends CentCategoryAllocation {
   comment?: string,
 }
 

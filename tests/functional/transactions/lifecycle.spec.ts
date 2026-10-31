@@ -1,4 +1,4 @@
-import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { categoryAllocationsToCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import { transactionRequest } from '../../helpers/transactionRequest.js'
 import {
@@ -38,7 +38,8 @@ async function createFixture() {
       .Regular, balanceCents: parseMoneyCents('0.00'), fundingCategories: [] })
     const transaction = await budget.related('transactions').create({
       date: DateTime.fromISO('2025-02-01'), type: TransactionType.MANUAL_TRANSACTION,
-      version: 0, deleted: false, sortOrder: 0, categories: [{ categoryId: first.id, amount: 10 }],
+      version: 0, deleted: false, sortOrder: 0,
+        categories: categoryAllocationsToCents([{ categoryId: first.id, amount: 10 }]),
         taxes: [],
     })
     await writeCanonicalTransactionFixture(transaction)
@@ -115,8 +116,9 @@ test.group('Ordinary transaction lifecycle', (group) => {
         await Budget.query({ client: trx }).where('id', fixture.budget.id).forUpdate().firstOrFail()
         const transaction = await Transaction.query({ client: trx }).where('id', fixture.transaction
           .id).firstOrFail()
-        await transaction.merge({ categories: [{ categoryId: fixture.first.id,
-          amount: sign * 0.2 }] }).save()
+        await transaction.merge({ categories: categoryAllocationsToCents([{
+          categoryId: fixture.first.id,
+          amount: sign * 0.2 }]) }).save()
         await fixture.accountTransaction.useTransaction(trx).merge(
           { amountCents: parseMoneyCents(encodeMonetaryAmount(sign * 0.2)) }).save()
         await fixture.account.useTransaction(trx).merge({ balanceCents: parseMoneyCents(
@@ -145,8 +147,9 @@ test.group('Ordinary transaction lifecycle', (group) => {
       await Budget.query({ client: trx }).where('id', fixture.budget.id).forUpdate().firstOrFail()
       const transaction = await Transaction.query({ client: trx }).where('id', fixture.transaction
         .id).firstOrFail()
-      await transaction.merge({ categories: [{ categoryId: id, amount: 0.1 },
-        { categoryId: id, amount: 0.2 }] }).save()
+      await transaction.merge({ categories: categoryAllocationsToCents([{ categoryId: id,
+        amount: 0.1 },
+        { categoryId: id, amount: 0.2 }]) }).save()
       await fixture.accountTransaction.useTransaction(trx).merge({ amountCents: parseMoneyCents(
         '0.30') }).save()
       await fixture.account.useTransaction(trx).merge({ balanceCents: parseMoneyCents(
@@ -165,7 +168,7 @@ test.group('Ordinary transaction lifecycle', (group) => {
     assert.deepEqual(await db.from('accounts').where('id', fixture.account.id).firstOrFail(),
       accountBefore)
     assert.deepEqual((await Transaction.findOrFail(fixture.transaction.id)).categories,
-      [{ categoryId: id, amount: 0.3 }])
+      categoryAllocationsToCents([{ categoryId: id, amount: 0.3 }]))
   })
 
   test('PATCH moves exact cents while preserving duplicate nominal allocations', async ({ client,
@@ -174,10 +177,10 @@ test.group('Ordinary transaction lifecycle', (group) => {
       await Budget.query({ client: trx }).where('id', fixture.budget.id).forUpdate().firstOrFail()
       const transaction = await Transaction.query({ client: trx }).where('id', fixture.transaction
         .id).firstOrFail()
-      await transaction.merge({ categories: [
+      await transaction.merge({ categories: categoryAllocationsToCents([
         { categoryId: fixture.first.id, amount: 0.1 },
         { categoryId: fixture.second.id, amount: 0.2 },
-      ] }).save()
+      ]) }).save()
       await fixture.accountTransaction.useTransaction(trx).merge({ amountCents: parseMoneyCents(
         '0.30') }).save()
       await fixture.first.useTransaction(trx).merge({ balanceCents: parseMoneyCents(
@@ -480,7 +483,7 @@ test.group('Ordinary transaction lifecycle', (group) => {
     const transaction = await Transaction.findOrFail(response.body().transaction.id)
     const accountTransaction = await AccountTransaction.findByOrFail('transactionId', transaction
       .id)
-    assert.deepEqual(transaction.categories, categories)
+    assert.deepEqual(transaction.categories, categoryAllocationsToCents(categories))
     assert.equal(accountTransaction.amountCents, parseMoneyCents(encodeMonetaryAmount(amount)))
     assert.equal(accountTransaction.accountId, fixture.account.id)
     assert.equal(transaction.budgetId, fixture.budget.id)
@@ -518,7 +521,7 @@ test.group('Ordinary transaction lifecycle', (group) => {
     const transaction = await Transaction.findOrFail(fixture.transaction.id)
     const accountTransaction = await AccountTransaction.findOrFail(fixture.accountTransaction.id)
     assert.equal(transaction.version, 1)
-    assert.deepEqual(transaction.categories, categories)
+    assert.deepEqual(transaction.categories, categoryAllocationsToCents(categories))
     assert.equal(accountTransaction.amountCents, parseMoneyCents(encodeMonetaryAmount(amount)))
     assert.equal((await Account.findOrFail(fixture.account.id)).balanceCents, parseMoneyCents(
       encodeMonetaryAmount(100 + amount)))
@@ -583,7 +586,8 @@ test.group('Ordinary transaction lifecycle', (group) => {
     assert.equal(accountTransaction.amountCents, parseMoneyCents(encodeMonetaryAmount(amount)))
     assert.equal((await Account.findOrFail(fixture.account.id)).balanceCents, parseMoneyCents(
       encodeMonetaryAmount(110 + amount)))
-    assert.equal(transaction.categories.reduce((sum, split) => sum + Math.round(split.amount * 100),
+    assert.equal(transaction.categories.reduce((sum,
+      split) => sum + Math.round(Number(formatMoneyCents(split.amountCents)) * 100),
       0), Math.round(amount * 100))
   })
 
@@ -597,7 +601,8 @@ test.group('Ordinary transaction lifecycle', (group) => {
     response.assertStatus(200)
     const transaction = await Transaction.findOrFail(fixture.transaction.id)
     const accountTransaction = await AccountTransaction.findOrFail(fixture.accountTransaction.id)
-    assert.equal(transaction.categories.reduce((sum, split) => sum + split.amount, 0),
+    assert.equal(transaction.categories.reduce((sum,
+      split) => sum + Number(formatMoneyCents(split.amountCents)), 0),
       Number(formatMoneyCents(accountTransaction.amountCents)))
     assert.equal((await Account.findOrFail(fixture.account.id)).balanceCents, parseMoneyCents(
       encodeMonetaryAmount(100 + Number(formatMoneyCents(accountTransaction.amountCents)))))

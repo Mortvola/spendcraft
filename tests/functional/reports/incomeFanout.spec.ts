@@ -2,7 +2,7 @@ import { parseMoneyCents } from '#common/moneyCents'
 import {
   writeCanonicalTransactionFixture, writeHistoricalTransactionFixture,
 } from '../../helpers/historicalTransactionFixture.js'
-import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { categoryAllocationsToCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
 // Run only with fresh task-specific PostgreSQL authorization.
 // Standard bootstrap independently guards pg/pgLog/execution before every
 // destructive fixture statement and returned cleanup; no local teardown/DDL.
@@ -35,7 +35,8 @@ async function movement(f: Fixture, amount: number, transfers: number[], options
   const transaction = await f.budget.related('transactions').create({
     date: DateTime.fromISO(options.date ?? '2025-02-01'), type: options.type ?? 5, version: 0,
     deleted: options.deleted ?? false, sortOrder: 0,
-    categories: transfers.map((amount) => ({ categoryId: f.category.id, amount })), taxes: [],
+    categories: categoryAllocationsToCents(transfers.map((amount) => ({
+      categoryId: f.category.id, amount }))), taxes: [],
   })
   await writeCanonicalTransactionFixture(transaction)
   const at = await (options.account ?? f.account).related('accountTransactions').create({
@@ -184,7 +185,8 @@ test.group('Income Vs Expenses transfer fan-out PostgreSQL acceptance', () => {
     await movement(f, 50, [], { date: '2025-01-01' })
     await movement(f, -20, [], { date: '2024-12-31' })
     await f.budget.related('transactions').create({ date: DateTime.fromISO('2025-01-01'), type: 2,
-      categories: [{ categoryId: f.category.id, amount: 999 }], taxes: [], version: 0,
+      categories: categoryAllocationsToCents([{ categoryId: f.category.id, amount: 999 }]),
+        taxes: [], version: 0,
         deleted: false, sortOrder: 0 })
     const response = await client.get('/api/v1/reports/income-vs-expenses').loginAs(f.user)
     response.assertStatus(200)

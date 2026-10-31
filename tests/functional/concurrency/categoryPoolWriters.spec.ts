@@ -170,7 +170,8 @@ async function openings(f: Fixture, count: number) {
   for (const row of rows) {
     equal(row.date.toISODate(), '2025-01-01')
     const links = await row.related('accountTransaction').query().firstOrFail()
-    equal(row.categories[0].amount, Number(formatMoneyCents(links.amountCents)))
+    equal(Number(formatMoneyCents(row.categories[0].amountCents)),
+      Number(formatMoneyCents(links.amountCents)))
   }
 }
 function ofx() {
@@ -447,7 +448,7 @@ test.group('Category deletion admission vs protected writers', (group) => {
       equal(Number(formatMoneyCents((await Category.findOrFail(f.category.id)).balanceCents)), 10)
       const rows = await f.budget.related('transactions').query().where('deleted', false)
       ok(rows.some((row) => row.categories.some((split) => split.categoryId === f.category.id &&
-        split.amount === 10)))
+        Number(formatMoneyCents(split.amountCents)) === 10)))
       await pool(f, writer === 'funding' || writer === 'rebalance' ? 90 : 100)
     } finally { restore() }
   })

@@ -1,4 +1,4 @@
-import { parseMoneyCents } from '#common/moneyCents'
+import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import Budget from '#models/Budget'
@@ -252,8 +252,10 @@ amount::real')
         .transactionId
     })
     const transaction = await Transaction.findOrFail(transactionId)
-    assert.deepEqual(transaction.categories.map(split => split.amount), scenario.expected)
-    assert.equal(transaction.categories.reduce((sum, split) => sum + Math.round(split.amount * 100),
+    assert.deepEqual(transaction.categories.map(split => Number(formatMoneyCents(
+      split.amountCents))), scenario.expected)
+    assert.equal(transaction.categories.reduce((sum,
+      split) => sum + Math.round(Number(formatMoneyCents(split.amountCents)) * 100),
       0), Math.round(scenario.amount * 100))
   })
 })
@@ -323,8 +325,10 @@ USING (${expression})`)
         .transactionId
     })
     const transaction = await Transaction.findOrFail(transactionId)
-    assert.deepEqual(transaction.categories.map(split => split.amount), scenario.expected)
-    assert.strictEqual(transaction.categories.reduce((sum, split) => sum + Math.round(split.amount *
+    assert.deepEqual(transaction.categories.map(split => Number(formatMoneyCents(
+      split.amountCents))), scenario.expected)
+    assert.strictEqual(transaction.categories.reduce((sum,
+      split) => sum + Math.round(Number(formatMoneyCents(split.amountCents)) *
       100), 0), Math.round(scenario.amount * 100))
   })
 

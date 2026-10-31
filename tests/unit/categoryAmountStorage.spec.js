@@ -1,3 +1,4 @@
+import { parseMoneyCents, addMoneyCents } from '../../common/moneyCents.ts'
 import { validateTransactionSplits } from '../../app/validation/transactionSplits.ts'
 import { test } from '@japa/runner'
 import { BaseModel } from '@adonisjs/lucid/orm'
@@ -24,6 +25,26 @@ function hydrated(categories) {
 }
 
 test.group('Category decimal-string production boundary without DB', () => {
+  test('stored decimal digits stay exact in cents through totals and encoding', ({ assert }) => {
+    const raw = [split('0.10'), split('0.20')]
+    const decoded = decodeCategoryAllocations(raw)
+    assert.strictEqual(addMoneyCents(...decoded.map(row => row.amountCents)),
+      parseMoneyCents('0.30'))
+    assert.deepEqual(encodeCategoryAllocations(decoded), raw)
+    const limit = [split('90071992547409.91'), split('-90071992547409.91')]
+    assert.deepEqual(encodeCategoryAllocations(decodeCategoryAllocations(limit)), limit)
+    assert.strictEqual(addMoneyCents(...decodeCategoryAllocations(limit).map(
+      row => row.amountCents)), parseMoneyCents('0.00'))
+  })
+  test('runtime encoding rejects dollars, fractional cents and unsafe integers', ({ assert }) => {
+    for (const amountCents of [0.1, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1, '0.30', null]) {
+      assert.throws(() => encodeCategoryAllocations([{ categoryId: 1, amountCents }]))
+    }
+    assert.throws(() => encodeCategoryAllocations([split(0.3)]))
+    assert.throws(() => encodeCategoryAllocations([{ ...split(0.3), amountCents: 30 }]))
+    assert.throws(() => addMoneyCents(parseMoneyCents('90071992547409.91'),
+      parseMoneyCents('0.01')))
+  })
   test('approved encoding').with([
     [12.34, '12.34'], [12.345, '12.35'], [-1.005, '-1.00'], [0.1 + 0.2, '0.30'],
     [-0, '0.00'], [0.005, '0.01'], [-0.005, '0.00'], [-12.345, '-12.34'],
@@ -38,13 +59,13 @@ test.group('Category decimal-string production boundary without DB', () => {
     assert.throws(() => monetaryAmountCents('90071992547409.92'))
     assert.throws(() => checkedCentSum([Number.MAX_SAFE_INTEGER, 1, -1]))
   })
-  test('canonical reads preserve numeric runtime values, metadata, order and duplicates', ({
+  test('canonical reads preserve integer cents, metadata, order and duplicates', ({
     assert }) => {
     const original = [split('0.30'), { ...split('1.23'), comment: 'keep', baseAmount: 1.005,
       extra: { value: 4 } }, split('-2.00')]
     const before = globalThis.structuredClone(original)
     const decoded = decodeCategoryAllocations(original)
-    assert.deepEqual(decoded.map((row) => row.amount), [0.3, 1.23, -2])
+    assert.deepEqual(decoded.map((row) => row.amountCents), [30, 123, -200])
     assert.deepEqual(original, before)
     assert.deepEqual(encodeCategoryAllocations(decoded), [split('0.30'), { ...original[1] }, split(
       '-2.00')])
@@ -70,24 +91,24 @@ test.group('Category decimal-string production boundary without DB', () => {
   test('real Lucid dirty tracking stays clean on canonical read and metadata-only save', ({
     assert }) => {
     const model = hydrated([split('1.00'), split('0.30')])
-    assert.deepEqual(model.categories.map((row) => row.amount), [1, 0.3])
+    assert.deepEqual(model.categories.map((row) => row.amountCents), [100, 30])
     assert.isFalse(model.$isDirty)
     model.comment = 'new'
     stageCategoryStorage(model)
     assert.deepEqual(model.prepareForAdapter(model.$dirty), { comment: 'new' })
     finishCategoryStorageSave(model)
-    assert.equal(model.categories[1].amount, 0.3)
+    assert.equal(model.categories[1].amountCents, 30)
   })
   test('real Lucid nested writes encode strings and leave numeric API/clean original', ({
     assert }) => {
     const model = hydrated([split('1.00')])
-    model.categories[0].amount = 12.345
+    model.categories[0].amountCents = parseMoneyCents(encodeMonetaryAmount(12.345))
     stageCategoryStorage(model)
     const payload = model.prepareForAdapter(model.$dirty)
     assert.deepEqual(JSON.parse(payload.categories), [split('12.35')])
     model.$hydrateOriginals()
     finishCategoryStorageSave(model)
-    assert.deepEqual(model.serialize().categories, [split(12.35)])
+    assert.deepEqual(model.serialize().categories, [{ categoryId: 1, amountCents: 1235 }])
     assert.isFalse(model.$isDirty)
     assert.throws(() => {
       const dirty = new Sample().merge({ categories: [split(1)] })
@@ -158,15 +179,17 @@ test('actual scope resolver batches active rows including Loans and rejects fore
     } },
   })
   await resolver(rows)
-  assert.deepEqual(rows.map((entry) => entry.categories[0].amount), [1, 1, 1, 1, '1.00', 1])
+  assert.deepEqual(rows.map((entry) => entry.categories[0].amountCents
+    ?? entry.categories[0].amount), [100, 100, 100, 100, '1.00', 100])
   assert.deepEqual(queries, ['account_transactions as at'])
   await resolver(rows.slice(0, 3))
   assert.lengthOf(queries, 1)
   const newOpening = row(7, 4)
+  newOpening.$attributes.categories = [{ categoryId: 1, amountCents: parseMoneyCents('1.00') }]
   newOpening.$isPersisted = false
   requestCategoryStorage(newOpening)
   await resolver([newOpening])
-  assert.equal(newOpening.categories[0].amount, 1)
+  assert.equal(newOpening.categories[0].amountCents, 100)
 })
 
 test('active validation and canonical numeric posting preserve the approved negative half tie',

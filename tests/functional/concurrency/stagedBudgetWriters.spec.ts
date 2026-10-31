@@ -1,4 +1,4 @@
-import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { categoryAllocationsToCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { parseMoneyCents } from '#common/moneyCents'
 import { encodeTaxForecast } from '#services/taxMonetaryCodec'
 import { categoryRequest } from '../../helpers/categoryRequest.js'
@@ -52,8 +52,9 @@ async function fixture() {
     // Known current eligible applied effect; no historical reversal acceptance inferred.
     const transaction = await budget.related('transactions').create({ date: DateTime.fromISO(
       '2025-02-01'),
-      type: TransactionType.MANUAL_TRANSACTION, categories: [{ categoryId: category.id,
-        amount: 5 }], taxes: [], deleted: false })
+      type: TransactionType.MANUAL_TRANSACTION,
+        categories: categoryAllocationsToCents([{ categoryId: category.id,
+        amount: 5 }]), taxes: [], deleted: false })
     await writeCanonicalTransactionFixture(transaction)
     await account.related('accountTransactions').create({ transactionId: transaction.id,
        amountCents: parseMoneyCents('5.00'),

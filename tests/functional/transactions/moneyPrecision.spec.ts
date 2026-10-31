@@ -3,7 +3,8 @@ import { transactionRequest, categoryTransferRequest } from '../../helpers/trans
 import { categoryRequest } from '../../helpers/categoryRequest.js'
 import { statementRequest } from '../../helpers/statementRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
-import { monetaryAmountCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { categoryAllocationsToCents, monetaryAmountCents,
+  encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import Budget from '#models/Budget'
@@ -97,12 +98,14 @@ test.group('Monetary persistence and allocation regressions', () => {
           .transactionId
       })
       const transaction = await Transaction.findOrFail(transactionId)
-      assert.deepEqual(transaction.categories.map((split) => split.amount), scenario.expected)
-      assert.equal(transaction.categories.reduce((sum, split) => sum + Math.round(split.amount *
+      assert.deepEqual(transaction.categories.map((split) => Number(formatMoneyCents(
+        split.amountCents))), scenario.expected)
+      assert.equal(transaction.categories.reduce((sum,
+        split) => sum + Math.round(Number(formatMoneyCents(split.amountCents)) *
         100), 0), Math.round(scenario.amount * 100))
       for (const split of transaction.categories) {
         assert.equal((await Category.findOrFail(split.categoryId)).balanceCents,
-          parseMoneyCents(encodeMonetaryAmount(split.amount)))
+          parseMoneyCents(encodeMonetaryAmount(Number(formatMoneyCents(split.amountCents)))))
       }
     })
 
@@ -120,7 +123,7 @@ test.group('Monetary persistence and allocation regressions', () => {
     }
     const transactions = await f.budget.related('transactions').query()
     const rawSplitTotal = transactions.reduce((sum, transaction) => sum + transaction.categories
-      .reduce((subtotal, split) => subtotal + split.amount, 0), 0)
+      .reduce((subtotal, split) => subtotal + Number(formatMoneyCents(split.amountCents)), 0), 0)
     const associationTotal = (await f.account.related('accountTransactions').query()).reduce((sum,
       row) => sum + Number(formatMoneyCents(row.amountCents)), 0)
     assert.lengthOf(transactions, 3)
@@ -165,7 +168,8 @@ test.group('Monetary persistence and allocation regressions', () => {
       } else {
         if (!transaction || !association) throw new Error(
           'Successful CREATE must persist its Transaction and AccountTransaction')
-        assert.equal(transaction.categories[0].amount, monetaryAmountCents(Number(amount)) / 100)
+        assert.equal(Number(formatMoneyCents(transaction.categories[0].amountCents)),
+          monetaryAmountCents(Number(amount)) / 100)
         assert.equal((await db.from('transactions').where('id', transaction.id).first()).categories[
           0].amount, encodeMonetaryAmount(Number(amount)))
         assert.equal(association.amountCents, parseMoneyCents(encodeMonetaryAmount(Number(
@@ -203,7 +207,8 @@ test.group('Monetary persistence and allocation regressions', () => {
       const f = await fixture()
       const transaction = await f.budget.related('transactions').create({
         date: DateTime.fromISO('2025-02-10'), type: TransactionType.MANUAL_TRANSACTION,
-        version: 0, categories: [{ categoryId: f.categories[0].id, amount: 0 }], taxes: [],
+        version: 0, categories: categoryAllocationsToCents([{ categoryId: f.categories[0].id,
+          amount: 0 }]), taxes: [],
       })
       await writeCanonicalTransactionFixture(transaction)
       const association = await f.account.related('accountTransactions').create({
@@ -219,7 +224,8 @@ test.group('Monetary persistence and allocation regressions', () => {
         encodeMonetaryAmount(amount)])).rows[0].amount
       const conserves = monetaryAmountCents(amount) === monetaryAmountCents(decimal)
       response.assertStatus(conserves ? 200 : 422)
-      assert.equal((await Transaction.findOrFail(transaction.id)).categories[0].amount,
+      assert.equal(Number(formatMoneyCents((await Transaction.findOrFail(
+        transaction.id)).categories[0].amountCents)),
         conserves ? monetaryAmountCents(amount) / 100 : 0)
       assert.equal((await AccountTransaction.findOrFail(association.id)).amountCents,
          parseMoneyCents(encodeMonetaryAmount(conserves ? Number(
@@ -378,8 +384,8 @@ precision')
       const balances = await Promise.all(f.categories.map(async (category) => Number(
         formatMoneyCents((await Category
         .findOrFail(category.id)).balanceCents))))
-      const cents = transaction.categories.reduce((total, split) => total + Math.round(split
-        .amount * 100), 0)
+      const cents = transaction.categories.reduce((total,
+        split) => total + Math.round(Number(formatMoneyCents(split.amountCents)) * 100), 0)
       assert.equal(cents, Math.round(Number(formatMoneyCents(association.amountCents)) * 100))
       console.log(JSON.stringify({ scenario: 'allocation', input: scenario,
         persistedAmount: Number(formatMoneyCents(association.amountCents)),
@@ -412,9 +418,10 @@ precision')
     assert.isNumber(persisted.amount)
     assert.equal(persisted.amount, amount)
     assert.equal(storage.stored_value, amount.toFixed(2))
-    assert.deepEqual(transaction.categories.map(split => split.amount), [amount, 0.01])
-    assert.equal(transaction.categories.reduce((total, split) => total + monetaryAmountCents(split
-      .amount), 0),
+    assert.deepEqual(transaction.categories.map(split => Number(formatMoneyCents(
+      split.amountCents))), [amount, 0.01])
+    assert.equal(transaction.categories.reduce((total,
+      split) => total + monetaryAmountCents(Number(formatMoneyCents(split.amountCents))), 0),
       monetaryAmountCents(amount) + 1)
   })
 })

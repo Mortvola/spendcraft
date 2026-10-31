@@ -1,4 +1,4 @@
-import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { categoryAllocationsToCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { parseMoneyCents } from '#common/moneyCents'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
@@ -26,8 +26,9 @@ async function createDomain(label: string) {
         fundingCategories: [] })
     const transaction = await budget.related('transactions').create({ date: DateTime.fromISO(
       '2025-02-01'),
-      type: TransactionType.MANUAL_TRANSACTION, categories: [{ categoryId: category.id,
-        amount: 10 }], taxes: [], deleted: false })
+      type: TransactionType.MANUAL_TRANSACTION,
+        categories: categoryAllocationsToCents([{ categoryId: category.id,
+        amount: 10 }]), taxes: [], deleted: false })
     return { budget, user, category, transaction }
   })
 }

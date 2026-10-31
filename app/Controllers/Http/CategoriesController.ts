@@ -35,13 +35,15 @@ function budgetGroups(budgetId: number, options?: ModelAdapterOptions) {
   return Group.query(options).where('budgetId', budgetId);
 }
 
-function hasReplacementAllocations(value: unknown): value is { categoryId: number, amount: number }[
+function hasReplacementAllocations(value: unknown): value is { categoryId: number,
+  amountCents: MoneyCents }[
   ] {
   return Array.isArray(value) && value.length > 0 && value.every((split: unknown) => (
     typeof split === 'object' && split !== null
     && 'categoryId' in split && typeof split.categoryId === 'number' && Number.isInteger(split
       .categoryId)
-    && 'amount' in split && typeof split.amount === 'number' && Number.isFinite(split.amount)
+    && 'amountCents' in split && typeof split.amountCents === 'number'
+    && Number.isSafeInteger(split.amountCents)
   ));
 }
 
@@ -700,7 +702,7 @@ class CategoriesController {
             type,
             categories: categories.map((category) => ({
               categoryId: category.categoryId,
-              amount: category.amount,
+              amountCents: parseMoneyCents(encodeMonetaryAmount(category.amount)),
               comment: category.comment,
               funder: category.funder,
               fundingCategories: category.fundingCategories,
@@ -731,7 +733,7 @@ class CategoriesController {
         for (const transCategory of transaction.categories) {
           const delta = categeoryDeltas.get(transCategory.categoryId) ?? parseMoneyCents('0.00');
           categeoryDeltas.set(transCategory.categoryId, subtractMoneyCents(delta,
-            parseMoneyCents(encodeMonetaryAmount(transCategory.amount))));
+            transCategory.amountCents));
         }
 
         await transaction
@@ -739,7 +741,7 @@ class CategoriesController {
             date: DateTime.fromISO(date),
             categories: categories.map((category) => ({
               categoryId: category.categoryId,
-              amount: category.amount,
+              amountCents: parseMoneyCents(encodeMonetaryAmount(category.amount)),
               comment: category.comment,
               funder: category.funder,
               fundingCategories: category.fundingCategories,
@@ -759,7 +761,7 @@ class CategoriesController {
       for (const transCategory of transaction.categories) {
         const delta = categeoryDeltas.get(transCategory.categoryId) ?? parseMoneyCents('0.00');
         categeoryDeltas.set(transCategory.categoryId, addMoneyCents(delta,
-          parseMoneyCents(encodeMonetaryAmount(transCategory.amount))));
+          transCategory.amountCents));
       }
 
        

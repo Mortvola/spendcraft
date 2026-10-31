@@ -1,4 +1,4 @@
-import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { categoryAllocationsToCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import { transactionRequest } from '../../helpers/transactionRequest.js'
 import { test } from '@japa/runner'
@@ -38,7 +38,7 @@ async function createDomain(label: string) {
     const transaction = await budget.related('transactions').create({
       date: DateTime.fromISO('2025-02-01'), type: TransactionType.MANUAL_TRANSACTION,
       version: 0, deleted: false, sortOrder: 0, comment: `${label} private comment`,
-      categories: [{ categoryId: category.id, amount: 10 }], taxes: [],
+      categories: categoryAllocationsToCents([{ categoryId: category.id, amount: 10 }]), taxes: [],
     })
     const accountTransaction = await account.related('accountTransactions').create({
       transactionId: transaction.id, name: `${label} private purchase`,
@@ -94,7 +94,8 @@ test.group('Account transaction creation isolation', (group) => {
     response.assertStatus(200)
     const row = await Transaction.findOrFail(response.body().transaction.id)
     assert.equal(row.budgetId, fixture.own.budget.id)
-    assert.deepEqual(row.categories, [{ categoryId: fixture.own.category.id, amount: 15 }])
+    assert.deepEqual(row.categories,
+      categoryAllocationsToCents([{ categoryId: fixture.own.category.id, amount: 15 }]))
     const accountRow = await AccountTransaction.findByOrFail('transactionId', row.id)
     assert.equal(accountRow.accountId, fixture.own.account.id)
     assert.equal(accountRow.amountCents, parseMoneyCents('15.00'))
@@ -148,7 +149,7 @@ test.group('Account transaction creation isolation', (group) => {
         categories })).accept('json').loginAs(fixture.shared)
     response.assertStatus(200)
     assert.deepEqual((await Transaction.findOrFail(response.body().transaction.id)).categories,
-      categories)
+      categoryAllocationsToCents(categories))
     assert.equal((await Category.findOrFail(fixture.own.category.id)).balanceCents,
       parseMoneyCents('35.00'))
     assert.equal((await Account.findOrFail(fixture.own.account.id)).balanceCents,

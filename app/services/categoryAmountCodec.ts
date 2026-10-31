@@ -1,3 +1,5 @@
+import { parseMoneyCents, formatMoneyCents, moneyCentsFromInteger,
+  type MoneyCents } from '#common/moneyCents'
 import { Exception } from '@adonisjs/core/exceptions'
 
 function invalid(message = 'Invalid Category allocation amount'): never {
@@ -58,6 +60,13 @@ function runtimeCategoryAmount(value: unknown): number {
 }
 
 export interface CategoryAllocation { categoryId: number; amount: number }
+export interface CentCategoryAllocation { categoryId: number; amountCents: MoneyCents }
+
+// Request values become cents once, before entering the Transaction model.
+export function categoryAllocationsToCents<T extends CategoryAllocation>(rows: readonly T[]) {
+  return rows.map(({ amount, ...metadata }) => ({ ...metadata, categoryId: metadata.categoryId,
+    amountCents: parseMoneyCents(encodeMonetaryAmount(amount)) }))
+}
 
 function allocations(value: unknown): Record<string, unknown>[] {
   if (!Array.isArray(value)) invalid('Category allocations must be an array')
@@ -69,19 +78,26 @@ function allocations(value: unknown): Record<string, unknown>[] {
   })
 }
 
-export function runtimeCategoryAllocations(value: unknown): CategoryAllocation[] {
-  return allocations(value).map((entry) => ({ ...entry, categoryId: Number(entry.categoryId),
-    amount: runtimeCategoryAmount(entry.amount) }))
+export function runtimeCategoryAllocations(value: unknown): CentCategoryAllocation[] {
+  return allocations(value).map(({ amountCents, ...entry }) => {
+    if (Object.hasOwn(entry, 'amount')) invalid('Runtime allocations require amountCents')
+    if (typeof amountCents !== 'number') invalid('Invalid allocation cents')
+    return { ...entry, categoryId: Number(entry.categoryId),
+      amountCents: moneyCentsFromInteger(amountCents) }
+  })
 }
 
-export function decodeCategoryAllocations(value: unknown): CategoryAllocation[] {
-  return allocations(value).map(entry => ({ ...entry, categoryId: Number(entry.categoryId),
-    amount: decodeStoredMonetaryAmount(entry.amount) }))
+export function decodeCategoryAllocations(value: unknown): CentCategoryAllocation[] {
+  return allocations(value).map(({ amount, ...entry }) => {
+    if (typeof amount !== 'string') invalid('Stored monetary amount must be a canonical string')
+    return { ...entry, categoryId: Number(entry.categoryId),
+      amountCents: moneyCentsFromInteger(monetaryAmountCents(amount)) }
+  })
 }
 
 export function encodeCategoryAllocations(value: unknown) {
-  return allocations(value).map((entry) => ({ ...entry, amount: encodeMonetaryAmount(entry
-    .amount) }))
+  return runtimeCategoryAllocations(value).map(({ amountCents, ...entry }) => ({ ...entry,
+    amount: formatMoneyCents(amountCents) }))
 }
 
 export function validateCategoryConservation(type: number, value: unknown, expected?: number,

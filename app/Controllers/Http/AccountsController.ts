@@ -18,7 +18,7 @@ import {
 import Statement from '#app/Models/Statement';
 import { validateSubmittedStatementIncome, encodeStatementIncome } from
   '#services/statementIncomeCodec';
-import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
+import { categoryAllocationsToCents, encodeMonetaryAmount } from '#services/categoryAmountCodec';
 import { replaceStatementIncome } from '#services/statementIncomeStorage';
 import AccountTransaction from '#app/Models/AccountTransaction';
 import transactionFields from './transactionFields.js';
@@ -225,7 +225,7 @@ export default class AccountsController {
         date: requestData.date,
         sortOrder: 2147483647,
         comment: requestData.comment,
-        categories,
+        categories: categoryAllocationsToCents(categories),
         duplicateOfTransactionId: null,
       });
 
@@ -271,7 +271,7 @@ export default class AccountsController {
 
         const balanceCents = addMoneyCents(
           category.balanceCents,
-          parseMoneyCents(encodeMonetaryAmount(split.amount)));
+          split.amountCents);
         category.balanceCents = balanceCents;
 
         await category.save();
@@ -375,11 +375,11 @@ export default class AccountsController {
           const unassigned = await budget.getUnassignedCategory({ client: trx });
           for (const row of crossing) {
             const splits = row.transaction.categories.length > 0
-              ? row.transaction.categories : [{ categoryId: unassigned.id, amount: Number(
-                formatMoneyCents(row.amountCents)) }];
+              ? row.transaction.categories : [{ categoryId: unassigned.id,
+                amountCents: row.amountCents }];
             for (const split of splits) {
               const previous = deltas.get(split.categoryId) ?? parseMoneyCents('0.00');
-              const amount = parseMoneyCents(encodeMonetaryAmount(split.amount));
+              const amount = split.amountCents;
               deltas.set(split.categoryId, later ? subtractMoneyCents(previous, amount)
                 : addMoneyCents(previous, amount));
             }

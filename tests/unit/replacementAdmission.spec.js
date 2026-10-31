@@ -7,7 +7,7 @@ import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
 import { DateTime } from 'luxon'
 import { TransactionType } from '../../common/ResponseTypes.ts'
-import { validateCategoryConservation, encodeMonetaryAmount } from
+import { validateCategoryConservation, encodeMonetaryAmount, categoryAllocationsToCents } from
   '../../app/services/categoryAmountCodec.ts'
 import { validateTransactionSplits } from '../../app/validation/transactionSplits.ts'
 
@@ -46,6 +46,10 @@ async function harness(shape = {}, request = {}) {
     merge(values) { log.push('target.merge'); Object.assign(this, values); return this },
     save: async () => { log.push('target.save') }, serialize() { return { id: this.id, date: this
       .date.toISODate(), type: this.type, categories: this.categories } } }
+  if (Array.isArray(target.categories) && target.categories.every(row => row !== null
+    && typeof row === 'object' && typeof row.amount === 'number' && Number.isFinite(row.amount))) {
+    target.categories = categoryAllocationsToCents(target.categories)
+  }
   const before = JSON.stringify({ target: { ...target }, balances: [...categories].map(([id, c]) =>
     [id, Number(formatMoneyCents(c.balanceCents))]) })
   const budget = { id: 1, getFundingPoolCategory: async () => ({ id: 2 }), related: () => ({

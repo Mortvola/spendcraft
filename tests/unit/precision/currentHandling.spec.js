@@ -9,7 +9,8 @@ import { addMoneyCents, formatMoneyCents, parseMoneyCents } from '../../../commo
 import { encodeTransferCategories } from '../../../client-src/monetary.ts'
 import parseEquation from '../../../client-src/EquationParser.ts'
 import { encodeFundingMetadata } from '../../../app/services/fundingAmountCodec.ts'
-import { encodeCategoryAllocations } from '../../../app/services/categoryAmountCodec.ts'
+import { encodeCategoryAllocations,
+  categoryAllocationsToCents } from '../../../app/services/categoryAmountCodec.ts'
 
 // Execute current component expressions without application/DB bootstrap or a DOM.
 async function component(name, context) {
@@ -125,7 +126,8 @@ test.group('Current monetary handling without database', () => {
     assert.strictEqual(transmitted[0].amount, '0.30')
     assert.strictEqual(transmitted[0].baseAmount, '0.10')
     assert.strictEqual(transmitted[0].fundingCategories[0].amount, 100)
-    const stored = encodeCategoryAllocations(encodeFundingMetadata(transmitted))
+    const stored = encodeCategoryAllocations(encodeFundingMetadata(categoryAllocationsToCents(
+      transmitted)))
     assert.strictEqual(stored[0].amount, '0.30')
     assert.strictEqual(stored[0].baseAmount, '0.10')
     assert.strictEqual(stored[0].fundingCategories[0].amount, '100.00')

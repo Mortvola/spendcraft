@@ -1,3 +1,4 @@
+import { categoryAllocationsToCents } from '#services/categoryAmountCodec'
 import { parseMoneyCents } from '#common/moneyCents'
 import { transactionRequest, categoryTransferRequest } from '../../helpers/transactionRequest.js'
 // PREPARED ONLY: requires fresh spendcraft_test authorization. Not run during implementation.
@@ -29,7 +30,8 @@ async function fixture() {
       type: CategoryType.Regular,
       balanceCents: parseMoneyCents('0.00'), fundingCategories: [] })
     const target = await Transaction.create({ budgetId: budget.id, type: 5, version: 0,
-      date: DateTime.fromISO('2025-02-01'), categories: [{ categoryId: category.id, amount: 10 }],
+      date: DateTime.fromISO('2025-02-01'),
+        categories: categoryAllocationsToCents([{ categoryId: category.id, amount: 10 }]),
         taxes: [] }, { client: trx })
     await account.related('accountTransactions').create({ transactionId: target.id, name:
       'Tax storage', amountCents: parseMoneyCents('10.00'), pending: false })

@@ -1,4 +1,4 @@
-import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { categoryAllocationsToCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { addMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import AutoAssignmentCategory from '#models/AutoAssignmentCategory'
 import AutoAssignment from '#models/AutoAssignment'
@@ -104,7 +104,8 @@ test.group('Transaction allocation API strings', () => {
           fundingCategories: [{ categoryId: 2, amount: 100, percentage: true }] },
         { categoryId: 2, amount: -0.125 }, { categoryId: 3, amount: 0 },
       ]
-      const row = new Transaction().merge({ id: 1, type, categories })
+      const row = new Transaction().merge({ id: 1, type,
+        categories: categoryAllocationsToCents(categories) })
       const before = globalThis.structuredClone(row.$attributes)
       for (const response of [row.serialize(), row.serialize(transactionFields), JSON.parse(JSON
         .stringify(row))]) {
@@ -114,13 +115,14 @@ test.group('Transaction allocation API strings', () => {
         ])
       }
       assert.deepEqual(row.$attributes, before)
-      assert.strictEqual(row.categories[0].amount, 0.1 + 0.2)
+      assert.strictEqual(row.categories[0].amountCents, parseMoneyCents('0.30'))
     })
   test('unsafe Category amounts cannot be serialized').with([NaN, Infinity, Number
     .MAX_SAFE_INTEGER])
     .run(({ assert }, amount) => {
-      const row = new Transaction().merge({ categories: [{ categoryId: 1, amount }] })
-      assert.throws(() => row.serialize())
+      assert.throws(() => new Transaction().merge({
+        categories: categoryAllocationsToCents([{ categoryId: 1, amount }]),
+      }).serialize())
     })
 })
 
@@ -347,10 +349,11 @@ test('funding API serialization preserves percentages, nulls, metadata and numer
     { categoryId: 2, amount: 0, baseAmount: null, fundingCategories: null },
     { categoryId: 3, amount: 0 },
   ]
-  const transaction = new Transaction().merge({ categories })
+  const transaction = new Transaction().merge({ categories: categoryAllocationsToCents(
+    categories) })
   const before = globalThis.structuredClone(transaction.$attributes)
   const response = transaction.serialize(transactionFields).categories
-  assert.deepEqual(response[0], { ...before.categories[0], amount: '0.00', baseAmount: '0.30',
+  assert.deepEqual(response[0], { ...categories[0], amount: '0.00', baseAmount: '0.30',
     fundingCategories: expected })
   assert.deepEqual(response[1], { categoryId: 2, amount: '0.00', baseAmount: null,
     fundingCategories: null })

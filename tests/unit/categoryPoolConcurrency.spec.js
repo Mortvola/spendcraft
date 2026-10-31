@@ -183,8 +183,11 @@ test.group('Deletion Category effects in checked cents without DB', () => {
         async delete() { events.push('account.delete') },
       }))
       const transactions = accounts.map(account => ({ categories: shape === 'empty' ? []
-        : account.id === 1 ? [{ categoryId: 1, amount: sign * 0.1 },
-          { categoryId: 1, amount: sign * 0.1 }] : [{ categoryId: 1, amount: sign * 0.1 }],
+        : account.id === 1 ? [{ categoryId: 1,
+          amountCents: parseMoneyCents(encodeMonetaryAmount(sign * 0.1)) },
+          { categoryId: 1,
+            amountCents: parseMoneyCents(encodeMonetaryAmount(sign * 0.1)) }] : [{
+              categoryId: 1, amountCents: parseMoneyCents(encodeMonetaryAmount(sign * 0.1)) }],
         async delete() { events.push('transaction.delete') } }))
       const { run } = await method(institutions, 'deleteAccounts', {
         parseMoneyCents, subtractMoneyCents, formatMoneyCents, AccountType, TrackingType,

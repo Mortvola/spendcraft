@@ -1,4 +1,4 @@
-import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { categoryAllocationsToCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
@@ -34,7 +34,8 @@ async function createFixture() {
       .Regular, balanceCents: parseMoneyCents('0.00'), fundingCategories: [] })
     const transaction = await budget.related('transactions').create({
       date: DateTime.fromISO('2025-02-01'), type: TransactionType.MANUAL_TRANSACTION,
-      version: 0, deleted: false, sortOrder: 0, categories: [{ categoryId: first.id, amount: 10 }],
+      version: 0, deleted: false, sortOrder: 0,
+        categories: categoryAllocationsToCents([{ categoryId: first.id, amount: 10 }]),
         taxes: [],
     })
     await writeCanonicalTransactionFixture(transaction)
@@ -95,7 +96,8 @@ test.group('Category transfer conservation', (group) => {
         .loginAs(fixture.user)
     created.assertStatus(200)
     const id = created.body().data.transaction.id
-    assert.deepEqual((await Transaction.findOrFail(id)).categories, categories)
+    assert.deepEqual((await Transaction.findOrFail(id)).categories,
+      categoryAllocationsToCents(categories))
     assert.equal((await Category.findOrFail(debitId)).balanceCents, parseMoneyCents(
       encodeMonetaryAmount(initialDebitBalance - amount)))
     assert.equal((await Category.findOrFail(fixture.second.id)).balanceCents, parseMoneyCents(
@@ -121,8 +123,9 @@ test.group('Category transfer conservation', (group) => {
   ]).run(async ({ client, assert }, [method, scenario]) => {
     const existing = await fixture.budget.related('transactions').create({
       date: DateTime.fromISO('2025-03-01'), type: TransactionType.REBALANCE_TRANSACTION,
-      categories: [{ categoryId: fixture.first.id, amount: -10 }, { categoryId: fixture.second.id,
-        amount: 10 }],
+      categories: categoryAllocationsToCents([{ categoryId: fixture.first.id, amount: -10 },
+        { categoryId: fixture.second.id,
+        amount: 10 }]),
     })
     await writeCanonicalTransactionFixture(existing)
     await fixture.first.merge({ balanceCents: parseMoneyCents('0.00') }).save()
@@ -160,8 +163,9 @@ test.group('Category transfer conservation', (group) => {
     client, assert }, method) => {
     const existing = await fixture.budget.related('transactions').create({
       date: DateTime.fromISO('2025-03-01'), type: TransactionType.REBALANCE_TRANSACTION,
-      categories: [{ categoryId: fixture.first.id, amount: -5 }, { categoryId: fixture.second.id,
-        amount: 5 }],
+      categories: categoryAllocationsToCents([{ categoryId: fixture.first.id, amount: -5 },
+        { categoryId: fixture.second.id,
+        amount: 5 }]),
     })
     await writeCanonicalTransactionFixture(existing)
     await fixture.first.merge({ balanceCents: parseMoneyCents('5.00') }).save()

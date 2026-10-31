@@ -1,5 +1,6 @@
 import { test } from '@japa/runner'
-import { encodeMonetaryAmount } from '../../app/services/categoryAmountCodec.ts'
+import { encodeMonetaryAmount,
+  categoryAllocationsToCents } from '../../app/services/categoryAmountCodec.ts'
 import { DateTime } from 'luxon'
 import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
@@ -66,7 +67,7 @@ test.group('Final readiness forward deletion characterization without DB', () =>
     const globals = { requestCategoryStorage: (model) => model, excludeCategoryStorage: () =>
       undefined, hasCategoryStorage: () => true,
       validateStoredCategoryConservation: async () => undefined, accountEligible,
-      categoryEligible, validateTransactionSplits, Transaction,
+      categoryEligible, validateTransactionSplits, categoryAllocationsToCents, Transaction,
       Account: { query: () => query(account) }, AccountTransaction: { findBy: async () => link },
       Category: { query: () => query(category) }, budgetCategories: () => query(category),
       budgetAccounts: () => query(account), db: { transaction: async () => trx },

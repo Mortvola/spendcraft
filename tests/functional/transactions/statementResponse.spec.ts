@@ -1,4 +1,4 @@
-import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { categoryAllocationsToCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import { transactionRequest } from '../../helpers/transactionRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
@@ -38,7 +38,8 @@ async function fixture(mode: string) {
       endingBalanceCents: parseMoneyCents('100.00') })
   const transaction = await budget.related('transactions').create({ date: DateTime.fromISO(
     '2025-02-10'),
-    type: TransactionType.MANUAL_TRANSACTION, categories: [{ categoryId: category.id, amount: 10 }],
+    type: TransactionType.MANUAL_TRANSACTION,
+      categories: categoryAllocationsToCents([{ categoryId: category.id, amount: 10 }]),
     taxes: [], version: 0, deleted: false, sortOrder: 0 })
   await writeCanonicalTransactionFixture(transaction)
   const association = await account.related('accountTransactions').create({
@@ -49,7 +50,8 @@ async function fixture(mode: string) {
   for (const [amount, deleted] of [[-4, false], [999, true]] as const) {
     const sibling = await budget.related('transactions').create({ date: DateTime.fromISO(
       '2025-02-11'),
-      type: TransactionType.MANUAL_TRANSACTION, categories: [{ categoryId: category.id, amount }],
+      type: TransactionType.MANUAL_TRANSACTION,
+        categories: categoryAllocationsToCents([{ categoryId: category.id, amount }]),
       taxes: [], version: 0, deleted, sortOrder: 0 })
     await writeCanonicalTransactionFixture(sibling)
     await account.related('accountTransactions').create({ transactionId: sibling.id,

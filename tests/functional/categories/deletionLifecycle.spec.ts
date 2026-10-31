@@ -1,3 +1,4 @@
+import { categoryAllocationsToCents } from '#services/categoryAmountCodec'
 import { parseMoneyCents } from '#common/moneyCents'
 import { test } from '@japa/runner'
 import { mock } from 'node:test'
@@ -27,7 +28,8 @@ test.group('Category deletion transaction lifecycle', (group) => {
         type: CategoryType.Regular, balanceCents: parseMoneyCents('0.00'), fundingCategories: [] })
       await budget.related('transactions').create({ date: DateTime.fromISO('2025-02-10'),
         type: TransactionType.MANUAL_TRANSACTION,
-        categories: [{ categoryId: blocked.id, amount: 10 }], taxes: [], version: 0, deleted: false,
+        categories: categoryAllocationsToCents([{ categoryId: blocked.id, amount: 10 }]),
+          taxes: [], version: 0, deleted: false,
           sortOrder: 0 })
       return { user, categoryGroup, blocked, empty }
     })

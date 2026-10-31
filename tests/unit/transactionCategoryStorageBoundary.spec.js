@@ -13,7 +13,8 @@ import { addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents } 
   '../../common/moneyCents.ts'
 import { auditTransaction } from '../../scripts/auditTransactionCategoryCents.mjs'
 import { Exception } from '@adonisjs/core/exceptions'
-import { encodeMonetaryAmount, validateCategoryConservation, decodeCategoryAllocations } from
+import { encodeMonetaryAmount, validateCategoryConservation, decodeCategoryAllocations,
+  encodeCategoryAllocations } from
   '../../app/services/categoryAmountCodec.ts'
 import { validateTransactionSplits } from '../../app/validation/transactionSplits.ts'
 
@@ -51,15 +52,19 @@ test.group('Transaction Category storage boundary — approved CREATE admission'
       ...category, amount: formatMoneyCents(amountCents),
     })))
     const rows = decodeCategoryAllocations(submitted)
-    assert.deepEqual(rows.map(({ categoryId, amount }) => ({ categoryId, amount })), [
+    assert.deepEqual(rows.map(({ categoryId, amountCents }) => ({ categoryId, amount: Number(
+      formatMoneyCents(amountCents)) })), [
       { categoryId: 1, amount: 10 }, { categoryId: 2, amount: -10 },
     ])
-    validateTransactionSplits(0, rows)
-    const result = auditTransaction({ id: 1, type: 2, categories: rows, links: [], poolIds: [99],
+    validateTransactionSplits(0, encodeCategoryAllocations(rows).map(row => ({
+      amount: Number(row.amount) })))
+    const result = auditTransaction({ id: 1, type: 2,
+      categories: encodeCategoryAllocations(rows), links: [], poolIds: [99],
       deprecated: false })
     assert.equal(result.status, 'unsupported')
     assert.equal(result.reason, 'missing_pool_allocation')
-    assert.throws(() => validateCategoryConservation(2, rows, undefined, 99),
+    assert.throws(() => validateCategoryConservation(2, encodeCategoryAllocations(rows),
+      undefined, 99),
       'Funding requires a Funding Pool allocation.')
   })
   test('transfer CREATE allows only funding and rebalance without creating an AccountTransaction')

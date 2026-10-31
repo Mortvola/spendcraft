@@ -46,14 +46,14 @@ test.group('Current Transaction Category string compatibility — no DB', () => 
         'Invalid monetary cents')
     }
   })
-  test('replacement admission currently accepts numeric allocations only').with([10, '10.00'])
+  test('replacement admission requires safe integer cent allocations').with([10, '10.00'])
     .run(async ({ assert }, amount) => {
       const accepts = await current('app/Controllers/Http/CategoriesController.ts',
         'hasReplacementAllocations')
-      assert.equal(accepts([{ categoryId: 1, amount }]), typeof amount === 'number')
+      assert.equal(accepts([{ categoryId: 1, amountCents: amount }]), typeof amount === 'number')
     })
   test('opening writes a positive same-sign Pool allocation and keeps Account balance')
-    .with(['new', 'numeric-existing', 'string-existing'])
+    .with(['new', 'existing'])
     .run(async ({ assert }, scenario) => {
       const owner = {}, date = { toISODate: () => '2025-01-01' }
       let row, link, queries = 0, saves = 0
@@ -63,8 +63,8 @@ test.group('Current Transaction Category string compatibility — no DB', () => 
         return this },
         async save() { return this }, related() { return { query: () => ({ firstOrFail: async () =>
           row }) } } }
-      if (scenario !== 'new') row = { categories: [{ categoryId: 99, amount: scenario ===
-        'string-existing' ? '75.00' : 75, comment: 'keep' }],
+      if (scenario !== 'new') row = { categories: [{ categoryId: 99,
+        amountCents: parseMoneyCents('75.00'), comment: 'keep' }],
         merge(values) { Object.assign(this, values); return this }, async save() { saves++;
           return this } }
       class Transaction {
@@ -89,7 +89,7 @@ test.group('Current Transaction Category string compatibility — no DB', () => 
       await update.call(account, { id: 2 }, pool)
       assert.equal(Number(formatMoneyCents(account.balanceCents)), 100)
       assert.equal(row.categories[0].categoryId, 99)
-      assert.strictEqual(row.categories[0].amount, 75)
+      assert.strictEqual(row.categories[0].amountCents, parseMoneyCents('75.00'))
       if (scenario === 'new') {
         assert.equal(row.type, 4); assert.strictEqual(row.date, date)
         assert.equal(link.amountCents, parseMoneyCents('75.00')); assert.equal(

@@ -1,4 +1,4 @@
-import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { categoryAllocationsToCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { parseMoneyCents } from '#common/moneyCents'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { categoryRequest } from '../../helpers/categoryRequest.js'
@@ -63,9 +63,9 @@ test.group('Funding recurrence characterization', () => {
         const pool = await f.budget.getFundingPoolCategory()
         const transaction = await f.budget.related('transactions').create({
           date: DateTime.fromISO('2025-03-10'),
-          type: TransactionType.REBALANCE_TRANSACTION, categories: [
+          type: TransactionType.REBALANCE_TRANSACTION, categories: categoryAllocationsToCents([
             { categoryId: f.category.id, amount: scenario.future },
-            { categoryId: pool.id, amount: -scenario.future }], taxes: [], deleted: false })
+            { categoryId: pool.id, amount: -scenario.future }]), taxes: [], deleted: false })
         await writeCanonicalTransactionFixture(transaction)
       }
       const before = await db.from('categories').where('id', f.category.id).firstOrFail()

@@ -1,3 +1,4 @@
+import { categoryAllocationsToCents } from '#services/categoryAmountCodec'
 import { parseMoneyCents } from '#common/moneyCents'
 import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 import {
@@ -31,7 +32,7 @@ async function fixture(type = TransactionType.FUNDING_TRANSACTION) {
     { categoryId: pool.id, amount: -amount, funder: true }]
     const target = await budget.related('transactions').create({ date: DateTime.fromISO(
       '2025-03-01'),
-      type, deleted: false, version: 0, categories: rows(2) })
+      type, deleted: false, version: 0, categories: categoryAllocationsToCents(rows(2)) })
     await writeCanonicalTransactionFixture(target)
     return { budget, user, group, category, pool, target, rows }
   })
@@ -145,7 +146,7 @@ test.group('Replacement admission persisted noninterference (prepared)', () => {
     response.assertStatus(200)
     const target = await Transaction.findOrFail(f.target.id)
     assert.equal(target.date.toISODate(), date); assert.equal(target.type, type)
-    assert.deepEqual(target.categories, f.rows(3))
+    assert.deepEqual(target.categories, categoryAllocationsToCents(f.rows(3)))
     const stored = await db.from('transactions').where('id', target.id).firstOrFail()
     assert.isTrue(stored.categories.every((row: { amount: unknown }) =>
       typeof row.amount === 'string'))
@@ -252,7 +253,7 @@ test.group('Replacement admission freshness and rollback (prepared)', () => {
     assert.equal(writes, 1)
     const target = await Transaction.findOrFail(f.target.id)
     assert.isTrue(target.deleted); assert.equal(target.date.toISODate(), '2025-03-01')
-    assert.deepEqual(target.categories, f.rows(2))
+    assert.deepEqual(target.categories, categoryAllocationsToCents(f.rows(2)))
     assert.equal((await Category.findOrFail(f.category.id)).balanceCents, parseMoneyCents('0.00'))
     assert.equal((await Category.findOrFail(f.pool.id)).balanceCents, parseMoneyCents('10.00'))
   })
@@ -297,7 +298,7 @@ test.group('Replacement admission freshness and rollback (prepared)', () => {
       assert.equal((await Category.findOrFail(f.category.id)).balanceCents, parseMoneyCents('4.00'))
       assert.equal((await Category.findOrFail(f.pool.id)).balanceCents, parseMoneyCents('6.00'))
       const target = await Transaction.findOrFail(f.target.id)
-      assert.deepEqual(target.categories, f.rows(4))
+      assert.deepEqual(target.categories, categoryAllocationsToCents(f.rows(4)))
       assert.equal(target.date.toISODate(), scenario.type === 2 ? '2025-03-01' : '2025-05-01')
     })
 

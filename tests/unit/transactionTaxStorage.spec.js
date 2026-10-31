@@ -17,7 +17,7 @@ import { bindResolvedCategoryStorage, prepareCategoryStorage, stageCategoryStora
   finishCategoryStorageSave,
   hasCategoryStorage, excludeCategoryStorage, excluded as categoryExclusions } from
     '../../app/services/categoryStorageBinding.ts'
-import { validateTransactionSplits } from '../../app/validation/transactionSplits.ts'
+import { validateCentTransactionSplits } from '../../app/validation/transactionSplits.ts'
 import { updateTransaction } from '../../app/validation/Validators/transaction.ts'
 import {
   accountEligible, categoryEligible, categoryEffectDeltas, excludedCategoryEffectDeltas,
@@ -267,7 +267,7 @@ async function patchFixture(input, { rawInput = input, invalidOwner = false, lat
       'Invented tax conservation') },
     AccountType, CategoryType, TrackingType, TransactionType, Exception, accountEligible,
       categoryEligible, categoryEffectDeltas, excludedCategoryEffectDeltas,
-    validateTransactionSplits,
+    validateCentTransactionSplits,
     addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents,
     db: { transaction: async () => owner }, updateTransaction, transactionFields: {},
     getAccountTransactionChanges: (_old, _new, previous) => previous,

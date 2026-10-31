@@ -1,4 +1,4 @@
-import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { categoryAllocationsToCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { parseMoneyCents, formatMoneyCents } from '#common/moneyCents'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { test } from '@japa/runner'
@@ -53,7 +53,8 @@ test.group('Account start-date characterization', () => {
       ] as const) {
         const transaction = await f.budget.related('transactions').create({
           date: DateTime.fromISO('2025-01-15'), type: TransactionType.MANUAL_TRANSACTION,
-          categories: [...categories], version: 0, deleted: false, sortOrder: 0, taxes: [] })
+          categories: categoryAllocationsToCents([...categories]), version: 0, deleted: false,
+            sortOrder: 0, taxes: [] })
         await writeCanonicalTransactionFixture(transaction)
         await f.account.related('accountTransactions').create({ transactionId: transaction.id,
           amountCents: parseMoneyCents(encodeMonetaryAmount(amount)), pending,
@@ -102,7 +103,8 @@ test.group('Account start-date characterization', () => {
       for (const movement of movements) {
         const transaction = await f.budget.related('transactions').create({
           date: DateTime.fromISO(movement.date), type: TransactionType.MANUAL_TRANSACTION,
-          version: 0, deleted: false, sortOrder: 0, categories: movement.categories, taxes: [],
+          version: 0, deleted: false, sortOrder: 0,
+            categories: categoryAllocationsToCents(movement.categories), taxes: [],
         })
         await writeCanonicalTransactionFixture(transaction)
         ids.push(transaction.id)
@@ -148,7 +150,8 @@ test.group('Account start-date characterization', () => {
           .reduce((sum, movement) => sum + Math.round(movement.amount * 100), 0)
         assert.equal(Math.round(Number(formatMoneyCents(initialRow.amountCents)) * 100),
            10000 - applicableCents)
-        assert.equal(Math.round(initial.categories[0].amount * 100), 10000 - applicableCents)
+        assert.equal(Math.round(Number(formatMoneyCents(
+          initial.categories[0].amountCents)) * 100), 10000 - applicableCents)
         assert.equal(Math.round(Number(formatMoneyCents((await Category.findOrFail(
           funding.id)).balanceCents)) * 100), 10000 -
           applicableCents)
@@ -177,7 +180,8 @@ test.group('Account start-date characterization', () => {
       await unassigned.save()
       const transaction = await f.budget.related('transactions').create({
         date: DateTime.fromISO('2025-01-15'), type: TransactionType.MANUAL_TRANSACTION,
-        categories: [{ categoryId: unassigned.id, amount: 10 }], taxes: [], version: 0,
+        categories: categoryAllocationsToCents([{ categoryId: unassigned.id, amount: 10 }]),
+          taxes: [], version: 0,
           sortOrder: 0, deleted: false,
       }, { client: trx })
       await writeCanonicalTransactionFixture(transaction)
@@ -296,7 +300,7 @@ preserves Account balance', async ({ client, assert }) => {
       const transaction = await f.budget.related('transactions').create({ date: DateTime.fromISO(
         '2025-01-15'),
         type: TransactionType.MANUAL_TRANSACTION, version: 0, deleted, sortOrder: 0,
-        categories: [{ categoryId: category.id, amount }], taxes: [] })
+        categories: categoryAllocationsToCents([{ categoryId: category.id, amount }]), taxes: [] })
       await writeCanonicalTransactionFixture(transaction)
       await f.account.related('accountTransactions').create({ transactionId: transaction.id,
          amountCents: parseMoneyCents(encodeMonetaryAmount(amount)),
@@ -305,7 +309,8 @@ preserves Account balance', async ({ client, assert }) => {
     for (const [type, amount] of [[TransactionType.FUNDING_TRANSACTION, 5], [TransactionType
       .REBALANCE_TRANSACTION, -2]]) {
       await f.budget.related('transactions').create({ date: DateTime.fromISO('2025-01-15'), type,
-        version: 0, deleted: false, sortOrder: 0, categories: [{ categoryId: category.id, amount }],
+        version: 0, deleted: false, sortOrder: 0,
+          categories: categoryAllocationsToCents([{ categoryId: category.id, amount }]),
           taxes: [] })
     }
     await category.merge({ balanceCents: parseMoneyCents('33.00') }).save()
@@ -347,8 +352,9 @@ test.group('Opening signed-sum verification', () => {
       for (const amount of amounts) {
         const transaction = await f.budget.related('transactions').create({ date: DateTime.fromISO(
           '2025-02-01'),
-          type: TransactionType.MANUAL_TRANSACTION, categories: [{ categoryId: unassigned.id,
-            amount }],
+          type: TransactionType.MANUAL_TRANSACTION,
+            categories: categoryAllocationsToCents([{ categoryId: unassigned.id,
+            amount }]),
           version: 0, deleted: false, sortOrder: 0, taxes: [] })
         await writeCanonicalTransactionFixture(transaction)
         await f.account.related('accountTransactions').create({ transactionId: transaction.id,

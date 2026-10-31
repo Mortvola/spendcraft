@@ -102,9 +102,10 @@ async function fixture() {
     XMLParser, DateTime, Transaction: PersistedTransaction,
     Category: { query: () => Object.create(categoryQuery) },
     TrackingType: { Transactions: 'Transactions', Balances: 'Balances' },
-    validateTransactionSplits(amount, allocations) {
-      if (Math.round(allocations.reduce((sum, row) => sum + row.amount, 0) * 100) !== Math.round(
-        amount * 100)) throw new Error('Invalid splits')
+    validateCentTransactionSplits(amountCents, allocations) {
+      if (addMoneyCents(...allocations.map(row => row.amountCents)) !== amountCents) {
+        throw new Error('Invalid splits')
+      }
     },
   })
   const budget = { id: 3, async getUnassignedCategory() { return unassigned },
@@ -142,7 +143,7 @@ test.group('OFX accounting and provider balance independence', () => {
     await f.run([{ amount: 0.005 }], '')
     assert.strictEqual(Number(formatMoneyCents(f.account.balanceCents)), 0.11)
     assert.strictEqual(f.links[0].amountCents, parseMoneyCents('0.01'))
-    assert.strictEqual(f.links[0].transaction.categories[0].amount, 0.005)
+    assert.strictEqual(f.links[0].transaction.categories[0].amountCents, parseMoneyCents('0.01'))
   })
 
   test('ledger-only observation never replaces accounting balance or writes history')
@@ -237,9 +238,11 @@ test.group('OFX accounting and provider balance independence', () => {
     assert }) => {
     const f = await fixture()
     await f.run([{ amount: 10 }], '')
-    const explicit = { categoryId: 3, amount: 4, comment: 'User allocation' }
+    const explicit = { categoryId: 3, amountCents: parseMoneyCents('4.00'),
+      comment: 'User allocation' }
     f.category(3, 4); f.categories.get(1).balanceCents = parseMoneyCents('6.00')
-    f.links[0].transaction.categories = [explicit, { categoryId: 1, amount: 6 }]
+    f.links[0].transaction.categories = [explicit, { categoryId: 1,
+      amountCents: parseMoneyCents('6.00') }]
     await f.run([{ amount: 15 }], '')
     assert.deepEqual(f.links[0].transaction.categories[0], explicit)
     assert.equal(f.categories.get(3).balanceCents, parseMoneyCents('4.00')); assert.equal(

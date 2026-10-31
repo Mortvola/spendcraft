@@ -1,9 +1,10 @@
+import { categoryAllocationsToCents,
+  encodeCategoryAllocations } from '#services/categoryAmountCodec'
 import { mock } from 'node:test'
 import { parseMoneyCents } from '#common/moneyCents'
 import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 import { categoryRequest } from '../../helpers/categoryRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
-import { encodeCategoryAllocations } from '#services/categoryAmountCodec'
 import { decodeFundingRules } from '#services/fundingAmountCodec'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
@@ -32,7 +33,8 @@ async function fixture() {
       categoryId: source.id, amount: 100, percentage: true }] }, { categoryId: source.id, amount: -
       10 }, { categoryId: pool.id, amount: 0 }]
     const transaction = await budget.related('transactions').create({
-      date: DateTime.fromISO('2025-03-01'), type: TransactionType.FUNDING_TRANSACTION, categories,
+      date: DateTime.fromISO('2025-03-01'), type: TransactionType.FUNDING_TRANSACTION,
+        categories: categoryAllocationsToCents(categories),
     })
     await writeCanonicalTransactionFixture(transaction)
     return { budget, user, group, category, source, pool, transaction }
@@ -263,9 +265,9 @@ test.group('Funding configuration validation regression', (group) => {
       ] })).accept('json').loginAs(f.user)
       response.assertStatus(200)
       const stored = await db.from('transactions').where('id', f.transaction.id).first()
-      assert.deepEqual(stored.categories, encodeCategoryAllocations([{ categoryId: f.category.id,
-        amount: 10 },
-        { categoryId: f.source.id, amount: -10 }, { categoryId: f.pool.id, amount: 0 }]))
+      assert.deepEqual(stored.categories, encodeCategoryAllocations(categoryAllocationsToCents([
+        { categoryId: f.category.id, amount: 10 },
+        { categoryId: f.source.id, amount: -10 }, { categoryId: f.pool.id, amount: 0 }])))
     }
   })
 })

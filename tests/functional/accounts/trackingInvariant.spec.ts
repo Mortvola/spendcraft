@@ -1,3 +1,4 @@
+import { categoryAllocationsToCents } from '#services/categoryAmountCodec'
 import { parseMoneyCents } from '#common/moneyCents'
 import { transactionRequest } from '../../helpers/transactionRequest.js'
 import { test } from '@japa/runner'
@@ -82,7 +83,8 @@ test.group('Balance-tracked invariant enforcement', (group) => {
   test('PATCH rejects historical invalid transaction mutation', async ({ client, assert }) => {
     const transaction = await f.budget.related('transactions').create({ date: DateTime.fromISO(
       '2025-02-10'), type: TransactionType.MANUAL_TRANSACTION, version: 0, deleted: false,
-      sortOrder: 0, categories: [{ categoryId: category.id, amount: 10 }], taxes: [] })
+      sortOrder: 0, categories: categoryAllocationsToCents([{ categoryId: category.id,
+        amount: 10 }]), taxes: [] })
     await f.account.related('accountTransactions').create({ transactionId: transaction.id,
       amountCents: parseMoneyCents('10.00'), name: 'Historical invalid row', pending: false,
          provider: 'NONE' })
@@ -124,7 +126,8 @@ a date edit')
         const funding = await f.budget.getFundingPoolCategory()
         const transaction = await f.budget.related('transactions').create({ date: DateTime.fromISO(
           '2025-01-01'), type: TransactionType.STARTING_BALANCE, version: 0, sortOrder: -1,
-          categories: [{ categoryId: funding.id, amount: 100 }], taxes: [] })
+          categories: categoryAllocationsToCents([{ categoryId: funding.id, amount: 100 }]),
+            taxes: [] })
         await f.account.related('accountTransactions').create({ transactionId: transaction.id,
           amountCents: parseMoneyCents('100.00'), name: 'Historical Initial Funding',
              provider: 'NONE' })
@@ -157,7 +160,8 @@ Test movement</STMTTRN></BANKTRANLIST>'
     assert }) => {
     const transaction = await f.budget.related('transactions').create({ date: DateTime.fromISO(
       '2025-02-10'), type: TransactionType.MANUAL_TRANSACTION, version: 0, deleted: false,
-      sortOrder: 0, categories: [{ categoryId: category.id, amount: 10 }], taxes: [] })
+      sortOrder: 0, categories: categoryAllocationsToCents([{ categoryId: category.id,
+        amount: 10 }]), taxes: [] })
     await f.account.related('accountTransactions').create({ transactionId: transaction.id,
       amountCents: parseMoneyCents('10.00'), name: 'Historical invalid delete', pending: false,
          provider: 'NONE' })

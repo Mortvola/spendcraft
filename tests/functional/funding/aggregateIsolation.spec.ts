@@ -1,5 +1,5 @@
 import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents'
-import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { categoryAllocationsToCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
@@ -48,8 +48,9 @@ async function createDomain(label: string) {
       const transaction = await budget.related('transactions').create({ date: DateTime.fromISO(entry
         .date),
         type: TransactionType.MANUAL_TRANSACTION, deleted: entry.deleted, taxes: [],
-        categories: [{ categoryId: first.id, amount: entry.amounts[0] }, { categoryId: second.id,
-          amount: entry.amounts[1] }] })
+        categories: categoryAllocationsToCents([{ categoryId: first.id,
+          amount: entry.amounts[0] }, { categoryId: second.id,
+          amount: entry.amounts[1] }]) })
       await trx.from('transactions').where('id', transaction.id).update({ categories: JSON
         .stringify([
         { categoryId: first.id, amount: entry.amounts[0].toFixed(2) },
@@ -91,8 +92,9 @@ test.group('Historical aggregate isolation', (group) => {
     const transaction = await owner.budget.related('transactions').create({ date: DateTime.fromISO(
       '2025-03-15'),
       type: TransactionType.MANUAL_TRANSACTION, deleted: false, taxes: [],
-      categories: [{ categoryId: target.first.id, amount: 37 }, { categoryId: target.second.id,
-        amount: 11 }] })
+      categories: categoryAllocationsToCents([{ categoryId: target.first.id, amount: 37 },
+        { categoryId: target.second.id,
+        amount: 11 }]) })
     // Deliberately cross-owned splits remain valid canonical storage.
     await db.from('transactions').where('id', transaction.id).update({ categories: JSON.stringify([
       { categoryId: target.first.id, amount: '37.00' }, { categoryId: target.second.id, amount:
@@ -193,9 +195,9 @@ direction`)
         })
       }
       await a.budget.related('transactions').create({ date: DateTime.fromISO('2025-02-01'),
-        type: TransactionType.REBALANCE_TRANSACTION, categories: [
+        type: TransactionType.REBALANCE_TRANSACTION, categories: categoryAllocationsToCents([
           { categoryId: a.first.id, amount: sign * 0.1 },
-          { categoryId: a.second.id, amount: -sign * 0.1 }], taxes: [], deleted: false })
+          { categoryId: a.second.id, amount: -sign * 0.1 }]), taxes: [], deleted: false })
       const before = await state()
       const response = await client.get('/api/v1/categories').qs({ date: '2025-03-15' })
         .loginAs(a.user)

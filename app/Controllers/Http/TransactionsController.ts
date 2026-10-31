@@ -1,9 +1,10 @@
-import { encodeMonetaryAmount, canonicalCategoryAllocations } from '#services/categoryAmountCodec';
+import { encodeMonetaryAmount, canonicalCategoryAllocations,
+  categoryAllocationsToCents } from '#services/categoryAmountCodec';
 import { prepareTaxReplacement } from '#services/transactionTaxStorage';
 import { hasCategoryStorage } from '#services/categoryStorageBinding';
 import { validateStoredCategoryConservation } from '#services/transactionCategoryStorage';
 import {
-  accountEligible, categoryEligible, categoryEffectDeltas, excludedCategoryEffectDeltas,
+  accountEligible, categoryEligible, categoryEffectDeltas,
 } from '#services/transactionEligibility';
 import { addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents } from
   '#common/moneyCents';
@@ -28,7 +29,7 @@ import transactionFields, { getChanges,
    getAccountTransactionChanges } from './transactionFields.js';
 import { ModelObject, ModelAdapterOptions } from "@adonisjs/lucid/types/model";
 import { updateTransaction } from '#validators/transaction';
-import { validateTransactionSplits } from '#app/validation/transactionSplits';
+import { validateCentTransactionSplits } from '#app/validation/transactionSplits';
 
 function budgetCategories(budgetId: number, options?: ModelAdapterOptions) {
   return Category.query(options)
@@ -203,11 +204,12 @@ export default class TransactionsController {
 
       if (transaction.type === TransactionType.MANUAL_TRANSACTION
         && account.tracking === TrackingType.Transactions && account.type !== AccountType.Loan) {
-        const amount = requestData.amount ?? Number(formatMoneyCents(acctTrans.amountCents));
-        const categories = requestData.categories?.length === 0
-          ? [{ amount }]
-          : requestData.categories ?? transaction.categories;
-        validateTransactionSplits(amount, categories);
+        const amountCents = requestData.amount === undefined ? acctTrans.amountCents
+          : parseMoneyCents(encodeMonetaryAmount(requestData.amount));
+        const categories = requestData.categories?.length === 0 ? [{ amountCents }]
+          : requestData.categories === undefined ? transaction.categories
+            : categoryAllocationsToCents(requestData.categories);
+        validateCentTransactionSplits(amountCents, categories);
       }
 
       // Ordinary effects use independent old/new eligibility; nominal splits stay intact.
@@ -238,20 +240,15 @@ export default class TransactionsController {
                comment: undefined }];
         }
         const oldSplits = transaction.categories.length > 0 ? transaction.categories
-          : [{ categoryId: unassignedCat.id, amount: Number(formatMoneyCents(
-            acctTrans.amountCents)) }];
-        const nominalNew = requestData.categories ?? transaction.categories;
+          : [{ categoryId: unassignedCat.id, amountCents: acctTrans.amountCents }];
+        const nominalNew = requestData.categories === undefined ? transaction.categories
+          : categoryAllocationsToCents(requestData.categories);
         const newSplits = nominalNew.length > 0 ? nominalNew
-          : [{ categoryId: unassignedCat.id, amount: requestData.amount ?? Number(
-            formatMoneyCents(acctTrans.amountCents)) }];
+          : [{ categoryId: unassignedCat.id, amountCents: requestData.amount === undefined
+            ? acctTrans.amountCents : parseMoneyCents(encodeMonetaryAmount(requestData.amount)) }];
         if (hasCategoryStorage(transaction)) {
-          // Allocation amounts remain numeric runtime values; convert them at this boundary.
-          const centAllocations = (splits: typeof oldSplits) => splits.map(split => ({
-            categoryId: split.categoryId,
-            amountCents: parseMoneyCents(encodeMonetaryAmount(split.amount)),
-          }));
-          const deltas = categoryEffectDeltas(centAllocations(oldSplits),
-            centAllocations(newSplits), oldCategoryEligible, newCategoryEligible);
+          const deltas = categoryEffectDeltas(oldSplits, newSplits,
+            oldCategoryEligible, newCategoryEligible);
           for (const [categoryId, delta] of deltas) {
             if (delta === 0) continue;
             const category = await budgetCategories(budget.id, { client: trx }).where('id',
@@ -264,7 +261,7 @@ export default class TransactionsController {
             categoriesResult.push({ id: category.id, balance });
           }
         } else {
-          const deltas = excludedCategoryEffectDeltas(oldSplits, newSplits, oldCategoryEligible,
+          const deltas = categoryEffectDeltas(oldSplits, newSplits, oldCategoryEligible,
             newCategoryEligible);
           for (const [categoryId, delta] of deltas) {
             if (delta === 0) continue;
@@ -301,7 +298,7 @@ export default class TransactionsController {
 
             category.balanceCents = subtractMoneyCents(
               category.balanceCents,
-              parseMoneyCents(encodeMonetaryAmount(transCategory.amount)));
+              transCategory.amountCents);
 
 
             await category.save();
@@ -330,7 +327,7 @@ export default class TransactionsController {
         }
 
         if (requestData.categories.length > 0) {
-          transaction.categories = requestData.categories;
+          transaction.categories = categoryAllocationsToCents(requestData.categories);
 
           for (const transCategory of requestData.categories) {
 
@@ -448,7 +445,8 @@ export default class TransactionsController {
       const transactionChanges: ModelObject = {
         date: requestData.date,
         comment: requestData.comment,
-        categories: requestData.categories,
+        categories: requestData.categories === undefined ? undefined
+          : categoryAllocationsToCents(requestData.categories),
       }
 
       changes = getChanges(transaction.$attributes, transactionChanges, changes);
@@ -647,7 +645,7 @@ export default class TransactionsController {
 
           const balanceCents = subtractMoneyCents(
             category.balanceCents,
-            parseMoneyCents(encodeMonetaryAmount(trxCat.amount)));
+            trxCat.amountCents);
           category.balanceCents = balanceCents;
 
           const balance = result.categories.find((b) => b.id === category.id);

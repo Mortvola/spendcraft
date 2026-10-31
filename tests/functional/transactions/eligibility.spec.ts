@@ -1,4 +1,4 @@
-import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { categoryAllocationsToCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import { transactionRequest } from '../../helpers/transactionRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
@@ -49,7 +49,8 @@ test.group('Account/Category eligibility correction (prepared)', () => {
     const transaction = await Transaction.findOrFail(response.body().transaction.id)
     const link = await AccountTransaction.findByOrFail('transactionId', transaction.id)
     assert.equal(link.amountCents, parseMoneyCents(encodeMonetaryAmount(amount)))
-    assert.deepEqual(transaction.categories, [{ categoryId: f.category.id, amount }])
+    assert.deepEqual(transaction.categories,
+      categoryAllocationsToCents([{ categoryId: f.category.id, amount }]))
     const raw = await db.from('accounts').where('id', f.account.id).firstOrFail()
     assert.equal(Number(raw.balance), 100 + (date >= dates[1] ? amount : 0))
     assert.equal((await Category.findOrFail(f.category.id)).balanceCents, parseMoneyCents(
@@ -65,8 +66,9 @@ test.group('Account/Category eligibility correction (prepared)', () => {
       const f = await fixture()
       const transaction = await f.budget.related('transactions').create({ date: DateTime.fromISO(
         dates[0]),
-        type: TransactionType.MANUAL_TRANSACTION, categories: [{ categoryId: f.category.id,
-          amount: -10 }],
+        type: TransactionType.MANUAL_TRANSACTION,
+          categories: categoryAllocationsToCents([{ categoryId: f.category.id,
+          amount: -10 }]),
         version: 0, deleted: false, sortOrder: 0, taxes: [] })
       await writeCanonicalTransactionFixture(transaction)
       const link = await f.account.related('accountTransactions').create({
@@ -108,7 +110,8 @@ test.group('Account/Category eligibility correction (prepared)', () => {
     crossing.assertStatus(200)
     assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('120.00'))
     assert.equal((await Category.findOrFail(f.category.id)).balanceCents, parseMoneyCents('20.00'))
-    assert.deepEqual((await Transaction.findOrFail(id)).categories, categories)
+    assert.deepEqual((await Transaction.findOrFail(id)).categories,
+      categoryAllocationsToCents(categories))
     const metadata = await client.patch(`/api/v1/transaction/${id}`).json(transactionRequest({
       version: 2, name: 'Renamed', comment: 'Only metadata', statementId: null })).loginAs(f.user)
     metadata.assertStatus(200)
@@ -123,8 +126,9 @@ test.group('Additional PATCH effect isolation (prepared)', () => {
     const f = await fixture()
     const transaction = await f.budget.related('transactions').create({ date: DateTime.fromISO(
       dates[1]),
-      type: TransactionType.REGULAR_TRANSACTION, categories: [{ categoryId: f.category.id,
-        amount: 10 }],
+      type: TransactionType.REGULAR_TRANSACTION,
+        categories: categoryAllocationsToCents([{ categoryId: f.category.id,
+        amount: 10 }]),
       version: 0, deleted: false, sortOrder: 0, taxes: [] })
     await writeCanonicalTransactionFixture(transaction)
     await f.account.related('accountTransactions').create({ transactionId: transaction.id,
@@ -136,8 +140,9 @@ test.group('Additional PATCH effect isolation (prepared)', () => {
     response.assertStatus(422)
     assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('110.00'))
     assert.equal((await Category.findOrFail(f.category.id)).balanceCents, parseMoneyCents('10.00'))
-    assert.deepEqual((await Transaction.findOrFail(transaction.id)).categories, [{ categoryId: f
-      .category.id, amount: 10 }])
+    assert.deepEqual((await Transaction.findOrFail(transaction.id)).categories,
+      categoryAllocationsToCents([{ categoryId: f
+      .category.id, amount: 10 }]))
   })
 
   test('late transaction failure rolls back Account, Category and nominal PATCH state', async ({
@@ -188,8 +193,9 @@ test.group('Eligibility verification edge cases', () => {
       const eligible = date >= dates[1]
       const transaction = await f.budget.related('transactions').create({ date: DateTime.fromISO(
         date),
-        type: TransactionType.REGULAR_TRANSACTION, categories: [{ categoryId: f.category.id,
-          amount: 10 }],
+        type: TransactionType.REGULAR_TRANSACTION,
+          categories: categoryAllocationsToCents([{ categoryId: f.category.id,
+          amount: 10 }]),
         version: 0, deleted: false, sortOrder: 0, taxes: [] })
       await writeCanonicalTransactionFixture(transaction)
       await f.account.related('accountTransactions').create({ transactionId: transaction.id,
@@ -252,8 +258,9 @@ test.group('Eligibility verification edge cases', () => {
     client, assert }) => {
     const f = await fixture()
     const old = await f.budget.related('transactions').create({ date: DateTime.fromISO(dates[0]),
-      type: TransactionType.MANUAL_TRANSACTION, categories: [{ categoryId: f.category.id,
-        amount: 10 }],
+      type: TransactionType.MANUAL_TRANSACTION,
+        categories: categoryAllocationsToCents([{ categoryId: f.category.id,
+        amount: 10 }]),
       version: 0, deleted: false, sortOrder: 0, taxes: [] })
     await writeCanonicalTransactionFixture(old)
     await f.account.related('accountTransactions').create({ transactionId: old.id,

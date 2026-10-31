@@ -75,16 +75,17 @@ FX>`
       date: a.transaction.date.toISODate(), deleted: a.transaction.deleted, version: a.transaction
         .version,
       splits: a.transaction.categories, splitTotal: a.transaction.categories.reduce((sum, split) =>
-        sum + split.amount, 0),
+        sum + Number(formatMoneyCents(split.amountCents)), 0),
     })) }
     const totals = new Map<number, number>();
     for (const transaction of result.transactions) {
-      financialAssert.equal(transaction.splits.reduce((sum, split) => sum + Math.round(split
-        .amount * 100), 0), Math.round(transaction.amount * 100));
+      financialAssert.equal(transaction.splits.reduce((sum,
+        split) => sum + Math.round(Number(formatMoneyCents(split.amountCents)) * 100), 0),
+          Math.round(transaction.amount * 100));
       if (!transaction.deleted && transaction.date !== null && transaction.date >= (account
         .startDate.toISODate() ?? '')) {
         for (const split of transaction.splits) totals.set(split.categoryId, (totals.get(split
-          .categoryId) ?? 0) + Math.round(split.amount * 100));
+          .categoryId) ?? 0) + Math.round(Number(formatMoneyCents(split.amountCents)) * 100));
       }
     }
     for (const category of categories) financialAssert.equal(Math.round(Number(category.balance) *
@@ -184,7 +185,7 @@ FX>`
     const categoryReport = await client.get('/api/v1/reports/category').qs({ c: nominal
       .categoryId }).loginAs(f.user)
     categoryReport.assertStatus(200)
-    assert.equal(categoryReport.body()[0].sum, nominal.amount)
+    assert.equal(categoryReport.body()[0].sum, Number(formatMoneyCents(nominal.amountCents)))
     assert.equal(categoryReport.body()[0].count, 1)
 
   })

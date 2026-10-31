@@ -1,6 +1,6 @@
 import { parseMoneyCents } from '#common/moneyCents'
 import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
-import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { categoryAllocationsToCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { writeHistoricalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
@@ -36,7 +36,7 @@ async function createDomain(label: string, existingBudget?: Budget) {
     const transaction = await budget.related('transactions').create({
       date: DateTime.fromISO('2025-02-01'), type: TransactionType.MANUAL_TRANSACTION,
       version: 0, deleted: false, sortOrder: 0, comment: `${label} private comment`,
-      categories: [{ categoryId: category.id, amount: 10 }], taxes: [],
+      categories: categoryAllocationsToCents([{ categoryId: category.id, amount: 10 }]), taxes: [],
     })
     await account.related('accountTransactions').create({
       transactionId: transaction.id, name: `${label} private purchase`,
@@ -121,7 +121,8 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
       for (const amount of [sign * 0.2, -sign * 0.2]) {
         const transaction = await f.budget.related('transactions').create({
           date: DateTime.fromISO('2025-02-15'), type: TransactionType.MANUAL_TRANSACTION,
-          categories: [{ categoryId: f.category.id, amount }], taxes: [], deleted: false })
+          categories: categoryAllocationsToCents([{ categoryId: f.category.id, amount }]),
+            taxes: [], deleted: false })
         await writeHistoricalTransactionFixture(transaction, { categories: [
           { categoryId: f.category.id, amount: encodeMonetaryAmount(amount) }] })
         await f.account.related('accountTransactions').create({ transactionId: transaction.id,
@@ -156,7 +157,8 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
         ['2025-02-15', -0.2], ['2025-01-31', -0.1]] as const) {
         const transaction = await own.budget.related('transactions').create({
           date: DateTime.fromISO(date), type: TransactionType.FUNDING_TRANSACTION,
-          categories: [{ categoryId: own.category.id, amount }], taxes: [], deleted: false })
+          categories: categoryAllocationsToCents([{ categoryId: own.category.id, amount }]),
+            taxes: [], deleted: false })
         await writeHistoricalTransactionFixture(transaction, { categories: [
           { categoryId: own.category.id, amount: encodeMonetaryAmount(amount) }] })
       }
@@ -282,8 +284,9 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
         'category' ? 5 : 2 })
       await f.budget.related('transactions').createMany(Array.from({ length: 25 }, () => ({
         date: DateTime.fromISO('2025-02-01'), type: report === 'category' ? 5 : 2,
-        version: 0, deleted: false, sortOrder: 0, categories: [{ categoryId: f.category.id,
-          amount: 10 }], taxes: [],
+        version: 0, deleted: false, sortOrder: 0,
+          categories: categoryAllocationsToCents([{ categoryId: f.category.id,
+          amount: 10 }]), taxes: [],
       })))
       const before = await snapshot(f.budget.id)
       const queries: { sql: string, bindings?: readonly unknown[] }[] = []
@@ -348,7 +351,8 @@ accountless nominal rows', async ({ client, assert }) => {
       amount: 4 }] })
     await f.budget.related('transactions').create({ date: f.transaction.date, type: 5, version: 0,
       sortOrder: 0, deleted: false,
-      categories: [{ categoryId: f.category.id, amount: 5 }], taxes: [] })
+      categories: categoryAllocationsToCents([{ categoryId: f.category.id, amount: 5 }]),
+        taxes: [] })
     const response = await client.get('/api/v1/reports/category').qs({ c: [f.category.id, other
       .id] }).loginAs(f.user)
     response.assertStatus(200)

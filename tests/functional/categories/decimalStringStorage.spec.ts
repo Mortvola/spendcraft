@@ -1,5 +1,5 @@
-import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
-import { parseMoneyCents } from '#common/moneyCents'
+import { categoryAllocationsToCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import { transactionRequest, categoryTransferRequest } from '../../helpers/transactionRequest.js'
 // PREPARED ONLY. Run through the safeguarded application test runner after fresh authorization.
 // tests/bootstrap.ts installs independent configured/live pg+pgLog/execution guards on every write.
@@ -183,7 +183,7 @@ test.group('Transaction Category decimal-string storage (prepared)', () => {
             { categoryId: f.category.id, amount: 0.2 }, { categoryId: f.pool.id, amount: -0.3 }]
         const target = await requestCategoryStorage(new Transaction()).useTransaction(trx)
           .fill({ budgetId: f.budget.id, type, date: DateTime.fromISO('2025-02-01'),
-            categories: allocations }).save()
+            categories: categoryAllocationsToCents(allocations) }).save()
         id = target.id
         if ([0, 4, 5].includes(type)) await f.account.related('accountTransactions').create({
           transactionId: id, name: 'Conserved', amountCents: parseMoneyCents('0.30'),
@@ -209,7 +209,7 @@ test.group('Transaction Category decimal-string storage (prepared)', () => {
       const categories = shape === 'funding-nine-cents'
         ? [{ categoryId: f.category.id, amount: 1.09 }, { categoryId: f.pool.id, amount: -1 }] : []
       const target = await Transaction.create({ budgetId: f.budget.id, type, deleted: true,
-        date: DateTime.fromISO('2025-02-01'), categories })
+        date: DateTime.fromISO('2025-02-01'), categories: categoryAllocationsToCents(categories) })
       if (type === 5) await f.account.related('accountTransactions').create({ transactionId: target
         .id, name: 'Deleted', amountCents: parseMoneyCents('1.00') })
       await db.from('transactions').where('id', target.id).update({ categories: JSON.stringify(
@@ -304,8 +304,9 @@ test.group('Decimal-string storage concurrency/security (prepared)', () => {
     .run(async ({ assert }, outcome) => {
       const f = await fixture()
       const target = await Transaction.create({ budgetId: f.budget.id, type: 5,
-        date: DateTime.fromISO('2025-02-01'), categories: [{ categoryId: f.category.id,
-          amount: 0.3 }] })
+        date: DateTime.fromISO('2025-02-01'),
+          categories: categoryAllocationsToCents([{ categoryId: f.category.id,
+          amount: 0.3 }]) })
       await f.account.related('accountTransactions').create({ transactionId: target.id, name:
         'Waiter', amountCents: parseMoneyCents('0.30') })
       await db.from('transactions').where('id', target.id).update({
@@ -319,8 +320,9 @@ test.group('Decimal-string storage concurrency/security (prepared)', () => {
         await Budget.query({ client: writer }).where('id', f.budget.id).forUpdate().firstOrFail()
         const fresh = await Transaction.query({ client: writer }).where('id', target.id)
           .firstOrFail()
-        fresh.categories = [{ categoryId: f.category.id, amount: 0.1 }, { categoryId: f.category.id,
-          amount: 0.2 }]
+        fresh.categories = categoryAllocationsToCents([{ categoryId: f.category.id,
+          amount: 0.1 }, { categoryId: f.category.id,
+          amount: 0.2 }])
         await fresh.save()
         await validateStoredCategoryConservation(fresh)
         waiter = db.transaction(async (trx) => {
@@ -329,10 +331,12 @@ test.group('Decimal-string storage concurrency/security (prepared)', () => {
           await Budget.query({ client: trx }).where('id', f.budget.id).forUpdate().firstOrFail()
           const current = await Transaction.query({ client: trx }).where('id', target.id)
             .firstOrFail()
-          assert.deepEqual(current.categories.map((row) => row.amount), outcome === 'commit' ? [0.1,
+          assert.deepEqual(current.categories.map((row) => Number(formatMoneyCents(
+            row.amountCents))), outcome === 'commit' ? [0.1,
             0.2] : [0.3])
-          current.categories = [{ categoryId: f.category.id, amount: 0.15 }, { categoryId: f
-            .category.id, amount: 0.15 }]
+          current.categories = categoryAllocationsToCents([{ categoryId: f.category.id,
+            amount: 0.15 }, { categoryId: f
+            .category.id, amount: 0.15 }])
           await current.save()
           await validateStoredCategoryConservation(current)
         })
@@ -361,8 +365,9 @@ test.group('Decimal-string storage concurrency/security (prepared)', () => {
         await Budget.query({ client: trx }).where('id', second.budget.id).forUpdate().firstOrFail()
         const target = await requestCategoryStorage(new Transaction()).useTransaction(trx).fill({
           budgetId: second.budget.id, type: 3, date: DateTime.fromISO('2025-02-01'),
-          categories: [{ categoryId: second.category.id, amount: 1 }, { categoryId: second.category
-            .id, amount: -1 }],
+          categories: categoryAllocationsToCents([{ categoryId: second.category.id,
+            amount: 1 }, { categoryId: second.category
+            .id, amount: -1 }]),
         }).save()
         await validateStoredCategoryConservation(target)
         assert.isNumber(target.id)

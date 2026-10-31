@@ -4,7 +4,8 @@ import type Transaction from '#models/Transaction'
 import db from '@adonisjs/lucid/services/db'
 import { Exception } from '@adonisjs/core/exceptions'
 import { stageFundingStorage } from './fundingStorage.ts'
-import { validateCategoryConservation, monetaryAmountCents, checkedCentSum } from
+import { validateCategoryConservation, monetaryAmountCents, checkedCentSum,
+  encodeCategoryAllocations } from
   './categoryAmountCodec.ts'
 
 const supported = [0, 2, 3, 4, 5]
@@ -73,18 +74,20 @@ export async function validateStoredCategoryConservation(transaction: Transactio
     // numeric(12,2) is within safe cent range; codec compares the exact decimal text, without
     // Number parsing.
     const expectedCents = monetaryAmountCents(String(links[0].amount))
-    if (checkedCentSum(transaction.categories.map((split) => monetaryAmountCents(split
-      .amount))) !== expectedCents) {
+    if (checkedCentSum(transaction.categories.map((
+      split) => split.amountCents)) !== expectedCents) {
       throw new Exception('The sum of the categories does not match the transaction amount.', {
         status: 422 })
     }
   } else if (transaction.type === 3) {
-    validateCategoryConservation(3, transaction.categories)
+    validateCategoryConservation(3, encodeCategoryAllocations(transaction.categories))
   } else {
     const pools = await db.from('categories as c').useTransaction(transaction.$trx)
       .join('groups as g', 'g.id', 'c.group_id').where('g.application_id', transaction.budgetId)
       .where('c.type', 'FUNDING POOL').select('c.id')
-    validateCategoryConservation(transaction.type, transaction.categories, undefined,
+    validateCategoryConservation(transaction.type,
+      encodeCategoryAllocations(transaction.categories),
+      undefined,
       pools.length === 1 ? Number(pools[0].id) : undefined)
   }
 }

@@ -1,3 +1,4 @@
+import { categoryAllocationsToCents } from '#services/categoryAmountCodec'
 import { parseMoneyCents } from '#common/moneyCents'
 import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 import { categoryRequest } from '../../helpers/categoryRequest.js'
@@ -44,8 +45,9 @@ async function createDomain(label: string) {
     const transaction = await budget.related('transactions').create({
       date: DateTime.fromISO('2025-02-01'), type: TransactionType.REBALANCE_TRANSACTION,
       version: 0, deleted: false, sortOrder: 0,
-      categories: [{ categoryId: category.id, amount: -10 }, { categoryId: otherCategory.id,
-        amount: 10 }], taxes: [],
+      categories: categoryAllocationsToCents([{ categoryId: category.id, amount: -10 },
+        { categoryId: otherCategory.id,
+        amount: 10 }]), taxes: [],
     })
     await writeCanonicalTransactionFixture(transaction)
     return { budget, user, group, otherGroup, emptyGroup, category, otherCategory, unusedCategory,

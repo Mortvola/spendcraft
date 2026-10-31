@@ -5,7 +5,7 @@ import {
 import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
 import { requestCategoryStorage } from '#services/categoryStorageBinding';
 import { validateStoredCategoryConservation } from '#services/transactionCategoryStorage';
-import { validateTransactionSplits } from '#app/validation/transactionSplits';
+import { validateCentTransactionSplits } from '#app/validation/transactionSplits';
 import { Exception } from '@adonisjs/core/exceptions';
 import {
   BaseModel, hasMany, column, belongsTo
@@ -267,8 +267,8 @@ class Account extends BaseModel {
   ): Promise<MoneyCents> {
     const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
 
-    transaction.categories = [{ categoryId: unassigned.id, amount: Number(formatMoneyCents(
-      accountTransaction.amountCents)) }];
+    transaction.categories = [{ categoryId: unassigned.id,
+      amountCents: accountTransaction.amountCents }];
 
     await transaction.save();
 
@@ -323,9 +323,7 @@ class Account extends BaseModel {
         if (remainingCents !== 0 && i === categories.length - 1) {
           amountCents = addMoneyCents(amountCents, remainingCents);
         }
-        const amount = Number(formatMoneyCents(amountCents));
-
-        transaction.categories.push({ categoryId: cat.categoryId, amount });
+        transaction.categories.push({ categoryId: cat.categoryId, amountCents });
 
         const category = await Category.findOrFail(cat.categoryId, { client: this.$trx });
         if (transaction.date >= this.startDate) {
@@ -457,11 +455,8 @@ class Account extends BaseModel {
 
       const deltaCents = subtractMoneyCents(
         newAmountCents,
-        addMoneyCents(...trxCats.map((category) => parseMoneyCents(encodeMonetaryAmount(
-          category.amount)))));
-      const delta = Number(formatMoneyCents(deltaCents));
-
-      if (delta !== 0) {
+        addMoneyCents(...trxCats.map((category) => category.amountCents)));
+      if (deltaCents !== 0) {
         // If there is an unassigned transaction category
         // then adjust its amount. Otherwise, add a new unassigned transaction category.
         const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
@@ -469,11 +464,10 @@ class Account extends BaseModel {
         const unnassignedTrxCat = trxCats.find((tc) => tc.categoryId === unassigned.id);
 
         if (unnassignedTrxCat) {
-          unnassignedTrxCat.amount = Number(formatMoneyCents(addMoneyCents(
-            parseMoneyCents(encodeMonetaryAmount(unnassignedTrxCat.amount)), deltaCents)));
+          unnassignedTrxCat.amountCents = addMoneyCents(unnassignedTrxCat.amountCents, deltaCents);
         }
         else {
-          transaction.categories.push({ categoryId: unassigned.id, amount: delta })
+          transaction.categories.push({ categoryId: unassigned.id, amountCents: deltaCents })
         }
 
         unassignedAmountCents = newApplicable ? deltaCents : parseMoneyCents('0.00');
@@ -487,7 +481,7 @@ class Account extends BaseModel {
         unassignedAmountCents = parseMoneyCents('0.00');
 
         for (const allocation of appliedCategories) {
-          const allocationCents = parseMoneyCents(encodeMonetaryAmount(allocation.amount));
+          const allocationCents = allocation.amountCents;
           const effectCents = newApplicable ? allocationCents
             : subtractMoneyCents(parseMoneyCents('0.00'), allocationCents);
           if (allocation.categoryId === unassigned.id) {
@@ -642,7 +636,7 @@ class Account extends BaseModel {
           const category = await Category.findOrFail(tc.categoryId, { client: transaction.$trx });
           category.balanceCents = subtractMoneyCents(
             category.balanceCents,
-            parseMoneyCents(encodeMonetaryAmount(tc.amount)));
+            tc.amountCents);
 
           await category.save();
         }
@@ -802,7 +796,7 @@ class Account extends BaseModel {
           newActive ? newAllocations : [], 1]] as const) {
           for (const allocation of allocations) {
             const previous = deltas.get(allocation.categoryId) ?? parseMoneyCents('0.00');
-            const amount = parseMoneyCents(encodeMonetaryAmount(allocation.amount));
+            const amount = allocation.amountCents;
             deltas.set(allocation.categoryId, direction === 1
               ? addMoneyCents(previous, amount) : subtractMoneyCents(previous, amount));
           }
@@ -836,12 +830,11 @@ class Account extends BaseModel {
           const newAmountCents = parseMoneyCents(encodeMonetaryAmount(newAmount));
           const explicit = oldAllocations.filter((allocation) => allocation
             .categoryId !== unassigned.id);
-          const remainder = Number(formatMoneyCents(subtractMoneyCents(
-            newAmountCents,
-            addMoneyCents(...explicit.map((allocation) => parseMoneyCents(encodeMonetaryAmount(
-              allocation.amount)))))));
-          const allocations = [...explicit, { categoryId: unassigned.id, amount: remainder }];
-          validateTransactionSplits(newAmount, allocations);
+          const remainderCents = subtractMoneyCents(newAmountCents,
+            addMoneyCents(...explicit.map((allocation) => allocation.amountCents)));
+          const allocations = [...explicit, { categoryId: unassigned.id,
+            amountCents: remainderCents }];
+          validateCentTransactionSplits(newAmountCents, allocations);
           await applyAllocations(oldAllocations, oldActive, allocations, transactionData
             .date >= this.startDate);
 
@@ -885,7 +878,8 @@ class Account extends BaseModel {
               type: TransactionType.REGULAR_TRANSACTION,
               date: transactionData.date,
               budgetId: budget.id,
-              categories: [{ categoryId: unassigned.id, amount: -transactionData.amount }],
+              categories: [{ categoryId: unassigned.id,
+                amountCents: parseMoneyCents(encodeMonetaryAmount(-transactionData.amount)) }],
             })
             .save();
 
@@ -900,7 +894,7 @@ class Account extends BaseModel {
               amountCents: parseMoneyCents(encodeMonetaryAmount(-transactionData.amount)),
             });
 
-          validateTransactionSplits(Number(formatMoneyCents(acctTrans.amountCents)),
+          validateCentTransactionSplits(acctTrans.amountCents,
              transaction.categories);
           await validateStoredCategoryConservation(transaction);
           await applyAllocations([], false, transaction.categories, transaction.date >= this
@@ -970,7 +964,6 @@ class Account extends BaseModel {
     const startingBalanceCents = subtractMoneyCents(
       this.balanceCents,
       parseMoneyCents(sum?.$extras.sum ?? '0.00'));
-    const startingBalance = Number(formatMoneyCents(startingBalanceCents));
 
     // Get the initial funding record and update the amount
     // or add the initial funding if one was not found.
@@ -997,7 +990,7 @@ class Account extends BaseModel {
       })
         .save();
 
-      transaction.categories[0].amount = Number(formatMoneyCents(acctTrx.amountCents))
+      transaction.categories[0].amountCents = acctTrx.amountCents
 
       await transaction.save();
       await validateStoredCategoryConservation(transaction);
@@ -1017,7 +1010,7 @@ class Account extends BaseModel {
           sortOrder: -1,
           budgetId: budget.id,
           type: TransactionType.STARTING_BALANCE,
-          categories: [{ categoryId: fundingPool.id, amount: startingBalance }],
+          categories: [{ categoryId: fundingPool.id, amountCents: startingBalanceCents }],
         })
         .save();
 

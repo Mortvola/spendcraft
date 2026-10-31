@@ -28,7 +28,7 @@ export function finishCategoryStorageSave(transaction: Transaction): void {
   if (!encoded) { finishFundingStorage(transaction, 'categories'); return }
   finishFundingStorage(transaction, 'categories', encoded)
   // The funding lifecycle changes metadata only; outer allocation decoding remains authoritative.
-  transaction.$attributes.categories = runtimeCategoryAllocations(transaction.$attributes
+  transaction.$attributes.categories = decodeCategoryAllocations(transaction.$attributes
     .categories)
   transaction.$original.categories = structuredClone(transaction.$attributes.categories)
   pendingWrites.delete(transaction)

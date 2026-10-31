@@ -950,7 +950,7 @@ class InstitutionController {
               if (category) {
                 category.balanceCents = subtractMoneyCents(
                   category.balanceCents,
-                  parseMoneyCents(encodeMonetaryAmount(tc.amount)));
+                  tc.amountCents);
 
                  
                 await category.save();
