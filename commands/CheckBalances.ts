@@ -1,5 +1,5 @@
-import { parseMoneyCents, formatMoneyCents, subtractMoneyCents } from '#common/moneyCents';
-import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
+import { parseMoneyCents, formatMoneyCents, subtractMoneyCents, type MoneyCents } from
+  '#common/moneyCents';
 import db from '@adonisjs/lucid/services/db';
 import Category from '#app/Models/Category';
 import Budget from '#app/Models/Budget';
@@ -52,7 +52,7 @@ export default class CheckBalances extends BaseCommand {
 
       interface Failures {
         category: Category,
-        transSum: number,
+        transSumCents: MoneyCents,
       }
 
       const failedApps: {
@@ -90,11 +90,12 @@ amount decimal)
 
          
         for (const cat of categories) {
-          const transSum = (cat.$extras.trans_sum === null ? 0 : parseFloat(cat.$extras.trans_sum));
-          if (cat.balanceCents !== Math.round(transSum * 100)) {
+          const transSumCents = parseMoneyCents(cat.$extras.trans_sum === null
+            ? '0.00' : cat.$extras.trans_sum);
+          if (cat.balanceCents !== transSumCents) {
             failures.push({
               category: cat,
-              transSum,
+              transSumCents,
             })
           }
         }
@@ -113,12 +114,12 @@ amount decimal)
           this.logger.info(`Budget ID: ${app.appId}`);
            
           for (const failure of app.failures) {
-            const { category, transSum } = failure;
+            const { category, transSumCents } = failure;
             const difference = formatMoneyCents(subtractMoneyCents(category.balanceCents,
-              parseMoneyCents(encodeMonetaryAmount(transSum))));
+              transSumCents));
             this.logger.info(`\t"${category.group.name}:${category.name}" (${category
-              .id}): ${formatMoneyCents(category.balanceCents)}, Transactions: ${transSum.toFixed(
-              2)}, difference: ${difference}`);
+              .id}): ${formatMoneyCents(category.balanceCents)}, Transactions: ${formatMoneyCents(
+              transSumCents)}, difference: ${difference}`);
 
             issuesFound += 1;
 
@@ -129,7 +130,7 @@ amount decimal)
             }
 
             if (fix || this.fix) {
-              category.balanceCents = parseMoneyCents(encodeMonetaryAmount(transSum));
+              category.balanceCents = transSumCents;
 
                
               await category.save();

@@ -248,3 +248,95 @@ test('Bill debit totals reject invalid or unsafe SQL values')
   .run(async ({ assert }, value) => {
     await assert.rejects(() => billTotals([value]))
   })
+
+async function checkBalances({ balance, total, fix = false, interactive = false,
+  confirm = false, user } = {}) {
+  const source = ts.createSourceFile('CheckBalances.ts', await readFile(
+    'commands/CheckBalances.ts', 'utf8'), ts.ScriptTarget.Latest, true)
+  let method
+  function visit(node) {
+    if (ts.isMethodDeclaration(node) && node.name.getText(source) === 'checkCategoryBalances') {
+      method = node
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(source)
+  const events = [], messages = [], errors = []
+  const trx = { async commit() { events.push('commit') },
+    async rollback() { events.push('rollback') } }
+  const category = { id: 1, name: 'Category', group: { name: 'Group' },
+    balanceCents: parseMoneyCents(balance), $extras: { trans_sum: total },
+    async save() { events.push('save') } }
+  const budgets = { query({ client }) {
+    if (client !== trx) throw new Error('Unbound Budget query')
+    return { whereHas(_relation, filter) {
+      filter({ where(_field, value) { events.push(`user:${value}`) } }); return this
+    }, async forUpdate() { events.push('lock'); return [{ id: 7 }] } }
+  } }
+  const categories = { query({ client }) {
+    if (client !== trx || !events.includes('lock')) throw new Error('Missing Budget lock')
+    return { whereHas() { return this }, joinRaw() { return this }, select() { return this },
+      async preload() { return [category] } }
+  } }
+  const run = runInNewContext(ts.transpileModule(
+    `(async function() ${method.body.getText(source)})`,
+    { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, {
+    db: { transaction: async () => trx }, Budget: budgets, Category: categories,
+    parseMoneyCents, formatMoneyCents, subtractMoneyCents,
+    console: { log(error) { errors.push(error) } },
+  })
+  await run.call({ fix, interactive, user, logger: { info(message) { messages.push(message) } },
+    prompt: { async confirm(question) {
+      if (question !== 'Fix?') throw new Error('Unexpected repair prompt')
+      events.push('prompt'); return confirm
+    } } })
+  return { category, events, messages, errors }
+}
+
+test.group('CheckBalances exact-cent totals without a database', () => {
+  test('equal signed totals and null zero do not write').with([
+    ['0.30', '0.30'], ['-0.30', '-0.30'], ['0.00', null],
+    ['90071992547409.91', '90071992547409.91'],
+  ]).run(async ({ assert }, [balance, total]) => {
+    const result = await checkBalances({ balance, total, fix: true })
+    assert.deepEqual(result.events, ['lock', 'rollback'])
+    assert.deepEqual(result.messages, ['No category balance issues found'])
+    assert.deepEqual(result.errors, [])
+  })
+
+  test('diagnosis and repairs preserve prompts, exact differences and transaction outcomes').with([
+    { fix: false, interactive: false, confirm: false, saved: false, committed: false },
+    { fix: true, interactive: false, confirm: false, saved: true, committed: true },
+    { fix: false, interactive: true, confirm: true, saved: true, committed: true },
+    { fix: false, interactive: true, confirm: false, saved: false, committed: true },
+    { fix: true, interactive: true, confirm: false, saved: true, committed: true },
+  ]).run(async ({ assert }, options) => {
+    const result = await checkBalances({ ...options, balance: '0.30', total: '0.20',
+      user: 'owner' })
+    assert.deepEqual(result.errors, [])
+    assert.deepEqual(result.events, ['user:owner', 'lock',
+      ...(options.interactive ? ['prompt'] : []),
+      ...(options.saved ? ['save'] : []), options.committed ? 'commit' : 'rollback'])
+    assert.strictEqual(result.category.balanceCents, parseMoneyCents(
+      options.saved ? '0.20' : '0.30'))
+    assert.include(result.messages[1], '0.30, Transactions: 0.20, difference: 0.10')
+  })
+
+  test('repairs retain negative totals and null-to-zero semantics').with([
+    ['-0.30', '-0.20'], ['0.01', null],
+  ]).run(async ({ assert }, [balance, total]) => {
+    const result = await checkBalances({ balance, total, fix: true })
+    assert.deepEqual(result.errors, [])
+    assert.strictEqual(result.category.balanceCents, parseMoneyCents(total ?? '0.00'))
+    assert.deepEqual(result.events, ['lock', 'save', 'commit'])
+  })
+
+  test('malformed, subcent and unsafe totals roll back before repair').with([
+    '0.001', 'NaN', 'Infinity', '90071992547409.92', '1.2.3', 0.2, undefined,
+  ]).run(async ({ assert }, total) => {
+    const result = await checkBalances({ balance: '0.30', total, fix: true })
+    assert.lengthOf(result.errors, 1)
+    assert.deepEqual(result.events, ['lock', 'rollback'])
+    assert.strictEqual(result.category.balanceCents, parseMoneyCents('0.30'))
+  })
+})
