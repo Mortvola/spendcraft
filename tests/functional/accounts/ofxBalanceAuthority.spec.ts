@@ -121,7 +121,7 @@ test.group('OFX independent accounting and provider balance (prepared)', () => {
       const transaction = await opening.related('transaction').query().firstOrFail()
       assert.strictEqual(transaction.categories[0].amount, sign * 0.3)
       const raw = await db.from('transactions').where('id', transaction.id).firstOrFail()
-      assert.strictEqual(typeof raw.categories[0].amount, loan ? 'number' : 'string')
+      assert.strictEqual(typeof raw.categories[0].amount, 'string')
     })
 
   test('Loan initial-funding failure rolls back Account, opening and Funding Pool changes',

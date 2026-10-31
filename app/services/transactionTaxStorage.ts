@@ -1,5 +1,4 @@
 import type Transaction from '#models/Transaction'
-import db from '@adonisjs/lucid/services/db'
 import { hasCategoryStorage, excluded as categoryExclusions } from './categoryStorageBinding.ts'
 import { bindResolvedTaxStorage, excludeTaxStorage, hasTaxStorage, isTaxStorageExcluded,
   stageTaxStorage, enableTaxStorageWrite } from './taxStorageBinding.ts'
@@ -18,25 +17,7 @@ export async function bindTaxStorage(transactions: Transaction[], replacing =
   const owner = rows[0].$trx
   if (rows.some(row => row.$trx !== owner)) throw new Error(
     'Tax storage requires one owning transaction')
-  const unresolved = rows.filter(row => !hasCategoryStorage(row))
-  const ids = unresolved.filter(row => row.$isPersisted).map(row => row.id)
-  const links = ids.length ? await db.from('account_transactions as at')
-    .if(owner, query => { if (owner) query.useTransaction(owner) })
-    .join('accounts as a', 'a.id', 'at.account_id').whereIn('at.transaction_id', ids)
-    .select('at.transaction_id', 'a.type') : []
-  const categoryIds = [...new Set(unresolved.flatMap(row => Array.isArray(row.categories)
-    ? row.categories.map(category => category.categoryId) : []))]
-  const loanCategories = categoryIds.length ? await db.from('categories')
-    .if(owner, query => { if (owner) query.useTransaction(owner) })
-    .whereIn('id', categoryIds).where('type', 'LOAN').select('id') : []
-  const loanIds = new Set(links.filter(link => link.type === 'loan').map(link => Number(link
-    .transaction_id)))
-  const loanCategoryIds = new Set(loanCategories.map(category => Number(category.id)))
   for (const row of rows) {
-    if (loanIds.has(row.id) || (Array.isArray(row.categories) && row.categories.some(category =>
-      loanCategoryIds.has(category.categoryId)))) {
-      excludeTaxStorage(row); continue
-    }
     // New rows need an explicitly resolved active lifecycle, rather than assuming
     // missing Account links prove nondeprecated ownership before they're created.
     if (!row.$isPersisted && !hasCategoryStorage(row)) continue

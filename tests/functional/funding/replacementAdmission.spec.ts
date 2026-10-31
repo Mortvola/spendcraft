@@ -132,9 +132,10 @@ test.group('Replacement admission persisted noninterference (prepared)', () => {
   test('valid lifecycle replacement and dates remain distinct').with([2, 3]).run(async ({ client,
     assert }, type) => {
     const f = await fixture(type)
-    // Loan Category allocations retain the excluded numeric storage contract.
+    // Legacy Category types use the same canonical storage contract.
     await f.category.merge({ type: CategoryType.Loan }).save()
     await writeHistoricalTransactionFixture(f.target, { categories: f.rows(2) })
+    await writeCanonicalTransactionFixture(f.target)
     const date = type === 2 ? '2025-03-01' : '2025-04-01'
     const response = await client.patch(`/api/v1/category-transfer/${f.target.id}`)
       .json(categoryTransferRequest({ type, date, categories: f.rows(3) })).accept('json').loginAs(f
@@ -143,6 +144,9 @@ test.group('Replacement admission persisted noninterference (prepared)', () => {
     const target = await Transaction.findOrFail(f.target.id)
     assert.equal(target.date.toISODate(), date); assert.equal(target.type, type)
     assert.deepEqual(target.categories, f.rows(3))
+    const stored = await db.from('transactions').where('id', target.id).firstOrFail()
+    assert.isTrue(stored.categories.every((row: { amount: unknown }) =>
+      typeof row.amount === 'string'))
     assert.equal((await Category.findOrFail(f.category.id)).balance, 3)
     assert.equal((await Category.findOrFail(f.pool.id)).balance, 7)
   })

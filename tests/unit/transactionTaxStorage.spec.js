@@ -187,7 +187,7 @@ test.group('Tax decimal-string production codec and Lucid boundary (no database)
     assert.isTrue(Object.hasOwn(model.$dirty, 'taxes'))
     assert.deepEqual(JSON.parse(model.prepareForAdapter(model.$dirty).taxes), [attribution('1.13')])
   })
-  test('scope resolution batches ownership checks and excludes only actual deprecated links',
+  test('all persisted Category types bind Tax storage without deprecated scope queries',
     async ({ assert }) => {
     const events = [], owner = new EventEmitter()
     const queries = { from(table) { events.push(table); return {
@@ -199,15 +199,15 @@ test.group('Tax decimal-string production codec and Lucid boundary (no database)
     } } }
     const functions = await productionFunctions(queries)
     const rows = [hydrated([attribution('1.00')], { id: 1, type: 1 }), hydrated([attribution(
-      1.005)], { id: 2 }),
-      hydrated([attribution(1.005)], { id: 3, categories: [{ categoryId: 3, amount: 1 }] }),
+      '1.00')], { id: 2 }),
+      hydrated([attribution('1.00')], { id: 3, categories: [{ categoryId: 3, amount: 1 }] }),
         hydrated([], { id: 4 })]
     for (const row of rows) row.useTransaction(owner)
     await functions.bindTaxStorage(rows)
-    assert.deepEqual(rows.map(row => hasTaxStorage(row)), [true, false, false, true])
-    assert.deepEqual(events, ['account_transactions as at', 'categories'])
+    assert.deepEqual(rows.map(row => hasTaxStorage(row)), [true, true, true, true])
+    assert.deepEqual(events, [])
     await functions.bindTaxStorage(rows)
-    assert.lengthOf(events, 2)
+    assert.lengthOf(events, 0)
     assert.equal(rows[0].taxes[0].amount, 1)
   })
   test('new unscoped rows and independent transactions are not silently globally normalized',

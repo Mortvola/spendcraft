@@ -11,7 +11,7 @@ const pendingWrites = new WeakMap<object, ReturnType<typeof encodeCategoryAlloca
 export const requested = new WeakSet<object>()
 export const excluded = new WeakSet<object>()
 
-// New instances are opted in only by callers with a resolved non-Loan Account or type2/3 lifecycle.
+// New instances are opted in only by callers with a resolved Account or type2/3 lifecycle.
 export function requestCategoryStorage(transaction: Transaction, active = true): Transaction {
   if (active) requested.add(transaction)
   else excluded.add(transaction)

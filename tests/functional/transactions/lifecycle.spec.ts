@@ -234,7 +234,7 @@ test.group('Ordinary transaction lifecycle', (group) => {
       assert.deepEqual(await snapshot(), before)
     })
 
-  test('Loan-excluded numeric allocations keep exact signed CREATE PATCH DELETE balances')
+  test('Loan Accounts and legacy Category types use strings and preserve lifecycle balances')
     .with(['account', 'category'].flatMap(exclusion => [1, -1].map(sign => ({ exclusion, sign }))))
     .run(async ({ client, assert }, { exclusion, sign }) => {
       await fixture.account.merge({ balance: sign * 0.1,
@@ -263,7 +263,7 @@ test.group('Ordinary transaction lifecycle', (group) => {
       }
       const stored = await db.from('transactions').where('id', id).firstOrFail()
       assert.isTrue(stored.categories.every((split: { amount: unknown }) => typeof split.amount ===
-        'number'))
+        'string'))
       const metadata = await client.patch(`/api/v1/transaction/${id}`)
         .json({ version: 2, name: 'Excluded metadata update' }).loginAs(fixture.user)
       metadata.assertStatus(200)
@@ -307,7 +307,7 @@ test.group('Ordinary transaction lifecycle', (group) => {
       await fixture.accountTransaction.merge({ amount: operation === 'delete' ? -0.01 : 0.2,
         principle: 0 }).save()
       await writeHistoricalTransactionFixture(fixture.transaction, { categories: [
-        { categoryId: fixture.first.id, amount: operation === 'delete' ? -0.01 : 0.2 }] })
+        { categoryId: fixture.first.id, amount: operation === 'delete' ? '-0.01' : '0.20' }] })
       const before = await snapshot()
       const response = operation === 'create'
         ? await client.post(`/api/v1/account/${fixture.account.id}/transactions`).json({
@@ -323,7 +323,7 @@ test.group('Ordinary transaction lifecycle', (group) => {
       assert.deepEqual(await snapshot(), before)
     })
 
-  test('Loan principal CREATE PATCH DELETE preserve exact signed balances and excluded JSON')
+  test('Loan principal CREATE PATCH DELETE preserve exact signed balances and canonical JSON')
     .with([1, -1]).run(async ({ client, assert }, sign) => {
       await fixture.account.merge({ type: AccountType.Loan, balance: sign * 0.1 }).save()
       const created = await client.post(`/api/v1/account/${fixture.account.id}/transactions`)
@@ -335,7 +335,7 @@ test.group('Ordinary transaction lifecycle', (group) => {
       assert.strictEqual((await Account.findOrFail(fixture.account.id)).balance, sign * 0.3)
       const stored = await db.from('transactions').where('id', id).firstOrFail()
       assert.isTrue(stored.categories.every((split: { amount: unknown }) => typeof split.amount ===
-        'number'))
+        'string'))
       for (const [version, principle] of ['0.10', '0.20'].entries()) {
         const response = await client.patch(`/api/v1/transaction/${id}`).json({ version,
           principle: sign < 0 ? `-${principle}` : principle }).loginAs(fixture.user)
@@ -361,7 +361,7 @@ test.group('Ordinary transaction lifecycle', (group) => {
       await fixture.accountTransaction.merge({ principle: operation === 'delete' ? -0.01 : 0 })
         .save()
       await writeHistoricalTransactionFixture(fixture.transaction, { categories: [
-        { categoryId: fixture.first.id, amount: 10 }] })
+        { categoryId: fixture.first.id, amount: '10.00' }] })
       const before = await snapshot()
       const response = operation === 'create'
         ? await client.post(`/api/v1/account/${fixture.account.id}/transactions`).json({

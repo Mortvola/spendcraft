@@ -22,7 +22,7 @@ interface FundingCategory {
 export default class Category extends BaseModel {
   @beforeSave()
   public static stageFunding(category: Category) {
-    if (category.type !== CategoryType.Loan) stageFundingStorage(category, 'fundingCategories');
+    stageFundingStorage(category, 'fundingCategories');
   }
 
   @afterSave()

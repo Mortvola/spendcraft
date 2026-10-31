@@ -42,7 +42,7 @@ function persist(row) {
 }
 
 test.group('Funding JSON storage (no database)', () => {
-  test('actual Loan scope resolves before funding encoding').with([
+  test('all Category types use the same funding storage lifecycle').with([
     'create', 'replacement', 'read', 'linked Loan', 'supported replacement',
   ]).run(async ({ assert }, scenario) => {
     const source = ts.createSourceFile('scope.ts', await readFile(
@@ -51,13 +51,11 @@ test.group('Funding JSON storage (no database)', () => {
       && ['bindCategoryStorage', 'prepareNewCategoryStorage'].includes(node.name?.text))
       .map(node => node.getText(source).replace(/^export\s+/, '')).join('\n')
     const owner = new EventEmitter(), queries = []
-    const raw = scenario === 'replacement' || scenario === 'supported replacement'
-      ? allocation('1.00') : allocation(1.005)
+    const raw = scenario === 'create' ? allocation(1.005) : allocation('1.00')
     const row = new Sample().merge({ categories: raw })
-    row.id = 1; row.type = 2; row.budgetId = 7
+    row.id = 1; row.type = scenario === 'linked Loan' ? 0 : 2; row.budgetId = 7
     row.$isPersisted = scenario !== 'create'; row.$hydrateOriginals()
     row.useTransaction(owner)
-    let loan = scenario !== 'supported replacement'
     const scope = runInNewContext(ts.transpileModule(
       `${functions}\n({ bindCategoryStorage, prepareNewCategoryStorage })`, {
       compilerOptions: { target: ts.ScriptTarget.ES2022 },
@@ -65,25 +63,22 @@ test.group('Funding JSON storage (no database)', () => {
       ...binding, supported: [0, 2, 3, 4, 5], stageFundingStorage, encodeCategoryAllocations,
       db: { from(table) {
         queries.push(table)
+        assert.notEqual(table, 'categories')
         return { if(value, callback) { if (value) callback(this); return this },
           useTransaction(client) { assert.strictEqual(client, owner); return this },
           join() { return this }, whereIn() { return this }, where() { return this },
           select() { return this },
-          then(resolve) { return Promise.resolve(table === 'categories'
-            ? (loan && scenario !== 'linked Loan' ? [{ id: 10 }] : [])
-            : (scenario === 'linked Loan' ? [{ transaction_id: 1, type: 'loan',
-              application_id: 7 }] : [])).then(resolve) },
+          then(resolve) { return Promise.resolve(scenario === 'linked Loan'
+            ? [{ transaction_id: 1, type: 'loan', application_id: 7 }] : []).then(resolve) },
         }
       } },
     })
     if (scenario === 'replacement') {
-      loan = false
       await scope.bindCategoryStorage([row])
-      loan = true
       row.categories = allocation(3)
     } else if (scenario === 'read' || scenario === 'linked Loan') {
       await scope.bindCategoryStorage([row])
-      assert.deepEqual(row.categories, raw)
+      assert.strictEqual(row.categories[0].baseAmount, 1)
       assert.isFalse(row.$isDirty)
     }
     if (scenario === 'create' || scenario === 'supported replacement') binding
@@ -103,16 +98,13 @@ test.group('Funding JSON storage (no database)', () => {
       prepareTaxStorageSave: async () => undefined })
     await save(row)
     const stored = JSON.parse(row.prepareForAdapter({ categories: row.categories }).categories)
-    if (scenario === 'supported replacement') {
-      assert.equal(stored[0].baseAmount, '1.00')
-      assert.deepEqual(stored[0].fundingCategories, [rule('1.00'), rule('1.00', true)])
-      row.$hydrateOriginals(); finishCategoryStorageSave(row)
-      assert.strictEqual(row.serialize().categories[0].baseAmount, 1)
-    } else {
-      assert.deepEqual(stored, scenario === 'replacement' ? allocation(3) : raw)
-      assert.isFalse(binding.bound.has(row))
-    }
-    assert.isAbove(queries.length, 0)
+    const expected = scenario === 'replacement' ? '3.00' : '1.00'
+    assert.equal(stored[0].baseAmount, expected)
+    assert.deepEqual(stored[0].fundingCategories, [rule(expected), rule(expected, true)])
+    assert.isTrue(binding.bound.has(row))
+    row.$hydrateOriginals(); finishCategoryStorageSave(row)
+    assert.strictEqual(row.serialize().categories[0].baseAmount, Number(expected))
+
   })
   test('all three paths and both modes use approved individual rounding').with([
     [12.345, '12.35'], [0.125, '0.13'], [-0.125, '-0.12'], [1.005, '1.00'], [-1.005, '-1.00'],

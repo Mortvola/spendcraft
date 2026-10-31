@@ -557,8 +557,7 @@ class Account extends BaseModel {
 
     let unassignedAmount = 0;
 
-    const transaction = await requestCategoryStorage(new Transaction(), this.type !== AccountType
-      .Loan)
+    const transaction = await requestCategoryStorage(new Transaction())
       .useTransaction(this.$trx)
       .fill({
         type: TransactionType.REGULAR_TRANSACTION,
@@ -904,8 +903,7 @@ class Account extends BaseModel {
           }
 
 
-          const transaction = await requestCategoryStorage(new Transaction(), this
-            .type !== AccountType.Loan)
+          const transaction = await requestCategoryStorage(new Transaction())
             .useTransaction(this.$trx)
             .fill({
               type: TransactionType.REGULAR_TRANSACTION,
@@ -1036,8 +1034,7 @@ class Account extends BaseModel {
         parseMoneyCents(encodeMonetaryAmount(fundingPool.balance)), deltaCents)));
     }
     else {
-      const transaction = await requestCategoryStorage(new Transaction(), this.type !== AccountType
-        .Loan)
+      const transaction = await requestCategoryStorage(new Transaction())
         .useTransaction(this.$trx)
         .fill({
           date: this.startDate,

@@ -152,7 +152,7 @@ test.group('Plaid sync characterization', (group) => {
       assert.strictEqual(transaction.categories[0].amount, sign * 0.4)
       const stored = await db.from('transactions').where('id', transaction.id).firstOrFail()
       assert.isTrue(stored.categories.every((split: { amount: unknown }) => typeof split.amount
-        === (loan ? 'number' : 'string')))
+        === 'string'))
       fake.responses = [page(accounts(), 'fraction-replay', { modified: [purchase('first', {
         amount: -sign * 0.4 })] })]
       ;(await client.post(url()).loginAs(f.user)).assertStatus(200)

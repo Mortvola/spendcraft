@@ -1,4 +1,4 @@
-import { requestCategoryStorage, excludeCategoryStorage } from '#services/categoryStorageBinding';
+import { requestCategoryStorage } from '#services/categoryStorageBinding';
 import { validateStoredCategoryConservation } from '#services/transactionCategoryStorage';
 import { accountEligible, categoryEligible } from '#services/transactionEligibility';
 import { HttpContext } from '@adonisjs/core/http';
@@ -13,7 +13,7 @@ import {
   ApiResponse,
   AddStatementResponse,
   StatementProps,
-  AccountType, CategoryType,
+  AccountType,
 } from '#common/ResponseTypes';
 import Statement from '#app/Models/Statement';
 import { validateSubmittedStatementIncome, encodeStatementIncome } from
@@ -195,8 +195,7 @@ export default class AccountsController {
         throw new Exception('Balance-tracked accounts cannot have transactions', { status: 422 });
       }
 
-      const transaction = requestCategoryStorage(new Transaction(), account.type !== AccountType
-        .Loan).useTransaction(trx);
+      const transaction = requestCategoryStorage(new Transaction()).useTransaction(trx);
 
       let { categories } = requestData
 
@@ -209,20 +208,15 @@ export default class AccountsController {
         }]
       }
 
-      let categoryStorageActive = account.type !== AccountType.Loan;
       for (const categoryId of new Set(categories.map((split) => split.categoryId))) {
-        const referencedCategory = await Category.query({ client: trx })
+        await Category.query({ client: trx })
           .where('id', categoryId)
           .whereHas('group', (query) => query.where('budgetId', budget.id))
           .firstOrFail();
-        if (referencedCategory.type === CategoryType.Loan) {
-          categoryStorageActive = false;
-          excludeCategoryStorage(transaction);
-        }
       }
 
       if (account.tracking === TrackingType.Transactions && account.type !== AccountType.Loan) {
-        validateTransactionSplits(requestData.amount, categories, undefined, categoryStorageActive);
+        validateTransactionSplits(requestData.amount, categories, undefined, true);
       }
 
       transaction.fill({

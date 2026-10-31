@@ -1,7 +1,6 @@
 import { encodeMonetaryAmount, canonicalCategoryAllocations } from '#services/categoryAmountCodec';
 import { prepareTaxReplacement } from '#services/transactionTaxStorage';
-import { excludeTaxStorage } from '#services/taxStorageBinding';
-import { hasCategoryStorage, excludeCategoryStorage } from '#services/categoryStorageBinding';
+import { hasCategoryStorage } from '#services/categoryStorageBinding';
 import { validateStoredCategoryConservation } from '#services/transactionCategoryStorage';
 import {
   accountEligible, categoryEligible, categoryEffectDeltas, excludedCategoryEffectDeltas,
@@ -15,7 +14,7 @@ import Category from '#app/Models/Category';
 import Transaction from '#app/Models/Transaction';
 import AccountTransaction from '#app/Models/AccountTransaction';
 import {
-  AccountBalanceProps, AccountType, ApiResponse, CategoryBalanceProps, CategoryType,
+  AccountBalanceProps, AccountType, ApiResponse, CategoryBalanceProps,
     RequestErrorCode,
   StatementProps,
   TrackingType,
@@ -173,12 +172,8 @@ export default class TransactionsController {
         ...(requestData.categories ?? []).map((category) => category.categoryId),
       ]);
       for (const categoryId of categoryIds) {
-        const referencedCategory = await budgetCategories(budget.id, { client: trx }).where('id',
+        await budgetCategories(budget.id, { client: trx }).where('id',
           categoryId).firstOrFail();
-        if (referencedCategory.type === CategoryType.Loan) {
-          excludeCategoryStorage(transaction);
-          excludeTaxStorage(transaction);
-        }
       }
 
       const taxReplacement = requestData.taxCategories === undefined ? undefined
