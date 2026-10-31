@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon';
-import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
+import { parseMoneyCents, formatMoneyCents, type MoneyCents } from '#common/moneyCents';
 import {
   BaseModel, belongsTo, column,
 } from '@adonisjs/lucid/orm';
@@ -44,16 +44,20 @@ class AccountTransaction extends BaseModel {
   public providerTransactionId: string | null;
 
   @column({
-    consume: (value: string) => parseFloat(value),
-    serialize: (value: number) => encodeMonetaryAmount(value),
+    columnName: 'amount', serializeAs: 'amount',
+    consume: parseMoneyCents, prepare: formatMoneyCents, serialize: formatMoneyCents,
   })
-  public amount: number;
+  public amountCents: MoneyCents;
 
   @column({
-    consume: (value: string) => (value !== null ? parseFloat(value) : null),
-    serialize: (value: number | null) => value === null ? null : encodeMonetaryAmount(value),
+    columnName: 'principle', serializeAs: 'principle',
+    consume: (value: string | null) => value === null ? null : parseMoneyCents(value),
+    prepare: (value: MoneyCents | null | undefined) => value === null || value === undefined
+      ? value : formatMoneyCents(value),
+    serialize: (value: MoneyCents | null | undefined) => value === null || value === undefined
+      ? value : formatMoneyCents(value),
   })
-  public principle: number | null;
+  public principalCents: MoneyCents | null;
 
   @column()
   public name: string;

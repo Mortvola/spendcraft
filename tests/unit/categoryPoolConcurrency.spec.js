@@ -191,7 +191,7 @@ test.group('Deletion Category effects in checked cents without DB', () => {
         AccountTransaction: { query({ client }) {
           assert.strictEqual(client, trx)
           return { async where(_field, id) { return [{ transactionId: id,
-            amount: sign * (id === 1 ? 0.2 : 0.1),
+            amountCents: parseMoneyCents(encodeMonetaryAmount(sign * (id === 1 ? 0.2 : 0.1))),
             async delete() { events.push('link.delete') } }] } }
         } }, Transaction: { async find(id, { client }) {
           assert.strictEqual(client, trx); return transactions[id - 1]

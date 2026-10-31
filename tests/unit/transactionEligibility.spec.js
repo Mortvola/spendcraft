@@ -45,7 +45,8 @@ async function patchFixture({ date = dates[1], pending = false, amount = 10, spl
     balanceCents: parseMoneyCents(encodeMonetaryAmount(100 + (
       eligible && !pending ? amount : 0))), async save() { events.push(['account', Number(
         formatMoneyCents(this.balanceCents))]) } }
-  const link = { amount, pending, name: 'Original', statementId: null, $attributes: {},
+  const link = { amountCents: parseMoneyCents(encodeMonetaryAmount(amount)), pending,
+     name: 'Original', statementId: null, $attributes: {},
     merge(data) { Object.assign(this, data); return this }, async save() { events.push('link') },
     related() { return { query: () => query(account) } } }
   const transaction = { id: 1, budgetId: 1, version: 0, type: 5, deleted: false,
@@ -92,6 +93,7 @@ async function patchFixture({ date = dates[1], pending = false, amount = 10, spl
       return { ...query(), where(_field, id) { return query(categories.get(id)) } }
     },
     validateTransactionSplits, updateTransaction: {}, transactionFields: {},
+    getAccountTransactionChanges: (_old, _new, previous) => previous,
     getChanges: (_old, _next, changes) => changes, db: { transaction: async () => trx },
   }
   const update = runInNewContext(await method('app/Controllers/Http/TransactionsController.ts',
@@ -217,7 +219,7 @@ test.group('Ordinary eligibility and real PATCH effects without DB', () => {
         assert.equal(f.categories.get(1).balanceCents, parseMoneyCents(encodeMonetaryAmount(
           eligible ? amount : 0)))
       }
-      assert.equal(f.link.amount, amount)
+      assert.equal(f.link.amountCents, parseMoneyCents(encodeMonetaryAmount(amount)))
       assert.equal(f.events.filter((event) => event === 'log').length, 3)
       assert.equal(f.events[0], 'gate')
     })
@@ -269,7 +271,7 @@ nominal splits', async ({ assert }) => {
     assert.equal(Number(formatMoneyCents(f.account.balanceCents)), 100)
     assert.equal(f.categories.get(1).balanceCents, parseMoneyCents('0.00'))
     assert.equal(f.categories.get(2).balanceCents, parseMoneyCents('0.00'))
-    assert.equal(f.link.amount, -20)
+    assert.equal(f.link.amountCents, parseMoneyCents('-20.00'))
   })
 })
 
@@ -342,7 +344,7 @@ test('Loan PATCH principal replacement and metadata-only edits retain exact sign
     const f = await patchFixture({ excluded: true, pending })
     f.account.type = 'Loan'
     f.account.balanceCents = parseMoneyCents(encodeMonetaryAmount(sign * 0.3))
-    f.link.principle = sign * 0.2
+    f.link.principalCents = parseMoneyCents(encodeMonetaryAmount(sign * 0.2))
     const before = Array.from(f.categories.values(), row => row.balance)
     await f.run({ principle: sign * 0.1 })
     assert.strictEqual(Number(formatMoneyCents(f.account.balanceCents)), sign * 0.2)
@@ -359,7 +361,7 @@ test('Loan PATCH treats missing historical principal as zero', async ({ assert }
   const f = await patchFixture({ excluded: true })
   f.account.type = 'Loan'
   f.account.balanceCents = parseMoneyCents(encodeMonetaryAmount(0.1))
-  f.link.principle = null
+  f.link.principalCents = null
   await f.run({ principle: 0.2 })
   assert.strictEqual(Number(formatMoneyCents(f.account.balanceCents)), 0.3)
 })
@@ -369,7 +371,7 @@ test('Loan PATCH rejects unsafe principal effects before Account save or commit'
     const f = await patchFixture({ excluded: true })
     f.account.type = 'Loan'
     f.account.balanceCents = parseMoneyCents(encodeMonetaryAmount(0.1))
-    f.link.principle = 0
+    f.link.principalCents = parseMoneyCents('0.00')
     await assert.rejects(() => f.run({ principle }))
     assert.include(f.events, 'rollback')
     assert.notInclude(f.events, 'commit')

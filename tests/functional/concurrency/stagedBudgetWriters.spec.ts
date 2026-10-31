@@ -53,7 +53,8 @@ async function fixture() {
       type: TransactionType.MANUAL_TRANSACTION, categories: [{ categoryId: category.id,
         amount: 5 }], taxes: [], deleted: false })
     await writeCanonicalTransactionFixture(transaction)
-    await account.related('accountTransactions').create({ transactionId: transaction.id, amount: 5,
+    await account.related('accountTransactions').create({ transactionId: transaction.id,
+       amountCents: parseMoneyCents('5.00'),
       name: 'Purchase', pending: false })
     return { budget, user, institution, account, group, empty, category, transaction }
   })

@@ -77,7 +77,8 @@ async function fixture() {
           const transaction = f.lastTransaction
           const row = { pending: false, ...values,
             merge(next) { Object.assign(this, next); return this },
-            async save() { calls.push(['link', this.amount]); return this },
+            async save() { calls.push(['link', Number(formatMoneyCents(
+              this.amountCents))]); return this },
             related() { return { query: () => ({ firstOrFail: async () => transaction }) } },
             transaction,
           }
@@ -140,7 +141,7 @@ test.group('OFX accounting and provider balance independence', () => {
     f.account.balanceCents = parseMoneyCents(encodeMonetaryAmount(0.1))
     await f.run([{ amount: 0.005 }], '')
     assert.strictEqual(Number(formatMoneyCents(f.account.balanceCents)), 0.11)
-    assert.strictEqual(f.links[0].amount, 0.005)
+    assert.strictEqual(f.links[0].amountCents, parseMoneyCents('0.01'))
     assert.strictEqual(f.links[0].transaction.categories[0].amount, 0.005)
   })
 

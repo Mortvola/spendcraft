@@ -54,7 +54,8 @@ async function createDomain(label: string) {
         { categoryId: second.id, amount: entry.amounts[1].toFixed(2) },
       ]) })
       await account.related('accountTransactions').create({ transactionId: transaction.id,
-        name: 'Legitimate purchase', amount: entry.amounts[0] + entry.amounts[1], pending: false,
+        name: 'Legitimate purchase', amountCents: parseMoneyCents(encodeMonetaryAmount(
+          entry.amounts[0] + entry.amounts[1])), pending: false,
           provider: 'NONE' })
       transactions.push(transaction)
     }
@@ -96,7 +97,8 @@ test.group('Historical aggregate isolation', (group) => {
         '11.00' },
     ]) })
     await owner.account.related('accountTransactions').create({ transactionId: transaction.id,
-      name: 'Historical inconsistent transaction', amount: 48, pending: false, provider: 'NONE' })
+      name: 'Historical inconsistent transaction', amountCents: parseMoneyCents('48.00'),
+         pending: false, provider: 'NONE' })
     return transaction
   }
 

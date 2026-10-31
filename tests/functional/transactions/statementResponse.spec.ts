@@ -1,4 +1,5 @@
-import { parseMoneyCents } from '#common/moneyCents'
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import { transactionRequest } from '../../helpers/transactionRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { test } from '@japa/runner'
@@ -42,7 +43,7 @@ async function fixture(mode: string) {
   await writeCanonicalTransactionFixture(transaction)
   const association = await account.related('accountTransactions').create({
     transactionId: transaction.id,
-    amount: 10, name: 'Original', pending: false, provider: 'NONE',
+    amountCents: parseMoneyCents('10.00'), name: 'Original', pending: false, provider: 'NONE',
     statementId: mode === 'assign' ? null : oldStatement.id })
   const responseStatement = mode === 'clear' ? oldStatement : target
   for (const [amount, deleted] of [[-4, false], [999, true]] as const) {
@@ -51,7 +52,8 @@ async function fixture(mode: string) {
       type: TransactionType.MANUAL_TRANSACTION, categories: [{ categoryId: category.id, amount }],
       taxes: [], version: 0, deleted, sortOrder: 0 })
     await writeCanonicalTransactionFixture(sibling)
-    await account.related('accountTransactions').create({ transactionId: sibling.id, amount,
+    await account.related('accountTransactions').create({ transactionId: sibling.id,
+       amountCents: parseMoneyCents(encodeMonetaryAmount(amount)),
       name: 'Sibling', pending: false, provider: 'NONE', statementId: responseStatement.id })
   }
   return { user, account, category, transaction, association, responseStatement,
@@ -181,7 +183,8 @@ test.group('Transaction Statement response commit boundary', () => {
     assert.equal(body.statement.credits, mode === 'clear' ? '0.00' : '10.00')
     assert.equal(body.statement.debits, '-4.00')
     assert.equal(body.transaction.version, 1)
-    assert.strictEqual(body.transaction.accountTransaction.amount, data.association.amount.toFixed(
+    assert.strictEqual(body.transaction.accountTransaction.amount, Number(formatMoneyCents(
+      data.association.amountCents)).toFixed(
       2))
     assert.equal(body.transaction.accountTransaction.name, 'Updated')
     assert.equal(body.transaction.accountTransaction.statementId, data.statementId)

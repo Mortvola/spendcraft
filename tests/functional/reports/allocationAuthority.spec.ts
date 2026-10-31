@@ -39,7 +39,8 @@ async function createDomain(label: string, existingBudget?: Budget) {
       categories: [{ categoryId: category.id, amount: 10 }], taxes: [],
     })
     await account.related('accountTransactions').create({
-      transactionId: transaction.id, name: `${label} private purchase`, amount: 10,
+      transactionId: transaction.id, name: `${label} private purchase`,
+         amountCents: parseMoneyCents('10.00'),
       provider: 'NONE', pending: false, statementId: null,
     })
     return { budget, user, institution, account, group, category, transaction }
@@ -124,7 +125,8 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
         await writeHistoricalTransactionFixture(transaction, { categories: [
           { categoryId: f.category.id, amount: encodeMonetaryAmount(amount) }] })
         await f.account.related('accountTransactions').create({ transactionId: transaction.id,
-          name: 'Exact shop', paymentChannel: 'online', amount, pending: false, provider: 'NONE' })
+          name: 'Exact shop', paymentChannel: 'online', amountCents: parseMoneyCents(
+            encodeMonetaryAmount(amount)), pending: false, provider: 'NONE' })
       }
       const before = await snapshot(f.budget.id)
       for (const report of ['payee', 'category']) {

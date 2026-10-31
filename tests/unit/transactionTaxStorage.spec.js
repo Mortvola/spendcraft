@@ -243,7 +243,8 @@ async function patchFixture(input, { rawInput = input, invalidOwner = false, lat
   function query(value) { return { where() { return this }, andWhere() { return this }, whereHas() {
     return this },
     async firstOrFail() { return value } } }
-  const link = { amount: 10, pending: false, related() { return { query: () => query(account) } } }
+  const link = { amountCents: parseMoneyCents('10.00'), pending: false, related(
+    ) { return { query: () => query(account) } } }
   model.related = name => name === 'accountTransaction' ? { query: () => query(link) } : {
     async create() { events.push('log'); if (lateFailure) throw new Error(
       'Injected late failure') } }
@@ -269,6 +270,7 @@ async function patchFixture(input, { rawInput = input, invalidOwner = false, lat
     validateTransactionSplits,
     addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents,
     db: { transaction: async () => owner }, updateTransaction, transactionFields: {},
+    getAccountTransactionChanges: (_old, _new, previous) => previous,
     getChanges: (_old, _new, previous) => previous,
     Transaction: { query({ client }) { if (client !== owner) throw new Error('Unbound Transaction');
       events.push('transaction.read'); if (invalidOwner) throw new Error('E_ROW_NOT_FOUND');
@@ -303,7 +305,7 @@ test.group('Actual tax PATCH controller with inert financial collaborators', () 
       '0.01'])
     assert.equal(f.database.categories, beforeCategories)
     assert.equal(Number(formatMoneyCents(f.account.balanceCents)), 100); assert.equal(
-      f.link.amount, 10)
+      f.link.amountCents, parseMoneyCents('10.00'))
     assert.isBelow(f.events.indexOf('budget.lock'), f.events.indexOf('transaction.read'))
     assert.deepEqual(f.events.slice(-3), ['save', 'log', 'commit'])
   })

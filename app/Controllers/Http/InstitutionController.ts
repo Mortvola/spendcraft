@@ -926,7 +926,7 @@ class InstitutionController {
 
               unassignedCat.balanceCents = subtractMoneyCents(
                 unassignedCat.balanceCents,
-                parseMoneyCents(encodeMonetaryAmount(acctTran.amount)));
+                acctTran.amountCents);
 
               await unassignedCat.save();
 

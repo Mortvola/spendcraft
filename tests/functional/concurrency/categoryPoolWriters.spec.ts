@@ -170,7 +170,7 @@ async function openings(f: Fixture, count: number) {
   for (const row of rows) {
     equal(row.date.toISODate(), '2025-01-01')
     const links = await row.related('accountTransaction').query().firstOrFail()
-    equal(row.categories[0].amount, links.amount)
+    equal(row.categories[0].amount, Number(formatMoneyCents(links.amountCents)))
   }
 }
 function ofx() {
@@ -325,7 +325,8 @@ test.group('Bounded offline Pool concurrency', (group) => {
     equal(Number(formatMoneyCents((await Category.findOrFail(f.category.id)).balanceCents)), 0)
     const opening = await f.account.related('accountTransactions').query().whereHas('transaction', (
       q) => q.where('type', 4)).preload('transaction').firstOrFail()
-    equal(opening.amount, 110); equal(opening.transaction.date.toISODate(), '2025-03-01')
+    equal(Number(formatMoneyCents(opening.amountCents)), 110); equal(
+      opening.transaction.date.toISODate(), '2025-03-01')
   })
   test('offline and provider first opening both survive', async ({ client }) => {
     const f = await fixture(); const restore = await provider(f, false, true)

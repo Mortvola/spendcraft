@@ -117,7 +117,7 @@ test.group('Monetary persistence and allocation regressions', () => {
     const rawSplitTotal = transactions.reduce((sum, transaction) => sum + transaction.categories
       .reduce((subtotal, split) => subtotal + split.amount, 0), 0)
     const associationTotal = (await f.account.related('accountTransactions').query()).reduce((sum,
-      row) => sum + row.amount, 0)
+      row) => sum + Number(formatMoneyCents(row.amountCents)), 0)
     assert.lengthOf(transactions, 3)
     assert.equal(rawSplitTotal, 0)
     assert.equal(associationTotal, 0)
@@ -163,11 +163,13 @@ test.group('Monetary persistence and allocation regressions', () => {
         assert.equal(transaction.categories[0].amount, monetaryAmountCents(Number(amount)) / 100)
         assert.equal((await db.from('transactions').where('id', transaction.id).first()).categories[
           0].amount, encodeMonetaryAmount(Number(amount)))
-        assert.equal(association.amount, Number(decimal))
+        assert.equal(association.amountCents, parseMoneyCents(encodeMonetaryAmount(Number(
+          decimal))))
       }
       console.log(JSON.stringify({ scenario: 'fractional cent', input: amount, status: response
         .status(),
-        persistedAmount: association?.amount, persistedSplits: transaction?.categories,
+        persistedAmount: association ? Number(formatMoneyCents(
+          association.amountCents)) : undefined, persistedSplits: transaction?.categories,
         categoryBalance: Number(formatMoneyCents(category.balanceCents)),
           accountBalance: Number(formatMoneyCents(
           account.balanceCents)),
@@ -200,7 +202,8 @@ test.group('Monetary persistence and allocation regressions', () => {
       })
       await writeCanonicalTransactionFixture(transaction)
       const association = await f.account.related('accountTransactions').create({
-        transactionId: transaction.id, name: 'Precision update', amount: 0, pending: false,
+        transactionId: transaction.id, name: 'Precision update', amountCents: parseMoneyCents(
+          '0.00'), pending: false,
           provider: 'NONE',
       })
       const response = await client.patch(`/api/v1/transaction/${transaction.id}`)
@@ -213,8 +216,9 @@ test.group('Monetary persistence and allocation regressions', () => {
       response.assertStatus(conserves ? 200 : 422)
       assert.equal((await Transaction.findOrFail(transaction.id)).categories[0].amount,
         conserves ? monetaryAmountCents(amount) / 100 : 0)
-      assert.equal((await AccountTransaction.findOrFail(association.id)).amount, conserves ? Number(
-        decimal) : 0)
+      assert.equal((await AccountTransaction.findOrFail(association.id)).amountCents,
+         parseMoneyCents(encodeMonetaryAmount(conserves ? Number(
+        decimal) : 0)))
       if (conserves) assert.equal((await db.from('transactions').where('id', transaction.id).first(
         )).categories[0].amount, encodeMonetaryAmount(amount))
       else {
@@ -223,8 +227,9 @@ test.group('Monetary persistence and allocation regressions', () => {
           parseMoneyCents('0.00'))
         assert.equal((await Transaction.findOrFail(transaction.id)).version, 0)
       }
-      console.log(JSON.stringify({ scenario: 'fractional PATCH', input, amount: (
-        await AccountTransaction.findOrFail(association.id)).amount,
+      console.log(JSON.stringify({ scenario: 'fractional PATCH', input, amount: Number(
+        formatMoneyCents((
+        await AccountTransaction.findOrFail(association.id)).amountCents)),
         splits: (await Transaction.findOrFail(transaction.id)).categories,
         categoryBalance: Number(formatMoneyCents((await Category.findOrFail(
           f.categories[0].id)).balanceCents)),
@@ -369,9 +374,9 @@ precision')
         .findOrFail(category.id)).balanceCents))))
       const cents = transaction.categories.reduce((total, split) => total + Math.round(split
         .amount * 100), 0)
-      assert.equal(cents, Math.round(association.amount * 100))
+      assert.equal(cents, Math.round(Number(formatMoneyCents(association.amountCents)) * 100))
       console.log(JSON.stringify({ scenario: 'allocation', input: scenario,
-        persistedAmount: association.amount,
+        persistedAmount: Number(formatMoneyCents(association.amountCents)),
         splits: transaction.categories, balances, conservedCents: cents }))
     })
 

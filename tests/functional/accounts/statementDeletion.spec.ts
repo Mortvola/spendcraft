@@ -68,7 +68,8 @@ test.group('Statement DELETE persisted-state characterization', () => {
           version: 0, deleted: false, sortOrder: 0, categories: [], taxes: [],
         })
         await f.account.related('accountTransactions').create({
-          transactionId: transaction.id, name: 'DELETE characterization', amount: scenario.amount,
+          transactionId: transaction.id, name: 'DELETE characterization',
+             amountCents: parseMoneyCents(encodeMonetaryAmount(scenario.amount)),
           provider: 'NONE', pending: false,
           statementId: index < scenario.count ? target.id : index === scenario.count ? neighbor
             ?.id ?? null : null,
@@ -137,7 +138,8 @@ test.group('Statement DELETE persisted-state characterization', () => {
       version: 0, deleted: false, sortOrder: 0, categories: [], taxes: [],
     })
     await f.account.related('accountTransactions').create({
-      transactionId: transaction.id, name: 'Rollback', amount: 10, provider: 'NONE', pending: false,
+      transactionId: transaction.id, name: 'Rollback', amountCents: parseMoneyCents('10.00'),
+         provider: 'NONE', pending: false,
         statementId: statement.id,
     })
     const snapshot = () => Promise.all([

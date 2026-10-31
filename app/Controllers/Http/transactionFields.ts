@@ -1,5 +1,7 @@
+import type AccountTransaction from '#models/AccountTransaction';
+import { formatMoneyCents } from '#common/moneyCents';
 import { DateTime } from 'luxon';
-import { ModelObject } from "@adonisjs/lucid/types/model";
+import { ModelAttributes, ModelObject } from "@adonisjs/lucid/types/model";
 
 const transactionFields = {
   fields: {
@@ -116,3 +118,23 @@ export function getChanges<T extends ModelObject>(
 }
 
 export default transactionFields;
+
+
+// Keep public change-log keys and dollar strings independent of model cent-property names.
+export function getAccountTransactionChanges(
+  original: Partial<ModelAttributes<AccountTransaction>>,
+  updates: Partial<ModelAttributes<AccountTransaction>>,
+  changes: Record<string, unknown>,
+): Record<string, unknown> {
+  const logValues = (values: Partial<ModelAttributes<AccountTransaction>>) => {
+    const { amountCents, principalCents, ...rest } = values;
+    return {
+      ...rest,
+      ...(amountCents !== undefined ? { amount: formatMoneyCents(amountCents) } : {}),
+      ...(principalCents !== undefined ? {
+        principle: principalCents === null ? null : formatMoneyCents(principalCents),
+      } : {}),
+    };
+  };
+  return getChanges(logValues(original), logValues(updates), changes);
+}

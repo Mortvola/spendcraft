@@ -1,3 +1,4 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { parseMoneyCents } from '#common/moneyCents'
 import { transactionRequest, categoryTransferRequest } from '../../helpers/transactionRequest.js'
 // PREPARED ONLY. Run through the safeguarded application test runner after fresh authorization.
@@ -67,7 +68,7 @@ test.group('Transaction Category decimal-string storage (prepared)', () => {
       const target = await Transaction.create({ budgetId: f.budget.id, type: 5, date: DateTime
         .fromISO('2025-02-01'), categories: [] })
       await f.account.related('accountTransactions').create({ transactionId: target.id, name:
-        'Mixed', amount: 0.3, pending: false })
+        'Mixed', amountCents: parseMoneyCents('0.30'), pending: false })
       await db.from('transactions').where('id', target.id).update({ categories: JSON.stringify(
         categories) })
       const before = await snapshot()
@@ -92,7 +93,7 @@ test.group('Transaction Category decimal-string storage (prepared)', () => {
       const target = await Transaction.create({ budgetId: f.budget.id, type: 5, version: 0,
         date: DateTime.fromISO('2025-02-01'), categories: [] })
       await f.account.related('accountTransactions').create({ transactionId: target.id, name:
-        'Patch', amount: 0.3, pending: false })
+        'Patch', amountCents: parseMoneyCents('0.30'), pending: false })
       const categories = [{ categoryId: f.category.id, amount: encoding === 'numeric' ? 0.1 :
         '0.10' },
         { categoryId: f.category.id, amount: encoding === 'string' ? '0.20' : 0.2 }]
@@ -154,7 +155,7 @@ test.group('Transaction Category decimal-string storage (prepared)', () => {
       const target = await Transaction.create({ budgetId: f.budget.id, type: 5,
         date: DateTime.fromISO('2025-02-01'), categories: [] })
       await f.account.related('accountTransactions').create({ transactionId: target.id, name:
-        'Malformed', amount: 1 })
+        'Malformed', amountCents: parseMoneyCents('1.00') })
       await db.from('transactions').where('id', target.id).update({ categories: JSON.stringify([{
         categoryId: f.category.id, amount }]) })
       const before = await snapshot()
@@ -185,7 +186,8 @@ test.group('Transaction Category decimal-string storage (prepared)', () => {
             categories: allocations }).save()
         id = target.id
         if ([0, 4, 5].includes(type)) await f.account.related('accountTransactions').create({
-          transactionId: id, name: 'Conserved', amount: 0.3, pending: false }, { client: trx })
+          transactionId: id, name: 'Conserved', amountCents: parseMoneyCents('0.30'),
+             pending: false }, { client: trx })
         await validateStoredCategoryConservation(target)
       })
       const stored = (await raw(id)).categories
@@ -209,7 +211,7 @@ test.group('Transaction Category decimal-string storage (prepared)', () => {
       const target = await Transaction.create({ budgetId: f.budget.id, type, deleted: true,
         date: DateTime.fromISO('2025-02-01'), categories })
       if (type === 5) await f.account.related('accountTransactions').create({ transactionId: target
-        .id, name: 'Deleted', amount: 1 })
+        .id, name: 'Deleted', amountCents: parseMoneyCents('1.00') })
       await db.from('transactions').where('id', target.id).update({ categories: JSON.stringify(
         categories.map((row) => ({ ...row, amount: row.amount.toFixed(2) })),
       ) })
@@ -305,7 +307,7 @@ test.group('Decimal-string storage concurrency/security (prepared)', () => {
         date: DateTime.fromISO('2025-02-01'), categories: [{ categoryId: f.category.id,
           amount: 0.3 }] })
       await f.account.related('accountTransactions').create({ transactionId: target.id, name:
-        'Waiter', amount: 0.3 })
+        'Waiter', amountCents: parseMoneyCents('0.30') })
       await db.from('transactions').where('id', target.id).update({
         categories: JSON.stringify([{ categoryId: f.category.id, amount: '0.30' }]),
       })
@@ -397,7 +399,7 @@ test.group('Decimal-string SQL membership and report compatibility', () => {
       const target = await Transaction.create({ budgetId: f.budget.id, type: 5,
         date: DateTime.fromISO('2025-02-01'), categories: [] })
       await f.account.related('accountTransactions').create({ transactionId: target.id, name:
-        'SQL membership', amount: nonzero ? 0.3 : 0 })
+        'SQL membership', amountCents: parseMoneyCents(encodeMonetaryAmount(nonzero ? 0.3 : 0)) })
       const values = nonzero ? [0.1, 0.2] : [0, 0]
       const allocations = values.map((amount, i) => ({ categoryId: f.category.id,
         amount: encoding === 'numeric' || (encoding === 'mixed' && i === 0) ? amount : amount
@@ -439,7 +441,7 @@ test.group('Decimal-string SQL membership and report compatibility', () => {
       const target = await Transaction.create({ budgetId: f.budget.id, type,
         date: DateTime.fromISO('2025-02-01'), categories: [] })
       if (type === 5) await f.account.related('accountTransactions').create({ transactionId: target
-        .id, name: 'Mixed report', amount: 0.3 })
+        .id, name: 'Mixed report', amountCents: parseMoneyCents('0.30') })
       const allocations = report === 'income-vs-expenses'
         ? [{ categoryId: transfer.id, amount: '0.10' }, { categoryId: transfer.id, amount: 0.2 }]
         : [{ categoryId: f.category.id, amount: '0.10' }, { categoryId: f.category.id,

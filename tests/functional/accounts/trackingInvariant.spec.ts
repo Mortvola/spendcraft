@@ -84,7 +84,8 @@ test.group('Balance-tracked invariant enforcement', (group) => {
       '2025-02-10'), type: TransactionType.MANUAL_TRANSACTION, version: 0, deleted: false,
       sortOrder: 0, categories: [{ categoryId: category.id, amount: 10 }], taxes: [] })
     await f.account.related('accountTransactions').create({ transactionId: transaction.id,
-      amount: 10, name: 'Historical invalid row', pending: false, provider: 'NONE' })
+      amountCents: parseMoneyCents('10.00'), name: 'Historical invalid row', pending: false,
+         provider: 'NONE' })
     await category.merge({ balanceCents: parseMoneyCents('10.00') }).save()
     const before = await snapshot()
     const response = await client.patch(`/api/v1/transaction/${transaction.id}`).json(
@@ -106,7 +107,8 @@ a date edit')
           '2025-02-10'), type: TransactionType.MANUAL_TRANSACTION, version: 0, deleted: false,
           sortOrder: 0, categories: [], taxes: [] })
         await f.account.related('accountTransactions').create({ transactionId: transaction.id,
-          amount: 0, name: 'Existing', pending: false, provider: 'NONE' })
+          amountCents: parseMoneyCents('0.00'), name: 'Existing', pending: false,
+             provider: 'NONE' })
       }
       const before = await snapshot()
       const response = await client.patch(`/api/v1/account/${f.account.id}`)
@@ -124,7 +126,8 @@ a date edit')
           '2025-01-01'), type: TransactionType.STARTING_BALANCE, version: 0, sortOrder: -1,
           categories: [{ categoryId: funding.id, amount: 100 }], taxes: [] })
         await f.account.related('accountTransactions').create({ transactionId: transaction.id,
-          amount: 100, name: 'Historical Initial Funding', provider: 'NONE' })
+          amountCents: parseMoneyCents('100.00'), name: 'Historical Initial Funding',
+             provider: 'NONE' })
       }
       const before = await snapshot()
       await assert.rejects(() => db.transaction(async (trx) => {
@@ -156,7 +159,8 @@ Test movement</STMTTRN></BANKTRANLIST>'
       '2025-02-10'), type: TransactionType.MANUAL_TRANSACTION, version: 0, deleted: false,
       sortOrder: 0, categories: [{ categoryId: category.id, amount: 10 }], taxes: [] })
     await f.account.related('accountTransactions').create({ transactionId: transaction.id,
-      amount: 10, name: 'Historical invalid delete', pending: false, provider: 'NONE' })
+      amountCents: parseMoneyCents('10.00'), name: 'Historical invalid delete', pending: false,
+         provider: 'NONE' })
     await category.merge({ balanceCents: parseMoneyCents('10.00') }).save()
     const before = await snapshot()
     const response = await client.delete(`/api/v1/transaction/${transaction.id}`).accept('json')

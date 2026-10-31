@@ -108,7 +108,8 @@ async function state(f: Fixture) {
   return { balance: Number(formatMoneyCents(account.balanceCents)),
     plaidBalance: account.plaidBalance, unassigned: Number(formatMoneyCents(
       unassigned.balanceCents)), pool: Number(formatMoneyCents(pool.balanceCents)),
-    rows: rows.map((row) => ({ amount: row.amount, pending: row.pending, type: row.transaction.type,
+    rows: rows.map((row) => ({ amount: Number(formatMoneyCents(row.amountCents)),
+       pending: row.pending, type: row.transaction.type,
       deleted: row.transaction.deleted, version: row.transaction.version, categories: row
         .transaction.categories })), logs }
 }
@@ -414,7 +415,7 @@ Account', async ({ client, assert }) => {
         .whereHas('transaction', (query) => query.where('type', 4)).preload('transaction')
           .firstOrFail()
       assert.equal(opening.transaction.date.toISODate(), '2025-03-01')
-      assert.equal(opening.amount, 110)
+      assert.equal(opening.amountCents, parseMoneyCents('110.00'))
     }
   })
 
@@ -556,7 +557,7 @@ test.group('startDate rollback eligibility reload', () => {
       .whereHas('transaction', (query) => query.where('type', 4)).preload('transaction')
         .firstOrFail()
     assert.equal(opening.transaction.date.toISODate(), '2025-01-01')
-    assert.equal(opening.amount, 100)
+    assert.equal(opening.amountCents, parseMoneyCents('100.00'))
     assert.lengthOf(after.rows.filter((row) => row.type === 5), 1)
     assert.lengthOf(after.logs, 0)
   })

@@ -23,7 +23,7 @@ import Budget from '#app/Models/Budget';
 import { XMLParser } from 'fast-xml-parser';
 import logger from '@adonisjs/core/services/logger'
 import db from '@adonisjs/lucid/services/db';
-import { getChanges } from '#app/Controllers/Http/transactionFields';
+import { getChanges, getAccountTransactionChanges } from '#app/Controllers/Http/transactionFields';
 import Category from './Category.js';
 import User from './User.js';
 import Statement from './Statement.js';
@@ -263,14 +263,15 @@ class Account extends BaseModel {
   ): Promise<number> {
     const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
 
-    transaction.categories = [{ categoryId: unassigned.id, amount: accountTransaction.amount }];
+    transaction.categories = [{ categoryId: unassigned.id, amount: Number(formatMoneyCents(
+      accountTransaction.amountCents)) }];
 
     await transaction.save();
 
-    return accountTransaction.amount;
+    return Number(formatMoneyCents(accountTransaction.amountCents));
   }
 
-   
+
   private async autoAssign(
     this: Account,
     budget: Budget,
@@ -299,7 +300,7 @@ class Account extends BaseModel {
       const categories = await autoAssignment.related('categories').query()
         .orderByRaw('CASE WHEN percentage THEN 1 ELSE 0 END');
 
-      let remainingCents = parseMoneyCents(encodeMonetaryAmount(accountTransaction.amount));
+      let remainingCents = accountTransaction.amountCents;
       let percentageBaseCents = remainingCents;
 
       const assignedCategories: string[] = [];
@@ -330,7 +331,7 @@ class Account extends BaseModel {
 
         await category.save()
 
-         
+
         const group = await category.related('group').query().firstOrFail();
 
         if (group.type === GroupType.NoGroup) {
@@ -398,7 +399,8 @@ class Account extends BaseModel {
     // TODO: Even if the transaction was deleted update the information.
     if (!transaction.deleted) {
       const newAmount = -plaidTransaction.amount;
-      const amountChanged = acctTrans.amount !== newAmount;
+      const newAmountCents = parseMoneyCents(encodeMonetaryAmount(newAmount));
+      const amountChanged = acctTrans.amountCents !== newAmountCents;
       const newDate = DateTime.fromISO(plaidTransaction.date);
       const oldApplicable = transaction.date >= this.startDate;
       const newApplicable = newDate >= this.startDate;
@@ -406,17 +408,19 @@ class Account extends BaseModel {
 
       // Replace the old applied effect with the new one. Pending transactions and
       // transactions before the account start date do not affect its balance.
-      const oldAppliedAmount = oldApplicable && !acctTrans.pending ? acctTrans.amount : 0;
-      const newAppliedAmount = newApplicable && !plaidTransaction.pending ? newAmount : 0;
+      const zeroCents = parseMoneyCents('0.00');
+      const oldAppliedAmount = oldApplicable && !acctTrans.pending
+        ? acctTrans.amountCents : zeroCents;
+      const newAppliedAmount = newApplicable && !plaidTransaction.pending
+        ? newAmountCents : zeroCents;
       transactionAmount = Number(formatMoneyCents(subtractMoneyCents(
-        parseMoneyCents(encodeMonetaryAmount(newAppliedAmount)),
-        parseMoneyCents(encodeMonetaryAmount(oldAppliedAmount)))));
+        newAppliedAmount, oldAppliedAmount)));
 
       // todo: check to see if any of these attributes have changed
-      const accountTransactionChanges: ModelObject = {
+      const accountTransactionChanges = {
         providerTransactionId: plaidTransaction.transaction_id,
         name: plaidTransaction.name ?? undefined,
-        amount: newAmount,
+        amountCents: newAmountCents,
         pending: plaidTransaction.pending ?? false,
         paymentChannel: plaidTransaction.payment_channel,
         ...(plaidTransaction.merchant_name !== undefined ? { merchantName: plaidTransaction
@@ -428,7 +432,8 @@ class Account extends BaseModel {
       // Log the changes
       let changes = {};
 
-      changes = getChanges(acctTrans.$attributes, accountTransactionChanges, changes)
+      changes = getAccountTransactionChanges(acctTrans.$attributes, accountTransactionChanges,
+         changes)
 
       acctTrans.merge(accountTransactionChanges);
 
@@ -448,7 +453,7 @@ class Account extends BaseModel {
       const trxCats = transaction.categories;
 
       const deltaCents = subtractMoneyCents(
-        parseMoneyCents(encodeMonetaryAmount(newAmount)),
+        newAmountCents,
         addMoneyCents(...trxCats.map((category) => parseMoneyCents(encodeMonetaryAmount(
           category.amount)))));
       const delta = Number(formatMoneyCents(deltaCents));
@@ -543,7 +548,7 @@ class Account extends BaseModel {
       provider: 'PLAID',
       providerTransactionId: plaidTransaction.transaction_id,
       name: plaidTransaction.name ?? undefined,
-      amount: -plaidTransaction.amount,
+      amountCents: parseMoneyCents(encodeMonetaryAmount(-plaidTransaction.amount)),
       pending: plaidTransaction.pending ?? false,
       paymentChannel: plaidTransaction.payment_channel,
       merchantName: plaidTransaction.merchant_name,
@@ -569,7 +574,8 @@ class Account extends BaseModel {
       return [0, 0];
     }
 
-    return [acctTrans.pending ? 0 : acctTrans.amount, unassignedAmount];
+    return [acctTrans.pending ? 0 : Number(formatMoneyCents(acctTrans.amountCents)),
+       unassignedAmount];
   }
 
   public async addOrUpdateTransaction(
@@ -619,22 +625,22 @@ class Account extends BaseModel {
     this: Account,
     acctTran: AccountTransaction,
   ) {
-     
+
     const transaction = await acctTran.related('transaction').query().firstOrFail();
 
     if (!transaction.deleted) {
-     
+
       const transCats = transaction.categories;
 
-       
+
       for (const tc of transCats) {
         if (transaction.date >= this.startDate) {
-         
+
           const category = await Category.findOrFail(tc.categoryId, { client: transaction.$trx });
           category.balanceCents = subtractMoneyCents(
             category.balanceCents,
             parseMoneyCents(encodeMonetaryAmount(tc.amount)));
-           
+
           await category.save();
         }
       }
@@ -642,13 +648,13 @@ class Account extends BaseModel {
       if (!acctTran.pending && transaction.date >= this.startDate) {
         this.$extras.addedSum = Number(formatMoneyCents(subtractMoneyCents(
           parseMoneyCents(encodeMonetaryAmount(this.$extras.addedSum ?? 0)),
-          parseMoneyCents(encodeMonetaryAmount(acctTran.amount)))));
+          acctTran.amountCents)));
       }
 
-       
+
       // await acctTran.delete();
 
-       
+
       // await transaction.delete();
 
       transaction.merge({
@@ -664,7 +670,7 @@ class Account extends BaseModel {
     }
   }
 
-   
+
   // public async applyTransactions(
   //   this: Account,
   //   budget: Budget,
@@ -825,10 +831,11 @@ class Account extends BaseModel {
           const oldAllocations = transaction.categories.map((allocation) => ({ ...allocation }));
           const oldActive = !transaction.deleted && transaction.date >= this.startDate;
           const newAmount = -transactionData.amount;
+          const newAmountCents = parseMoneyCents(encodeMonetaryAmount(newAmount));
           const explicit = oldAllocations.filter((allocation) => allocation
             .categoryId !== unassigned.id);
           const remainder = Number(formatMoneyCents(subtractMoneyCents(
-            parseMoneyCents(encodeMonetaryAmount(newAmount)),
+            newAmountCents,
             addMoneyCents(...explicit.map((allocation) => parseMoneyCents(encodeMonetaryAmount(
               allocation.amount)))))));
           const allocations = [...explicit, { categoryId: unassigned.id, amount: remainder }];
@@ -837,12 +844,10 @@ class Account extends BaseModel {
             .date >= this.startDate);
 
           const oldEffect = !transaction.deleted && !acctTrans.pending && transaction.date >= this
-            .startDate
-            ? acctTrans.amount : 0;
+            .startDate ? acctTrans.amountCents : parseMoneyCents('0.00');
           const newEffect = !acctTrans.pending && transactionData.date >= this
-            .startDate ? newAmount : 0;
-          const amount = subtractMoneyCents(parseMoneyCents(encodeMonetaryAmount(newEffect)),
-            parseMoneyCents(encodeMonetaryAmount(oldEffect)));
+            .startDate ? newAmountCents : parseMoneyCents('0.00');
+          const amount = subtractMoneyCents(newEffect, oldEffect);
 
           await transaction
             .merge({
@@ -859,7 +864,7 @@ class Account extends BaseModel {
               provider: 'OFX',
               providerTransactionId: transactionData.transactionId,
               name: transactionData.name ?? undefined,
-              amount: -transactionData.amount,
+              amountCents: parseMoneyCents(encodeMonetaryAmount(-transactionData.amount)),
             })
             .save();
 
@@ -890,16 +895,17 @@ class Account extends BaseModel {
               providerTransactionId: transactionData.transactionId,
               accountId: this.id,
               name: transactionData.name ?? undefined,
-              amount: -transactionData.amount,
+              amountCents: parseMoneyCents(encodeMonetaryAmount(-transactionData.amount)),
             });
 
-          validateTransactionSplits(acctTrans.amount, transaction.categories);
+          validateTransactionSplits(Number(formatMoneyCents(acctTrans.amountCents)),
+             transaction.categories);
           await validateStoredCategoryConservation(transaction);
           await applyAllocations([], false, transaction.categories, transaction.date >= this
             .startDate);
 
           if (!acctTrans.pending && transaction.date >= this.startDate) {
-            sum = addMoneyCents(sum, parseMoneyCents(encodeMonetaryAmount(acctTrans.amount)));
+            sum = addMoneyCents(sum, acctTrans.amountCents);
           }
 
 
@@ -981,15 +987,15 @@ class Account extends BaseModel {
         .save();
 
       const deltaCents = subtractMoneyCents(
-        startingBalanceCents, parseMoneyCents(encodeMonetaryAmount(acctTrx.amount)));
+        startingBalanceCents, acctTrx.amountCents);
       const delta = Number(formatMoneyCents(deltaCents));
 
       await acctTrx.merge({
-        amount: startingBalance,
+        amountCents: startingBalanceCents,
       })
         .save();
 
-      transaction.categories[0].amount = acctTrx.amount
+      transaction.categories[0].amount = Number(formatMoneyCents(acctTrx.amountCents))
 
       await transaction.save();
       await validateStoredCategoryConservation(transaction);
@@ -1017,7 +1023,7 @@ class Account extends BaseModel {
         transactionId: transaction.id,
         accountId: this.id,
         name: 'Initial Funding',
-        amount: startingBalance,
+        amountCents: startingBalanceCents,
       });
 
       await validateStoredCategoryConservation(transaction);

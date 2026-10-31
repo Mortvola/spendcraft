@@ -39,7 +39,8 @@ async function createFixture() {
     })
     await writeCanonicalTransactionFixture(transaction)
     const accountTransaction = await account.related('accountTransactions').create({
-      transactionId: transaction.id, name: 'Original purchase', amount: 10, pending: false,
+      transactionId: transaction.id, name: 'Original purchase', amountCents: parseMoneyCents(
+        '10.00'), pending: false,
         provider: 'NONE', statementId: null,
     })
     return { budget, user, account, first, second, transaction, accountTransaction }

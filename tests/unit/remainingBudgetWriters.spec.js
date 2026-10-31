@@ -41,7 +41,7 @@ test.group('Remaining Budget writer characterization without DB', () => {
     const acquired = new Promise((resolve) => { acquire = resolve })
     const waiting = new Promise((resolve) => { entered = resolve })
     const owner = { commit: async () => { events.push('commit') }, rollback: noop }
-    const link = { providerTransactionId: 'purchase', amount: -5,
+    const link = { providerTransactionId: 'purchase', amountCents: parseMoneyCents('-5.00'),
       merge(values) { Object.assign(this, values); return this }, save: async () => { events.push(
         'link.save') } }
     const account = { plaidAccountId: 'provider-account', balanceCents: parseMoneyCents(
@@ -83,7 +83,8 @@ test.group('Remaining Budget writer characterization without DB', () => {
       'remote.remove', 'institution.save', 'account.save', 'link.save', 'commit'])
     assert.isNull(institution.cursor); assert.isNull(institution.accessToken); assert.isNull(link
       .providerTransactionId)
-    assert.equal(Number(formatMoneyCents(account.balanceCents)), 95); assert.equal(link.amount, -5)
+    assert.equal(Number(formatMoneyCents(account.balanceCents)), 95); assert.equal(
+      link.amountCents, parseMoneyCents('-5.00'))
   })
 
   test('unlink rolls back a failed Budget lookup before any provider or identity work', async ({
@@ -111,7 +112,8 @@ next', async ({ assert }) => {
     const gate = new Promise((resolve) => { release = resolve })
     const waiting = new Promise((resolve) => { entered = resolve })
     const stored = { categories: [], amount: 5 }
-    const second = { categories: [], accountTransaction: { amount: 12 }, async save() {
+    const second = { categories: [], accountTransaction: { amountCents: parseMoneyCents(
+      '12.00') }, async save() {
       assert.include(events, 'gate2'); events.push('save2')
     } }
     let active = 0, next = 0
@@ -140,7 +142,8 @@ next', async ({ assert }) => {
             name) {
             assert.equal(name, 'accountTransaction'); events.push(`read${owner.id}`)
             return owner.id === 1 ? (stored.categories.length === 0 ? [{ categories: [],
-              accountTransaction: { amount: stored.amount }, save: async () => { throw new Error(
+              accountTransaction: { amountCents: parseMoneyCents(encodeMonetaryAmount(
+                stored.amount)) }, save: async () => { throw new Error(
               'Stale target selected') } }] : []) : [second]
           } }) }) }
         } }
@@ -183,7 +186,7 @@ next', async ({ assert }) => {
           related: () => ({ query: () => ({ useTransaction(client) { assert.strictEqual(client,
             owner); return this },
             whereRaw() { return this }, has() { return this }, preload: async () => [{ categories: [
-              ], accountTransaction: { amount: 5 },
+              ], accountTransaction: { amountCents: parseMoneyCents('5.00') },
               save: async () => { throw new Error('save failed') } }],
           }) }),
         }) }

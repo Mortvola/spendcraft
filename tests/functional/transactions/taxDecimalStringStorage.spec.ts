@@ -32,7 +32,7 @@ async function fixture() {
       date: DateTime.fromISO('2025-02-01'), categories: [{ categoryId: category.id, amount: 10 }],
         taxes: [] }, { client: trx })
     await account.related('accountTransactions').create({ transactionId: target.id, name:
-      'Tax storage', amount: 10, pending: false })
+      'Tax storage', amountCents: parseMoneyCents('10.00'), pending: false })
     // Explicit raw legacy fixture. No production writer is bypassed by the operation under test.
     await trx.from('transactions').where('id', target.id).update({
       categories: JSON.stringify([{ categoryId: category.id, amount: '10.00' }]),

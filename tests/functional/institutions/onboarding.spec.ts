@@ -360,7 +360,7 @@ effects').with(['manual', 'sync all', 'command', 'webhook']).run(async ({ client
     assert.equal((await inst.related('accounts').query().firstOrFail()).id, account.id)
     const purchase = await AccountTransaction.query().where('accountId', account.id).where(
       'providerTransactionId', 'purchase').firstOrFail()
-    assert.equal(purchase.amount, -10)
+    assert.equal(purchase.amountCents, parseMoneyCents('-10.00'))
     assert.equal((await Account.findOrFail(account.id)).balanceCents, parseMoneyCents('100.00'))
     assert.equal((await budget.getUnassignedCategory()).balanceCents, parseMoneyCents('-10.00'))
     assert.equal((await budget.getFundingPoolCategory()).balanceCents, parseMoneyCents('110.00'))

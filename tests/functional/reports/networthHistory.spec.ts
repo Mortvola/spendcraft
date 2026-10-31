@@ -42,7 +42,8 @@ test.group('Net-worth history independence', (group) => {
     type = TransactionType.MANUAL_TRANSACTION) {
     const transaction = await f.budget.related('transactions').create({ date, type, categories: [],
       taxes: [], version: 0, sortOrder: 0, deleted: false })
-    await f.account.related('accountTransactions').create({ transactionId: transaction.id, amount,
+    await f.account.related('accountTransactions').create({ transactionId: transaction.id,
+       amountCents: parseMoneyCents(encodeMonetaryAmount(amount)),
       name: 'Report movement', provider: 'NONE', pending: false })
   }
 
@@ -56,8 +57,8 @@ test.group('Net-worth history independence', (group) => {
       startDate: account.startDate.toISODate(), currentBalance: Number(formatMoneyCents(
         account.balanceCents)),
       history: history.map((row) => ({ date: row.date.toISODate(), balance: row.balance })),
-      transactions: transactions.map((row) => ({ date: row.transaction.date.toISODate(), amount: row
-        .amount, type: row.transaction.type })),
+      transactions: transactions.map((row) => ({ date: row.transaction.date.toISODate(),
+         amount: Number(formatMoneyCents(row.amountCents)), type: row.transaction.type })),
       report: response.body() }))
     return response.body()
   }
@@ -203,7 +204,8 @@ test.group('Net-worth history independence', (group) => {
           type: TransactionType.MANUAL_TRANSACTION, categories: [], taxes: [], version: 0,
           sortOrder: 0, deleted: false })
         await account.related('accountTransactions').create({ transactionId: transaction.id,
-          amount: 5, name: 'Mixed report movement', provider: 'NONE', pending: false })
+          amountCents: parseMoneyCents('5.00'), name: 'Mixed report movement', provider: 'NONE',
+             pending: false })
       }
       const before = await report(client, f)
       assert.lengthOf(before, 2)

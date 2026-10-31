@@ -1,3 +1,4 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { parseMoneyCents, formatMoneyCents } from '#common/moneyCents'
 import { statementRequest } from '../../helpers/statementRequest.js'
 import { test } from '@japa/runner'
@@ -52,8 +53,9 @@ async function createFixture() {
         version: 0, deleted: false, sortOrder: 0, categories: [], taxes: [],
       })
       const row = await account.related('accountTransactions').create({
-        transactionId: transaction.id, name: `Period day ${day}`, amount: day % 2 === 0 ? day : -
-          day,
+        transactionId: transaction.id, name: `Period day ${day}`, amountCents: parseMoneyCents(
+          encodeMonetaryAmount(day % 2 === 0 ? day : -
+          day)),
         provider: 'NONE', pending: false, statementId: day === 10 ? statement
           .id : day === 16 ? neighbor.id : null,
       })
@@ -114,8 +116,9 @@ test.group('Statement reconciliation period characterization', (group) => {
         const expected = day === 16 ? fixture.neighbor.id : selected ? fixture.statement.id : null
         expectedAssignments.push({ day, statementId: expected })
         if (expected === fixture.statement.id) {
-          if (row.amount > 0) credits += row.amount
-          else debits += row.amount
+          if (Number(formatMoneyCents(row.amountCents)) > 0) credits += Number(formatMoneyCents(
+            row.amountCents))
+          else debits += Number(formatMoneyCents(row.amountCents))
         }
       }
       assert.equal(response.body().startDate, dates.startDate)
@@ -141,7 +144,8 @@ test.group('Statement reconciliation period characterization', (group) => {
       version: 0, deleted: false, sortOrder: 0, categories: [], taxes: [],
     })
     const march = await fixture.account.related('accountTransactions').create({
-      transactionId: transaction.id, name: 'New period movement', amount: 20,
+      transactionId: transaction.id, name: 'New period movement', amountCents: parseMoneyCents(
+        '20.00'),
       provider: 'NONE', pending: false, statementId: null,
     })
     const before = await state()

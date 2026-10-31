@@ -1,3 +1,4 @@
+import { formatMoneyCents } from '#common/moneyCents'
 import { validateStoredCategoryConservation } from '#services/transactionCategoryStorage';
 import { BaseCommand } from "@adonisjs/core/ace";
 import { CommandOptions } from "@adonisjs/core/types/ace";
@@ -16,7 +17,7 @@ export default class CheckUnassigned extends BaseCommand {
           startApp: true,
           staysAlive: false,
         };
-   
+
   private async checkUnassigned() {
     const { default: Database } = await import('@adonisjs/lucid/services/db');
     const { default: Budget } = await import('#models/Budget');
@@ -37,8 +38,9 @@ export default class CheckUnassigned extends BaseCommand {
             .preload('accountTransaction');
 
           await Promise.all(transactions.map(async (transaction) => {
-            transaction.categories = [{ categoryId: unassignedCat.id, amount: transaction
-              .accountTransaction.amount }];
+            transaction.categories = [{ categoryId: unassignedCat.id, amount: Number(
+              formatMoneyCents(transaction
+              .accountTransaction.amountCents)) }];
             await transaction.save();
             if (!transaction.deleted) await validateStoredCategoryConservation(transaction);
             return transaction;

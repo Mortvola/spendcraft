@@ -48,7 +48,8 @@ async function createDomain(label: string) {
     })
     await writeCanonicalTransactionFixture(transaction)
     const accountTransaction = await account.related('accountTransactions').create({
-      transactionId: transaction.id, name: `${label} private purchase`, amount: 10,
+      transactionId: transaction.id, name: `${label} private purchase`,
+         amountCents: parseMoneyCents('10.00'),
       provider: 'PLAID', providerTransactionId: `provider-transaction-${label}`, pending: false,
         statementId: null,
     })
@@ -395,7 +396,8 @@ test.group('Institution isolation', (group) => {
       if (loan) await f.account.merge({ type: AccountType.Loan }).save()
       await f.category.merge({ balanceCents: parseMoneyCents(encodeMonetaryAmount(
         sign * 0.3)) }).save()
-      await f.accountTransaction.merge({ amount: sign * 0.2 }).save()
+      await f.accountTransaction.merge({ amountCents: parseMoneyCents(encodeMonetaryAmount(
+        sign * 0.2)) }).save()
       await db.from('transactions').where('id', f.transaction.id).update({ categories:
         JSON.stringify([{ categoryId: f.category.id, amount: sign > 0 ? '0.10' : '-0.10' },
           { categoryId: f.category.id, amount: sign > 0 ? '0.10' : '-0.10' }]) })
@@ -412,7 +414,8 @@ test.group('Institution isolation', (group) => {
           categories: [], taxes: [], deleted: false })
         await writeCanonicalTransactionFixture(transaction)
         await other.related('accountTransactions').create({ transactionId: transaction.id,
-          amount: sign * 0.2, pending: false, name: 'Empty allocation', provider: 'NONE' })
+          amountCents: parseMoneyCents(encodeMonetaryAmount(sign * 0.2)), pending: false,
+             name: 'Empty allocation', provider: 'NONE' })
       }
       const foreignBefore = await db.from('categories').where('id', fixture.foreign.category.id)
         .firstOrFail()

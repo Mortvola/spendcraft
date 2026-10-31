@@ -202,11 +202,11 @@ test.group('Initial Funding checked cents without a database', () => {
       await f.run()
       assert.deepEqual(f.events.find(event => Array.isArray(event) && event[0] === 'storage'),
         ['storage', undefined])
-      assert.strictEqual(f.link().amount, sign * 0.1)
+      assert.strictEqual(f.link().amountCents, parseMoneyCents(encodeMonetaryAmount(sign * 0.1)))
       assert.strictEqual(f.pool.balanceCents, parseMoneyCents(encodeMonetaryAmount(sign * 0.2)))
       f.account.balanceCents = parseMoneyCents(encodeMonetaryAmount(sign * 0.4))
       await f.run()
-      assert.strictEqual(f.link().amount, sign * 0.2)
+      assert.strictEqual(f.link().amountCents, parseMoneyCents(encodeMonetaryAmount(sign * 0.2)))
       assert.strictEqual(f.pool.balanceCents, parseMoneyCents(encodeMonetaryAmount(sign * 0.3)))
       assert.strictEqual(f.transaction.categories[0].amount, sign * 0.2)
       await f.run()
@@ -217,7 +217,7 @@ test.group('Initial Funding checked cents without a database', () => {
   test('empty aggregate is zero', async ({ assert }) => {
     const f = await openingFixture({ balance: 0, total: null, poolBalance: 0 })
     await f.run()
-    assert.strictEqual(f.link().amount, 0)
+    assert.strictEqual(f.link().amountCents, parseMoneyCents('0.00'))
     assert.strictEqual(f.pool.balanceCents, parseMoneyCents('0.00'))
   })
 
@@ -270,7 +270,8 @@ async function assignmentFixture(amount, rules, { loan = false, eligible = true,
     } },
   })
   return { transaction, balances, events,
-    run: () => allocate.call(account, budget, transaction, { amount, name: 'Match' }) }
+    run: () => allocate.call(account, budget, transaction, { amountCents: Number.isFinite(amount)
+      ? parseMoneyCents(encodeMonetaryAmount(amount)) : amount, name: 'Match' }) }
 }
 
 test.group('Auto-assignment checked cents without a database', () => {

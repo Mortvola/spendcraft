@@ -39,7 +39,8 @@ async function movement(f: Fixture, amount: number, transfers: number[], options
   })
   await writeCanonicalTransactionFixture(transaction)
   const at = await (options.account ?? f.account).related('accountTransactions').create({
-    transactionId: transaction.id, amount, name: 'Report movement', provider: 'NONE',
+    transactionId: transaction.id, amountCents: parseMoneyCents(encodeMonetaryAmount(amount)),
+       name: 'Report movement', provider: 'NONE',
     pending: options.pending ?? false, statementId: null,
   })
   return { transaction, at }
@@ -145,7 +146,7 @@ test.group('Income Vs Expenses transfer fan-out PostgreSQL acceptance', () => {
       startDate: DateTime.fromISO('2026-01-01'), rate: 0, closed: false })
     const first = await movement(f, 50, [20, 30])
     await second.related('accountTransactions').create({ transactionId: first.transaction.id, name:
-      'Other link', amount: -50,
+      'Other link', amountCents: parseMoneyCents('-50.00'),
       provider: 'NONE', pending: false, statementId: null })
     await movement(f, -40, [-10], { account: second }); await movement(f, 8, [], { date:
       '2025-03-01' })

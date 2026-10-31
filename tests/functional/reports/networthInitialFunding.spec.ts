@@ -42,7 +42,8 @@ test.group('Net-worth opening snapshots', (group) => {
     type = TransactionType.MANUAL_TRANSACTION) {
     const transaction = await f.budget.related('transactions').create({ date, type, categories: [],
       taxes: [], version: 0, sortOrder: 0, deleted: false })
-    await f.account.related('accountTransactions').create({ transactionId: transaction.id, amount,
+    await f.account.related('accountTransactions').create({ transactionId: transaction.id,
+       amountCents: parseMoneyCents(encodeMonetaryAmount(amount)),
       name: 'Report movement', provider: 'NONE', pending: false })
   }
 
@@ -55,7 +56,8 @@ test.group('Net-worth opening snapshots', (group) => {
     console.log(JSON.stringify({ characterization: 'networth-initial', status: response.status(),
       account: { balance: Number(formatMoneyCents(account.balanceCents)),
         startDate: account.startDate.toISODate() },
-      transactions: associations.map((row) => ({ amount: row.amount, date: row.transaction.date
+      transactions: associations.map((row) => ({ amount: Number(formatMoneyCents(
+        row.amountCents)), date: row.transaction.date
         .toISODate(), type: row.transaction.type })),
       report: status === 200 ? response.body() : null }))
     return response.body()

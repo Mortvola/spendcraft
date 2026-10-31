@@ -68,7 +68,8 @@ async function snapshot(f: Fixture) {
   const categories = await db.from('categories').join('groups', 'groups.id', 'categories.group_id')
     .where('groups.application_id', f.budget.id).select('categories.*').orderBy('categories.id')
   return { account, categories,
-    links: links.map((link) => ({ id: link.id, amount: link.amount, pending: link.pending,
+    links: links.map((link) => ({ id: link.id, amount: Number(formatMoneyCents(
+      link.amountCents)), pending: link.pending,
       providerId: link.providerTransactionId, transaction: link.transaction.serialize() })),
     history: await db.from('balance_histories').where('account_id', f.account.id).orderBy('id'),
     logs: await db.from('transaction_logs').where('application_id', f.budget.id).orderBy('id'),
@@ -93,7 +94,8 @@ async function assertBalances(f: Fixture, expected: number, provider: number, ca
     'Provider ledger contaminated Pool')
   const opening = await account.related('accountTransactions').query()
     .whereHas('transaction', (query) => query.where('type', 4)).preload('transaction').firstOrFail()
-  if (opening.amount !== 1000 || opening.transaction.categories[0].amount !== 1000) throw new Error(
+  if (opening.amountCents !== parseMoneyCents('1000.00')
+    || opening.transaction.categories[0].amount !== 1000) throw new Error(
     'Provider ledger contaminated opening')
 }
 
@@ -125,7 +127,7 @@ test.group('OFX independent accounting and provider balance (prepared)', () => {
         sign * 0.3)))
       const opening = await repeated.account.related('accountTransactions').query()
         .whereHas('transaction', query => query.where('type', 4)).firstOrFail()
-      assert.strictEqual(opening.amount, sign * 0.3)
+      assert.strictEqual(opening.amountCents, parseMoneyCents(encodeMonetaryAmount(sign * 0.3)))
       const transaction = await opening.related('transaction').query().firstOrFail()
       assert.strictEqual(transaction.categories[0].amount, sign * 0.3)
       const raw = await db.from('transactions').where('id', transaction.id).firstOrFail()
@@ -247,7 +249,7 @@ test.group('OFX independent accounting and provider balance (prepared)', () => {
       await f.account.useTransaction(trx).related('accountTransactions').create({
         transactionId: transaction.id,
         accountId: f.account.id, provider: 'OFX', providerTransactionId:
-          '123:authority-account:one', amount: 0 })
+          '123:authority-account:one', amountCents: parseMoneyCents('0.00') })
     })
     const before = await snapshot(f)
     ;(await upload(client, f, [{ id: 'new', amount: 5 }, { amount: 15 }])).assertStatus(500)
@@ -303,7 +305,7 @@ test.group('OFX independent accounting and provider balance (prepared)', () => {
         return mock.method(prototype, 'save', async function (this: LucidRow) {
           if (!this.$trx) throw new Error('Financial write escaped owning transaction')
           clients.add(this.$trx)
-          if (this instanceof Account && ('balance' in this.$dirty || 'plaidBalance' in this
+          if (this instanceof Account && ('balanceCents' in this.$dirty || 'plaidBalance' in this
             .$dirty)) {
             writes.push({ balance: Number(formatMoneyCents(this.balanceCents)),
               provider: this.plaidBalance })

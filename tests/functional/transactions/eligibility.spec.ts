@@ -48,7 +48,7 @@ test.group('Account/Category eligibility correction (prepared)', () => {
     response.assertStatus(200)
     const transaction = await Transaction.findOrFail(response.body().transaction.id)
     const link = await AccountTransaction.findByOrFail('transactionId', transaction.id)
-    assert.equal(link.amount, amount)
+    assert.equal(link.amountCents, parseMoneyCents(encodeMonetaryAmount(amount)))
     assert.deepEqual(transaction.categories, [{ categoryId: f.category.id, amount }])
     const raw = await db.from('accounts').where('id', f.account.id).firstOrFail()
     assert.equal(Number(raw.balance), 100 + (date >= dates[1] ? amount : 0))
@@ -71,7 +71,7 @@ test.group('Account/Category eligibility correction (prepared)', () => {
       await writeCanonicalTransactionFixture(transaction)
       const link = await f.account.related('accountTransactions').create({
         transactionId: transaction.id,
-        name: 'Crossing', amount: -10, pending, provider: 'NONE' })
+        name: 'Crossing', amountCents: parseMoneyCents('-10.00'), pending, provider: 'NONE' })
       for (const [version, date] of [dates[1], dates[2], dates[0]].entries()) {
         const response = await client.patch(`/api/v1/transaction/${transaction.id}`).json(
           transactionRequest({ version, date })).loginAs(f.user)
@@ -81,7 +81,8 @@ test.group('Account/Category eligibility correction (prepared)', () => {
           !pending ? -10 : 0))))
         assert.equal((await Category.findOrFail(f.category.id)).balanceCents, parseMoneyCents(
           encodeMonetaryAmount(date >= dates[1] ? -10 : 0)))
-        assert.equal((await AccountTransaction.findOrFail(link.id)).amount, -10)
+        assert.equal((await AccountTransaction.findOrFail(link.id)).amountCents,
+           parseMoneyCents('-10.00'))
       }
     })
 
@@ -127,7 +128,7 @@ test.group('Additional PATCH effect isolation (prepared)', () => {
       version: 0, deleted: false, sortOrder: 0, taxes: [] })
     await writeCanonicalTransactionFixture(transaction)
     await f.account.related('accountTransactions').create({ transactionId: transaction.id,
-      amount: 10, name: 'Imported', pending: false, provider: 'OFX' })
+      amountCents: parseMoneyCents('10.00'), name: 'Imported', pending: false, provider: 'OFX' })
     await f.account.merge({ balanceCents: parseMoneyCents('110.00') }).save()
     await f.category.merge({ balanceCents: parseMoneyCents('10.00') }).save()
     const response = await client.patch(`/api/v1/transaction/${transaction.id}`).json(
@@ -172,7 +173,8 @@ test.group('Additional PATCH effect isolation (prepared)', () => {
       assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('100.00'))
       assert.equal((await Category.findOrFail(f.category.id)).balanceCents, parseMoneyCents('0.00'))
       assert.deepEqual(await snapshot(), before)
-      assert.equal((await AccountTransaction.findByOrFail('transactionId', id)).amount, 10)
+      assert.equal((await AccountTransaction.findByOrFail('transactionId', id)).amountCents,
+         parseMoneyCents('10.00'))
     } finally { Transaction.prototype.save = original }
   })
 })
@@ -191,7 +193,8 @@ test.group('Eligibility verification edge cases', () => {
         version: 0, deleted: false, sortOrder: 0, taxes: [] })
       await writeCanonicalTransactionFixture(transaction)
       await f.account.related('accountTransactions').create({ transactionId: transaction.id,
-        amount: 10, name: 'Partial edit', pending: false, provider: 'OFX' })
+        amountCents: parseMoneyCents('10.00'), name: 'Partial edit', pending: false,
+           provider: 'OFX' })
       await f.account.merge({ balanceCents: parseMoneyCents(encodeMonetaryAmount(
         eligible ? 110 : 100)) }).save()
       await f.category.merge({ balanceCents: parseMoneyCents(encodeMonetaryAmount(
@@ -207,8 +210,8 @@ test.group('Eligibility verification edge cases', () => {
           encodeMonetaryAmount(eligible ? 110 : 100)))
         assert.equal((await Category.findOrFail(f.category.id)).balanceCents, parseMoneyCents(
           encodeMonetaryAmount(eligible ? 10 : 0)))
-        assert.equal((await AccountTransaction.findByOrFail('transactionId', transaction.id))
-          .amount, 10)
+        assert.equal((await AccountTransaction.findByOrFail('transactionId',
+           transaction.id)).amountCents, parseMoneyCents('10.00'))
         return
       }
       response.assertStatus(200)
@@ -254,7 +257,8 @@ test.group('Eligibility verification edge cases', () => {
       version: 0, deleted: false, sortOrder: 0, taxes: [] })
     await writeCanonicalTransactionFixture(old)
     await f.account.related('accountTransactions').create({ transactionId: old.id,
-      name: 'Old inconsistent effect', amount: 10, pending: false, provider: 'NONE' })
+      name: 'Old inconsistent effect', amountCents: parseMoneyCents('10.00'), pending: false,
+         provider: 'NONE' })
     await f.category.merge({ balanceCents: parseMoneyCents('999.00') }).save()
     const oldState = await db.from('transactions').where('id', old.id).firstOrFail()
     const response = await client.post(`/api/v1/account/${f.account.id}/transactions`).json(

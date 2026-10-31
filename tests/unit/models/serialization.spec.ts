@@ -10,7 +10,7 @@ import AccountTransaction from '#models/AccountTransaction'
 import Transaction from '#models/Transaction'
 import Account from '#models/Account'
 import Institution from '#models/Institution'
-import transactionFields from '#controllers/transactionFields'
+import transactionFields, { getAccountTransactionChanges } from '#controllers/transactionFields'
 
 function accountTransaction() {
   return new AccountTransaction().merge({
@@ -20,8 +20,8 @@ function accountTransaction() {
     provider: 'PLAID',
     providerTransactionId: 'private-provider-id',
     name: 'Purchase',
-    amount: 12.5,
-    principle: null,
+    amountCents: parseMoneyCents('12.50'),
+    principalCents: null,
     pending: false,
     paymentChannel: 'online',
     merchantName: 'Shop',
@@ -126,21 +126,22 @@ test.group('Transaction allocation API strings', () => {
 
 
 test.group('AccountTransaction amount API strings', () => {
-  test('amount serialization is canonical while model amounts and other fields remain unchanged')
+  test('amount serialization is canonical while model cents and other fields remain unchanged')
     .with([
     { amount: 12.5, expected: '12.50' }, { amount: -12.5, expected: '-12.50' },
     { amount: 0, expected: '0.00' }, { amount: -0, expected: '0.00' },
     { amount: 0.1 + 0.2, expected: '0.30' }, { amount: 0.125, expected: '0.13' },
     { amount: -0.125, expected: '-0.12' }, { amount: 1.005, expected: '1.00' },
   ]).run(({ assert }, { amount, expected }) => {
-    const row = accountTransaction().merge({ amount, principle: 1.25 })
+    const row = accountTransaction().merge({ amountCents: parseMoneyCents(encodeMonetaryAmount(
+      amount)), principalCents: parseMoneyCents('1.25') })
     const before = globalThis.structuredClone(row.$attributes)
     const transaction = new Transaction()
     transaction.$setRelated('accountTransaction', row)
     assert.strictEqual(row.serialize().amount, expected)
     assert.strictEqual(JSON.parse(JSON.stringify(row)).amount, expected)
     assert.strictEqual(transaction.serialize(transactionFields).accountTransaction.amount, expected)
-    assert.strictEqual(row.amount, amount)
+    assert.strictEqual(row.amountCents, parseMoneyCents(encodeMonetaryAmount(amount)))
     assert.strictEqual(row.serialize().principle, '1.25')
     assert.deepEqual(row.$attributes, before)
   })
@@ -148,14 +149,15 @@ test.group('AccountTransaction amount API strings', () => {
     const row = AccountTransaction.$createFromAdapterResult({ id: 1, amount: '-12.34',
       principle: null })
     assert.isNotNull(row)
-    assert.strictEqual(row?.amount, -12.34)
+    assert.strictEqual(row?.amountCents, parseMoneyCents('-12.34'))
     assert.strictEqual(row?.serialize().amount, '-12.34')
     assert.isNull(row?.serialize().principle)
     assert.isFalse(row?.$isDirty)
   })
   test('invalid amounts cannot be emitted as valid monetary strings').with([NaN, Infinity, -
     Infinity, Number.MAX_SAFE_INTEGER])
-    .run(({ assert }, amount) => assert.throws(() => accountTransaction().merge({ amount })
+    .run(({ assert }, amount) => assert.throws(() => accountTransaction().merge(
+      { amountCents: parseMoneyCents(encodeMonetaryAmount(amount)) })
       .serialize()))
 })
 
@@ -356,15 +358,17 @@ test('auto-assignment responses encode fixed dollars and preserve numeric model 
 })
 
 
-test('AccountTransaction principal serialization preserves numeric models and nulls', ({
+test('AccountTransaction principal serialization preserves cents and nulls', ({
   assert }) => {
   for (const [principle, expected] of [[12.5, '12.50'], [0, '0.00'], [-0.125, '-0.12'],
     [0.125, '0.13'], [1.005, '1.00'], [0.1 + 0.2, '0.30'], [null, null]] as const) {
-    const row = accountTransaction().merge({ principle })
+    const principalCents = principle === null ? null
+      : parseMoneyCents(encodeMonetaryAmount(principle))
+    const row = accountTransaction().merge({ principalCents })
     const before = globalThis.structuredClone(row.$attributes)
     assert.strictEqual(row.serialize().principle, expected)
     assert.strictEqual(JSON.parse(JSON.stringify(row)).principle, expected)
-    assert.strictEqual(row.principle, principle)
+    assert.strictEqual(row.principalCents, principalCents)
     assert.deepEqual(row.$attributes, before)
   }
 })
@@ -414,5 +418,83 @@ test.group('Category balance cents and API compatibility', () => {
       assert.throws(() => column.prepare?.(value, 'balanceCents', category))
       assert.throws(() => column.serialize?.(value, 'balanceCents', category))
     }
+  })
+})
+
+
+test.group('AccountTransaction cent model boundaries', () => {
+  test('retains cents through arithmetic and preserves amount/principle column and API names', ({
+    assert }) => {
+    const row = AccountTransaction.$createFromAdapterResult({ id: 1, amount: '0.10',
+      principle: '-0.12' })
+    if (!row) throw new Error('AccountTransaction hydration failed')
+    assert.isFalse(row.$isDirty)
+    row.amountCents = addMoneyCents(row.amountCents, parseMoneyCents('0.20'))
+    assert.strictEqual(row.amountCents, 30)
+    assert.strictEqual(row.principalCents, -12)
+    assert.strictEqual(row.serialize().amount, '0.30')
+    assert.strictEqual(row.serialize().principle, '-0.12')
+    assert.notProperty(row.serialize(), 'amountCents')
+    assert.notProperty(row.serialize(), 'principalCents')
+    assert.notProperty(row.$attributes, 'amount')
+    assert.notProperty(row.$attributes, 'principle')
+    for (const [name, stored, value] of [
+      ['amountCents', 'amount', '0.30'], ['principalCents', 'principle', '-0.12'],
+    ] as const) {
+      const column = AccountTransaction.$getColumn(name)
+      if (!column?.prepare) throw new Error('Missing monetary codec')
+      assert.strictEqual(column.columnName, stored)
+      assert.strictEqual(column.prepare(row[name], name, row), value)
+    }
+  })
+  test('omitted principal remains omitted rather than being formatted as cents', ({ assert }) => {
+    const row = accountTransaction().merge({ principalCents: undefined })
+    const column = AccountTransaction.$getColumn('principalCents')
+    if (!column?.prepare) throw new Error('Missing principal codec')
+    assert.isUndefined(column.prepare(undefined, 'principalCents', row))
+    assert.isUndefined(row.serialize().principle)
+    assert.notProperty(JSON.parse(JSON.stringify(row)), 'principle')
+  })
+  test('nullable principal remains distinct from zero').with([null, '0.00', '-0.01', '0.01'])
+    .run(({ assert }, principle) => {
+      const row = AccountTransaction.$createFromAdapterResult({ id: 1, amount: '-0.30', principle })
+      if (!row) throw new Error('AccountTransaction hydration failed')
+      assert.strictEqual(row.amountCents, -30)
+      assert.strictEqual(row.principalCents, principle === null ? null : parseMoneyCents(principle))
+      assert.strictEqual(row.serialize().principle, principle)
+      assert.isFalse(row.$isDirty)
+    })
+  test('invalid and unsafe stored money rejects').with([
+    '0.001', '-0.00', 'NaN', 'Infinity', '90071992547409.92', 0.1,
+  ]).run(({ assert }, value) => {
+    assert.throws(() => AccountTransaction.$createFromAdapterResult({ amount: value }))
+    assert.throws(() => AccountTransaction.$createFromAdapterResult({ amount: '0.00',
+      principle: value }))
+  })
+  test('invalid runtime cents reject before persistence and serialization', ({ assert }) => {
+    const row = new AccountTransaction()
+    for (const name of ['amountCents', 'principalCents']) {
+      const column = AccountTransaction.$getColumn(name)
+      if (!column?.prepare || !column.serialize) throw new Error('Missing monetary codecs')
+      for (const value of [0.1, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
+        assert.throws(() => column.prepare?.(value, name, row))
+        assert.throws(() => column.serialize?.(value, name, row))
+      }
+    }
+  })
+  test('change logs preserve public monetary names and dollar units', ({ assert }) => {
+    const original = { amountCents: parseMoneyCents('12.34'), principalCents: null }
+    const changes = getAccountTransactionChanges(original, {
+      amountCents: parseMoneyCents('-0.12'), principalCents: parseMoneyCents('0.00'),
+    }, {})
+    assert.deepEqual(changes, {
+      amount: { old: '12.34', new: '-0.12' }, principle: { old: null, new: '0.00' },
+    })
+    assert.deepEqual(getAccountTransactionChanges({ principalCents: parseMoneyCents('0.00') },
+      { principalCents: null }, {}), { principle: { old: '0.00', new: null } })
+    assert.deepEqual(getAccountTransactionChanges(original, { ...original }, {}), {})
+    assert.deepEqual(getAccountTransactionChanges(original, { name: 'Renamed' }, {}), {
+      name: { old: undefined, new: 'Renamed' },
+    })
   })
 })

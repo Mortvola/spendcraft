@@ -56,7 +56,8 @@ test.group('Account start-date characterization', () => {
           categories: [...categories], version: 0, deleted: false, sortOrder: 0, taxes: [] })
         await writeCanonicalTransactionFixture(transaction)
         await f.account.related('accountTransactions').create({ transactionId: transaction.id,
-          amount, pending, name: 'Exact boundary', provider: 'NONE' })
+          amountCents: parseMoneyCents(encodeMonetaryAmount(amount)), pending,
+             name: 'Exact boundary', provider: 'NONE' })
       }
       const before = await db.from('account_transactions').where('account_id', f.account.id)
         .orderBy('id')
@@ -106,7 +107,8 @@ test.group('Account start-date characterization', () => {
         await writeCanonicalTransactionFixture(transaction)
         ids.push(transaction.id)
         await f.account.related('accountTransactions').create({
-          transactionId: transaction.id, amount: movement.amount, name: 'Boundary movement',
+          transactionId: transaction.id, amountCents: parseMoneyCents(encodeMonetaryAmount(
+            movement.amount)), name: 'Boundary movement',
           pending: false, provider: 'NONE', statementId: null,
         })
       }
@@ -144,7 +146,8 @@ test.group('Account start-date characterization', () => {
         assert.equal(initial.date.toISODate(), date)
         const applicableCents = movements.filter((movement) => movement.date >= date)
           .reduce((sum, movement) => sum + Math.round(movement.amount * 100), 0)
-        assert.equal(Math.round(initialRow.amount * 100), 10000 - applicableCents)
+        assert.equal(Math.round(Number(formatMoneyCents(initialRow.amountCents)) * 100),
+           10000 - applicableCents)
         assert.equal(Math.round(initial.categories[0].amount * 100), 10000 - applicableCents)
         assert.equal(Math.round(Number(formatMoneyCents((await Category.findOrFail(
           funding.id)).balanceCents)) * 100), 10000 -
@@ -179,7 +182,8 @@ test.group('Account start-date characterization', () => {
       }, { client: trx })
       await writeCanonicalTransactionFixture(transaction)
       await f.account.related('accountTransactions').create({ transactionId: transaction.id,
-        amount: 10, name: 'Crossing allocation', pending: false, provider: 'NONE' })
+        amountCents: parseMoneyCents('10.00'), name: 'Crossing allocation', pending: false,
+           provider: 'NONE' })
       const funding = await f.budget.getFundingPoolCategory({ client: trx })
       await f.account.updateStartingBalance(f.budget, funding)
       await funding.save()
@@ -219,7 +223,8 @@ test.group('Account start-date characterization', () => {
       const initial = await Transaction.query().where('budgetId', f.budget.id).where('type',
         TransactionType.STARTING_BALANCE).firstOrFail()
       assert.equal(initial.date.toISODate(), '2025-02-01')
-      assert.equal((await AccountTransaction.findByOrFail('transactionId', initial.id)).amount, 100)
+      assert.equal((await AccountTransaction.findByOrFail('transactionId',
+         initial.id)).amountCents, parseMoneyCents('100.00'))
     } finally {
       Budget.prototype.syncCategoryBalances = original
     }
@@ -263,13 +268,14 @@ test.group('Account start-date characterization', () => {
       version: 0, sortOrder: 0, deleted: false })
     await writeCanonicalTransactionFixture(transaction)
     await f.account.related('accountTransactions').create({ transactionId: transaction.id,
-      amount: 10, name: 'Invalid historical state', pending: false, provider: 'NONE' })
+      amountCents: parseMoneyCents('10.00'), name: 'Invalid historical state', pending: false,
+         provider: 'NONE' })
     const response = await client.patch(`/api/v1/account/${f.account.id}`).json({ startDate:
       '2025-02-01' }).accept('json').loginAs(f.user)
     response.assertStatus(200)
     assert.lengthOf(await Transaction.query().where('budgetId', f.budget.id), 1)
-    assert.equal((await AccountTransaction.findByOrFail('transactionId', transaction.id)).amount,
-      10)
+    assert.equal((await AccountTransaction.findByOrFail('transactionId',
+       transaction.id)).amountCents, parseMoneyCents('10.00'))
     assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('100.00'))
   })
 
@@ -292,7 +298,8 @@ preserves Account balance', async ({ client, assert }) => {
         type: TransactionType.MANUAL_TRANSACTION, version: 0, deleted, sortOrder: 0,
         categories: [{ categoryId: category.id, amount }], taxes: [] })
       await writeCanonicalTransactionFixture(transaction)
-      await f.account.related('accountTransactions').create({ transactionId: transaction.id, amount,
+      await f.account.related('accountTransactions').create({ transactionId: transaction.id,
+         amountCents: parseMoneyCents(encodeMonetaryAmount(amount)),
         pending, name: 'Opening applicability', provider: 'NONE' })
     }
     for (const [type, amount] of [[TransactionType.FUNDING_TRANSACTION, 5], [TransactionType
@@ -322,9 +329,9 @@ preserves Account balance', async ({ client, assert }) => {
         .whereHas('transaction', (query) => query.where('type', TransactionType.STARTING_BALANCE))
           .preload('transaction').firstOrFail()
       assert.equal(opening.transaction.date.toISODate(), date)
-      assert.equal(opening.amount, date === '2025-01-01' ? 80 : 100)
-      assert.equal((await Category.findOrFail(pool.id)).balanceCents, parseMoneyCents(
-        encodeMonetaryAmount(opening.amount)))
+      assert.equal(opening.amountCents, parseMoneyCents(encodeMonetaryAmount(
+        date === '2025-01-01' ? 80 : 100)))
+      assert.equal((await Category.findOrFail(pool.id)).balanceCents, opening.amountCents)
       assert.lengthOf(await AccountTransaction.query().where('accountId', f.account.id), 4)
     }
   })
@@ -345,7 +352,8 @@ test.group('Opening signed-sum verification', () => {
           version: 0, deleted: false, sortOrder: 0, taxes: [] })
         await writeCanonicalTransactionFixture(transaction)
         await f.account.related('accountTransactions').create({ transactionId: transaction.id,
-          name: 'Signed sum', amount, pending: false, provider: 'NONE' })
+          name: 'Signed sum', amountCents: parseMoneyCents(encodeMonetaryAmount(amount)),
+             pending: false, provider: 'NONE' })
       }
       await unassigned.merge({ balanceCents: parseMoneyCents('10.00') }).save()
       const before = await db.from('accounts').select('balance').where('id', f.account.id)

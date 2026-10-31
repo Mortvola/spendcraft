@@ -41,7 +41,8 @@ async function createDomain(label: string) {
       categories: [{ categoryId: category.id, amount: 10 }], taxes: [],
     })
     const accountTransaction = await account.related('accountTransactions').create({
-      transactionId: transaction.id, name: `${label} private purchase`, amount: 10,
+      transactionId: transaction.id, name: `${label} private purchase`,
+         amountCents: parseMoneyCents('10.00'),
       provider: 'NONE', pending: false, statementId: null,
     })
     const statement = await account.related('statements').create({
@@ -96,7 +97,7 @@ test.group('Account transaction creation isolation', (group) => {
     assert.deepEqual(row.categories, [{ categoryId: fixture.own.category.id, amount: 15 }])
     const accountRow = await AccountTransaction.findByOrFail('transactionId', row.id)
     assert.equal(accountRow.accountId, fixture.own.account.id)
-    assert.equal(accountRow.amount, 15)
+    assert.equal(accountRow.amountCents, parseMoneyCents('15.00'))
     assert.equal((await Account.findOrFail(fixture.own.account.id)).balanceCents,
       parseMoneyCents('115.00'))
     assert.equal((await Category.findOrFail(fixture.own.category.id)).balanceCents,

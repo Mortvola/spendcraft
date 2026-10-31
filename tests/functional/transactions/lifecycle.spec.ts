@@ -43,7 +43,8 @@ async function createFixture() {
     })
     await writeCanonicalTransactionFixture(transaction)
     const accountTransaction = await account.related('accountTransactions').create({
-      transactionId: transaction.id, name: 'Original purchase', amount: 10, pending: false,
+      transactionId: transaction.id, name: 'Original purchase', amountCents: parseMoneyCents(
+        '10.00'), pending: false,
         provider: 'NONE', statementId: null,
     })
     return { budget, user, account, first, second, transaction, accountTransaction }
@@ -116,7 +117,8 @@ test.group('Ordinary transaction lifecycle', (group) => {
           .id).firstOrFail()
         await transaction.merge({ categories: [{ categoryId: fixture.first.id,
           amount: sign * 0.2 }] }).save()
-        await fixture.accountTransaction.useTransaction(trx).merge({ amount: sign * 0.2 }).save()
+        await fixture.accountTransaction.useTransaction(trx).merge(
+          { amountCents: parseMoneyCents(encodeMonetaryAmount(sign * 0.2)) }).save()
         await fixture.account.useTransaction(trx).merge({ balanceCents: parseMoneyCents(
           encodeMonetaryAmount(sign * 0.1)) }).save()
         await fixture.first.useTransaction(trx).merge({ balanceCents: parseMoneyCents(
@@ -145,7 +147,8 @@ test.group('Ordinary transaction lifecycle', (group) => {
         .id).firstOrFail()
       await transaction.merge({ categories: [{ categoryId: id, amount: 0.1 },
         { categoryId: id, amount: 0.2 }] }).save()
-      await fixture.accountTransaction.useTransaction(trx).merge({ amount: 0.3 }).save()
+      await fixture.accountTransaction.useTransaction(trx).merge({ amountCents: parseMoneyCents(
+        '0.30') }).save()
       await fixture.account.useTransaction(trx).merge({ balanceCents: parseMoneyCents(
         '100.30') }).save()
       await fixture.first.useTransaction(trx).merge({ balanceCents: parseMoneyCents(
@@ -175,7 +178,8 @@ test.group('Ordinary transaction lifecycle', (group) => {
         { categoryId: fixture.first.id, amount: 0.1 },
         { categoryId: fixture.second.id, amount: 0.2 },
       ] }).save()
-      await fixture.accountTransaction.useTransaction(trx).merge({ amount: 0.3 }).save()
+      await fixture.accountTransaction.useTransaction(trx).merge({ amountCents: parseMoneyCents(
+        '0.30') }).save()
       await fixture.first.useTransaction(trx).merge({ balanceCents: parseMoneyCents(
         '0.10') }).save()
       await fixture.second.useTransaction(trx).merge({ balanceCents: parseMoneyCents(
@@ -206,7 +210,8 @@ test.group('Ordinary transaction lifecycle', (group) => {
         sign * 0.1)) }).save()
       await fixture.first.merge({ balanceCents: parseMoneyCents(encodeMonetaryAmount(
         sign * 0.2)) }).save()
-      await fixture.accountTransaction.merge({ amount: sign * 0.2, pending }).save()
+      await fixture.accountTransaction.merge({ amountCents: parseMoneyCents(
+        encodeMonetaryAmount(sign * 0.2)), pending }).save()
       await writeHistoricalTransactionFixture(fixture.transaction, { type, categories: [
         { categoryId: fixture.first.id, amount: type === TransactionType.TRANSFER_TRANSACTION
           ? sign * 0.2 : sign > 0 ? '0.20' : '-0.20' }] })
@@ -241,7 +246,7 @@ test.group('Ordinary transaction lifecycle', (group) => {
   test('special Account-linked balance overflow rolls back the full mutation')
     .with(['patch', 'delete']).run(async ({ client, assert }, operation) => {
       await fixture.account.merge({ balanceCents: parseMoneyCents('9999999999.99') }).save()
-      await fixture.accountTransaction.merge({ amount: -0.01 }).save()
+      await fixture.accountTransaction.merge({ amountCents: parseMoneyCents('-0.01') }).save()
       await writeHistoricalTransactionFixture(fixture.transaction, {
         type: TransactionType.STARTING_BALANCE, categories: [
           { categoryId: fixture.first.id, amount: '-0.01' }] })
@@ -332,8 +337,9 @@ test.group('Ordinary transaction lifecycle', (group) => {
     .with(['create', 'patch', 'delete']).run(async ({ client, assert }, operation) => {
       await fixture.account.merge({ type: AccountType.Loan }).save()
       await fixture.first.merge({ balanceCents: parseMoneyCents('9999999999.99') }).save()
-      await fixture.accountTransaction.merge({ amount: operation === 'delete' ? -0.01 : 0.2,
-        principle: 0 }).save()
+      await fixture.accountTransaction.merge({ amountCents: parseMoneyCents(
+        encodeMonetaryAmount(operation === 'delete' ? -0.01 : 0.2)),
+        principalCents: parseMoneyCents('0.00') }).save()
       await writeHistoricalTransactionFixture(fixture.transaction, { categories: [
         { categoryId: fixture.first.id, amount: operation === 'delete' ? '-0.01' : '0.20' }] })
       const before = await snapshot()
@@ -391,7 +397,8 @@ test.group('Ordinary transaction lifecycle', (group) => {
     .with(['create', 'patch', 'delete']).run(async ({ client, assert }, operation) => {
       await fixture.account.merge({ type: AccountType.Loan, balanceCents: parseMoneyCents(
         '9999999999.99') }).save()
-      await fixture.accountTransaction.merge({ principle: operation === 'delete' ? -0.01 : 0 })
+      await fixture.accountTransaction.merge({ principalCents: parseMoneyCents(
+        encodeMonetaryAmount(operation === 'delete' ? -0.01 : 0)) })
         .save()
       await writeHistoricalTransactionFixture(fixture.transaction, { categories: [
         { categoryId: fixture.first.id, amount: '10.00' }] })
@@ -418,8 +425,8 @@ test.group('Ordinary transaction lifecycle', (group) => {
     created.assertStatus(200)
     const id = created.body().transaction.id
     let model = await AccountTransaction.findByOrFail('transactionId', id)
-    assert.strictEqual(model.amount, 12.35)
-    assert.strictEqual(model.principle, 10.25)
+    assert.strictEqual(model.amountCents, parseMoneyCents('12.35'))
+    assert.strictEqual(model.principalCents, parseMoneyCents('10.25'))
     assert.strictEqual(created.body().transaction.accountTransaction.principle, '10.25')
     assert.strictEqual((await Account.findOrFail(fixture.account.id)).balanceCents,
       parseMoneyCents('120.25'))
@@ -428,8 +435,8 @@ test.group('Ordinary transaction lifecycle', (group) => {
     }).accept('json').loginAs(fixture.user)
     updated.assertStatus(200)
     model = await AccountTransaction.findByOrFail('transactionId', id)
-    assert.strictEqual(model.amount, -0.12)
-    assert.strictEqual(model.principle, -0.12)
+    assert.strictEqual(model.amountCents, parseMoneyCents('-0.12'))
+    assert.strictEqual(model.principalCents, parseMoneyCents('-0.12'))
     assert.strictEqual(updated.body().data.transaction.accountTransaction.principle, '-0.12')
     assert.strictEqual((await Account.findOrFail(fixture.account.id)).balanceCents,
       parseMoneyCents('109.88'))
@@ -474,7 +481,7 @@ test.group('Ordinary transaction lifecycle', (group) => {
     const accountTransaction = await AccountTransaction.findByOrFail('transactionId', transaction
       .id)
     assert.deepEqual(transaction.categories, categories)
-    assert.equal(accountTransaction.amount, amount)
+    assert.equal(accountTransaction.amountCents, parseMoneyCents(encodeMonetaryAmount(amount)))
     assert.equal(accountTransaction.accountId, fixture.account.id)
     assert.equal(transaction.budgetId, fixture.budget.id)
     assert.equal((await Account.findOrFail(fixture.account.id)).balanceCents, parseMoneyCents(
@@ -512,7 +519,7 @@ test.group('Ordinary transaction lifecycle', (group) => {
     const accountTransaction = await AccountTransaction.findOrFail(fixture.accountTransaction.id)
     assert.equal(transaction.version, 1)
     assert.deepEqual(transaction.categories, categories)
-    assert.equal(accountTransaction.amount, amount)
+    assert.equal(accountTransaction.amountCents, parseMoneyCents(encodeMonetaryAmount(amount)))
     assert.equal((await Account.findOrFail(fixture.account.id)).balanceCents, parseMoneyCents(
       encodeMonetaryAmount(100 + amount)))
     assert.equal((await Category.findOrFail(fixture.first.id)).balanceCents, parseMoneyCents(
@@ -573,7 +580,7 @@ test.group('Ordinary transaction lifecycle', (group) => {
     const transaction = await Transaction.findOrFail(response.body().transaction.id)
     const accountTransaction = await AccountTransaction.findByOrFail('transactionId', transaction
       .id)
-    assert.equal(accountTransaction.amount, amount)
+    assert.equal(accountTransaction.amountCents, parseMoneyCents(encodeMonetaryAmount(amount)))
     assert.equal((await Account.findOrFail(fixture.account.id)).balanceCents, parseMoneyCents(
       encodeMonetaryAmount(110 + amount)))
     assert.equal(transaction.categories.reduce((sum, split) => sum + Math.round(split.amount * 100),
@@ -591,10 +598,9 @@ test.group('Ordinary transaction lifecycle', (group) => {
     const transaction = await Transaction.findOrFail(fixture.transaction.id)
     const accountTransaction = await AccountTransaction.findOrFail(fixture.accountTransaction.id)
     assert.equal(transaction.categories.reduce((sum, split) => sum + split.amount, 0),
-      accountTransaction.amount)
+      Number(formatMoneyCents(accountTransaction.amountCents)))
     assert.equal((await Account.findOrFail(fixture.account.id)).balanceCents, parseMoneyCents(
-      encodeMonetaryAmount(100 + accountTransaction
-      .amount)))
+      encodeMonetaryAmount(100 + Number(formatMoneyCents(accountTransaction.amountCents)))))
   })
 
   test('deletion reverses ordinary financial effects without destroying linkage', async ({ client,

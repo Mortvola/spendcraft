@@ -24,7 +24,8 @@ import {
 import Account from '#app/Models/Account';
 import TransactionLog from '#app/Models/TransactionLog';
 import Statement from '#app/Models/Statement';
-import transactionFields, { getChanges } from './transactionFields.js';
+import transactionFields, { getChanges,
+   getAccountTransactionChanges } from './transactionFields.js';
 import { ModelObject, ModelAdapterOptions } from "@adonisjs/lucid/types/model";
 import { updateTransaction } from '#validators/transaction';
 import { validateTransactionSplits } from '#app/validation/transactionSplits';
@@ -35,7 +36,7 @@ function budgetCategories(budgetId: number, options?: ModelAdapterOptions) {
 }
 
 export default class TransactionsController {
-   
+
   public async get({
     request,
     auth: { user },
@@ -57,7 +58,7 @@ export default class TransactionsController {
     return transaction;
   }
 
-   
+
   public async getMultiple({
     request,
     auth: { user },
@@ -101,7 +102,7 @@ export default class TransactionsController {
     };
   }
 
-   
+
   public async update({
     request,
     response,
@@ -202,7 +203,7 @@ export default class TransactionsController {
 
       if (transaction.type === TransactionType.MANUAL_TRANSACTION
         && account.tracking === TrackingType.Transactions && account.type !== AccountType.Loan) {
-        const amount = requestData.amount ?? acctTrans.amount;
+        const amount = requestData.amount ?? Number(formatMoneyCents(acctTrans.amountCents));
         const categories = requestData.categories?.length === 0
           ? [{ amount }]
           : requestData.categories ?? transaction.categories;
@@ -223,22 +224,26 @@ export default class TransactionsController {
       const zeroCents = parseMoneyCents('0.00');
       const accountDeltaCents = ordinary ? subtractMoneyCents(
         accountEligible(newState, account.startDate)
-          ? parseMoneyCents(encodeMonetaryAmount(requestData.amount ?? acctTrans.amount))
+          ? requestData.amount === undefined ? acctTrans.amountCents
+            : parseMoneyCents(encodeMonetaryAmount(requestData.amount))
           : zeroCents,
         accountEligible(oldState, account.startDate)
-          ? parseMoneyCents(encodeMonetaryAmount(acctTrans.amount)) : zeroCents,
+          ? acctTrans.amountCents : zeroCents,
       ) : zeroCents;
 
       if (ordinary) {
         if (requestData.categories?.length === 0) {
           requestData.categories = [{ categoryId: unassignedCat.id,
-            amount: requestData.amount ?? acctTrans.amount, comment: undefined }];
+            amount: requestData.amount ?? Number(formatMoneyCents(acctTrans.amountCents)),
+               comment: undefined }];
         }
         const oldSplits = transaction.categories.length > 0 ? transaction.categories
-          : [{ categoryId: unassignedCat.id, amount: acctTrans.amount }];
+          : [{ categoryId: unassignedCat.id, amount: Number(formatMoneyCents(
+            acctTrans.amountCents)) }];
         const nominalNew = requestData.categories ?? transaction.categories;
         const newSplits = nominalNew.length > 0 ? nominalNew
-          : [{ categoryId: unassignedCat.id, amount: requestData.amount ?? acctTrans.amount }];
+          : [{ categoryId: unassignedCat.id, amount: requestData.amount ?? Number(
+            formatMoneyCents(acctTrans.amountCents)) }];
         if (hasCategoryStorage(transaction)) {
           // Allocation amounts remain numeric runtime values; convert them at this boundary.
           const centAllocations = (splits: typeof oldSplits) => splits.map(split => ({
@@ -278,7 +283,7 @@ export default class TransactionsController {
         if (requestData.categories.length === 0) {
           requestData.categories = [{
             categoryId: unassignedCat.id,
-            amount: requestData.amount ?? acctTrans.amount,
+            amount: requestData.amount ?? Number(formatMoneyCents(acctTrans.amountCents)),
             comment: undefined,
           }]
         }
@@ -288,9 +293,9 @@ export default class TransactionsController {
         if (categories.length > 0) {
           // There are pre-existing category splits.
           // Credit the category balance for each one.
-           
+
           for (const transCategory of categories) {
-             
+
             const category = await budgetCategories(budget.id, { client: trx }).where('id',
               transCategory.categoryId).firstOrFail();
 
@@ -298,7 +303,7 @@ export default class TransactionsController {
               category.balanceCents,
               parseMoneyCents(encodeMonetaryAmount(transCategory.amount)));
 
-             
+
             await category.save();
 
             categoriesResult.push({
@@ -314,7 +319,7 @@ export default class TransactionsController {
           if (requestData.amount !== undefined) {
             unassigned.balanceCents = subtractMoneyCents(
               unassigned.balanceCents,
-              parseMoneyCents(encodeMonetaryAmount(acctTrans.amount)));
+              acctTrans.amountCents);
             await unassigned.save();
           }
 
@@ -328,7 +333,7 @@ export default class TransactionsController {
           transaction.categories = requestData.categories;
 
           for (const transCategory of requestData.categories) {
-             
+
             const category = await budgetCategories(budget.id, { client: trx }).where('id',
               transCategory.categoryId).firstOrFail();
 
@@ -336,10 +341,10 @@ export default class TransactionsController {
               category.balanceCents,
               parseMoneyCents(encodeMonetaryAmount(transCategory.amount)));
 
-             
+
             await category.save();
 
-            
+
 
             // Determine if the category is already in the array.
             const index = categoriesResult.findIndex((c) => c.id === category.id);
@@ -392,24 +397,24 @@ export default class TransactionsController {
       ) {
         const replacementBalanceCents = !ordinary
           ? subtractMoneyCents(account.balanceCents,
-            parseMoneyCents(encodeMonetaryAmount(account.type === AccountType.Loan
-              ? acctTrans.principle ?? 0 : acctTrans.amount))) : null;
+            account.type === AccountType.Loan
+              ? acctTrans.principalCents ?? parseMoneyCents('0.00') : acctTrans.amountCents) : null;
 
-        const accountTransactionChanges: ModelObject = {
-          name: requestData.name,
-          amount: requestData.amount,
-          principle: requestData.principle,
-          statementId: requestData.statementId,
-        }
+        const accountTransactionChanges = {
+          ...(requestData.name !== undefined ? { name: requestData.name } : {}),
+          ...(requestData.amount !== undefined ? {
+            amountCents: parseMoneyCents(encodeMonetaryAmount(requestData.amount)),
+          } : {}),
+          ...(requestData.principle !== undefined ? {
+            principalCents: parseMoneyCents(encodeMonetaryAmount(requestData.principle)),
+          } : {}),
+          ...(requestData.statementId !== undefined ? {
+            statementId: requestData.statementId,
+          } : {}),
+        };
 
-        changes = getChanges(acctTrans.$attributes, accountTransactionChanges, changes);
-
-        for (const property of Object.getOwnPropertyNames(accountTransactionChanges)) {
-          if (accountTransactionChanges[property] === undefined) {
-            // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-            delete accountTransactionChanges[property]
-          }
-        }
+        changes = getAccountTransactionChanges(acctTrans.$attributes, accountTransactionChanges,
+          changes);
 
         // Note the change in statement id, if any, for retrieval of the statement
         // later.
@@ -426,8 +431,8 @@ export default class TransactionsController {
 
         if (replacementBalanceCents !== null) {
           account.balanceCents = addMoneyCents(replacementBalanceCents,
-            parseMoneyCents(encodeMonetaryAmount(account.type === AccountType.Loan
-              ? acctTrans.principle ?? 0 : acctTrans.amount)));
+            account.type === AccountType.Loan
+              ? acctTrans.principalCents ?? parseMoneyCents('0.00') : acctTrans.amountCents);
         }
 
         if (!ordinary) await account.save();
@@ -450,7 +455,7 @@ export default class TransactionsController {
 
       transactionChanges.version = transaction.version + 1;
 
-       
+
       for (const property of Object.getOwnPropertyNames(transactionChanges)) {
         if (transactionChanges[property] === undefined) {
           // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
@@ -479,13 +484,13 @@ export default class TransactionsController {
       });
 
       // Get the transaction count for each of the categories
-       
+
       for (const cat of categoriesResult) {
-         
+
         const category = await budgetCategories(budget.id, { client: trx }).where('id', cat.id)
           .firstOrFail();
 
-         
+
         cat.count = await category.transactionsCount(budget);
       }
 
@@ -534,7 +539,7 @@ export default class TransactionsController {
     }
   }
 
-   
+
   public async dedup({
     request,
     auth: { user },
@@ -561,7 +566,7 @@ export default class TransactionsController {
     });
   }
 
-   
+
   public async delete({
     request,
     auth: {
@@ -624,7 +629,7 @@ export default class TransactionsController {
 
           const balanceCents = subtractMoneyCents(
             unassignedCat.balanceCents,
-            parseMoneyCents(encodeMonetaryAmount(acctTransaction.amount)));
+            acctTransaction.amountCents);
           unassignedCat.balanceCents = balanceCents;
 
           result.categories.push({ id: unassignedCat.id, balance: formatMoneyCents(
@@ -634,9 +639,9 @@ export default class TransactionsController {
         }
       }
       else {
-         
+
         for (const trxCat of trxCategories) {
-           
+
           const category = await budgetCategories(budget.id, { client: trx }).where('id', trxCat
             .categoryId).firstOrFail();
 
@@ -655,11 +660,11 @@ export default class TransactionsController {
               category.balanceCents) });
           }
 
-          
+
 
           await category.save();
 
-           
+
           // await trxCat.delete();
         }
       }
@@ -673,13 +678,13 @@ export default class TransactionsController {
           if (account.type === AccountType.Loan) {
             const balanceCents = subtractMoneyCents(
               account.balanceCents,
-              parseMoneyCents(encodeMonetaryAmount(acctTransaction.principle ?? 0)));
+              acctTransaction.principalCents ?? parseMoneyCents('0.00'));
             account.balanceCents = balanceCents;
           }
           else {
             const balanceCents = subtractMoneyCents(
               account.balanceCents,
-              parseMoneyCents(encodeMonetaryAmount(acctTransaction.amount)));
+              acctTransaction.amountCents);
             account.balanceCents = balanceCents;
           }
 
@@ -707,7 +712,7 @@ export default class TransactionsController {
     }
   }
 
-   
+
   public async getRebalances({
     auth: {
       user,
@@ -734,7 +739,7 @@ export default class TransactionsController {
     }
   }
 
-   
+
   public async search({
     request,
     auth: {
@@ -792,7 +797,7 @@ export default class TransactionsController {
     };
   }
 
-   
+
   public async logs({
     auth: {
       user,

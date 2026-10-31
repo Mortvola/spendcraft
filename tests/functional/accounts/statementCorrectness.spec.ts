@@ -54,7 +54,8 @@ test.group('Manual statement correctness', (group) => {
       version: 0, deleted: options.deleted ?? false, sortOrder: 0, categories: [], taxes: [],
     })
     return fixture.account.related('accountTransactions').create({
-      transactionId: transaction.id, name: 'Statement movement', amount, provider: 'NONE',
+      transactionId: transaction.id, name: 'Statement movement', amountCents: parseMoneyCents(
+        encodeMonetaryAmount(amount)), provider: 'NONE',
       pending: options.pending ?? false, statementId: options.statementId ?? null,
     })
   }

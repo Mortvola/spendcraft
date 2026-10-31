@@ -47,7 +47,8 @@ async function domain(label: string) {
       version: 0, deleted: false, sortOrder: 0, categories: [], taxes: [],
     })
     const accountTransaction = await account.related('accountTransactions').create({
-      transactionId: transaction.id, name: `${label} private purchase`, amount: 23.45, provider:
+      transactionId: transaction.id, name: `${label} private purchase`,
+         amountCents: parseMoneyCents('23.45'), provider:
         'NONE', pending: false, statementId: null,
     })
     return { budget, user, account, otherAccount, history, otherHistory, statement,

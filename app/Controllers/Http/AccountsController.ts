@@ -234,8 +234,9 @@ export default class AccountsController {
       const acctTransaction = await account.related('accountTransactions').create({
         name: requestData.name,
         transactionId: transaction.id,
-        amount: requestData.amount,
-        principle: requestData.principle,
+        amountCents: parseMoneyCents(encodeMonetaryAmount(requestData.amount)),
+        principalCents: requestData.principle === undefined ? undefined
+          : parseMoneyCents(encodeMonetaryAmount(requestData.principle)),
         statementId: null,
       });
 
@@ -246,13 +247,13 @@ export default class AccountsController {
       if (account.type === AccountType.Loan) {
         const balanceCents = addMoneyCents(
           account.balanceCents,
-          parseMoneyCents(encodeMonetaryAmount(acctTransaction.principle ?? 0)));
+          acctTransaction.principalCents ?? parseMoneyCents('0.00'));
         account.balanceCents = balanceCents;
       }
       else if (accountEligible(state, account.startDate)) {
         const balanceCents = addMoneyCents(
           account.balanceCents,
-          parseMoneyCents(encodeMonetaryAmount(acctTransaction.amount)));
+          acctTransaction.amountCents);
         account.balanceCents = balanceCents;
       }
 
@@ -374,7 +375,8 @@ export default class AccountsController {
           const unassigned = await budget.getUnassignedCategory({ client: trx });
           for (const row of crossing) {
             const splits = row.transaction.categories.length > 0
-              ? row.transaction.categories : [{ categoryId: unassigned.id, amount: row.amount }];
+              ? row.transaction.categories : [{ categoryId: unassigned.id, amount: Number(
+                formatMoneyCents(row.amountCents)) }];
             for (const split of splits) {
               const previous = deltas.get(split.categoryId) ?? parseMoneyCents('0.00');
               const amount = parseMoneyCents(encodeMonetaryAmount(split.amount));

@@ -44,7 +44,8 @@ async function createDomain(label: string) {
     })
     await writeCanonicalTransactionFixture(transaction)
     const accountTransaction = await account.related('accountTransactions').create({
-      transactionId: transaction.id, name: `${label} private purchase`, amount: 10,
+      transactionId: transaction.id, name: `${label} private purchase`,
+         amountCents: parseMoneyCents('10.00'),
       provider: 'NONE', pending: false, statementId: null,
     })
     const statement = await account.related('statements').create({

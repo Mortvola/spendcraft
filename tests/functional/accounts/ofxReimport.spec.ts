@@ -69,8 +69,8 @@ FX>`
     const result = { balance: Number(formatMoneyCents(account.balanceCents)),
       plaidBalance: account.plaidBalance, categories,
       history, logs, transactions: associations.map((a) => ({
-      id: a.transaction.id, associationId: a.id, providerId: a.providerTransactionId, amount: a
-        .amount,
+      id: a.transaction.id, associationId: a.id, providerId: a.providerTransactionId,
+         amount: Number(formatMoneyCents(a.amountCents)),
       date: a.transaction.date.toISODate(), deleted: a.transaction.deleted, version: a.transaction
         .version,
       splits: a.transaction.categories, splitTotal: a.transaction.categories.reduce((sum, split) =>

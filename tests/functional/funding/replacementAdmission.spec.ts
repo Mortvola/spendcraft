@@ -74,7 +74,8 @@ test.group('Replacement admission persisted noninterference (prepared)', () => {
           subtype: '', type: shape === 'Loan Account' ? AccountType.Loan : AccountType.Depository,
             tracking: TrackingType.Transactions,
           startDate: DateTime.fromISO('2025-01-01'), rate: 0, closed: false })
-        await account.related('accountTransactions').create({ transactionId: f.target.id, amount: 2,
+        await account.related('accountTransactions').create({ transactionId: f.target.id,
+           amountCents: parseMoneyCents('2.00'),
           name: 'Unsupported link', pending: false })
       }
     }
@@ -197,7 +198,8 @@ test.group('Replacement admission freshness and rollback (prepared)', () => {
             balanceCents: parseMoneyCents('100.00'),
             subtype: '', type: AccountType.Depository, tracking: TrackingType.Transactions,
               startDate: DateTime.fromISO('2025-01-01'), rate: 0 }, { client: owner })
-          await account.related('accountTransactions').create({ name: 'Shape link', amount: 2,
+          await account.related('accountTransactions').create({ name: 'Shape link',
+             amountCents: parseMoneyCents('2.00'),
             transactionId: f.target.id }, { client: owner })
         }
         await owner.commit()

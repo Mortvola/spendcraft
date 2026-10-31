@@ -35,7 +35,8 @@ async function createDomain(label: string, existingBudget?: Budget) {
       categories: [{ categoryId: category.id, amount: 10 }], taxes: [],
     })
     await account.related('accountTransactions').create({
-      transactionId: transaction.id, name: `${label} private purchase`, amount: 10,
+      transactionId: transaction.id, name: `${label} private purchase`,
+         amountCents: parseMoneyCents('10.00'),
       provider: 'NONE', pending: false, statementId: null,
     })
     await db.table('transaction_categories').useTransaction(trx).insert({
