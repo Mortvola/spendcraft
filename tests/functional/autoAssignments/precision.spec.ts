@@ -227,8 +227,10 @@ amount::real')
   test('rounded inputs retain actual multi-rule allocation and residual behavior').with([
     { amount: 100, fixed: 10.005, percentage: 50, expected: [10.01, 45, 44.99] },
     { amount: 0.01, fixed: 0, percentage: 50, expected: [0, 0.01, 0] },
-  ]).run(async ({ assert }, scenario) => {
+  ].flatMap(scenario => [false, true].map(loan => ({ ...scenario, loan })))).run(async ({
+    assert }, scenario) => {
     const f = await fixture()
+    if (scenario.loan) await f.account.merge({ type: AccountType.Loan }).save()
     let transactionId = 0
     await db.transaction(async trx => {
       f.budget.useTransaction(trx)
@@ -296,8 +298,10 @@ USING (${expression})`)
   test('fractional percentages and signed values use unchanged allocator').with([
     { amount: 100, fixed: 10.005, percentage: 12.755, expected: [10.01, 11.48, 78.51] },
     { amount: -100, fixed: -10.125, percentage: 12.75, expected: [-10.12, -11.46, -78.42] },
-  ]).run(async ({ assert }, scenario) => {
+  ].flatMap(scenario => [false, true].map(loan => ({ ...scenario, loan })))).run(async ({
+    assert }, scenario) => {
     const f = await fixture()
+    if (scenario.loan) await f.account.merge({ type: AccountType.Loan }).save()
     let transactionId = 0
     await db.transaction(async trx => {
       f.budget.useTransaction(trx)
@@ -319,6 +323,27 @@ USING (${expression})`)
     assert.strictEqual(transaction.categories.reduce((sum, split) => sum + Math.round(split.amount *
       100), 0), Math.round(scenario.amount * 100))
   })
+
+  test('allocation balance overflow rolls back Loan and ordinary Account writes')
+    .with([false, true]).run(async ({ assert }, loan) => {
+      const f = await fixture()
+      if (loan) await f.account.merge({ type: AccountType.Loan }).save()
+      await f.categories[0].merge({ balance: 9999999999.99 }).save()
+      const rule = await f.budget.related('autoAssignment').create({ name: 'Overflow',
+        searchStrings: ['Precision match'] })
+      await rule.related('categories').create({ categoryId: f.categories[0].id, amount: 100,
+        percentage: true })
+      const tables = ['accounts', 'categories', 'transactions', 'account_transactions',
+        'transaction_logs']
+      const before = await Promise.all(tables.map(table => db.from(table).orderBy('id')))
+      await assert.rejects(() => db.transaction(async trx => {
+        f.budget.useTransaction(trx)
+        f.account.useTransaction(trx)
+        await f.account.addOrUpdateTransaction(provider(0.01), f.budget)
+      }), /numeric field overflow/)
+      assert.deepEqual(await Promise.all(tables.map(table => db.from(table).orderBy('id'))),
+        before)
+    })
 
   test('CREATE and PATCH wait on the existing Budget lock').with([
     { method: 'post', commit: true }, { method: 'post', commit: false },

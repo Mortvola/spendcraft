@@ -298,58 +298,33 @@ class Account extends BaseModel {
       const categories = await autoAssignment.related('categories').query()
         .orderByRaw('CASE WHEN percentage THEN 1 ELSE 0 END');
 
-      const useCents = this.type !== AccountType.Loan;
-      const zeroCents = parseMoneyCents('0.00');
-      let remainingCents = useCents
-        ? parseMoneyCents(encodeMonetaryAmount(accountTransaction.amount)) : zeroCents;
+      let remainingCents = parseMoneyCents(encodeMonetaryAmount(accountTransaction.amount));
       let percentageBaseCents = remainingCents;
-      // Loan-excluded allocations retain their existing arithmetic.
-      let remaining = useCents ? 0 : Math.round(accountTransaction.amount * 100);
-      let transactionAmount = accountTransaction.amount;
 
       const assignedCategories: string[] = [];
       transaction.categories = [];
 
       for (let i = 0; i < categories.length; i += 1) {
         const cat = categories[i];
-        let amount: number;
-        let amountCents = zeroCents;
-
-        if (useCents) {
-          amountCents = cat.percentage
-            ? moneyCentsFromInteger(Math.round(percentageBaseCents * (cat.amount / 100)))
-            : parseMoneyCents(encodeMonetaryAmount(cat.amount));
-          if (!cat.percentage) {
-            percentageBaseCents = subtractMoneyCents(percentageBaseCents, amountCents);
-          }
-          remainingCents = subtractMoneyCents(remainingCents, amountCents);
-          // The final rule absorbs the remainder, as before.
-          if (remainingCents !== 0 && i === categories.length - 1) {
-            amountCents = addMoneyCents(amountCents, remainingCents);
-          }
-          amount = Number(formatMoneyCents(amountCents));
+        let amountCents = cat.percentage
+          ? moneyCentsFromInteger(Math.round(percentageBaseCents * (cat.amount / 100)))
+          : parseMoneyCents(encodeMonetaryAmount(cat.amount));
+        if (!cat.percentage) {
+          percentageBaseCents = subtractMoneyCents(percentageBaseCents, amountCents);
         }
-        else {
-          let legacyCents: number;
-          if (cat.percentage) {
-            legacyCents = Math.round(transactionAmount * (cat.amount / 100.0) * 100);
-          }
-          else {
-            legacyCents = Math.round(cat.amount * 100);
-            transactionAmount -= legacyCents / 100.0;
-          }
-          remaining -= legacyCents;
-          if (remaining !== 0 && i === categories.length - 1) legacyCents += remaining;
-          amount = legacyCents / 100.0;
+        remainingCents = subtractMoneyCents(remainingCents, amountCents);
+        // The final rule absorbs the remainder, as before.
+        if (remainingCents !== 0 && i === categories.length - 1) {
+          amountCents = addMoneyCents(amountCents, remainingCents);
         }
+        const amount = Number(formatMoneyCents(amountCents));
 
         transaction.categories.push({ categoryId: cat.categoryId, amount });
 
         const category = await Category.findOrFail(cat.categoryId, { client: this.$trx });
         if (transaction.date >= this.startDate) {
-          category.balance = useCents ? Number(formatMoneyCents(addMoneyCents(
-            parseMoneyCents(encodeMonetaryAmount(category.balance)), amountCents)))
-            : category.balance + amount;
+          category.balance = Number(formatMoneyCents(addMoneyCents(
+            parseMoneyCents(encodeMonetaryAmount(category.balance)), amountCents)));
         }
 
         await category.save()
