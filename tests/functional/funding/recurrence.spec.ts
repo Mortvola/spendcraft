@@ -23,7 +23,8 @@ async function fixture() {
       'Regular' })
     const category = await group.related('categories').create({ name: 'Existing goal',
       type: CategoryType.Goal,
-      balanceCents: parseMoneyCents('0.00'), fundingAmount: 120, useGoal: true,
+      balanceCents: parseMoneyCents('0.00'), fundingAmountCents: parseMoneyCents('120.00'),
+         useGoal: true,
         goalDate: DateTime.fromISO('2025-01-01'),
       recurrence: 3, suspended: false, fundingCategories: [] })
     return { budget, user, group, category }
@@ -54,7 +55,8 @@ test.group('Funding recurrence characterization', () => {
       { fundingAmount: 0.3, balance: 0.1, future: 0.1, expected: 0.15 },
     ]).run(async ({ client, assert }, scenario) => {
       const f = await fixture()
-      await f.category.merge({ fundingAmount: scenario.fundingAmount,
+      await f.category.merge({ fundingAmountCents: parseMoneyCents(encodeMonetaryAmount(
+        scenario.fundingAmount)),
         balanceCents: parseMoneyCents(encodeMonetaryAmount(scenario.balance)),
         recurrence: 2, goalDate: DateTime.fromISO('2025-04-01') }).save()
       if (scenario.future !== undefined) {

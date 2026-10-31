@@ -105,7 +105,8 @@ test.group('Funding decimal-string PostgreSQL acceptance', () => {
       const stored = await db.from('categories').where('id', id).firstOrFail()
       assert.strictEqual(stored.funding_amount, '12.35')
       assert.strictEqual(response.body().data.fundingAmount, '12.35')
-      assert.strictEqual((await Category.findOrFail(id)).fundingAmount, 12.35)
+      assert.strictEqual((await Category.findOrFail(id)).fundingAmountCents, parseMoneyCents(
+        '12.35'))
       assert.deepEqual(stored.funding_categories.map((r: { amount: string }) => r.amount), ['-0.12',
         '12.34', '87.66'])
       assert.deepEqual(response.body().data.fundingCategories.map((r: {
@@ -245,7 +246,8 @@ balances from metadata').with(['create', 'replace'])
   test('actual funding reconstruction, residuals and proposed funding use numeric hydrated rules',
     async ({ client, assert }) => {
     const f = await fixture()
-    await f.category.merge({ fundingAmount: 1, fundingCategories: [{ categoryId: f.pool.id,
+    await f.category.merge({ fundingAmountCents: parseMoneyCents('1.00'),
+       fundingCategories: [{ categoryId: f.pool.id,
       amount: 100, percentage: true }] }).save()
     const loaded = await Category.findOrFail(f.category.id)
     const inputs = { [f.category.id]: { baseAmount: 1, fundingCategories: loaded.fundingCategories,

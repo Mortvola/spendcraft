@@ -296,7 +296,7 @@ test('connected-account responses encode balances without changing model values'
 test('Category responses encode balances while runtime values remain numeric', ({ assert }) => {
   for (const [amount, expected] of [[12.5, '12.50'], [-0.3, '-0.30'], [0, '0.00']] as const) {
     const category = new Category().merge({ id: 1, balanceCents: parseMoneyCents(
-      encodeMonetaryAmount(amount)), fundingAmount: 5 })
+      encodeMonetaryAmount(amount)), fundingAmountCents: parseMoneyCents('5.00') })
     assert.strictEqual(category.serialize().balance, expected)
     assert.strictEqual(JSON.parse(JSON.stringify(category)).balance, expected)
     assert.strictEqual(category.balanceCents, parseMoneyCents(encodeMonetaryAmount(amount)))
@@ -310,7 +310,7 @@ test('funding API serialization preserves percentages, nulls, metadata and numer
   const rules = [{ categoryId: 1, amount: -0.125, percentage: false, note: 'keep' },
     { categoryId: 2, amount: 12.75, percentage: true },
     { categoryId: 3, amount: null, percentage: false }, { categoryId: 4, percentage: false }]
-  const category = new Category().merge({ fundingAmount: 1.005 })
+  const category = new Category().merge({ fundingAmountCents: parseMoneyCents('1.00') })
   category.$setAttribute('fundingCategories', rules)
   const original = globalThis.structuredClone(category.$attributes)
   const expected = [{ ...rules[0], amount: '-0.12' }, ...rules.slice(1)]
@@ -392,7 +392,7 @@ test.group('Category balance cents and API compatibility', () => {
     assert.strictEqual(category.serialize().balance, '0.30')
     assert.notProperty(category.serialize(), 'balanceCents')
     assert.notProperty(category.$attributes, 'balance')
-    assert.strictEqual(category.fundingAmount, 12.75)
+    assert.strictEqual(category.fundingAmountCents, parseMoneyCents('12.75'))
     assert.strictEqual(category.serialize().fundingAmount, '12.75')
   })
   test('hydrates signed and zero balances without a dollar-number intermediate').with([
@@ -496,5 +496,52 @@ test.group('AccountTransaction cent model boundaries', () => {
     assert.deepEqual(getAccountTransactionChanges(original, { name: 'Renamed' }, {}), {
       name: { old: undefined, new: 'Renamed' },
     })
+  })
+})
+
+
+test.group('Category funding target cent boundaries', () => {
+  test('hydrates and calculates in cents while preserving the storage and API field', (
+    { assert }) => {
+    const row = Category.$createFromAdapterResult({ id: 1, balance: '1.00',
+       funding_amount: '0.10' })
+    if (!row) throw new Error('Category hydration failed')
+    assert.isFalse(row.$isDirty)
+    row.fundingAmountCents = addMoneyCents(row.fundingAmountCents, parseMoneyCents('0.20'))
+    assert.strictEqual(row.fundingAmountCents, 30)
+    assert.strictEqual(row.balanceCents, 100)
+    const column = Category.$getColumn('fundingAmountCents')
+    if (!column?.prepare) throw new Error('Missing funding target codec')
+    assert.strictEqual(column.columnName, 'funding_amount')
+    assert.strictEqual(column.prepare(row.fundingAmountCents, 'fundingAmountCents', row), '0.30')
+    assert.strictEqual(row.serialize().fundingAmount, '0.30')
+    assert.notProperty(row.serialize(), 'fundingAmountCents')
+    assert.notProperty(row.$attributes, 'fundingAmount')
+  })
+  test('signed and zero targets serialize without making clean models dirty').with([
+    { stored: '0.00', expected: 0 }, { stored: '-0.12', expected: -12 },
+    { stored: '9999999999.99', expected: 999999999999 },
+  ]).run(({ assert }, { stored, expected }) => {
+    const row = Category.$createFromAdapterResult({ id: 1, funding_amount: stored })
+    if (!row) throw new Error('Category hydration failed')
+    assert.strictEqual(row.fundingAmountCents, expected)
+    assert.strictEqual(row.serialize().fundingAmount, stored)
+    assert.isFalse(row.$isDirty)
+    row.name = 'Metadata only'
+    assert.notProperty(row.$dirty, 'fundingAmountCents')
+  })
+  test('invalid and unsafe stored targets reject').with([
+    '1.005', '-0.00', 'NaN', 'Infinity', '90071992547409.92', 0.1, null,
+  ]).run(({ assert }, funding_amount) => {
+    assert.throws(() => Category.$createFromAdapterResult({ id: 1, funding_amount }))
+  })
+  test('invalid runtime cents reject before persistence or serialization', ({ assert }) => {
+    const row = new Category()
+    const column = Category.$getColumn('fundingAmountCents')
+    if (!column?.prepare || !column.serialize) throw new Error('Missing funding target codecs')
+    for (const value of [0.1, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
+      assert.throws(() => column.prepare?.(value, 'fundingAmountCents', row))
+      assert.throws(() => column.serialize?.(value, 'fundingAmountCents', row))
+    }
   })
 })

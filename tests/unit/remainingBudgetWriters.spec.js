@@ -359,7 +359,7 @@ next', async ({ assert }) => {
 
   test('Category settings wait and reload before dirty-field persistence, preventing a hybrid',
     async ({ assert }) => {
-    const stored = { name: 'Original', fundingAmount: 5, groupId: 10 }
+    const stored = { name: 'Original', fundingAmountCents: parseMoneyCents('5.00'), groupId: 10 }
     let tail = Promise.resolve()
     const readNames = []
     const run = await method('app/Controllers/Http/CategoriesController.ts', 'updateCategory', {
@@ -403,7 +403,8 @@ next', async ({ assert }) => {
     }
     await Promise.all([run(request('A', 8)), run(request('B', 5))])
     assert.deepEqual(readNames, ['Original', 'A'])
-    assert.deepEqual(stored, { name: 'B', fundingAmount: 5, groupId: 10 })
+    assert.deepEqual(stored, { name: 'B', fundingAmountCents: parseMoneyCents('5.00'),
+       groupId: 10 })
   })
 
 })

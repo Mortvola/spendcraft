@@ -1,3 +1,4 @@
+import { mock } from 'node:test'
 import { parseMoneyCents } from '#common/moneyCents'
 import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 import { categoryRequest } from '../../helpers/categoryRequest.js'
@@ -147,6 +148,52 @@ test.group('Funding configuration validation regression', (group) => {
       }
     })
   }
+
+  test('funding targets persist exact decimals through CREATE PATCH and metadata-only updates')
+    .with(['0.10', '-0.12', '0.00', '9999999999.99']).run(async ({ client, assert }, amount) => {
+      const f = await fixture()
+      const prefix = `/api/v1/groups/${f.group.id}/categories`
+      const created = await client.post(prefix).json({ name: 'Exact target', useGoal: false,
+        fundingAmount: amount, fundingCategories: [] }).accept('json').loginAs(f.user)
+      created.assertStatus(200)
+      const id: number = created.body().data.id
+      assert.strictEqual(created.body().data.fundingAmount, amount)
+      assert.notProperty(created.body().data, 'fundingAmountCents')
+      let target = await Category.findOrFail(id)
+      assert.strictEqual(target.fundingAmountCents, parseMoneyCents(amount))
+      const patched = await client.patch(`${prefix}/${id}`)
+        .json({ name: 'Exact target', fundingAmount: '0.20' }).accept('json').loginAs(f.user)
+      patched.assertStatus(200)
+      assert.strictEqual(patched.body().data.fundingAmount, '0.20')
+      const metadata = await client.patch(`${prefix}/${id}`).json({ name: 'Renamed target' })
+        .accept('json').loginAs(f.user)
+      metadata.assertStatus(200)
+      assert.strictEqual(metadata.body().data.fundingAmount, '0.20')
+      target = await Category.findOrFail(id)
+      assert.strictEqual(target.fundingAmountCents, 20)
+      const stored = await db.rawQuery('SELECT funding_amount::text AS amount FROM categories '
+        + 'WHERE id = ?', [id])
+      assert.strictEqual(stored.rows[0].amount, '0.20')
+    })
+
+  test('funding target PATCH rolls back target and metadata after a late save failure', async ({
+    client, assert }) => {
+    const f = await fixture()
+    const before = await db.from('categories').where('id', f.category.id).firstOrFail()
+    const save = Category.prototype.save
+    const failure = mock.method(Category.prototype, 'save', async function (this: Category) {
+      const result = await save.call(this)
+      if (this.id === f.category.id) throw new Error('Injected funding target save failure')
+      return result
+    })
+    try {
+      const response = await client.patch(
+        `/api/v1/groups/${f.group.id}/categories/${f.category.id}`)
+        .json({ name: 'Must roll back', fundingAmount: '0.20' }).accept('json').loginAs(f.user)
+      response.assertStatus(500)
+      assert.deepEqual(await db.from('categories').where('id', f.category.id).firstOrFail(), before)
+    } finally { failure.mock.restore() }
+  })
 
   test('Category POST requires configuration even when empty is allowed', async ({ client,
     assert }) => {

@@ -150,7 +150,12 @@ async function fundingProposal(changes = {}) {
     normalized.balanceCents = parseMoneyCents(encodeMonetaryAmount(normalized.balance))
     delete normalized.balance
   }
-  const category = { id: 1, balanceCents: parseMoneyCents('0.00'), fundingAmount: 0.29,
+  if (Object.hasOwn(normalized, 'fundingAmount')) {
+    normalized.fundingAmountCents = parseMoneyCents(encodeMonetaryAmount(normalized.fundingAmount))
+    delete normalized.fundingAmount
+  }
+  const category = { id: 1, balanceCents: parseMoneyCents('0.00'),
+    fundingAmountCents: parseMoneyCents('0.29'),
     useGoal: true, suspended: false,
     goalDate: DateTime.fromISO('2025-04-01'), recurrence: 2, $extras: {}, fundingCategories: [],
     includeFundingTransfers: false, ...normalized }

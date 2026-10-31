@@ -433,7 +433,7 @@ class CategoriesController {
           groupId: parseInt(groupId, 10),
           name: requestData.name,
           balanceCents: parseMoneyCents('0.00'),
-          fundingAmount: requestData.fundingAmount ?? 0,
+          fundingAmountCents: parseMoneyCents(encodeMonetaryAmount(requestData.fundingAmount ?? 0)),
           includeFundingTransfers: requestData.type === CategoryType.Bill ? false : requestData
             .includeFundingTransfers,
           goalDate: requestData.goalDate,
@@ -490,7 +490,9 @@ class CategoriesController {
         name: requestData.name,
         groupId,
         suspended: requestData.suspended,
-        fundingAmount: requestData.fundingAmount,
+        ...(requestData.fundingAmount !== undefined ? {
+          fundingAmountCents: parseMoneyCents(encodeMonetaryAmount(requestData.fundingAmount)),
+        } : {}),
         includeFundingTransfers: requestData.includeFundingTransfers,
         hidden: requestData.hidden,
         useGoal: requestData.useGoal,

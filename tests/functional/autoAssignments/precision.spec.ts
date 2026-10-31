@@ -27,7 +27,8 @@ async function fixture() {
     const categories = []
     for (const name of ['Fixed', 'First percentage', 'Last percentage']) {
       categories.push(await group.related('categories').create({ name, type: CategoryType.Regular,
-        balanceCents: parseMoneyCents('0.00'), fundingAmount: 0, useGoal: false, recurrence: 1,
+        balanceCents: parseMoneyCents('0.00'), fundingAmountCents: parseMoneyCents('0.00'),
+           useGoal: false, recurrence: 1,
           fundingCategories: [] }))
     }
     return { budget, user, account, categories }

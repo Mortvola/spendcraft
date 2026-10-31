@@ -1,3 +1,4 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { parseMoneyCents } from '#common/moneyCents'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
@@ -19,7 +20,8 @@ async function createDomain(label: string) {
     const group = await budget.related('groups').create({ name: label + ' group', type: 'Regular' })
     const category = await group.related('categories').create({ name: label + ' category',
       type: CategoryType.Regular,
-      balanceCents: parseMoneyCents('100.00'), fundingAmount: label === 'own' ? 10 : 99,
+      balanceCents: parseMoneyCents('100.00'), fundingAmountCents: parseMoneyCents(
+        encodeMonetaryAmount(label === 'own' ? 10 : 99)),
         useGoal: false, recurrence: 1,
         fundingCategories: [] })
     const transaction = await budget.related('transactions').create({ date: DateTime.fromISO(

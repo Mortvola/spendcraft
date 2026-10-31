@@ -1,3 +1,4 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { parseMoneyCents } from '#common/moneyCents'
 import { encodeTaxForecast } from '#services/taxMonetaryCodec'
 import { categoryRequest } from '../../helpers/categoryRequest.js'
@@ -45,7 +46,8 @@ async function fixture() {
     const empty = await budget.related('groups').create({ name: 'Empty', type: 'Regular' })
     const category = await group.related('categories').create({ name: 'Target', type: CategoryType
       .Regular,
-      balanceCents: parseMoneyCents('5.00'), fundingAmount: 5, fundingCategories: [],
+      balanceCents: parseMoneyCents('5.00'), fundingAmountCents: parseMoneyCents('5.00'),
+         fundingCategories: [],
         useGoal: false, recurrence: 1 })
     // Known current eligible applied effect; no historical reversal acceptance inferred.
     const transaction = await budget.related('transactions').create({ date: DateTime.fromISO(
@@ -143,7 +145,7 @@ test.group('Staged Budget writers PostgreSQL acceptance', (group) => {
           const pid = (await trx.rawQuery('SELECT pg_backend_pid() AS pid')).rows[0].pid
           // Commit/rollback a mutable configuration value while the endpoint waits.
           const category = await Category.findOrFail(held.category.id, { client: trx })
-          category.fundingAmount = 37; await category.save()
+          category.fundingAmountCents = parseMoneyCents('37.00'); await category.save()
           const pending = request(client, target, operation).accept('json').loginAs(target.user)
             .then((value) => value)
           response = pending; void pending.catch(() => undefined)
@@ -156,7 +158,8 @@ test.group('Staged Budget writers PostgreSQL acceptance', (group) => {
           if (!['deleteUser', 'deleteAccount', 'deleteInstitution'].includes(operation)) {
             const fresh = await Category.findOrFail(target.category.id)
             assert.equal(fresh.balanceCents, parseMoneyCents('5.00'))
-            assert.equal(fresh.fundingAmount, ordering === 'commit' ? 37 : 5)
+            assert.equal(fresh.fundingAmountCents, parseMoneyCents(encodeMonetaryAmount(
+              ordering === 'commit' ? 37 : 5)))
           }
           if (operation === 'tax') {
             const rows = await Tax.query().where('budgetId', target.budget.id).where('year', 2026)
@@ -263,8 +266,9 @@ test.group('Staged Budget writers PostgreSQL acceptance', (group) => {
       } finally { release(); await Promise.allSettled([a, ...(b ? [b] : [])]) }
       await a; await b
       const fresh = await Category.findOrFail(f.category.id)
-      assert.equal(fresh.name, values[1].name); assert.equal(fresh.fundingAmount, values[1]
-        .fundingAmount)
+      assert.equal(fresh.name, values[1].name); assert.equal(fresh.fundingAmountCents,
+         parseMoneyCents(encodeMonetaryAmount(values[1]
+        .fundingAmount)))
       assert.equal(fresh.balanceCents, parseMoneyCents('5.00'))
     })
 

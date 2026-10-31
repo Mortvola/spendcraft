@@ -1,6 +1,6 @@
 import { formatMoneyCents, parseMoneyCents, type MoneyCents } from '#common/moneyCents';
 import { serializeFundingRules } from '#services/fundingAmountCodec';
-import { encodeMonetaryAmount, categoryNonzeroAllocationSql } from '#services/categoryAmountCodec';
+import { categoryNonzeroAllocationSql } from '#services/categoryAmountCodec';
 import { consumeFundingStorage, prepareFundingStorage, finishFundingStorage,
   stageFundingStorage } from '#services/fundingStorage';
 import {
@@ -58,10 +58,10 @@ export default class Category extends BaseModel {
   public hidden: boolean;
 
   @column({
-    consume: (value: string) => parseFloat(value),
-    serialize: (value: number) => encodeMonetaryAmount(value),
+    columnName: 'funding_amount', serializeAs: 'fundingAmount',
+    consume: parseMoneyCents, prepare: formatMoneyCents, serialize: formatMoneyCents,
   })
-  public fundingAmount: number;
+  public fundingAmountCents: MoneyCents;
 
   @column()
   public includeFundingTransfers: boolean;

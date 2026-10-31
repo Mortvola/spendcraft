@@ -28,12 +28,14 @@ async function createDomain(label: string) {
     const group = await budget.related('groups').create({ name: `${label} group`, type: 'Regular' })
     const first = await group.related('categories').create({ name: `${label} first`,
       type: CategoryType.Regular,
-      balanceCents: parseMoneyCents('200.00'), fundingAmount: 300, useGoal: true,
+      balanceCents: parseMoneyCents('200.00'), fundingAmountCents: parseMoneyCents('300.00'),
+         useGoal: true,
         goalDate: DateTime.fromISO('2025-03-01'),
       recurrence: 1, suspended: false, fundingCategories: [] })
     const second = await group.related('categories').create({ name: `${label} second`,
       type: CategoryType.Regular,
-      balanceCents: parseMoneyCents('50.00'), fundingAmount: 120, useGoal: true,
+      balanceCents: parseMoneyCents('50.00'), fundingAmountCents: parseMoneyCents('120.00'),
+         useGoal: true,
         goalDate: DateTime.fromISO('2025-03-01'),
       recurrence: 1, suspended: false, fundingCategories: [] })
     const transactions = []

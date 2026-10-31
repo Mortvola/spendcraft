@@ -64,7 +64,7 @@ export default class GoalTest extends BaseCommand {
 
      
     for (const b of bills) {
-      console.log(`${b.name}, ${b.fundingAmount}, ${formatMoneyCents(
+      console.log(`${b.name}, ${Number(formatMoneyCents(b.fundingAmountCents))}, ${formatMoneyCents(
         b.balanceCents)}, ${b.$extras.goalDate.toISODate()}`)
     }
   }

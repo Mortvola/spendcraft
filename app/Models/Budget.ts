@@ -547,7 +547,7 @@ amount decimal)
           }
 
           const futureTrxCents = parseMoneyCents(cat.$extras.sum ?? '0.00');
-          const goalCents = parseMoneyCents(encodeMonetaryAmount(cat.fundingAmount));
+          const goalCents = cat.fundingAmountCents;
           const balanceCents = cat.balanceCents;
           const goalDiffCents = subtractMoneyCents(goalCents,
             subtractMoneyCents(balanceCents, futureTrxCents));
@@ -562,13 +562,14 @@ amount decimal)
             proposedCat.adjusted = true;
             proposedCat.adjustedReason =
               `The funding amount was adjusted from a planned amount of ${formatMoneyCents(
-              plannedCents)} to ${formatMoneyCents(monthlyCents)} for the goal of ${cat
-              .fundingAmount} due ${goalMonth.month}-${goalMonth.year}.`;
+              plannedCents)} to ${formatMoneyCents(monthlyCents)} for the goal of ${Number(
+                formatMoneyCents(
+                  cat.fundingAmountCents))} due ${goalMonth.month}-${goalMonth.year}.`;
           }
         }
       }
       else {
-        proposedCat.amount = cat.fundingAmount;
+        proposedCat.amount = Number(formatMoneyCents(cat.fundingAmountCents));
         // const plannedAmount = planCat.amount / planCat.recurrence;
         // let monthlyAmount = plannedAmount;
 

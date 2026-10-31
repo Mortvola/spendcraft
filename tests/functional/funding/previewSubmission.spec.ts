@@ -26,7 +26,8 @@ async function fixture() {
     const group = await budget.related('groups').create({ name: 'Preview', type: 'Regular' })
     const categories = []
     for (const name of ['A', 'B', 'C']) categories.push(await group.related('categories').create({
-      name, type: CategoryType.Regular, balanceCents: parseMoneyCents('0.00'), fundingAmount: 1,
+      name, type: CategoryType.Regular, balanceCents: parseMoneyCents('0.00'),
+         fundingAmountCents: parseMoneyCents('1.00'),
         useGoal: false,
       recurrence: 1, fundingCategories: [], includeFundingTransfers: false, suspended: false,
     }))
@@ -71,7 +72,8 @@ test.group('Funding preview/submission persisted equality', () => {
       if (scenario === 'low Pool') await f.pool.merge({ balanceCents: parseMoneyCents(
         '1.00') }).save()
       if (scenario === 'goal' || scenario === 'mixed goal') {
-        await a.merge({ useGoal: true, goalDate: DateTime.fromISO('2025-04-01'), fundingAmount: 120,
+        await a.merge({ useGoal: true, goalDate: DateTime.fromISO('2025-04-01'),
+           fundingAmountCents: parseMoneyCents('120.00'),
           recurrence: 3 }).save()
         const proposed = await client.get('/api/v1/funding-plans/proposed?date=2025-03-01').loginAs(
           f.user)
@@ -157,7 +159,8 @@ test.group('Funding preview/submission persisted equality', () => {
     const rows = calculateFunding({ [a.id]: { baseAmount: 2, includeFundingTransfers: false,
       fundingCategories: [{ categoryId: f.pool.id, amount: 100, percentage: true }] } }, f.pool.id)
     // Another committed operation changes financial/configuration state after preview.
-    await a.merge({ balanceCents: parseMoneyCents('5.00'), fundingAmount: 99 }).save()
+    await a.merge({ balanceCents: parseMoneyCents('5.00'), fundingAmountCents: parseMoneyCents(
+      '99.00') }).save()
     await f.pool.merge({ balanceCents: parseMoneyCents('20.00') }).save()
     const response = await client.post('/api/v1/category-transfer').json(categoryTransferRequest({
       date: '2025-03-01', type: 2, categories: rows })).loginAs(f.user)
@@ -368,7 +371,8 @@ test.group('Immutable funding date verification', () => {
       const [a, b] = f.categories
       let base = 2
       if (rule.includes('goal')) {
-        await a.merge({ useGoal: true, fundingAmount: 120, goalDate: DateTime.fromISO('2025-04-01'),
+        await a.merge({ useGoal: true, fundingAmountCents: parseMoneyCents('120.00'),
+           goalDate: DateTime.fromISO('2025-04-01'),
           recurrence: 3 }).save()
         const march = await client.get('/api/v1/funding-plans/proposed?date=2025-03-01').loginAs(f
           .user)
