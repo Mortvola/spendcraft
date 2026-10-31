@@ -71,7 +71,8 @@ test.group('Funding recurrence characterization', () => {
       const before = await db.from('categories').where('id', f.category.id).firstOrFail()
       const proposal = (await f.budget.getProposedFunding('2025-03-01')).find(row =>
         row.categoryId === f.category.id)
-      assert.strictEqual(proposal?.amount, scenario.expected)
+      assert.strictEqual(proposal?.amountCents,
+        parseMoneyCents(encodeMonetaryAmount(scenario.expected)))
       const response = await client.get('/api/v1/funding-plans/proposed').qs({ date: '2025-03-01' })
         .loginAs(f.user)
       response.assertStatus(200)

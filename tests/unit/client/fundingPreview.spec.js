@@ -1,5 +1,7 @@
 import { validateFundingPercentages } from '../../../common/fundingPercentages.ts'
-import { parseMoneyCents, formatMoneyCents, addMoneyCents, subtractMoneyCents } from
+import {
+  parseMoneyCents, formatMoneyCents, addMoneyCents, subtractMoneyCents, moneyCentsFromInteger,
+} from
   '../../../common/moneyCents.ts'
 import { setImmediate } from 'node:timers'
 import { encodeMonetaryAmount } from '../../../app/services/categoryAmountCodec.ts'
@@ -366,16 +368,20 @@ withdrawal', async ({ assert }) => {
 goal algorithm', async ({ assert }) => {
     const category = { id: 10, useGoal: true, suspended: false, goalDate: DateTime.fromISO(
       '2025-04-01'),
-      fundingAmount: 120, balance: 0, recurrence: 3, $extras: { sum: '0' },
+      fundingAmountCents: parseMoneyCents('120.00'), balanceCents: parseMoneyCents('0.00'),
+      recurrence: 3, $extras: { sum: '0.00' },
       fundingCategories: row(0).fundingCategories, includeFundingTransfers: false }
     const getProposed = runInNewContext(await expression('app/Models/Budget.ts',
       'getProposedFunding'), {
-      DateTime, Category: { query: () => ({ whereHas() { return this }, async joinRaw() { return [
+      DateTime, subtractMoneyCents, parseMoneyCents, formatMoneyCents, moneyCentsFromInteger,
+      Category: { query: () => ({ whereHas() { return this }, async joinRaw() { return [
         category] } }) },
     })
     const [proposed] = await getProposed.call({ id: 1 }, '2025-03-01')
-    assert.equal(proposed.amount, 60)
-    const f = await dialog({ date: '2025-03-01', categories: { 10: row(proposed.amount) } })
+    assert.equal(proposed.amountCents, parseMoneyCents('60.00'))
+    const f = await dialog({ date: '2025-03-01', categories: {
+      10: row(formatMoneyCents(proposed.amountCents)),
+    } })
     assert.include(f.html, 'data-amount="60.00"')
     await f.submit()
     assert.equal(f.submitted.request.categories[0].baseAmount, 60)
@@ -385,9 +391,10 @@ goal algorithm', async ({ assert }) => {
 
 
 test.group('Funding preview API decimal strings', () => {
-  test('proposed endpoint encodes money and preserves numeric calculation results', async ({
-    assert }) => {
-    const proposed = [{ categoryId: 10, amount: 0.1 + 0.2, adjusted: true, adjustedReason: 'keep',
+  test('proposed endpoint formats cents and preserves percentage values')
+    .with(['0.30', '-0.12', '0.00', '90071992547409.90']).run(async ({ assert }, amount) => {
+    const proposed = [{ categoryId: 10, amountCents: parseMoneyCents(amount), adjusted: true,
+      adjustedReason: 'keep',
       includeFundingTransfers: false, fundingCategories: [
         { categoryId: 99, amount: -0.125, percentage: false },
         { categoryId: 20, amount: 12.75, percentage: true },
@@ -395,11 +402,12 @@ test.group('Funding preview API decimal strings', () => {
     const before = globalThis.structuredClone(proposed)
     const budget = { getProposedFunding: async () => proposed }
     const get = runInNewContext(await expression('app/Controllers/Http/FundingPlanController.ts',
-      'getProposed'), { encodeMonetaryAmount })
+      'getProposed'), { encodeMonetaryAmount, formatMoneyCents })
     const response = await get({ auth: { user: { related: () => ({ query: () => ({
       firstOrFail: async () => budget }) }) } },
       request: { qs: () => ({ date: '2025-03-01' }) } })
-    assert.strictEqual(response.data[0].amount, '0.30')
+    assert.strictEqual(response.data[0].amount, amount)
+    assert.notProperty(response.data[0], 'amountCents')
     assert.strictEqual(response.data[0].fundingCategories[0].amount, '-0.12')
     assert.strictEqual(response.data[0].fundingCategories[1].amount, 12.75)
     assert.strictEqual(response.data[0].adjustedReason, 'keep')
@@ -412,7 +420,7 @@ test.group('Funding preview API decimal strings', () => {
       Http: { get: async () => ({ ok: true, body: async () => response }) },
     })
     const inputs = await getProposed('2025-03-01')
-    assert.strictEqual(inputs[10].baseAmount, '0.30')
+    assert.strictEqual(inputs[10].baseAmount, amount)
     assert.deepEqual(Array.from(inputs[10].fundingCategories, rule => rule.amount), ['-0.12',
       12.75])
   })

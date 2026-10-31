@@ -191,7 +191,7 @@ test.group('Proposed funding checked cents without a database', () => {
       { changes: { useGoal: false }, amount: 0.29, adjusted: false },
     ]).run(async ({ assert }, { changes, amount, adjusted }) => {
       const proposal = await fundingProposal(changes)
-      assert.strictEqual(proposal.amount, amount)
+      assert.strictEqual(proposal.amountCents, parseMoneyCents(encodeMonetaryAmount(amount)))
       assert.strictEqual(proposal.adjusted, adjusted)
     })
 

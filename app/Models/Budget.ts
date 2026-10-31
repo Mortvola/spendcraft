@@ -1,5 +1,5 @@
 import {
-  subtractMoneyCents, parseMoneyCents, formatMoneyCents, moneyCentsFromInteger,
+  subtractMoneyCents, parseMoneyCents, formatMoneyCents, moneyCentsFromInteger, type MoneyCents,
 } from '#common/moneyCents';
 import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
 import { DateTime } from 'luxon'
@@ -24,7 +24,7 @@ import Tax from './Tax.ts';
 
 type ProposedFundingCategory = Omit<ProposedFundingCategoryProps, 'amount' |
   'fundingCategories'> & {
-  amount: number;
+  amountCents: MoneyCents;
   fundingCategories: { categoryId: number, amount: number, percentage: boolean }[];
 };
 
@@ -528,7 +528,7 @@ amount decimal)
     for (const cat of cats) {
       const proposedCat: ProposedFundingCategory = {
         categoryId: cat.id,
-        amount: 0,
+        amountCents: parseMoneyCents('0.00'),
         adjusted: false,
         adjustedReason: null,
         fundingCategories: cat.fundingCategories,
@@ -554,7 +554,7 @@ amount decimal)
           const monthlyCents = goalDiffCents > 0
             ? moneyCentsFromInteger(Math.round(goalDiffCents / (monthDiff + 1)))
             : parseMoneyCents('0.00');
-          proposedCat.amount = Number(formatMoneyCents(monthlyCents));
+          proposedCat.amountCents = monthlyCents;
 
           const plannedCents = moneyCentsFromInteger(Math.round(goalCents / cat.recurrence));
 
@@ -569,7 +569,7 @@ amount decimal)
         }
       }
       else {
-        proposedCat.amount = Number(formatMoneyCents(cat.fundingAmountCents));
+        proposedCat.amountCents = cat.fundingAmountCents;
         // const plannedAmount = planCat.amount / planCat.recurrence;
         // let monthlyAmount = plannedAmount;
 
