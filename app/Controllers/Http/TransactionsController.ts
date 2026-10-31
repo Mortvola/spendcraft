@@ -202,14 +202,17 @@ export default class TransactionsController {
 
       const unassignedCat = await budget.getUnassignedCategory({ client: trx });
 
+      const nextAmountCents = requestData.amount === undefined ? acctTrans.amountCents
+        : parseMoneyCents(encodeMonetaryAmount(requestData.amount));
+      const replacementCategories = requestData.categories === undefined ? undefined
+        : requestData.categories.length === 0 ? [{ categoryId: unassignedCat.id,
+          amountCents: nextAmountCents, comment: undefined }]
+          : categoryAllocationsToCents(requestData.categories);
+
       if (transaction.type === TransactionType.MANUAL_TRANSACTION
         && account.tracking === TrackingType.Transactions && account.type !== AccountType.Loan) {
-        const amountCents = requestData.amount === undefined ? acctTrans.amountCents
-          : parseMoneyCents(encodeMonetaryAmount(requestData.amount));
-        const categories = requestData.categories?.length === 0 ? [{ amountCents }]
-          : requestData.categories === undefined ? transaction.categories
-            : categoryAllocationsToCents(requestData.categories);
-        validateCentTransactionSplits(amountCents, categories);
+        validateCentTransactionSplits(nextAmountCents,
+          replacementCategories ?? transaction.categories);
       }
 
       // Ordinary effects use independent old/new eligibility; nominal splits stay intact.
@@ -226,26 +229,17 @@ export default class TransactionsController {
       const zeroCents = parseMoneyCents('0.00');
       const accountDeltaCents = ordinary ? subtractMoneyCents(
         accountEligible(newState, account.startDate)
-          ? requestData.amount === undefined ? acctTrans.amountCents
-            : parseMoneyCents(encodeMonetaryAmount(requestData.amount))
-          : zeroCents,
+          ? nextAmountCents : zeroCents,
         accountEligible(oldState, account.startDate)
           ? acctTrans.amountCents : zeroCents,
       ) : zeroCents;
 
       if (ordinary) {
-        if (requestData.categories?.length === 0) {
-          requestData.categories = [{ categoryId: unassignedCat.id,
-            amount: requestData.amount ?? Number(formatMoneyCents(acctTrans.amountCents)),
-               comment: undefined }];
-        }
         const oldSplits = transaction.categories.length > 0 ? transaction.categories
           : [{ categoryId: unassignedCat.id, amountCents: acctTrans.amountCents }];
-        const nominalNew = requestData.categories === undefined ? transaction.categories
-          : categoryAllocationsToCents(requestData.categories);
+        const nominalNew = replacementCategories ?? transaction.categories;
         const newSplits = nominalNew.length > 0 ? nominalNew
-          : [{ categoryId: unassignedCat.id, amountCents: requestData.amount === undefined
-            ? acctTrans.amountCents : parseMoneyCents(encodeMonetaryAmount(requestData.amount)) }];
+          : [{ categoryId: unassignedCat.id, amountCents: nextAmountCents }];
         if (hasCategoryStorage(transaction)) {
           const deltas = categoryEffectDeltas(oldSplits, newSplits,
             oldCategoryEligible, newCategoryEligible);
@@ -276,15 +270,7 @@ export default class TransactionsController {
         }
       }
 
-      if (!ordinary && requestData.categories !== undefined) {
-        if (requestData.categories.length === 0) {
-          requestData.categories = [{
-            categoryId: unassignedCat.id,
-            amount: requestData.amount ?? Number(formatMoneyCents(acctTrans.amountCents)),
-            comment: undefined,
-          }]
-        }
-
+      if (!ordinary && replacementCategories !== undefined) {
         const { categories } = transaction;
 
         if (categories.length > 0) {
@@ -326,17 +312,17 @@ export default class TransactionsController {
           });
         }
 
-        if (requestData.categories.length > 0) {
-          transaction.categories = categoryAllocationsToCents(requestData.categories);
+        if (replacementCategories.length > 0) {
+          transaction.categories = replacementCategories;
 
-          for (const transCategory of requestData.categories) {
+          for (const transCategory of replacementCategories) {
 
             const category = await budgetCategories(budget.id, { client: trx }).where('id',
               transCategory.categoryId).firstOrFail();
 
             category.balanceCents = addMoneyCents(
               category.balanceCents,
-              parseMoneyCents(encodeMonetaryAmount(transCategory.amount)));
+              transCategory.amountCents);
 
 
             await category.save();
@@ -445,8 +431,7 @@ export default class TransactionsController {
       const transactionChanges: ModelObject = {
         date: requestData.date,
         comment: requestData.comment,
-        categories: requestData.categories === undefined ? undefined
-          : categoryAllocationsToCents(requestData.categories),
+        categories: replacementCategories,
       }
 
       changes = getChanges(transaction.$attributes, transactionChanges, changes);

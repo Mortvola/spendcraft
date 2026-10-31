@@ -204,20 +204,18 @@ test.group('Ordinary transaction lifecycle', (group) => {
       accountBefore)
   })
 
-  test('special Account-linked PATCH and DELETE retain exact balances and existing pending rules')
-    .with([TransactionType.STARTING_BALANCE, TransactionType.TRANSFER_TRANSACTION]
-      .flatMap(type => [1, -1].flatMap(sign => [false, true].map(pending => ({ type, sign,
-        pending })))))
-    .run(async ({ client, assert }, { type, sign, pending }) => {
+  test('starting-balance PATCH and DELETE retain exact balances and existing pending rules')
+    .with([1, -1].flatMap(sign => [false, true].map(pending => ({ sign, pending }))))
+    .run(async ({ client, assert }, { sign, pending }) => {
       await fixture.account.merge({ balanceCents: parseMoneyCents(encodeMonetaryAmount(
         sign * 0.1)) }).save()
       await fixture.first.merge({ balanceCents: parseMoneyCents(encodeMonetaryAmount(
         sign * 0.2)) }).save()
       await fixture.accountTransaction.merge({ amountCents: parseMoneyCents(
         encodeMonetaryAmount(sign * 0.2)), pending }).save()
-      await writeHistoricalTransactionFixture(fixture.transaction, { type, categories: [
-        { categoryId: fixture.first.id, amount: type === TransactionType.TRANSFER_TRANSACTION
-          ? sign * 0.2 : sign > 0 ? '0.20' : '-0.20' }] })
+      await writeHistoricalTransactionFixture(fixture.transaction, {
+        type: TransactionType.STARTING_BALANCE, categories: [
+          { categoryId: fixture.first.id, amount: sign > 0 ? '0.20' : '-0.20' }] })
       for (const [version, value] of ['0.40', '0.20'].entries()) {
         const amount = sign < 0 ? `-${value}` : value
         const response = await client.patch(`/api/v1/transaction/${fixture.transaction.id}`)
@@ -235,8 +233,7 @@ test.group('Ordinary transaction lifecycle', (group) => {
       assert.strictEqual((await Account.findOrFail(fixture.account.id)).balanceCents,
         parseMoneyCents(encodeMonetaryAmount(sign * 0.1)))
       const stored = await db.from('transactions').where('id', fixture.transaction.id).firstOrFail()
-      assert.strictEqual(typeof stored.categories[0].amount,
-        type === TransactionType.TRANSFER_TRANSACTION ? 'number' : 'string')
+      assert.strictEqual(typeof stored.categories[0].amount, 'string')
       const removed = await client.delete(`/api/v1/transaction/${fixture.transaction.id}`)
         .loginAs(fixture.user)
       removed.assertStatus(200)

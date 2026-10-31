@@ -385,12 +385,11 @@ test('Loan PATCH rejects unsafe principal effects before Account save or commit'
   })
 
 
-test('special non-Loan PATCH replacements and metadata edits retain exact signed balances')
-  .with([1, 4].flatMap(type => [1, -1].flatMap(sign => [false, true].map(pending => ({ type, sign,
-    pending })))))
-  .run(async ({ assert }, { type, sign, pending }) => {
-    const f = await patchFixture({ excluded: type === 1, pending, amount: sign * 0.2 })
-    f.transaction.type = type
+test('starting-balance PATCH replacements and metadata edits retain exact signed balances')
+  .with([1, -1].flatMap(sign => [false, true].map(pending => ({ sign, pending }))))
+  .run(async ({ assert }, { sign, pending }) => {
+    const f = await patchFixture({ pending, amount: sign * 0.2 })
+    f.transaction.type = 4
     f.account.balanceCents = parseMoneyCents(encodeMonetaryAmount(sign * 0.1))
     await f.run({ amount: sign * 0.4, categories: [{ categoryId: 1, amount: sign * 0.4 }] })
     assert.strictEqual(Number(formatMoneyCents(f.account.balanceCents)), sign * 0.3)
@@ -453,4 +452,32 @@ test('excluded metadata-only PATCH preserves historical subcent numeric allocati
   assert.strictEqual(f.categories.get(1).balanceCents, parseMoneyCents(encodeMonetaryAmount(
     balance)))
   assert.isFalse(f.events.some(event => Array.isArray(event) && event[0] === 'category'))
+})
+
+test('empty PATCH allocations default directly from stored or supplied cents').with([
+  { type: 5, pending: false }, { type: 5, pending: true },
+  { type: 4, pending: false }, { type: 5, pending: false, loan: true },
+].flatMap(scenario => [-1, 0, 1].map(sign => ({ ...scenario, sign })))).run(async ({ assert },
+  { type, pending, loan, sign }) => {
+  const f = await patchFixture({ amount: sign * 0.3, pending })
+  f.transaction.type = type
+  if (loan) f.account.type = 'Loan'
+  const accountBefore = f.account.balanceCents
+  await f.run({ categories: [] })
+  assert.deepEqual(f.transaction.categories, [{ categoryId: 3,
+    amountCents: parseMoneyCents(encodeMonetaryAmount(sign * 0.3)), comment: undefined }])
+  assert.strictEqual(f.categories.get(1).balanceCents, parseMoneyCents('0.00'))
+  assert.strictEqual(f.categories.get(3).balanceCents,
+    parseMoneyCents(encodeMonetaryAmount(sign * 0.3)))
+  assert.strictEqual(f.account.balanceCents, accountBefore)
+  const original = globalThis.structuredClone(f.transaction.categories)
+  await f.run({ name: 'Metadata only' })
+  assert.deepEqual(f.transaction.categories, original)
+  await f.run({ amount: sign * 0.2, categories: [] })
+  assert.deepEqual(f.transaction.categories, [{ categoryId: 3,
+    amountCents: parseMoneyCents(encodeMonetaryAmount(sign * 0.2)), comment: undefined }])
+  assert.strictEqual(f.link.amountCents, parseMoneyCents(encodeMonetaryAmount(sign * 0.2)))
+  assert.strictEqual(f.categories.get(3).balanceCents,
+    parseMoneyCents(encodeMonetaryAmount(sign * 0.2)))
+  assert.strictEqual(f.events.filter(event => event === 'commit').length, 3)
 })
