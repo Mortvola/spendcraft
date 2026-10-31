@@ -1,3 +1,4 @@
+import { fundingMetadataToCents } from '../../app/services/fundingAmountCodec.ts'
 // Current CREATE behavior only. All database collaborators are inert; no app bootstrap.
 import { test } from '@japa/runner'
 import { readFile } from 'node:fs/promises'
@@ -81,7 +82,8 @@ test.group('Transaction Category storage boundary — approved CREATE admission'
         id, balanceCents: parseMoneyCents('0.10'), async save() { events.push('category.save') },
       }]))
       const handler = await transferHandler({
-        DateTime, TransactionType, Exception, updateCategoryTransfer, encodeMonetaryAmount,
+        DateTime, TransactionType, Exception, fundingMetadataToCents, updateCategoryTransfer,
+          encodeMonetaryAmount,
           validateCategoryConservation,
         requestCategoryStorage: (model) => model, validateStoredCategoryConservation: async () =>
           undefined,

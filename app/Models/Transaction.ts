@@ -1,4 +1,5 @@
-import { serializeFundingMetadata } from '#services/fundingAmountCodec';
+import { serializeFundingMetadata,
+  type TransactionFundingMetadata } from '#services/fundingAmountCodec';
 import { encodeTaxAttributions } from '#services/taxAmountCodec';
 import { encodeCategoryAllocations,
   type CentCategoryAllocation } from '#services/categoryAmountCodec';
@@ -19,7 +20,7 @@ import Budget from '#app/Models/Budget';
 import TransactionLog from './TransactionLog.js';
 import type { HasMany, BelongsTo, HasOne } from "@adonisjs/lucid/types/relations";
 
-interface TransCategory extends CentCategoryAllocation {
+interface TransCategory extends CentCategoryAllocation, TransactionFundingMetadata {
   comment?: string,
 }
 

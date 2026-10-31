@@ -3,7 +3,8 @@ import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 import { canonicalCategoryAllocations, categoryAllocationsToCents, encodeMonetaryAmount,
   encodeCategoryAllocations,
   monetaryAmountCents, checkedCentSum } from '#services/categoryAmountCodec'
-import { encodeFundingMetadata, decodeFundingMetadata } from '#services/fundingAmountCodec'
+import { fundingMetadataToCents, encodeFundingMetadata,
+  decodeFundingMetadata } from '#services/fundingAmountCodec'
 // Requires task-specific authorization and the current
 // configured/live pg + pgLog + exact execution-connection safeguards before SQL.
 import { test } from '@japa/runner'
@@ -107,10 +108,11 @@ test.group('Funding preview/submission persisted equality', () => {
       const transaction = await Transaction.findOrFail(response.body().data.transaction.id)
       assert.equal(transaction.type, TransactionType.FUNDING_TRANSACTION)
       assert.deepEqual(transaction.categories, decodeFundingMetadata(encodeFundingMetadata(
-        categoryAllocationsToCents(canonicalCategoryAllocations(rows)))))
+        categoryAllocationsToCents(fundingMetadataToCents(canonicalCategoryAllocations(rows))))))
       const persisted = await db.from('transactions').where('id', transaction.id).first()
       assert.deepEqual(persisted.categories,
-        encodeCategoryAllocations(encodeFundingMetadata(categoryAllocationsToCents(rows))))
+        encodeCategoryAllocations(encodeFundingMetadata(categoryAllocationsToCents(
+          fundingMetadataToCents(rows)))))
       assert.lengthOf(await transaction.related('accountTransaction').query(), 0)
       for (const [id, initial] of before) {
         // Existing numeric(12,2) storage; compare the current display/accounting
@@ -169,7 +171,7 @@ test.group('Funding preview/submission persisted equality', () => {
       date: '2025-03-01', type: 2, categories: rows })).loginAs(f.user)
     response.assertStatus(200)
     assert.deepEqual((await Transaction.findOrFail(response.body().data.transaction.id)).categories,
-      categoryAllocationsToCents(rows))
+      categoryAllocationsToCents(fundingMetadataToCents(rows)))
     assert.equal((await Category.findOrFail(a.id)).balanceCents, parseMoneyCents('7.00'))
     assert.equal((await Category.findOrFail(f.pool.id)).balanceCents, parseMoneyCents('18.00'))
   })
@@ -362,7 +364,7 @@ account for reversal')
         encodeMonetaryAmount(projectedCategory)))
       assert.equal(additionalWithdrawal, amount - 2)
       assert.deepEqual((await Transaction.findOrFail(created.body().data.transaction.id))
-        .categories, categoryAllocationsToCents(newRows))
+        .categories, categoryAllocationsToCents(fundingMetadataToCents(newRows)))
     })
 })
 
@@ -410,7 +412,8 @@ test.group('Immutable funding date verification', () => {
       assert.equal(original.date, '2025-03-17')
       assert.equal(original.type, 2)
       assert.deepEqual(original.categories,
-        encodeCategoryAllocations(encodeFundingMetadata(categoryAllocationsToCents(rows))))
+        encodeCategoryAllocations(encodeFundingMetadata(categoryAllocationsToCents(
+          fundingMetadataToCents(rows)))))
       const balances = () => db.from('categories').select('categories.*').join('groups',
         'groups.id', 'categories.group_id')
         .where('groups.application_id', f.budget.id).orderBy('categories.id')
@@ -551,7 +554,7 @@ test.group('Immutable funding replacement serialization', () => {
       const transaction = await Transaction.findOrFail(id)
       assert.equal(transaction.date.toISODate(), '2025-03-17')
       assert.deepEqual(transaction.categories,
-        categoryAllocationsToCents(rows(kind === 'other writer' ? 3 : 4)))
+        categoryAllocationsToCents(fundingMetadataToCents(rows(kind === 'other writer' ? 3 : 4))))
       assert.equal((await Category.findOrFail(a.id)).balanceCents, parseMoneyCents('4.00'))
       assert.equal((await Category.findOrFail(f.pool.id)).balanceCents, parseMoneyCents('6.00'))
       assert.lengthOf(await Transaction.query().where('budgetId', f.budget.id), kind ===
@@ -600,7 +603,7 @@ test.group('Immutable funding date ownership and lifecycle isolation', () => {
     assert.isTrue(transaction.deleted)
     assert.equal(transaction.date.toISODate(), '2025-03-17')
     assert.deepEqual(transaction.categories, decodeFundingMetadata(encodeFundingMetadata(
-      categoryAllocationsToCents(canonicalCategoryAllocations(rows)))))
+      categoryAllocationsToCents(fundingMetadataToCents(canonicalCategoryAllocations(rows))))))
     assert.equal((await Category.findOrFail(f.categories[0].id)).balanceCents, parseMoneyCents(
       '0.00'))
     assert.equal((await Category.findOrFail(f.pool.id)).balanceCents, parseMoneyCents('10.00'))

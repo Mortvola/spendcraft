@@ -1,3 +1,4 @@
+import { fundingMetadataToCents } from '#services/fundingAmountCodec'
 import { categoryAllocationsToCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import { transactionRequest, categoryTransferRequest } from '../../helpers/transactionRequest.js'
@@ -183,7 +184,7 @@ test.group('Transaction Category decimal-string storage (prepared)', () => {
             { categoryId: f.category.id, amount: 0.2 }, { categoryId: f.pool.id, amount: -0.3 }]
         const target = await requestCategoryStorage(new Transaction()).useTransaction(trx)
           .fill({ budgetId: f.budget.id, type, date: DateTime.fromISO('2025-02-01'),
-            categories: categoryAllocationsToCents(allocations) }).save()
+            categories: categoryAllocationsToCents(fundingMetadataToCents(allocations)) }).save()
         id = target.id
         if ([0, 4, 5].includes(type)) await f.account.related('accountTransactions').create({
           transactionId: id, name: 'Conserved', amountCents: parseMoneyCents('0.30'),

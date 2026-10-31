@@ -1,3 +1,4 @@
+import { fundingMetadataToCents } from '#services/fundingAmountCodec'
 import { categoryAllocationsToCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { addMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import AutoAssignmentCategory from '#models/AutoAssignmentCategory'
@@ -105,7 +106,7 @@ test.group('Transaction allocation API strings', () => {
         { categoryId: 2, amount: -0.125 }, { categoryId: 3, amount: 0 },
       ]
       const row = new Transaction().merge({ id: 1, type,
-        categories: categoryAllocationsToCents(categories) })
+        categories: categoryAllocationsToCents(fundingMetadataToCents(categories)) })
       const before = globalThis.structuredClone(row.$attributes)
       for (const response of [row.serialize(), row.serialize(transactionFields), JSON.parse(JSON
         .stringify(row))]) {
@@ -350,7 +351,7 @@ test('funding API serialization preserves percentages, nulls, metadata and numer
     { categoryId: 3, amount: 0 },
   ]
   const transaction = new Transaction().merge({ categories: categoryAllocationsToCents(
-    categories) })
+    fundingMetadataToCents(categories)) })
   const before = globalThis.structuredClone(transaction.$attributes)
   const response = transaction.serialize(transactionFields).categories
   assert.deepEqual(response[0], { ...categories[0], amount: '0.00', baseAmount: '0.30',

@@ -1,3 +1,4 @@
+import { fundingMetadataToCents } from '../../app/services/fundingAmountCodec.ts'
 import { subtractMoneyCents, addMoneyCents, formatMoneyCents,
   parseMoneyCents } from '#common/moneyCents'
 import { requestFundingStorage } from '../../app/services/fundingStorage.ts'
@@ -80,7 +81,7 @@ async function harness(shape = {}, request = {}) {
     .replace(application, `observeApplication(); ${application}`)
   const transfer = runInNewContext(instrumented, {
     subtractMoneyCents, addMoneyCents, parseMoneyCents, formatMoneyCents, encodeMonetaryAmount,
-      requestFundingStorage,
+      requestFundingStorage, fundingMetadataToCents,
     observeReversal: () => { log.push('reverse') },
       observeApplication: () => { log.push('apply') },
     validateCategoryConservation, validateStoredCategoryConservation: async () => undefined,

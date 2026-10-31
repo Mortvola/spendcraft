@@ -5,7 +5,7 @@ import { parseMoneyCents } from '#common/moneyCents'
 import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 import { categoryRequest } from '../../helpers/categoryRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
-import { decodeFundingRules } from '#services/fundingAmountCodec'
+import { fundingMetadataToCents, decodeFundingRules } from '#services/fundingAmountCodec'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import testUtils from '@adonisjs/core/services/test_utils'
@@ -34,7 +34,7 @@ async function fixture() {
       10 }, { categoryId: pool.id, amount: 0 }]
     const transaction = await budget.related('transactions').create({
       date: DateTime.fromISO('2025-03-01'), type: TransactionType.FUNDING_TRANSACTION,
-        categories: categoryAllocationsToCents(categories),
+        categories: categoryAllocationsToCents(fundingMetadataToCents(categories)),
     })
     await writeCanonicalTransactionFixture(transaction)
     return { budget, user, group, category, source, pool, transaction }

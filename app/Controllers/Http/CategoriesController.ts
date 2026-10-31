@@ -1,3 +1,4 @@
+import { fundingMetadataToCents } from '#services/fundingAmountCodec';
 import {
   addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents, type MoneyCents,
 } from '#common/moneyCents';
@@ -700,7 +701,7 @@ class CategoriesController {
           .fill({
             date: DateTime.fromISO(date),
             type,
-            categories: categories.map((category) => ({
+            categories: fundingMetadataToCents(categories.map((category) => ({
               categoryId: category.categoryId,
               amountCents: parseMoneyCents(encodeMonetaryAmount(category.amount)),
               comment: category.comment,
@@ -708,7 +709,7 @@ class CategoriesController {
               fundingCategories: category.fundingCategories,
               includeFundingTransfers: category.includeFundingTransfers,
               baseAmount: category.baseAmount,
-            })),
+            }))),
             budgetId: budget.id,
           }).save();
 
@@ -739,7 +740,7 @@ class CategoriesController {
         await transaction
           .merge(removeUndefined({
             date: DateTime.fromISO(date),
-            categories: categories.map((category) => ({
+            categories: fundingMetadataToCents(categories.map((category) => ({
               categoryId: category.categoryId,
               amountCents: parseMoneyCents(encodeMonetaryAmount(category.amount)),
               comment: category.comment,
@@ -747,7 +748,7 @@ class CategoriesController {
               fundingCategories: category.fundingCategories,
               includeFundingTransfers: category.includeFundingTransfers,
               baseAmount: category.baseAmount,
-            })),
+            }))),
           }))
           .save()
       }

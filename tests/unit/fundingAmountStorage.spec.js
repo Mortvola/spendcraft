@@ -2,7 +2,8 @@ import { test } from '@japa/runner'
 import { BaseModel } from '@adonisjs/lucid/orm'
 import Category from '../../app/Models/Category.ts'
 import { encodeFundingRules, decodeFundingRules, encodeFundingMetadata,
-  decodeFundingMetadata, serializeFundingMetadata } from '../../app/services/fundingAmountCodec.ts'
+  decodeFundingMetadata, serializeFundingMetadata, fundingMetadataToCents,
+  runtimeFundingMetadata } from '../../app/services/fundingAmountCodec.ts'
 import { consumeFundingStorage, requestFundingStorage, stageFundingStorage,
   prepareFundingStorage } from '../../app/services/fundingStorage.ts'
 import { bindResolvedCategoryStorage, prepareCategoryStorage, stageCategoryStorage,
@@ -14,7 +15,7 @@ import { updateCategoryTransfer } from '../../app/validation/Validators/category
 import { calculateFunding, fundingCalculationInputs } from
   '../../client-src/Funding/calculateFunding.ts'
 import { encodeTransferCategories } from '../../client-src/monetary.ts'
-import { formatMoneyCents } from '../../common/moneyCents.ts'
+import { formatMoneyCents, parseMoneyCents } from '../../common/moneyCents.ts'
 import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
@@ -27,7 +28,7 @@ const allocation = baseAmount => [{ categoryId: 10, amount: '1.00', baseAmount,
 class Sample extends BaseModel {}
 Sample.boot()
 Sample.$addColumn('categories', { prepare: (value, _key, row) => prepareCategoryStorage(value,
-  row) })
+  row), serialize: value => serializeFundingMetadata(encodeCategoryAllocations(value)) })
 Sample.$addColumn('comment', {})
 function hydrated(raw) {
   const row = new Sample().merge({ categories: raw, comment: 'old' })
@@ -42,6 +43,53 @@ function persist(row) {
 }
 
 test.group('Funding JSON storage (no database)', () => {
+  test('Transaction metadata retains exact cents while percentages stay numeric', ({ assert }) => {
+    const raw = [{ categoryId: 1, amount: '0.00', baseAmount: '90071992547409.91',
+      fundingCategories: [{ categoryId: 2, amount: '-90071992547409.91', percentage: false },
+        { categoryId: 3, amount: '12.75', percentage: true }], extra: { amount: 1.005 } }]
+    const decoded = decodeFundingMetadata(raw)
+    assert.strictEqual(decoded[0].baseAmountCents, Number.MAX_SAFE_INTEGER)
+    assert.strictEqual(decoded[0].fundingCategories[0].amountCents, -Number.MAX_SAFE_INTEGER)
+    assert.strictEqual(decoded[0].fundingCategories[1].amount, 12.75)
+    assert.notProperty(decoded[0], 'baseAmount')
+    assert.notProperty(decoded[0].fundingCategories[0], 'amount')
+    assert.deepEqual(encodeFundingMetadata(decoded), raw)
+    const response = serializeFundingMetadata(decoded)
+    assert.strictEqual(response[0].baseAmount, raw[0].baseAmount)
+    assert.strictEqual(response[0].fundingCategories[0].amount,
+      raw[0].fundingCategories[0].amount)
+    assert.strictEqual(response[0].fundingCategories[1].amount, 12.75)
+    assert.notProperty(response[0], 'baseAmountCents')
+    assert.notProperty(response[0].fundingCategories[0], 'amountCents')
+    assert.deepEqual(raw[0].extra, { amount: 1.005 })
+    const model = hydrated(raw)
+    model.categories[0].comment = 'Metadata edit'
+    const stored = JSON.parse(persist(model).categories)
+    assert.strictEqual(stored[0].baseAmount, '90071992547409.91')
+    assert.strictEqual(stored[0].fundingCategories[0].amount, '-90071992547409.91')
+  })
+  test('request money rounds once without rounding percentage calculation inputs', ({ assert }) => {
+    const input = [{ categoryId: 1, baseAmount: -0.005,
+      fundingCategories: [rule(12.345), rule(12.345, true)] }]
+    const original = globalThis.structuredClone(input)
+    const cents = fundingMetadataToCents(input)
+    assert.strictEqual(cents[0].baseAmountCents, parseMoneyCents('0.00'))
+    assert.strictEqual(cents[0].fundingCategories[0].amountCents, parseMoneyCents('12.35'))
+    assert.strictEqual(cents[0].fundingCategories[1].amount, 12.345)
+    assert.deepEqual(runtimeFundingMetadata(cents), cents)
+    assert.strictEqual(encodeFundingMetadata(cents)[0].fundingCategories[1].amount, '12.35')
+    assert.deepEqual(input, original)
+  })
+  test('runtime metadata rejects invalid cents and ambiguous unit fields', ({ assert }) => {
+    for (const value of [0.1, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1, '1.00']) {
+      assert.throws(() => encodeFundingMetadata([{ categoryId: 1, baseAmountCents: value }]))
+      assert.throws(() => encodeFundingMetadata([{ categoryId: 1,
+        fundingCategories: [{ categoryId: 2, amountCents: value, percentage: false }] }]))
+    }
+    assert.throws(() => encodeFundingMetadata([{ categoryId: 1, baseAmount: 1 }]))
+    assert.throws(() => serializeFundingMetadata([{ categoryId: 1,
+      fundingCategories: [{ categoryId: 2, amountCents: 100, percentage: true }] }]))
+  })
   test('all Category types use the same funding storage lifecycle').with([
     'create', 'replacement', 'read', 'linked Loan', 'supported replacement',
   ]).run(async ({ assert }, scenario) => {
@@ -51,7 +99,8 @@ test.group('Funding JSON storage (no database)', () => {
       && ['bindCategoryStorage', 'prepareNewCategoryStorage'].includes(node.name?.text))
       .map(node => node.getText(source).replace(/^export\s+/, '')).join('\n')
     const owner = new EventEmitter(), queries = []
-    const raw = scenario === 'create' ? categoryAllocationsToCents(allocation(1.005))
+    const raw = scenario === 'create' ? categoryAllocationsToCents(fundingMetadataToCents(
+      allocation(1.005)))
       : allocation('1.00')
     const row = new Sample().merge({ categories: raw })
     row.id = 1; row.type = scenario === 'linked Loan' ? 0 : 2; row.budgetId = 7
@@ -76,10 +125,10 @@ test.group('Funding JSON storage (no database)', () => {
     })
     if (scenario === 'replacement') {
       await scope.bindCategoryStorage([row])
-      row.categories = categoryAllocationsToCents(allocation(3))
+      row.categories = categoryAllocationsToCents(fundingMetadataToCents(allocation(3)))
     } else if (scenario === 'read' || scenario === 'linked Loan') {
       await scope.bindCategoryStorage([row])
-      assert.strictEqual(row.categories[0].baseAmount, 1)
+      assert.strictEqual(row.categories[0].baseAmountCents, parseMoneyCents('1.00'))
       assert.isFalse(row.$isDirty)
     }
     if (scenario === 'create' || scenario === 'supported replacement') binding
@@ -104,7 +153,7 @@ test.group('Funding JSON storage (no database)', () => {
     assert.deepEqual(stored[0].fundingCategories, [rule(expected), rule(expected, true)])
     assert.isTrue(binding.bound.has(row))
     row.$hydrateOriginals(); finishCategoryStorageSave(row)
-    assert.strictEqual(row.serialize().categories[0].baseAmount, Number(expected))
+    assert.strictEqual(row.serialize().categories[0].baseAmount, expected)
 
   })
   test('all three paths and both modes use approved individual rounding').with([
@@ -113,7 +162,7 @@ test.group('Funding JSON storage (no database)', () => {
   ]).run(({ assert }, [value, stored]) => {
     assert.deepEqual(encodeFundingRules([rule(value), rule(value, true)]), [rule(stored), rule(
       stored, true)])
-    const encoded = encodeFundingMetadata(allocation(value))[0]
+    const encoded = encodeFundingMetadata(fundingMetadataToCents(allocation(value)))[0]
     assert.equal(encoded.baseAmount, stored)
     assert.deepEqual(encoded.fundingCategories, [rule(stored), rule(stored, true)])
     assert.equal(encoded.amount, '1.00'); assert.equal(encoded.comment, 'keep')
@@ -123,15 +172,17 @@ test.group('Funding JSON storage (no database)', () => {
     '', '1.2', '1.005', '1e2', '01.00', '-0.00', '90071992547409.92',
   ]).run(({ assert }, value) => {
     assert.throws(() => encodeFundingRules([rule(value)]))
-    assert.throws(() => encodeFundingMetadata(allocation(value)))
+    assert.throws(() => encodeFundingMetadata(fundingMetadataToCents(allocation(value))))
     assert.throws(() => decodeFundingMetadata(allocation(value)))
   })
-  test('canonical reads expose numbers and do not mutate raw JSON or modes', ({ assert }) => {
+  test('canonical reads expose cents and numeric percentages without mutating JSON or modes',
+    ({ assert }) => {
     const raw = [{ ...allocation('1.00')[0], fundingCategories: [rule('12.35'), rule('33.33', true),
       { ...rule('-0.12', null), extra: { amount: 1.005 } }], note: [2, 1, 2] }]
     const before = globalThis.structuredClone(raw), decoded = decodeFundingMetadata(raw)
-    assert.equal(decoded[0].baseAmount, 1)
-    assert.deepEqual(decoded[0].fundingCategories.map(r => r.amount), [12.35, 33.33, -0.12])
+    assert.equal(decoded[0].baseAmountCents, parseMoneyCents('1.00'))
+    assert.deepEqual(decoded[0].fundingCategories.map(r => r.percentage === true
+      ? r.amount : r.amountCents), [1235, 33.33, -12])
     assert.isNull(decoded[0].fundingCategories[2].percentage)
     assert.deepEqual(raw, before); assert.deepEqual(decoded[0].note, raw[0].note)
   })
@@ -144,8 +195,8 @@ test.group('Funding JSON storage (no database)', () => {
       baseAmount: null,
       fundingCategories: null }, { categoryId: 3, amount: '0.00', fundingCategories: [{
         categoryId: 4, percentage: true }, rule(null)] }]
-    assert.deepEqual(encodeFundingMetadata(raw), raw)
-    assert.deepEqual(decodeFundingMetadata(raw), raw)
+    assert.deepEqual(encodeFundingMetadata(decodeFundingMetadata(raw)), raw)
+    assert.deepEqual(decodeFundingMetadata(raw), fundingMetadataToCents(raw))
     assert.deepEqual(decodeFundingRules([rule(null), { categoryId: 1 }]), [rule(null), {
       categoryId: 1 }])
   })
@@ -197,8 +248,9 @@ test.group('Funding JSON storage (no database)', () => {
     const stored = JSON.parse(persist(row).categories)
     assert.equal(stored[0].baseAmount, '1.00')
     assert.deepEqual(stored[0].fundingCategories, [rule('1.00'), rule('1.00', true)])
-    assert.strictEqual(row.serialize().categories[0].baseAmount, 1)
-    assert.deepEqual(row.categories[0].fundingCategories, [rule(1), rule(1, true)])
+    assert.strictEqual(row.serialize().categories[0].baseAmount, '1.00')
+    assert.deepEqual(row.categories[0].fundingCategories, [
+      { categoryId: 99, amountCents: parseMoneyCents('1.00'), percentage: false }, rule(1, true)])
     assert.isFalse(row.$isDirty)
   })
   test('editing one metadata leaf does not normalize historical siblings', ({ assert }) => {
@@ -213,26 +265,26 @@ test.group('Funding JSON storage (no database)', () => {
   test('invalid metadata fails before adapter persistence and does not change sibling data', ({
     assert }) => {
     const row = hydrated(allocation('1.00')), original = globalThis.structuredClone(row.$original)
-    row.categories[0].baseAmount = Infinity
+    row.categories[0].baseAmountCents = Infinity
     assert.throws(() => persist(row))
     assert.deepEqual(row.$original, original)
   })
   test('a rejected adapter attempt cannot leak pending metadata into a later scalar save', ({
     assert }) => {
     const row = hydrated(allocation('1.00'))
-    row.categories[0].baseAmount = 2.345
+    row.categories[0].baseAmountCents = parseMoneyCents('2.35')
     stageFundingStorage(row, 'categories'); stageCategoryStorage(row)
     row.prepareForAdapter(row
       .$dirty) // Simulate preparation followed by an adapter/transaction failure.
     row.categories = globalThis.structuredClone(row.$original.categories)
     row.comment = 'later unrelated save'
     assert.deepEqual(persist(row), { comment: 'later unrelated save' })
-    assert.equal(row.categories[0].baseAmount, 1)
+    assert.equal(row.categories[0].baseAmountCents, parseMoneyCents('1.00'))
   })
   test('changing a rule identity or mode does not reuse an unrelated historical leaf', ({
     assert }) => {
     const row = hydrated(allocation('1.00'))
-    row.categories[0].fundingCategories[0].percentage = true
+    row.categories[0].fundingCategories[0] = rule(1, true)
     row.categories[0].fundingCategories[1].categoryId = 98
     const encoded = JSON.parse(persist(row).categories)[0]
     assert.equal(encoded.fundingCategories[0].amount, '1.00')
@@ -265,12 +317,13 @@ roundtrip', ({ assert }) => {
       const submitted = encodeTransferCategories(before.map(({ amountCents, ...category }) => ({
         ...category, amount: formatMoneyCents(amountCents),
       })))
-      const stored = encodeFundingMetadata(submitted)
+      const stored = encodeFundingMetadata(fundingMetadataToCents(submitted))
       assert.equal(stored[0].baseAmount, base)
       assert.isString(stored[0].fundingCategories[0].amount)
       const decoded = decodeFundingMetadata(stored)
-      assert.strictEqual(decoded[0].baseAmount, Number(base))
-      assert.isNumber(decoded[0].fundingCategories[0].amount)
+      assert.strictEqual(decoded[0].baseAmountCents, parseMoneyCents(base))
+      assert.isNumber(decoded[0].fundingCategories[0].percentage === true
+        ? decoded[0].fundingCategories[0].amount : decoded[0].fundingCategories[0].amountCents)
       const response = serializeFundingMetadata(decoded)
       assert.deepEqual(calculateFunding(fundingCalculationInputs({ 10: {
         ...response[0], includeFundingTransfers: false,
@@ -287,7 +340,7 @@ roundtrip', ({ assert }) => {
     assert }) => {
     const row = hydrated(allocation('54.27'))
     row.deleted = true
-    assert.equal(row.categories[0].baseAmount, 54.27)
+    assert.equal(row.categories[0].baseAmountCents, parseMoneyCents('54.27'))
     assert.deepEqual(persist(row), {})
   })
   test('hydrated funding rules prepare without changing stored values', ({ assert }) => {
