@@ -1,4 +1,4 @@
-import { addMoneyCents, parseMoneyCents, formatMoneyCents } from '#common/moneyCents';
+import { addMoneyCents, parseMoneyCents } from '#common/moneyCents';
 import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
 import {
   BaseModel, hasMany,
@@ -99,7 +99,7 @@ class Institution extends BaseModel {
           } else {
             acct.balanceCents = addMoneyCents(
               acct.balanceCents,
-              parseMoneyCents(encodeMonetaryAmount(acct.$extras.addedSum ?? 0)));
+              acct.$extras.addedSumCents ?? parseMoneyCents('0.00'));
           }
            
           await acct.save();
@@ -162,16 +162,16 @@ class Institution extends BaseModel {
       }
 
       if (acct.tracking === TrackingType.Balances) continue;
-      const [amount, unassignedAmount] = await acct.addOrUpdateTransaction(transaction, budget);
+      const [amountCents, unassignedAmountCents] = await acct.addOrUpdateTransaction(
+        transaction, budget);
 
       // Account returns deltas based on both the old and new applicable state.
-      acct.$extras.addedSum = Number(formatMoneyCents(addMoneyCents(
-        parseMoneyCents(encodeMonetaryAmount(acct.$extras.addedSum ?? 0)),
-        parseMoneyCents(encodeMonetaryAmount(amount)))));
+      acct.$extras.addedSumCents = addMoneyCents(
+        acct.$extras.addedSumCents ?? parseMoneyCents('0.00'), amountCents);
 
       if (acct.tracking === TrackingType.Transactions) {
         unassignedSum = addMoneyCents(unassignedSum,
-          parseMoneyCents(encodeMonetaryAmount(unassignedAmount)));
+          unassignedAmountCents);
       }
 
       acct.$extras.modified = true;

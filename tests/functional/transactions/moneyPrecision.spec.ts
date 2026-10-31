@@ -88,7 +88,11 @@ test.group('Monetary persistence and allocation regressions', () => {
           await rule.related('categories').create({ categoryId: f.categories[scenario.fixed.length +
             index].id, amount, percentage: true })
         }
-        await f.account.addOrUpdateTransaction(provider(scenario.amount), f.budget)
+        const [accountDeltaCents, unassignedDeltaCents] = await f.account.addOrUpdateTransaction(
+          provider(scenario.amount), f.budget)
+        assert.strictEqual(accountDeltaCents, parseMoneyCents(
+          encodeMonetaryAmount(scenario.amount)))
+        assert.strictEqual(unassignedDeltaCents, parseMoneyCents('0.00'))
         transactionId = (await f.account.related('accountTransactions').query().firstOrFail())
           .transactionId
       })

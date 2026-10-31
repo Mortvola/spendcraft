@@ -264,7 +264,7 @@ class Account extends BaseModel {
     budget: Budget,
     transaction: Transaction,
     accountTransaction: AccountTransaction,
-  ): Promise<number> {
+  ): Promise<MoneyCents> {
     const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
 
     transaction.categories = [{ categoryId: unassigned.id, amount: Number(formatMoneyCents(
@@ -272,7 +272,7 @@ class Account extends BaseModel {
 
     await transaction.save();
 
-    return Number(formatMoneyCents(accountTransaction.amountCents));
+    return accountTransaction.amountCents;
   }
 
 
@@ -392,9 +392,9 @@ class Account extends BaseModel {
     budget: Budget,
     acctTrans: AccountTransaction,
     plaidTransaction: Plaid.Transaction,
-  ): Promise<[number, number]> {
-    let transactionAmount = 0;
-    let unassignedAmount = 0;
+  ): Promise<[MoneyCents, MoneyCents]> {
+    let transactionAmountCents = parseMoneyCents('0.00');
+    let unassignedAmountCents = parseMoneyCents('0.00');
 
     const transaction = await acctTrans.related('transaction').query()
       .firstOrFail()
@@ -417,8 +417,7 @@ class Account extends BaseModel {
         ? acctTrans.amountCents : zeroCents;
       const newAppliedAmount = newApplicable && !plaidTransaction.pending
         ? newAmountCents : zeroCents;
-      transactionAmount = Number(formatMoneyCents(subtractMoneyCents(
-        newAppliedAmount, oldAppliedAmount)));
+      transactionAmountCents = subtractMoneyCents(newAppliedAmount, oldAppliedAmount);
 
       // todo: check to see if any of these attributes have changed
       const accountTransactionChanges = {
@@ -477,7 +476,7 @@ class Account extends BaseModel {
           transaction.categories.push({ categoryId: unassigned.id, amount: delta })
         }
 
-        unassignedAmount = newApplicable ? delta : 0;
+        unassignedAmountCents = newApplicable ? deltaCents : parseMoneyCents('0.00');
       }
 
       if (oldApplicable !== newApplicable && this.tracking === TrackingType.Transactions) {
@@ -485,22 +484,21 @@ class Account extends BaseModel {
         // crossing the start date. Unassigned is accumulated by the institution.
         const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
         const appliedCategories = newApplicable ? transaction.categories : oldCategories;
-        const direction = newApplicable ? 1 : -1;
-        unassignedAmount = 0;
+        unassignedAmountCents = parseMoneyCents('0.00');
 
         for (const allocation of appliedCategories) {
-          const effect = direction * allocation.amount;
+          const allocationCents = parseMoneyCents(encodeMonetaryAmount(allocation.amount));
+          const effectCents = newApplicable ? allocationCents
+            : subtractMoneyCents(parseMoneyCents('0.00'), allocationCents);
           if (allocation.categoryId === unassigned.id) {
-            unassignedAmount = Number(formatMoneyCents(addMoneyCents(
-              parseMoneyCents(encodeMonetaryAmount(unassignedAmount)),
-              parseMoneyCents(encodeMonetaryAmount(effect)))));
+            unassignedAmountCents = addMoneyCents(unassignedAmountCents, effectCents);
           }
           else {
             const category = await Category.findOrFail(allocation.categoryId, { client: this
               .$trx });
             category.balanceCents = addMoneyCents(
               category.balanceCents,
-              parseMoneyCents(encodeMonetaryAmount(effect)));
+              effectCents);
             await category.save();
           }
         }
@@ -523,19 +521,19 @@ class Account extends BaseModel {
       }
     }
 
-    return [transactionAmount, unassignedAmount];
+    return [transactionAmountCents, unassignedAmountCents];
   }
 
   private async addTransaction(
     this: Account,
     budget: Budget,
     plaidTransaction: Plaid.Transaction,
-  ): Promise<[number, number]> {
+  ): Promise<[MoneyCents, MoneyCents]> {
     if (!this.$trx) {
       throw new Error('database transaction not set');
     }
 
-    let unassignedAmount = 0;
+    let unassignedAmountCents = parseMoneyCents('0.00');
 
     const transaction = await requestCategoryStorage(new Transaction())
       .useTransaction(this.$trx)
@@ -569,30 +567,30 @@ class Account extends BaseModel {
     // If this is a matching auto assignment then use its categories
     // Otherwise, assign the unassigned category.
     if (!(await this.autoAssign(budget, transaction, acctTrans))) {
-      unassignedAmount = await this.assignUnassigned(budget, transaction, acctTrans);
+      unassignedAmountCents = await this.assignUnassigned(budget, transaction, acctTrans);
     }
 
     await validateStoredCategoryConservation(transaction);
 
     if (transaction.date < this.startDate) {
-      return [0, 0];
+      return [parseMoneyCents('0.00'), parseMoneyCents('0.00')];
     }
 
-    return [acctTrans.pending ? 0 : Number(formatMoneyCents(acctTrans.amountCents)),
-       unassignedAmount];
+    return [acctTrans.pending ? parseMoneyCents('0.00') : acctTrans.amountCents,
+       unassignedAmountCents];
   }
 
   public async addOrUpdateTransaction(
     this: Account,
     plaidTransaction: Plaid.Transaction,
     budget: Budget,
-  ): Promise<[number, number]> {
+  ): Promise<[MoneyCents, MoneyCents]> {
     if (!this.$trx) {
       throw new Error('database transaction not set');
     }
 
-    let transactionAmount = 0;
-    let unassignedAmount = 0;
+    let transactionAmountCents = parseMoneyCents('0.00');
+    let unassignedAmountCents = parseMoneyCents('0.00');
 
     // First check to see if the transaction is present. If it is then update it. If it is not
     // then add it.
@@ -614,15 +612,16 @@ class Account extends BaseModel {
 
     if (acctTrans) {
       // The account transaction exists. Update it.
-      [transactionAmount, unassignedAmount] = await this.updateTransaction(budget, acctTrans,
-        plaidTransaction);
+      [transactionAmountCents, unassignedAmountCents] = await this.updateTransaction(
+        budget, acctTrans, plaidTransaction);
     }
     else {
       // Tthe acdount transaction was not found. Create it.
-      [transactionAmount, unassignedAmount] = await this.addTransaction(budget, plaidTransaction);
+      [transactionAmountCents, unassignedAmountCents] = await this.addTransaction(
+        budget, plaidTransaction);
     }
 
-    return [transactionAmount, unassignedAmount];
+    return [transactionAmountCents, unassignedAmountCents];
   }
 
   public async deleteAccountTransaction(
@@ -650,9 +649,8 @@ class Account extends BaseModel {
       }
 
       if (!acctTran.pending && transaction.date >= this.startDate) {
-        this.$extras.addedSum = Number(formatMoneyCents(subtractMoneyCents(
-          parseMoneyCents(encodeMonetaryAmount(this.$extras.addedSum ?? 0)),
-          acctTran.amountCents)));
+        this.$extras.addedSumCents = subtractMoneyCents(
+          this.$extras.addedSumCents ?? parseMoneyCents('0.00'), acctTran.amountCents);
       }
 
 

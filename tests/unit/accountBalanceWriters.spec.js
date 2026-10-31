@@ -121,6 +121,28 @@ test.group('Provider concurrency behavior without a database', () => {
     assert.deepEqual(events, ['gate', 'refresh', 'accounts', 'provider'])
   })
 
+  test('provider deltas accumulate in cents without dollar round trips').with([1, -1])
+    .run(async ({ assert }, sign) => {
+      const source = await method('app/Models/Institution.ts', 'addOrUpdateTransactions')
+      const update = runInNewContext(ts.transpileModule(`(async function(${source
+        .parameters}) ${source.body})`, {
+        compilerOptions: { target: ts.ScriptTarget.ES2022 },
+      }).outputText, { addMoneyCents, parseMoneyCents,
+        TrackingType: { Balances: 'Balances', Transactions: 'Transactions' } })
+      const account = { tracking: 'Transactions', $attributes: { plaidAccountId: 'provider' },
+        $extras: {},
+        async addOrUpdateTransaction(transaction) {
+          const cents = parseMoneyCents(encodeMonetaryAmount(sign * transaction.amount))
+          return [cents, cents]
+        } }
+      const result = await update({}, [{ account_id: 'provider', amount: 0.1 },
+        { account_id: 'provider', amount: 0.2 }], [account], [])
+      const expected = parseMoneyCents(sign === 1 ? '0.30' : '-0.30')
+      assert.strictEqual(account.$extras.addedSumCents, expected)
+      assert.strictEqual(result.unassignedSum, expected)
+      assert.notProperty(account.$extras, 'addedSum')
+    })
+
   test('provider balances retain nullable cents and account sign conventions').with([
     { type: 'Depository', current: 0.305, expected: '0.31' },
     { type: 'Credit', current: 0.3, expected: '-0.30' },
@@ -136,13 +158,14 @@ test.group('Provider concurrency behavior without a database', () => {
     }).outputText, { addMoneyCents, parseMoneyCents, encodeMonetaryAmount,
       TrackingType: { Balances: 'Balances' }, AccountType: { Credit: 'Credit', Loan: 'Loan' } })
     const account = { tracking: 'Transactions', type, plaidAccountId: 'provider',
-      initialized: true, $extras: { modified: true }, balanceCents: parseMoneyCents('12.34'),
+      initialized: true, $extras: { modified: true, addedSumCents: parseMoneyCents('0.20') },
+      balanceCents: parseMoneyCents('0.10'),
       async save() { return this } }
     const provider = { account_id: 'provider', balances: { current } }
     await update({}, [account], [provider])
     assert.strictEqual(account.plaidBalanceCents, expected === null
       ? null : parseMoneyCents(expected))
-    assert.strictEqual(account.balanceCents, parseMoneyCents('12.34'))
+    assert.strictEqual(account.balanceCents, parseMoneyCents('0.30'))
     assert.strictEqual(provider.balances.current, current)
   })
 
