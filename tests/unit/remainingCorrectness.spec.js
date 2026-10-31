@@ -1,10 +1,10 @@
+import { transactionSearchAmount } from '../../app/validation/monetaryAmount.ts'
 import { encodeMonetaryAmount } from '../../app/services/categoryAmountCodec.ts'
 import { AccountType, TrackingType, TransactionType } from '../../common/ResponseTypes.ts'
 import { test } from '@japa/runner'
 import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
-import { DateTime } from 'luxon'
 
 // Executes current method bodies against inert adapters: no app/DB bootstrap.
 async function method(file, name, context) {
@@ -66,6 +66,7 @@ test('transaction list endpoints return canonical placeholder balances').with(['
     const budget = { related: () => ({ query: () => query }) }
     const handler = await method('app/Controllers/Http/TransactionsController.ts', action, {
       Transaction: { query: () => query }, TransactionType, transactionFields: {},
+      transactionSearchAmount,
     })
     const response = await handler({ request: { qs: () => ({ t: [1] }) },
       auth: { user: { budgetId: 1, related: () => ({ query: () => ({ firstOrFail: async () =>

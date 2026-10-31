@@ -1,4 +1,5 @@
-import { autoAssignmentAmount } from '../../app/services/autoAssignmentAmount.ts'
+import { autoAssignmentAmount, autoAssignmentPercentageCents } from
+  '../../app/services/autoAssignmentAmount.ts'
 import {
   addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents, moneyCentsFromInteger,
 } from
@@ -314,7 +315,8 @@ async function assignmentFixture(amount, rules, { loan = false, eligible = true,
   const allocate = runInNewContext(ts.transpileModule(`(async function(${source.parameters}) ${
     source.body})`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, {
     addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents, moneyCentsFromInteger,
-    encodeMonetaryAmount, AccountType: { Loan: 'Loan' }, GroupType: { NoGroup: 'NoGroup' },
+    autoAssignmentPercentageCents, encodeMonetaryAmount, AccountType: { Loan: 'Loan' },
+    GroupType: { NoGroup: 'NoGroup' },
     Category: { async findOrFail(id, options) {
       if (options.client !== trx) throw new Error('Missing transaction binding')
       return balances[id - 1]
