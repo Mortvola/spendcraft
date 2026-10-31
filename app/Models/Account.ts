@@ -1,7 +1,8 @@
 import {
-  addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents, moneyCentsFromInteger,
+  addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents,
   type MoneyCents,
 } from '#common/moneyCents';
+import { autoAssignmentPercentageCents } from '#services/autoAssignmentAmount';
 import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
 import { requestCategoryStorage } from '#services/categoryStorageBinding';
 import { validateStoredCategoryConservation } from '#services/transactionCategoryStorage';
@@ -314,7 +315,7 @@ class Account extends BaseModel {
         const cat = categories[i];
         const allocation = cat.allocationAmount;
         let amountCents = allocation.percentage
-          ? moneyCentsFromInteger(Math.round(percentageBaseCents * (allocation.amount / 100)))
+          ? autoAssignmentPercentageCents(percentageBaseCents, allocation.amount)
           : allocation.amountCents;
         if (!cat.percentage) {
           percentageBaseCents = subtractMoneyCents(percentageBaseCents, amountCents);

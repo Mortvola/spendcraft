@@ -1,4 +1,5 @@
-import { formatMoneyCents, parseMoneyCents, type MoneyCents } from '#common/moneyCents'
+import { formatMoneyCents, parseMoneyCents, moneyCentsFromInteger, type MoneyCents } from
+  '#common/moneyCents'
 import { Exception } from '@adonisjs/core/exceptions'
 
 // Percentage points and fixed dollars share scale, not allocation semantics.
@@ -33,4 +34,17 @@ export function storedAutoAssignmentAmount(value: unknown): string {
 export function encodeAutoAssignmentAmount(value: AutoAssignmentAmount): string {
   return value.percentage ? roundAutoAssignmentAmount(value.amount).toFixed(2)
     : storedAutoAssignmentAmount(formatMoneyCents(value.amountCents))
+}
+
+// Multiply cents by hundredths of a percentage point exactly. BigInt division truncates
+// toward zero; ties round toward positive infinity, matching Math.round (including negatives).
+export function autoAssignmentPercentageCents(baseCents: MoneyCents, percentage: number):
+  MoneyCents {
+  const base = BigInt(moneyCentsFromInteger(baseCents))
+  const units = BigInt(parseMoneyCents(roundAutoAssignmentAmount(percentage).toFixed(2)))
+  const product = base * units
+  const quotient = product / 10000n
+  const remainder = product % 10000n
+  const rounded = quotient + (remainder >= 5000n ? 1n : remainder < -5000n ? -1n : 0n)
+  return moneyCentsFromInteger(Number(rounded))
 }
