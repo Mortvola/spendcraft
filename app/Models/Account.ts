@@ -655,10 +655,9 @@ class Account extends BaseModel {
         if (transaction.date >= this.startDate) {
          
           const category = await Category.findOrFail(tc.categoryId, { client: transaction.$trx });
-          category.balance = this.type === AccountType.Loan ? category.balance - tc.amount
-            : Number(formatMoneyCents(subtractMoneyCents(
-              parseMoneyCents(encodeMonetaryAmount(category.balance)),
-              parseMoneyCents(encodeMonetaryAmount(tc.amount)))));
+          category.balance = Number(formatMoneyCents(subtractMoneyCents(
+            parseMoneyCents(encodeMonetaryAmount(category.balance)),
+            parseMoneyCents(encodeMonetaryAmount(tc.amount)))));
            
           await category.save();
         }

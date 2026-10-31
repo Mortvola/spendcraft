@@ -924,11 +924,9 @@ class InstitutionController {
                
               const unassignedCat = await budget.getUnassignedCategory({ client: budget.$trx });
 
-              unassignedCat.balance = acct.type === AccountType.Loan
-                ? unassignedCat.balance - acctTran.amount
-                : Number(formatMoneyCents(subtractMoneyCents(
-                  parseMoneyCents(encodeMonetaryAmount(unassignedCat.balance)),
-                  parseMoneyCents(encodeMonetaryAmount(acctTran.amount)))));
+              unassignedCat.balance = Number(formatMoneyCents(subtractMoneyCents(
+                parseMoneyCents(encodeMonetaryAmount(unassignedCat.balance)),
+                parseMoneyCents(encodeMonetaryAmount(acctTran.amount)))));
 
               await unassignedCat.save();
 
@@ -950,10 +948,9 @@ class InstitutionController {
               const category = await Category.find(tc.categoryId, { client: budget.$trx });
 
               if (category) {
-                category.balance = acct.type === AccountType.Loan ? category.balance - tc.amount
-                  : Number(formatMoneyCents(subtractMoneyCents(
-                    parseMoneyCents(encodeMonetaryAmount(category.balance)),
-                    parseMoneyCents(encodeMonetaryAmount(tc.amount)))));
+                category.balance = Number(formatMoneyCents(subtractMoneyCents(
+                  parseMoneyCents(encodeMonetaryAmount(category.balance)),
+                  parseMoneyCents(encodeMonetaryAmount(tc.amount)))));
 
                  
                 await category.save();

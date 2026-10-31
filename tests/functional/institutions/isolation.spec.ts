@@ -384,8 +384,10 @@ test.group('Institution isolation', (group) => {
 
   test('deletion reverses fractional duplicate and empty allocations exactly')
     .with(['account', 'institution'].flatMap(operation => [1, -1].map(sign => ({ operation,
-      sign })))).run(async ({ client, assert }, { operation, sign }) => {
+      sign }))).flatMap(scenario => [false, true].map(loan => ({ ...scenario, loan }))))
+    .run(async ({ client, assert }, { operation, sign, loan }) => {
       const f = fixture.own
+      if (loan) await f.account.merge({ type: AccountType.Loan }).save()
       await f.category.merge({ balance: sign * 0.3 }).save()
       await f.accountTransaction.merge({ amount: sign * 0.2 }).save()
       await db.from('transactions').where('id', f.transaction.id).update({ categories:
@@ -395,8 +397,9 @@ test.group('Institution isolation', (group) => {
       if (operation === 'institution') {
         await unassigned.merge({ balance: sign * 0.3 }).save()
         const other = await f.institution.related('accounts').create({ name: 'Second exact account',
-          type: AccountType.Depository, subtype: 'checking', tracking: TrackingType.Transactions,
-          balance: 0, startDate: DateTime.fromISO('2025-01-01'), rate: 0, closed: false })
+          type: loan ? AccountType.Loan : AccountType.Depository, subtype: 'checking',
+          tracking: TrackingType.Transactions, balance: 0,
+          startDate: DateTime.fromISO('2025-01-01'), rate: 0, closed: false })
         const transaction = await f.budget.related('transactions').create({
           date: DateTime.fromISO('2025-02-01'), type: TransactionType.MANUAL_TRANSACTION,
           categories: [], taxes: [], deleted: false })
@@ -422,8 +425,9 @@ test.group('Institution isolation', (group) => {
         .firstOrFail(), foreignBefore)
     })
 
-  test('late deletion balance failure rolls back all local financial changes', async ({ client,
-    assert }) => {
+  test('late deletion balance failure rolls back all local financial changes')
+    .with([false, true]).run(async ({ client, assert }, loan) => {
+    if (loan) await fixture.own.account.merge({ type: AccountType.Loan }).save()
     const before = await state()
     const original = Category.prototype.save
     const failure = mock.method(Category.prototype, 'save', async function (this: Category) {
