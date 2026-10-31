@@ -1,5 +1,6 @@
 import {
   addMoneyCents, subtractMoneyCents, parseMoneyCents, formatMoneyCents, moneyCentsFromInteger,
+  divideMoneyCents,
 } from
   '../../common/moneyCents.ts'
 import { encodeMonetaryAmount } from '../../app/services/categoryAmountCodec.ts'
@@ -165,6 +166,7 @@ async function fundingProposal(changes = {}) {
     .getText(source)})`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, {
     DateTime, Category: { query: () => query }, parseMoneyCents, encodeMonetaryAmount,
     subtractMoneyCents, formatMoneyCents, moneyCentsFromInteger,
+  divideMoneyCents,
   })
   const result = await calculate.call({ id: 7 }, '2025-03-01')
   if (JSON.stringify(category) !== before) throw new Error('Proposal mutated Category')
@@ -194,6 +196,15 @@ test.group('Proposed funding checked cents without a database', () => {
       assert.strictEqual(proposal.amountCents, parseMoneyCents(encodeMonetaryAmount(amount)))
       assert.strictEqual(proposal.adjusted, adjusted)
     })
+
+  test('large safe goals retain exact monthly and planned division', async ({ assert }) => {
+    const proposal = await fundingProposal({
+      fundingAmountCents: moneyCentsFromInteger(Number.MAX_SAFE_INTEGER),
+      goalDate: DateTime.fromISO('2025-05-01'), recurrence: 3,
+    })
+    assert.strictEqual(proposal.amountCents, 3002399751580330)
+    assert.isFalse(proposal.adjusted)
+  })
 
   test('adjustment message keeps its existing format without dollar formatting arithmetic',
     async ({ assert }) => {

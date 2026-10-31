@@ -1,6 +1,7 @@
 import { validateFundingPercentages } from '../../../common/fundingPercentages.ts'
 import {
   parseMoneyCents, formatMoneyCents, addMoneyCents, subtractMoneyCents, moneyCentsFromInteger,
+  divideMoneyCents,
 } from
   '../../../common/moneyCents.ts'
 import { setImmediate } from 'node:timers'
@@ -375,6 +376,7 @@ goal algorithm', async ({ assert }) => {
     const getProposed = runInNewContext(await expression('app/Models/Budget.ts',
       'getProposedFunding'), {
       DateTime, subtractMoneyCents, parseMoneyCents, formatMoneyCents, moneyCentsFromInteger,
+      divideMoneyCents,
       Category: { query: () => ({ whereHas() { return this }, async joinRaw() { return [
         category] } }) },
     })

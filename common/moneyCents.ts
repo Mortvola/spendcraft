@@ -41,6 +41,17 @@ export function subtractMoneyCents(left: MoneyCents, right: MoneyCents): MoneyCe
   return checkedCents(integerCents(left) - integerCents(right));
 }
 
+// Divide by a positive period count, rounding exact half ties toward positive infinity.
+export function divideMoneyCents(value: MoneyCents, divisor: number): MoneyCents {
+  if (!Number.isSafeInteger(divisor) || divisor <= 0) throw new Error('Invalid monetary cents');
+  const numerator = integerCents(value);
+  const denominator = BigInt(divisor);
+  const quotient = numerator / denominator;
+  const doubledRemainder = (numerator % denominator) * 2n;
+  return checkedCents(quotient + (doubledRemainder >= denominator ? 1n
+    : doubledRemainder < -denominator ? -1n : 0n));
+}
+
 export function formatMoneyCents(value: MoneyCents): DecimalMoneyString {
   const cents = integerCents(value);
   const magnitude = cents < 0n ? -cents : cents;

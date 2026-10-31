@@ -1,6 +1,6 @@
 import { test } from '@japa/runner'
 import { moneyCentsFromInteger, parseMoneyCents, addMoneyCents, subtractMoneyCents,
-  formatMoneyCents } from '../../common/moneyCents.ts'
+  formatMoneyCents, divideMoneyCents } from '../../common/moneyCents.ts'
 
 test.group('Checked integer monetary cents', () => {
   test('canonical strings parse and format exactly').with([
@@ -51,4 +51,28 @@ test('already-rounded integers become checked cents without dollar conversion', 
     .MAX_SAFE_INTEGER - 1]) {
     assert.throws(() => moneyCentsFromInteger(value))
   }
+})
+
+
+test.group('Exact monetary period division', () => {
+  test('rounds signed cents and half ties without floating-point division').with([
+    [30, 3, 10], [29, 2, 15], [-29, 2, -14], [1, 2, 1], [-1, 2, 0],
+    [4, 3, 1], [5, 3, 2], [-4, 3, -1], [-5, 3, -2], [0, 12, 0],
+    [Number.MAX_SAFE_INTEGER, 1, Number.MAX_SAFE_INTEGER],
+    [Number.MAX_SAFE_INTEGER, 3, 3002399751580330],
+    [-Number.MAX_SAFE_INTEGER, 3, -3002399751580330],
+    [Number.MAX_SAFE_INTEGER, 2, 4503599627370496],
+    [-Number.MAX_SAFE_INTEGER, 2, -4503599627370495],
+  ]).run(({ assert }, [value, divisor, expected]) => {
+    const result = divideMoneyCents(moneyCentsFromInteger(value), divisor)
+    assert.strictEqual(result, expected)
+    assert.isFalse(Object.is(result, -0))
+  })
+  test('rejects invalid period counts').with([0, -1, 1.5, NaN, Infinity,
+    Number.MAX_SAFE_INTEGER + 1, '2', null, undefined])
+    .run(({ assert }, divisor) => {
+      assert.throws(() => divideMoneyCents(parseMoneyCents('1.00'), divisor))
+    })
+  test('rejects invalid cents').with([0.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1, '1'])
+    .run(({ assert }, value) => { assert.throws(() => divideMoneyCents(value, 2)) })
 })

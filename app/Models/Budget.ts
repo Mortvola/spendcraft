@@ -1,5 +1,5 @@
 import {
-  subtractMoneyCents, parseMoneyCents, formatMoneyCents, moneyCentsFromInteger, type MoneyCents,
+  subtractMoneyCents, parseMoneyCents, formatMoneyCents, divideMoneyCents, type MoneyCents,
 } from '#common/moneyCents';
 import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
 import { DateTime } from 'luxon'
@@ -552,11 +552,11 @@ amount decimal)
           const goalDiffCents = subtractMoneyCents(goalCents,
             subtractMoneyCents(balanceCents, futureTrxCents));
           const monthlyCents = goalDiffCents > 0
-            ? moneyCentsFromInteger(Math.round(goalDiffCents / (monthDiff + 1)))
+            ? divideMoneyCents(goalDiffCents, monthDiff + 1)
             : parseMoneyCents('0.00');
           proposedCat.amountCents = monthlyCents;
 
-          const plannedCents = moneyCentsFromInteger(Math.round(goalCents / cat.recurrence));
+          const plannedCents = divideMoneyCents(goalCents, cat.recurrence);
 
           if (monthlyCents !== plannedCents) {
             proposedCat.adjusted = true;
