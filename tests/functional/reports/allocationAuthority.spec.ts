@@ -1,7 +1,8 @@
 import { parseMoneyCents } from '#common/moneyCents'
 import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 import { categoryAllocationsToCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
-import { writeHistoricalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
+import { writeCanonicalTransactionFixture, writeHistoricalTransactionFixture } from
+  '../../helpers/historicalTransactionFixture.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
@@ -38,6 +39,7 @@ async function createDomain(label: string, existingBudget?: Budget) {
       version: 0, deleted: false, sortOrder: 0, comment: `${label} private comment`,
       categories: categoryAllocationsToCents([{ categoryId: category.id, amount: 10 }]), taxes: [],
     })
+    await writeCanonicalTransactionFixture(transaction)
     await account.related('accountTransactions').create({
       transactionId: transaction.id, name: `${label} private purchase`,
          amountCents: parseMoneyCents('10.00'),
@@ -282,12 +284,14 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
       const f = await createDomain('observe')
       await writeHistoricalTransactionFixture(f.transaction, { type: report ===
         'category' ? 5 : 2 })
-      await f.budget.related('transactions').createMany(Array.from({ length: 25 }, () => ({
+      const transactions = await f.budget.related('transactions').createMany(Array.from(
+        { length: 25 }, () => ({
         date: DateTime.fromISO('2025-02-01'), type: report === 'category' ? 5 : 2,
         version: 0, deleted: false, sortOrder: 0,
           categories: categoryAllocationsToCents([{ categoryId: f.category.id,
           amount: 10 }]), taxes: [],
       })))
+      for (const transaction of transactions) await writeCanonicalTransactionFixture(transaction)
       const before = await snapshot(f.budget.id)
       const queries: { sql: string, bindings?: readonly unknown[] }[] = []
       const listener = (event: { sql: string, bindings?: readonly unknown[] }) => queries.push(
@@ -349,10 +353,12 @@ accountless nominal rows', async ({ client, assert }) => {
     await writeHistoricalTransactionFixture(f.transaction, { categories: [{ categoryId: f.category
       .id, amount: 20 }, { categoryId: f.category.id, amount: 30 }, { categoryId: other.id,
       amount: 4 }] })
-    await f.budget.related('transactions').create({ date: f.transaction.date, type: 5, version: 0,
+    const accountless = await f.budget.related('transactions').create({
+      date: f.transaction.date, type: 5, version: 0,
       sortOrder: 0, deleted: false,
       categories: categoryAllocationsToCents([{ categoryId: f.category.id, amount: 5 }]),
         taxes: [] })
+    await writeCanonicalTransactionFixture(accountless)
     const response = await client.get('/api/v1/reports/category').qs({ c: [f.category.id, other
       .id] }).loginAs(f.user)
     response.assertStatus(200)

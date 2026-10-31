@@ -503,7 +503,8 @@ test.group('Category deletion admission vs protected writers', (group) => {
     }, () => remove(client, f, 204))
     equal(await Category.find(f.category.id), null); equal(Number(formatMoneyCents((
       await Category.findOrFail(f.other.id)).balanceCents)), 10)
-    deepStrictEqual((await target.refresh()).categories, [{ categoryId: f.other.id, amount: 10 }]);
+    deepStrictEqual((await target.refresh()).categories, [{ categoryId: f.other.id,
+      amountCents: parseMoneyCents('10.00') }]);
       equal(target.version, 1)
     await pool(f, 100)
   })

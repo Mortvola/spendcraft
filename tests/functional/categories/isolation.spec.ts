@@ -1,3 +1,4 @@
+import { fundingRulesToCents } from '#services/fundingAmountCodec'
 import { categoryAllocationsToCents } from '#services/categoryAmountCodec'
 import { parseMoneyCents } from '#common/moneyCents'
 import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
@@ -230,7 +231,8 @@ test.group('Group/category/transfer isolation', (group) => {
     assert.equal(category.groupId, destination.id)
     assert.equal(category.name, 'Updated category')
     assert.equal(category.balanceCents, parseMoneyCents('100.00'))
-    assert.deepEqual(category.fundingCategories, [funding(fixture.own.otherCategory.id)])
+    assert.deepEqual(category.fundingCategories, fundingRulesToCents([funding(fixture.own
+      .otherCategory.id)]))
     assert.equal(response.body().data.groupId, destination.id)
     // Only the updated category's metadata may change; all other persisted state is identical.
     const withoutUpdatedCategory = (snapshot: Awaited<ReturnType<typeof state>>) => snapshot.map((
@@ -257,7 +259,8 @@ test.group('Group/category/transfer isolation', (group) => {
       { ...categoryBody(), fundingCategories })).accept('json').loginAs(fixture.shared)
     category.assertStatus(200)
     const categoryId: number = category.body().data.id
-    assert.deepEqual((await Category.findOrFail(categoryId)).fundingCategories, fundingCategories)
+    assert.deepEqual((await Category.findOrFail(categoryId)).fundingCategories,
+      fundingRulesToCents(fundingCategories))
     const changed = await client.patch(`/api/v1/groups/${groupId}/categories/${categoryId}`).json(
       categoryRequest({ name: 'Renamed shared category', fundingCategories })).accept('json')
       .loginAs(fixture.shared)

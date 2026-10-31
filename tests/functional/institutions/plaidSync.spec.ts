@@ -211,7 +211,9 @@ test.group('Plaid sync characterization', (group) => {
           type: CategoryType.Regular, balanceCents: parseMoneyCents('0.10'),
             fundingCategories: [] })
         categories.push(category)
-        await assignment.related('categories').create({ ...rule, categoryId: category.id })
+        await assignment.related('categories').create({ categoryId: category.id,
+          percentage: rule.percentage,
+          allocationAmount: autoAssignmentAmount(rule.amount, rule.percentage) })
       }
       fake.responses = [page(accounts(), 'exact-assigned', { added: [purchase('purchase', {
         amount: -scenario.amount })] })]

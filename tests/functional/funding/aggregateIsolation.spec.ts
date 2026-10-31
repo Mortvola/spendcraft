@@ -1,3 +1,4 @@
+import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import { categoryAllocationsToCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { test } from '@japa/runner'
@@ -194,10 +195,12 @@ direction`)
             type: TransactionType.FUNDING_TRANSACTION } : {}),
         })
       }
-      await a.budget.related('transactions').create({ date: DateTime.fromISO('2025-02-01'),
+      const rebalance = await a.budget.related('transactions').create({
+        date: DateTime.fromISO('2025-02-01'),
         type: TransactionType.REBALANCE_TRANSACTION, categories: categoryAllocationsToCents([
           { categoryId: a.first.id, amount: sign * 0.1 },
           { categoryId: a.second.id, amount: -sign * 0.1 }]), taxes: [], deleted: false })
+      await writeCanonicalTransactionFixture(rebalance)
       const before = await state()
       const response = await client.get('/api/v1/categories').qs({ date: '2025-03-15' })
         .loginAs(a.user)

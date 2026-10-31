@@ -2,7 +2,8 @@ import { parseMoneyCents } from '#common/moneyCents'
 import {
   writeCanonicalTransactionFixture, writeHistoricalTransactionFixture,
 } from '../../helpers/historicalTransactionFixture.js'
-import { categoryAllocationsToCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { categoryAllocationsToCents, encodeCategoryAllocations, encodeMonetaryAmount } from
+  '#services/categoryAmountCodec'
 // Run only with fresh task-specific PostgreSQL authorization.
 // Standard bootstrap independently guards pg/pgLog/execution before every
 // destructive fixture statement and returned cleanup; no local teardown/DDL.
@@ -209,8 +210,9 @@ test.group('Income Vs Expenses transfer fan-out PostgreSQL acceptance', () => {
     await writeHistoricalTransactionFixture(other.transaction, { categories: [{ categoryId: own
       .category.id, amount: 999 }] })
     const ownTransaction = await own.budget.related('transactions').query().firstOrFail()
-    await writeHistoricalTransactionFixture(ownTransaction, { categories: [...ownTransaction
-      .categories, { categoryId: foreign.category.id, amount: 999 }] })
+    await writeHistoricalTransactionFixture(ownTransaction, {
+      categories: [...encodeCategoryAllocations(
+      ownTransaction.categories), { categoryId: foreign.category.id, amount: 999 }] })
     const before = await snapshot()
     const response = await client.get('/api/v1/reports/income-vs-expenses').loginAs(own.user)
     response.assertStatus(200)
@@ -225,8 +227,9 @@ test.group('Income Vs Expenses transfer fan-out PostgreSQL acceptance', () => {
     const unassigned = await f.budget.getUnassignedCategory()
     const pool = await f.budget.getFundingPoolCategory()
     const m = await movement(f, 50, [20])
-    await writeHistoricalTransactionFixture(m.transaction, { categories: [...m.transaction
-      .categories,
+    await writeHistoricalTransactionFixture(m.transaction, {
+      categories: [...encodeCategoryAllocations(
+      m.transaction.categories),
       { categoryId: unassigned.id, amount: 999 }, { categoryId: pool.id, amount: 999 },
       { categoryId: 2147483647, amount: 999 }] })
     const before = await snapshot()

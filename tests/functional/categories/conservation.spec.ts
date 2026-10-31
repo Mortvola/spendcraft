@@ -1,4 +1,5 @@
 import { categoryAllocationsToCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { fundingMetadataToCents } from '#services/fundingAmountCodec'
 import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
@@ -97,7 +98,7 @@ test.group('Category transfer conservation', (group) => {
     created.assertStatus(200)
     const id = created.body().data.transaction.id
     assert.deepEqual((await Transaction.findOrFail(id)).categories,
-      categoryAllocationsToCents(categories))
+      fundingMetadataToCents(categoryAllocationsToCents(categories)))
     assert.equal((await Category.findOrFail(debitId)).balanceCents, parseMoneyCents(
       encodeMonetaryAmount(initialDebitBalance - amount)))
     assert.equal((await Category.findOrFail(fixture.second.id)).balanceCents, parseMoneyCents(

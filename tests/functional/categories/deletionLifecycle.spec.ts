@@ -1,3 +1,4 @@
+import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { categoryAllocationsToCents } from '#services/categoryAmountCodec'
 import { parseMoneyCents } from '#common/moneyCents'
 import { test } from '@japa/runner'
@@ -26,11 +27,13 @@ test.group('Category deletion transaction lifecycle', (group) => {
         type: CategoryType.Regular, balanceCents: parseMoneyCents('10.00'), fundingCategories: [] })
       const empty = await categoryGroup.related('categories').create({ name: 'Empty',
         type: CategoryType.Regular, balanceCents: parseMoneyCents('0.00'), fundingCategories: [] })
-      await budget.related('transactions').create({ date: DateTime.fromISO('2025-02-10'),
+      const transaction = await budget.related('transactions').create({
+        date: DateTime.fromISO('2025-02-10'),
         type: TransactionType.MANUAL_TRANSACTION,
         categories: categoryAllocationsToCents([{ categoryId: blocked.id, amount: 10 }]),
           taxes: [], version: 0, deleted: false,
           sortOrder: 0 })
+      await writeCanonicalTransactionFixture(transaction)
       return { user, categoryGroup, blocked, empty }
     })
   }

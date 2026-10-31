@@ -61,8 +61,8 @@ test.group('Circular dependency regression', () => {
       import.meta.url), 'utf8'))
     const reviewedGraph = Object.fromEntries(accepted.members.map((member) => [member, []]))
     for (const [issuer, target] of accepted.edges) reviewedGraph[issuer].push(target)
-    assert.lengthOf(accepted.members, 11)
-    assert.lengthOf(accepted.edges, 26)
+    assert.lengthOf(accepted.members, 9)
+    assert.lengthOf(accepted.edges, 22)
     assert.isTrue(compareBaseline(reviewedGraph, accepted).ok)
   })
   test('normalizes paths and classifies built-ins without hiding missing/skipped files', ({

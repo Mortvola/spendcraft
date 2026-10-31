@@ -1,3 +1,4 @@
+import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { categoryAllocationsToCents } from '#services/categoryAmountCodec'
 import { parseMoneyCents } from '#common/moneyCents'
 import { test } from '@japa/runner'
@@ -35,6 +36,7 @@ async function createDomain(label: string, existingBudget?: Budget) {
       version: 0, deleted: false, sortOrder: 0, comment: `${label} private comment`,
       categories: categoryAllocationsToCents([{ categoryId: category.id, amount: 10 }]), taxes: [],
     })
+    await writeCanonicalTransactionFixture(transaction)
     await account.related('accountTransactions').create({
       transactionId: transaction.id, name: `${label} private purchase`,
          amountCents: parseMoneyCents('10.00'),
