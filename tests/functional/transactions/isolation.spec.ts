@@ -88,6 +88,33 @@ test.group('Transaction budget isolation', (group) => {
     ])
   }
 
+  test('amount search matches exact decimal text within the current Budget').with([
+    ['12', '12.00'], ['12.3', '12.30'], ['.30', '0.30'], [' -12.34 ', '-12.34'],
+    ['-0.00', '0.00'], ['9999999999.99', '9999999999.99'],
+  ]).run(async ({ client, assert }, [input, amount]) => {
+    for (const domain of [fixture.own, fixture.foreign]) {
+      await domain.accountTransaction.merge({ amountCents: parseMoneyCents(amount) }).save()
+    }
+    const before = await state()
+    const response = await client.get('/api/v1/transactions/search')
+      .qs({ amount: input, limit: 20, offset: 0 }).loginAs(fixture.shared)
+    response.assertStatus(200)
+    assert.deepEqual(response.body().data.transactions.map((row: { id: number }) => row.id),
+      [fixture.own.transaction.id])
+    assert.strictEqual(response.body().data.transactions[0].accountTransaction.amount, amount)
+    assert.deepEqual(await state(), before)
+  })
+
+  test('invalid amount search rejects without changing financial records').with([
+    '12.34abc', '12.345', '1e2', 'NaN', 'Infinity', '90071992547409.92', ['10', '20'],
+  ]).run(async ({ client, assert }, amount) => {
+    const before = await state()
+    const response = await client.get('/api/v1/transactions/search')
+      .qs({ amount, limit: 20, offset: 0 }).loginAs(fixture.own.user)
+    response.assertStatus(422)
+    assert.deepEqual(await state(), before)
+  })
+
   test('owner and shared-budget user can read a transaction').with(['owner', 'shared']).run(async ({
     client, assert }, actor) => {
     const user = actor === 'owner' ? fixture.own.user : fixture.shared

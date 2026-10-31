@@ -29,6 +29,7 @@ import transactionFields, { getChanges,
    getAccountTransactionChanges } from './transactionFields.js';
 import { ModelObject, ModelAdapterOptions } from "@adonisjs/lucid/types/model";
 import { updateTransaction } from '#validators/transaction';
+import { transactionSearchAmount } from '#app/validation/monetaryAmount';
 import { validateCentTransactionSplits } from '#app/validation/transactionSplits';
 
 function budgetCategories(budgetId: number, options?: ModelAdapterOptions) {
@@ -740,10 +741,7 @@ export default class TransactionsController {
       nameSearch = nameSearch.trim()
     }
 
-    let amountSearch = request.qs().amount;
-    if (amountSearch) {
-      amountSearch = amountSearch.trim()
-    }
+    const amountSearch = transactionSearchAmount(request.qs().amount);
 
     const search = budget.related('transactions').query()
       .where('deleted', false)
@@ -764,7 +762,7 @@ export default class TransactionsController {
 
     if (amountSearch) {
       search.whereHas('accountTransaction', (q) => {
-        q.where('amount', parseFloat(amountSearch))
+        q.where('amount', amountSearch)
       })
     }
 
