@@ -4,7 +4,6 @@ import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
 import Budget from '#models/Budget'
 import User from '#models/User'
-import Category from '#models/Category'
 import { CategoryType, TransactionType } from '#common/ResponseTypes'
 
 let sequence = 0
@@ -40,7 +39,7 @@ async function createFixture() {
   return { own, foreign, shared }
 }
 
-test.group('Loan isolation', (group) => {
+test.group('Retired Category-based Loan endpoints', (group) => {
   let fixture: Awaited<ReturnType<typeof createFixture>>
   group.each.setup(async () => {
     fixture = await createFixture()
@@ -75,30 +74,24 @@ test.group('Loan isolation', (group) => {
     response.assertStatus(404)
   })
 
-  test('owner and shared-budget users retain the current loan behavior').with(['owner', 'shared'])
-    .run(async ({ client, assert }, actor) => {
-    const user = actor === 'owner' ? fixture.own.user : fixture.shared
-    const prefix = `/api/v1/loans/${fixture.own.category.id}`
-    const loan = await client.get(prefix).accept('json').loginAs(user)
-    loan.assertStatus(200)
-    assert.strictEqual(loan.body().balance, '-100.00')
-    const transactions = await client.get(`${prefix}/transactions`).accept('json').loginAs(user)
-    transactions.assertStatus(200)
-    assert.deepEqual(transactions.body(), { balance: '0.00', transactions: [] })
-    const foreignBefore = await db.from('loans').where('category_id', fixture.foreign.category.id)
-      .firstOrFail()
-    const updated = await client.patch(prefix).json({ name: 'Renamed loan', rate: 8, startDate:
-      '2025-02-01', startingBalance: '200.00' }).accept('json').loginAs(user)
-    updated.assertStatus(200)
-    assert.equal((await Category.findOrFail(fixture.own.category.id)).name, 'Renamed loan')
-    // Settings now persist; financial recomputation remains inert.
-    const persisted = await db.from('loans').where('category_id', fixture.own.category.id)
-      .firstOrFail()
-    assert.equal(Number(persisted.rate), 8)
-    assert.equal(Number(persisted.starting_balance), 200)
-    assert.equal(Number(persisted.balance), -100)
-    assert.deepEqual(await db.from('loans').where('category_id', fixture.foreign.category.id)
-      .firstOrFail(), foreignBefore)
-    assert.equal((await Category.findOrFail(fixture.foreign.category.id)).name, 'foreign category')
-  })
+  test('retired routes return 404 for owner and shared-budget users without mutation')
+    .with(['owner', 'shared']).run(async ({ client, assert }, actor) => {
+      const user = actor === 'owner' ? fixture.own.user : fixture.shared
+      const prefix = `/api/v1/loans/${fixture.own.category.id}`
+      const before = await state()
+      const loan = await client.get(prefix).accept('json').loginAs(user)
+      loan.assertStatus(404)
+      assert.deepEqual(await state(), before)
+      const transactions = await client.get(`${prefix}/transactions`).accept('json').loginAs(user)
+      transactions.assertStatus(404)
+      assert.deepEqual(await state(), before)
+      const updated = await client.patch(prefix).json({ name: 'Renamed loan', rate: 8,
+        startDate: '2025-02-01', startingBalance: '200.00' }).accept('json').loginAs(user)
+      updated.assertStatus(404)
+      assert.deepEqual(await state(), before)
+      const created = await client.post('/api/v1/loans').json({ name: 'New loan', rate: 8,
+        startDate: '2025-02-01', amount: '200.00' }).accept('json').loginAs(user)
+      created.assertStatus(404)
+      assert.deepEqual(await state(), before)
+    })
 })
