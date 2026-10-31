@@ -275,8 +275,8 @@ test.group('Plaid staged onboarding characterization', (group) => {
       assert.equal(account.institutionId, inst.id)
       assert.strictEqual(returned.balance, Number(formatMoneyCents(
         account.balanceCents)).toFixed(2))
-      assert.strictEqual(returned.plaidBalance, account.plaidBalance === null ? null : account
-        .plaidBalance.toFixed(2))
+      assert.strictEqual(returned.plaidBalance, account.plaidBalanceCents === null ? null
+        : formatMoneyCents(account.plaidBalanceCents))
       assert.equal(returned.plaidId, account.plaidAccountId)
       assert.equal(returned.startDate, account.startDate.toISODate())
     }
@@ -430,7 +430,7 @@ effects').with(['manual', 'sync all', 'command', 'webhook']).run(async ({ client
     assert.strictEqual(response.body().data.accounts[0].balance, Number(formatMoneyCents(
       account.balanceCents)).toFixed(2))
     assert.strictEqual(response.body().data.accounts[0].plaidBalance, account
-      .plaidBalance === null ? null : account.plaidBalance.toFixed(2))
+      .plaidBalanceCents === null ? null : formatMoneyCents(account.plaidBalanceCents))
     assert.strictEqual(response.body().data.accounts[0].pendingBalance, allocation === 'pending' ?
       '-37.00' : '0.00')
     assert.lengthOf(await account.related('accountTransactions').query(), 2)
@@ -451,11 +451,12 @@ effects').with(['manual', 'sync all', 'command', 'webhook']).run(async ({ client
     const account = await institution.related('accounts').query().firstOrFail()
     assert.equal(account.balanceCents, parseMoneyCents(encodeMonetaryAmount(
       state === 'posted' ? 175 : 100)))
-    assert.equal(account.plaidBalance, state === 'posted' ? 175 : 100)
+    assert.equal(account.plaidBalanceCents, parseMoneyCents(
+      state === 'posted' ? '175.00' : '100.00'))
     assert.strictEqual(response.body().data.accounts[0].balance, Number(formatMoneyCents(
       account.balanceCents)).toFixed(2))
     assert.strictEqual(response.body().data.accounts[0].plaidBalance, account
-      .plaidBalance === null ? null : account.plaidBalance.toFixed(2))
+      .plaidBalanceCents === null ? null : formatMoneyCents(account.plaidBalanceCents))
     assert.strictEqual(response.body().data.accounts[0].pendingBalance, state === 'pending' ?
       '-37.00' : '0.00')
   })

@@ -93,7 +93,7 @@ export default class Budget extends BaseModel {
         tracking: a.tracking,
         balance: formatMoneyCents(a.balanceCents),
         pendingBalance: encodeMonetaryAmount(a.$extras.pendingBalance ?? '0.00'),
-        plaidBalance: a.plaidBalance == null ? null : encodeMonetaryAmount(a.plaidBalance),
+        plaidBalance: a.plaidBalanceCents == null ? null : formatMoneyCents(a.plaidBalanceCents),
         startDate: a.startDate?.toISODate() ?? null,
         rate: a.rate,
       })),

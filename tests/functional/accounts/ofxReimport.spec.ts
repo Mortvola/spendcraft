@@ -67,7 +67,8 @@ FX>`
     const logs = await db.from('transaction_logs').where('application_id', f.budget.id).orderBy(
       'id')
     const result = { balance: Number(formatMoneyCents(account.balanceCents)),
-      plaidBalance: account.plaidBalance, categories,
+      plaidBalance: account.plaidBalanceCents === null ? null
+        : Number(formatMoneyCents(account.plaidBalanceCents)), categories,
       history, logs, transactions: associations.map((a) => ({
       id: a.transaction.id, associationId: a.id, providerId: a.providerTransactionId,
          amount: Number(formatMoneyCents(a.amountCents)),

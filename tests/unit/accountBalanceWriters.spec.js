@@ -121,6 +121,31 @@ test.group('Provider concurrency behavior without a database', () => {
     assert.deepEqual(events, ['gate', 'refresh', 'accounts', 'provider'])
   })
 
+  test('provider balances retain nullable cents and account sign conventions').with([
+    { type: 'Depository', current: 0.305, expected: '0.31' },
+    { type: 'Credit', current: 0.3, expected: '-0.30' },
+    { type: 'Credit', current: 0.305, expected: '-0.30' },
+    { type: 'Loan', current: -0.3, expected: '0.30' },
+    { type: 'Credit', current: 0, expected: '0.00' },
+    { type: 'Credit', current: null, expected: null },
+  ]).run(async ({ assert }, { type, current, expected }) => {
+    const source = await method('app/Models/Institution.ts', 'updateAccountBalances')
+    const update = runInNewContext(ts.transpileModule(`(async function(${source
+      .parameters}) ${source.body})`, {
+      compilerOptions: { target: ts.ScriptTarget.ES2022 },
+    }).outputText, { addMoneyCents, parseMoneyCents, encodeMonetaryAmount,
+      TrackingType: { Balances: 'Balances' }, AccountType: { Credit: 'Credit', Loan: 'Loan' } })
+    const account = { tracking: 'Transactions', type, plaidAccountId: 'provider',
+      initialized: true, $extras: { modified: true }, balanceCents: parseMoneyCents('12.34'),
+      async save() { return this } }
+    const provider = { account_id: 'provider', balances: { current } }
+    await update({}, [account], [provider])
+    assert.strictEqual(account.plaidBalanceCents, expected === null
+      ? null : parseMoneyCents(expected))
+    assert.strictEqual(account.balanceCents, parseMoneyCents('12.34'))
+    assert.strictEqual(provider.balances.current, current)
+  })
+
   test('opening helpers compose shared Pool effects sequentially', async ({ assert }) => {
     const source = await method('app/Models/Institution.ts', 'updateAccountBalances')
     let persistedPool = 0

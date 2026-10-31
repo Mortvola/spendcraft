@@ -31,7 +31,8 @@ async function fixture() {
     const institution = await budget.related('institutions').create({ name: `OFX ${sequence}` })
     const account = await institution.related('accounts').create({ name: 'Accounting',
       balanceCents: parseMoneyCents('1000.00'),
-      plaidBalance: 1400, type: AccountType.Credit, subtype: 'credit card', tracking: TrackingType
+      plaidBalanceCents: parseMoneyCents('1400.00'),
+      type: AccountType.Credit, subtype: 'credit card', tracking: TrackingType
         .Transactions,
       startDate: DateTime.fromISO('2025-02-01'), rate: 0, closed: false })
     const pool = await budget.getFundingPoolCategory({ client: trx })
@@ -78,10 +79,13 @@ async function snapshot(f: Fixture) {
 async function assertBalances(f: Fixture, expected: number, provider: number, category: number) {
   const account = await Account.findOrFail(f.account.id)
   if (Number(formatMoneyCents(
-    account.balanceCents)) !== expected || account.plaidBalance !== provider) throw new Error(
+    account.balanceCents)) !== expected
+    || account.plaidBalanceCents !== parseMoneyCents(encodeMonetaryAmount(provider))) {
+    throw new Error(
     `Independent Account balances disagree: actual ${Number(formatMoneyCents(
       account.balanceCents))}/${account
-    .plaidBalance}; expected ${expected}/${provider}`)
+    .plaidBalanceCents}; expected ${expected}/${provider}`)
+  }
   const raw = await db.rawQuery(
     'SELECT balance::text, plaid_balance::text FROM accounts WHERE id = ?', [account.id])
   if (Number(raw.rows[0].balance) !== expected || Number(raw.rows[0]
@@ -305,10 +309,11 @@ test.group('OFX independent accounting and provider balance (prepared)', () => {
         return mock.method(prototype, 'save', async function (this: LucidRow) {
           if (!this.$trx) throw new Error('Financial write escaped owning transaction')
           clients.add(this.$trx)
-          if (this instanceof Account && ('balanceCents' in this.$dirty || 'plaidBalance' in this
-            .$dirty)) {
+          if (this instanceof Account && ('balanceCents' in this.$dirty
+            || 'plaidBalanceCents' in this.$dirty)) {
             writes.push({ balance: Number(formatMoneyCents(this.balanceCents)),
-              provider: this.plaidBalance })
+              provider: this.plaidBalanceCents === null ? null
+                : Number(formatMoneyCents(this.plaidBalanceCents)) })
           }
           return save.call(this)
         })
@@ -321,7 +326,7 @@ test.group('OFX independent accounting and provider balance (prepared)', () => {
         this: Account, ...args: Parameters<Account['updateStartingBalance']>) {
         openingCount++
         assert.equal(this.balanceCents, parseMoneyCents('950.00'))
-        assert.equal(this.plaidBalance, 1500)
+        assert.equal(this.plaidBalanceCents, parseMoneyCents('1500.00'))
         await maintenance.apply(this, args)
       })
       const command = await ace.create(OfxUpload, ['prepared.ofx'])

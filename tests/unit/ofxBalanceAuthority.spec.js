@@ -57,10 +57,10 @@ async function fixture() {
     related() { return { create: async () => { calls.push('log') } } }
   }
   const account = { tracking: 'Transactions', balanceCents: parseMoneyCents(
-    encodeMonetaryAmount(1000)), plaidBalance: 1400,
+    encodeMonetaryAmount(1000)), plaidBalanceCents: parseMoneyCents('1400.00'),
     startDate: DateTime.fromISO('2025-02-01'), $trx: {}, id: 10, name: 'Checking',
     async save() { calls.push(['account', Number(formatMoneyCents(this.balanceCents)),
-      this.plaidBalance]) },
+      this.plaidBalanceCents]) },
     async updateAccountBalanceHistory() { throw new Error('OFX must not write history') },
     async updateStartingBalance() { calls.push(['opening', Number(formatMoneyCents(
       this.balanceCents))]) },
@@ -150,7 +150,7 @@ test.group('OFX accounting and provider balance independence', () => {
       const f = await fixture()
       await f.run([], `<LEDGERBAL><BALAMT>${ledger}</LEDGERBAL>`)
       assert.equal(Number(formatMoneyCents(f.account.balanceCents)), 1000)
-      assert.equal(f.account.plaidBalance, ledger)
+      assert.equal(f.account.plaidBalanceCents, parseMoneyCents(encodeMonetaryAmount(ledger)))
       assert.deepInclude(f.calls, ['opening', 1000])
     })
 
@@ -159,7 +159,7 @@ test.group('OFX accounting and provider balance independence', () => {
     const f = await fixture()
     await f.run([{}], '')
     assert.equal(Number(formatMoneyCents(f.account.balanceCents)), 950)
-    assert.equal(f.account.plaidBalance, 1400)
+    assert.equal(f.account.plaidBalanceCents, parseMoneyCents('1400.00'))
     assert.equal(f.categories.get(1).balanceCents, parseMoneyCents('-50.00'))
     assert.deepInclude(f.calls, ['opening', 950])
   })
@@ -172,18 +172,18 @@ test.group('OFX accounting and provider balance independence', () => {
       await assert.rejects(() => f.run([{}], ledger), /Invalid OFX ledger balance/)
       assert.deepEqual(f.calls, [])
       assert.equal(Number(formatMoneyCents(f.account.balanceCents)), 1000); assert.equal(
-        f.account.plaidBalance, 1400)
+        f.account.plaidBalanceCents, parseMoneyCents('1400.00'))
     })
 
   test('new, replay and ledger change compose independently', async ({ assert }) => {
     const f = await fixture()
     await f.run([{}])
     assert.equal(Number(formatMoneyCents(f.account.balanceCents)), 950); assert.equal(
-      f.account.plaidBalance, 1500)
+      f.account.plaidBalanceCents, parseMoneyCents('1500.00'))
     const count = f.links.length
     await f.run([{}], '<LEDGERBAL><BALAMT>1600</LEDGERBAL>')
     assert.equal(Number(formatMoneyCents(f.account.balanceCents)), 950); assert.equal(
-      f.account.plaidBalance, 1600)
+      f.account.plaidBalanceCents, parseMoneyCents('1600.00'))
     assert.equal(f.categories.get(1).balanceCents, parseMoneyCents('-50.00'))
     assert.lengthOf(f.links, count)
   })

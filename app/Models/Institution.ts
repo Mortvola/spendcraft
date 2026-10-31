@@ -77,14 +77,14 @@ class Institution extends BaseModel {
 
         // Only operate on the account if there is a corresponding plaid account.
         if (plaidAccount) {
-          acct.plaidBalance = plaidAccount.balances.current;
-          if (acct.plaidBalance && (acct.type === AccountType.Credit|| acct.type === AccountType
-            .Loan)) {
-            acct.plaidBalance = -acct.plaidBalance;
-          }
+          const providerBalance = plaidAccount.balances.current;
+          const signedBalance = providerBalance !== null && (acct.type === AccountType.Credit
+            || acct.type === AccountType.Loan) ? -providerBalance : providerBalance;
+          acct.plaidBalanceCents = signedBalance === null ? null
+            : parseMoneyCents(encodeMonetaryAmount(signedBalance));
 
           if (!acct.initialized) {
-            acct.balanceCents = parseMoneyCents(encodeMonetaryAmount(acct.plaidBalance ?? 0))
+            acct.balanceCents = acct.plaidBalanceCents ?? parseMoneyCents('0.00')
             acct.initialized = true;
 
             const startDate = acct.startDate.toISODate()
@@ -149,7 +149,8 @@ class Institution extends BaseModel {
             institutionId: this.id,
             startDate: DateTime.now().startOf('month'),
             balanceCents: parseMoneyCents(encodeMonetaryAmount(plaidAccount.balances.current ?? 0)),
-            plaidBalance: plaidAccount.balances.current,
+            plaidBalanceCents: plaidAccount.balances.current === null ? null
+              : parseMoneyCents(encodeMonetaryAmount(plaidAccount.balances.current)),
             tracking: TrackingType.Transactions,
             enabled: true,
             closed: false,

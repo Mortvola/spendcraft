@@ -532,7 +532,7 @@ class InstitutionController {
           institutionId: institution.id,
           startDate: DateTime.now().startOf('month'),
           balanceCents: parseMoneyCents(encodeMonetaryAmount(balance ?? 0)),
-          plaidBalance: balance,
+          plaidBalanceCents: parseMoneyCents(encodeMonetaryAmount(balance)),
           tracking: TrackingType.Transactions,
           enabled: true,
           closed: false,
@@ -559,7 +559,7 @@ class InstitutionController {
           tracking: a.tracking,
           balance: formatMoneyCents(a.balanceCents),
           pendingBalance: '0.00',
-          plaidBalance: a.plaidBalance == null ? null : encodeMonetaryAmount(a.plaidBalance),
+          plaidBalance: a.plaidBalanceCents == null ? null : formatMoneyCents(a.plaidBalanceCents),
           startDate,
           rate: a.rate,
         };
@@ -655,8 +655,8 @@ class InstitutionController {
             tracking: acct.tracking,
             balance: formatMoneyCents(acct.balanceCents),
             pendingBalance: '0.00',
-            plaidBalance: acct.plaidBalance == null ? null : encodeMonetaryAmount(acct
-              .plaidBalance),
+            plaidBalance: acct.plaidBalanceCents == null ? null
+              : formatMoneyCents(acct.plaidBalanceCents),
             startDate,
             rate: acct.rate,
             plaidId: acct.plaidAccountId,

@@ -106,7 +106,8 @@ async function state(f: Fixture) {
     'transaction').orderBy('id')
   const logs = await db.from('transaction_logs').where('application_id', f.budget.id).orderBy('id')
   return { balance: Number(formatMoneyCents(account.balanceCents)),
-    plaidBalance: account.plaidBalance, unassigned: Number(formatMoneyCents(
+    plaidBalance: account.plaidBalanceCents === null ? null
+        : Number(formatMoneyCents(account.plaidBalanceCents)), unassigned: Number(formatMoneyCents(
       unassigned.balanceCents)), pool: Number(formatMoneyCents(pool.balanceCents)),
     rows: rows.map((row) => ({ amount: Number(formatMoneyCents(row.amountCents)),
        pending: row.pending, type: row.transaction.type,
@@ -249,7 +250,8 @@ test.group('Bounded Account writer PostgreSQL serialization (prepared)', () => {
       const save = Account.prototype.save
       const failure = mock.method(Account.prototype, 'save', async function (this: Account) {
         const saved = await save.call(this)
-        if (this.id === f.account.id && !held && this.plaidBalance === 110) {
+        if (this.id === f.account.id && !held
+          && this.plaidBalanceCents === parseMoneyCents('110.00')) {
           held = true
           if (!this.$trx) throw new Error('Missing owning transaction')
           const result = await this.$trx.rawQuery('SELECT pg_backend_pid() AS pid')

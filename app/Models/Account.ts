@@ -95,10 +95,14 @@ class Account extends BaseModel {
   public balanceCents: MoneyCents;
 
   @column({
-    consume: (value: string | null) => value === null ? value : parseFloat(value),
-    serialize: (value: number | null) => value === null ? null : encodeMonetaryAmount(value),
+    columnName: 'plaid_balance', serializeAs: 'plaidBalance',
+    consume: (value: string | null) => value === null ? null : parseMoneyCents(value),
+    prepare: (value: MoneyCents | null | undefined) => value == null
+      ? value : formatMoneyCents(value),
+    serialize: (value: MoneyCents | null | undefined) => value == null
+      ? value : formatMoneyCents(value),
   })
-  public plaidBalance: number | null;
+  public plaidBalanceCents: MoneyCents | null;
 
   @column({
     consume: (value: string | null) => value === null ? value : parseFloat(value),
@@ -726,7 +730,7 @@ class Account extends BaseModel {
 
     if (ofxData) {
       let sum = parseMoneyCents('0.00');
-      let providerBalance: number | undefined;
+      let providerBalanceCents: MoneyCents | undefined;
 
       const sgml2Xml = (sgml: string) => (
         sgml
@@ -768,7 +772,7 @@ class Account extends BaseModel {
             || !Number.isFinite(Number(value))) {
             throw new Error('Invalid OFX ledger balance');
           }
-          providerBalance = Number(value);
+          providerBalanceCents = parseMoneyCents(encodeMonetaryAmount(Number(value)));
         }
         const rows = statement.BANKTRANLIST?.STMTTRN;
         for (const t of rows === undefined ? [] : Array.isArray(rows) ? rows : [rows]) {
@@ -920,7 +924,7 @@ class Account extends BaseModel {
 
       this.balanceCents = addMoneyCents(
         this.balanceCents, sum);
-      if (providerBalance !== undefined) this.plaidBalance = providerBalance;
+      if (providerBalanceCents !== undefined) this.plaidBalanceCents = providerBalanceCents;
 
       await this.save();
 

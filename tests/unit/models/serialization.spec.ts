@@ -231,14 +231,38 @@ test.group('Account balance API strings', () => {
     }
   })
 
+  test('nullable Plaid cents preserve storage and API names and reject invalid values', ({
+    assert }) => {
+    const account = new Account()
+    const column = Account.$getColumn('plaidBalanceCents')
+    if (!column?.prepare || !column.serialize) throw new Error('Missing Plaid balance codecs')
+    assert.strictEqual(column.columnName, 'plaid_balance')
+    assert.strictEqual(column.prepare(parseMoneyCents('0.30'), 'plaidBalanceCents', account),
+      '0.30')
+    for (const absent of [null, undefined]) {
+      assert.strictEqual(column.prepare(absent, 'plaidBalanceCents', account), absent)
+      assert.strictEqual(column.serialize(absent, 'plaidBalanceCents', account), absent)
+    }
+    for (const invalid of [0.1, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
+      assert.throws(() => column.prepare?.(invalid, 'plaidBalanceCents', account))
+      assert.throws(() => column.serialize?.(invalid, 'plaidBalanceCents', account))
+    }
+    for (const invalid of ['1.005', 'NaN', '-0.00', '90071992547409.92', 12.5]) {
+      assert.throws(() => Account.$createFromAdapterResult({ id: 1, plaid_balance: invalid }))
+    }
+    account.plaidBalanceCents = parseMoneyCents('0.30')
+    assert.notProperty(account.serialize(), 'plaidBalanceCents')
+    assert.notProperty(account.$attributes, 'plaidBalance')
+  })
+
   test('formats cent balances without changing models or nullable Plaid balances').with([
     { balance: 12.5, plaidBalance: 0.3, expected: '12.50', plaid: '0.30' },
     { balance: -12.34, plaidBalance: -12.34, expected: '-12.34', plaid: '-12.34' },
     { balance: 0, plaidBalance: null, expected: '0.00', plaid: null },
   ]).run(({ assert }, value) => {
     const account = new Account().merge({ id: 1, balanceCents: parseMoneyCents(
-      encodeMonetaryAmount(value.balance)), plaidBalance: value
-      .plaidBalance, rate: 1.25 })
+      encodeMonetaryAmount(value.balance)),
+      plaidBalanceCents: value.plaid === null ? null : parseMoneyCents(value.plaid), rate: 1.25 })
     const before = globalThis.structuredClone(account.$attributes)
     for (const response of [account.serialize(), JSON.parse(JSON.stringify(account))]) {
       assert.strictEqual(response.balance, value.expected)
@@ -247,7 +271,8 @@ test.group('Account balance API strings', () => {
     }
     assert.deepEqual(account.$attributes, before)
     assert.strictEqual(account.balanceCents, parseMoneyCents(encodeMonetaryAmount(value.balance)))
-    assert.strictEqual(account.plaidBalance, value.plaidBalance)
+    assert.strictEqual(account.plaidBalanceCents, value.plaid === null
+      ? null : parseMoneyCents(value.plaid))
   })
   test('database hydration retains cents and remains clean during response serialization', ({
     assert }) => {
@@ -256,7 +281,7 @@ test.group('Account balance API strings', () => {
     assert.strictEqual(account?.serialize().balance, '12.50')
     assert.strictEqual(account?.serialize().plaidBalance, '-0.30')
     assert.strictEqual(account?.balanceCents, parseMoneyCents('12.50'))
-    assert.strictEqual(account?.plaidBalance, -0.3)
+    assert.strictEqual(account?.plaidBalanceCents, parseMoneyCents('-0.30'))
     assert.isFalse(account?.$isDirty)
   })
 })
@@ -266,7 +291,7 @@ test('connected-account responses encode balances without changing model values'
   assert }) => {
   const budget = new Budget()
   const account = new Account().merge({ id: 1, balanceCents: parseMoneyCents('12.50'),
-    plaidBalance: 0.3 })
+    plaidBalanceCents: parseMoneyCents('0.30') })
   account.$extras.pendingBalance = '0.00'
   const institution = new Institution().merge({ id: 2, name: 'Bank' })
   institution.$setRelated('accounts', [account])
@@ -279,7 +304,7 @@ test('connected-account responses encode balances without changing model values'
     assert.strictEqual(result[0].accounts[0].plaidBalance, '0.30')
     assert.strictEqual(result[0].accounts[0].pendingBalance, '0.00')
     assert.strictEqual(account?.balanceCents, parseMoneyCents('12.50'))
-    assert.strictEqual(account.plaidBalance, 0.3)
+    assert.strictEqual(account.plaidBalanceCents, parseMoneyCents('0.30'))
     for (const [stored, expected] of [[null, '0.00'], ['-37.00', '-37.00'], ['12.50',
       '12.50']] as const) {
       account.$extras.pendingBalance = stored
