@@ -118,7 +118,7 @@ validated', ({ assert }) => {
 
 // Hooks' scope resolution is exercised with inert SQL collaborators, not another scope
 // implementation.
-test('actual scope resolver batches active rows and leaves Loan/unsupported ownership untouched',
+test('actual scope resolver batches active rows including Loans and rejects foreign ownership',
   async ({ assert }) => {
   const { readFile } = await import('node:fs/promises')
   const { runInNewContext } = await import('node:vm')
@@ -158,11 +158,10 @@ test('actual scope resolver batches active rows and leaves Loan/unsupported owne
     } },
   })
   await resolver(rows)
-  assert.deepEqual(rows.map((entry) => entry.categories[0].amount), [1, 1, 1, '1.00', '1.00',
-    '1.00'])
-  assert.deepEqual(queries, ['account_transactions as at', 'categories'])
+  assert.deepEqual(rows.map((entry) => entry.categories[0].amount), [1, 1, 1, 1, '1.00', 1])
+  assert.deepEqual(queries, ['account_transactions as at'])
   await resolver(rows.slice(0, 3))
-  assert.lengthOf(queries, 2)
+  assert.lengthOf(queries, 1)
   const newOpening = row(7, 4)
   newOpening.$isPersisted = false
   requestCategoryStorage(newOpening)
@@ -174,11 +173,10 @@ test('active validation and canonical numeric posting preserve the approved nega
   async ({ assert }) => {
   const { canonicalCategoryAllocations } = await import('../../app/services/categoryAmountCodec.ts')
   const input = [split(-1.125)]
-  validateTransactionSplits(-1.12, input, undefined, true)
+  validateTransactionSplits(-1.12, input)
   assert.deepEqual(canonicalCategoryAllocations(input), [split(-1.12)])
   assert.equal(input[0].amount, -1.125)
-  // The default shared policy remains unchanged for excluded legacy callers.
-  assert.throws(() => validateTransactionSplits(-1.12, input))
+  assert.throws(() => validateTransactionSplits(-1.13, input))
 })
 
 test('actual active-new save guard rejects a missing owning transaction before scope queries',
@@ -204,4 +202,23 @@ test('stored Category allocations require canonical strings', ({ assert }) => {
     assert.throws(() => decodeCategoryAllocations([split(amount)]))
     assert.throws(() => hydrated([split(amount)]))
   }
+})
+
+
+test('split validation checks signed totals, invalid amounts and safe cent accumulation', ({
+  assert }) => {
+  validateTransactionSplits(0.3, [split(0.1), split(0.2)])
+  validateTransactionSplits(-0.3, [split(-0.1), split(-0.2)])
+  validateTransactionSplits(0, [split(-0.1), split(0.1)])
+  assert.throws(() => validateTransactionSplits(0.3, [split(0.1)]))
+  assert.throws(() => validateTransactionSplits(0, [split(0.1)]),
+    'The sum of the categories does not match the transaction amount.')
+  assert.throws(() => validateTransactionSplits(1, [split(0)], 'Custom mismatch'),
+    'Custom mismatch')
+  for (const amount of [NaN, Infinity, -Infinity, 1e16]) {
+    assert.throws(() => validateTransactionSplits(amount, []))
+    assert.throws(() => validateTransactionSplits(0, [split(amount)]))
+  }
+  assert.throws(() => validateTransactionSplits(0, Array.from({ length: 3 }, () =>
+    split(45035996273704))), 'Unsafe Category allocation cent total')
 })

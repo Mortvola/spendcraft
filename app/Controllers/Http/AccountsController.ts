@@ -216,7 +216,7 @@ export default class AccountsController {
       }
 
       if (account.tracking === TrackingType.Transactions && account.type !== AccountType.Loan) {
-        validateTransactionSplits(requestData.amount, categories, undefined, true);
+        validateTransactionSplits(requestData.amount, categories);
       }
 
       transaction.fill({

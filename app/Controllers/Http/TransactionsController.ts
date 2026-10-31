@@ -206,7 +206,7 @@ export default class TransactionsController {
         const categories = requestData.categories?.length === 0
           ? [{ amount }]
           : requestData.categories ?? transaction.categories;
-        validateTransactionSplits(amount, categories, undefined, hasCategoryStorage(transaction));
+        validateTransactionSplits(amount, categories);
       }
 
       // Ordinary effects use independent old/new eligibility; nominal splits stay intact.

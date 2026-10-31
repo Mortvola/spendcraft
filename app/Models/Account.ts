@@ -3,7 +3,7 @@ import {
   type MoneyCents,
 } from '#common/moneyCents';
 import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
-import { requestCategoryStorage, hasCategoryStorage } from '#services/categoryStorageBinding';
+import { requestCategoryStorage } from '#services/categoryStorageBinding';
 import { validateStoredCategoryConservation } from '#services/transactionCategoryStorage';
 import { validateTransactionSplits } from '#app/validation/transactionSplits';
 import { Exception } from '@adonisjs/core/exceptions';
@@ -831,8 +831,7 @@ class Account extends BaseModel {
             addMoneyCents(...explicit.map((allocation) => parseMoneyCents(encodeMonetaryAmount(
               allocation.amount)))))));
           const allocations = [...explicit, { categoryId: unassigned.id, amount: remainder }];
-          validateTransactionSplits(newAmount, allocations, undefined, hasCategoryStorage(
-            transaction));
+          validateTransactionSplits(newAmount, allocations);
           await applyAllocations(oldAllocations, oldActive, allocations, transactionData
             .date >= this.startDate);
 
@@ -893,8 +892,7 @@ class Account extends BaseModel {
               amount: -transactionData.amount,
             });
 
-          validateTransactionSplits(acctTrans.amount, transaction.categories, undefined,
-            hasCategoryStorage(transaction));
+          validateTransactionSplits(acctTrans.amount, transaction.categories);
           await validateStoredCategoryConservation(transaction);
           await applyAllocations([], false, transaction.categories, transaction.date >= this
             .startDate);
