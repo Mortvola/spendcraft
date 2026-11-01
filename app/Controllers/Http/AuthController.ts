@@ -105,7 +105,11 @@ export default class AuthController {
         },
       });
     }
-    catch {
+    catch (error) {
+      if (!(error instanceof errors.E_UNAUTHORIZED_ACCESS)) {
+        throw error;
+      }
+
       response.status(401).type('json').send({
         errors: [{
           message: 'Your session has expired. Please sign in again.',

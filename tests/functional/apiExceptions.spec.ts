@@ -55,6 +55,21 @@ test.group('Refresh token error responses', () => {
       assert.equal(refresh.mock.callCount(), 1)
     })
 
+  test('unexpected refresh failures return safe HTTP 500 errors')
+    .with(['Private Redis connection failure', 'Private token-generation failure'])
+    .run(async ({ client, assert, cleanup }, message) => {
+      const refresh = mock.method(JwtGuard.prototype, 'loginViaRefreshToken', async () => {
+        throw new Error(message)
+      })
+      cleanup(() => refresh.mock.restore())
+      const response = await client.post('/api/v1/refresh').json({ data: {
+        refresh: 'current-refresh-token',
+      } }).accept('json')
+      response.assertStatus(500)
+      assert.deepEqual(response.body(), { errors: [{ message: 'Internal server error' }] })
+      assert.equal(refresh.mock.callCount(), 1)
+    })
+
   test('successful refresh preserves the token response', async ({ client, assert, cleanup }) => {
     const refresh = mock.method(JwtGuard.prototype, 'loginViaRefreshToken', async (
       token: string) => {
