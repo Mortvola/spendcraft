@@ -1,9 +1,10 @@
-import type { AutoAssignmentWriteRequest } from '../../common/ResponseTypes';
+import type { AutoAssignmentWriteRequest, AutoAssignmentResponse } from
+  '../../common/ResponseTypes';
 import Http from '@mortvola/http';
 import { observable, runInAction } from 'mobx';
 import AutoAssignment, { encodeAutoAssignmentRules } from './AutoAssignment';
 import {
-  AutoAssignmentProps, AutoAssignmentRule, AutoAssignmentsInterface, AutoAssignmentsResponse,
+  AutoAssignmentRule, AutoAssignmentsInterface, AutoAssignmentsResponse,
     StoreInterface,
 } from './Types';
 
@@ -26,7 +27,8 @@ class AutoAssignments implements AutoAssignmentsInterface {
       throw new Error('invalid response');
     }
 
-    const body = await response.body();
+    const { data: body } = await response.body();
+    if (!Array.isArray(body)) throw new Error('Invalid auto-assignments response');
 
     if (body) {
       runInAction(() => {
@@ -42,7 +44,7 @@ class AutoAssignments implements AutoAssignmentsInterface {
     searchStrings: string[],
     categories: AutoAssignmentRule[],
   }) {
-    const response = await Http.post<AutoAssignmentWriteRequest, AutoAssignmentProps>(
+    const response = await Http.post<AutoAssignmentWriteRequest, AutoAssignmentResponse>(
       '/api/v1/auto-assignments', {
       name: props.name,
       searchStrings: props.searchStrings,
@@ -50,7 +52,8 @@ class AutoAssignments implements AutoAssignmentsInterface {
     })
 
     if (response.ok) {
-      const body = await response.body();
+      const { data: body } = await response.body();
+      if (!body) throw new Error('Invalid auto-assignment response');
 
       runInAction(() => {
         const autoAssignment = new AutoAssignment(body, this.store)

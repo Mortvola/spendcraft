@@ -34,6 +34,19 @@ export type FundingRuleResponse = { categoryId: number } & (
   | { percentage: true; amount: number }
 );
 
+export interface AutoAssignmentProps {
+  id: number;
+  name: string;
+  searchStrings: string[],
+  categories: ({ id: number; categoryId: number } & (
+    { percentage: true; amount: number } | { percentage: false | null; amount: DecimalMoneyString }
+  ))[],
+}
+
+
+export type AutoAssignmentResponse = ApiResponse<AutoAssignmentProps>;
+export type AutoAssignmentsResponse = ApiResponse<AutoAssignmentProps[]>;
+
 export interface AutoAssignmentWriteRequest {
   name: string;
   searchStrings: string[];

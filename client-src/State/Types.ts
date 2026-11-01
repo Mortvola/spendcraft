@@ -12,7 +12,6 @@ import {
   CategoryBalanceProps,
   AccountProps,
   BillProps,
-  DecimalMoneyString,
   StatementProps,
   GroupType,
   UpdateStatementProps,
@@ -617,20 +616,12 @@ export interface CategoryParams {
   hidden: boolean,
 }
 
-export interface AutoAssignmentProps {
-  id: number;
-  name: string;
-  searchStrings: string[],
-  categories: ({ id: number; categoryId: number } & (
-    { percentage: true; amount: number } | { percentage: false | null; amount: DecimalMoneyString }
-  ))[],
-}
+export type { AutoAssignmentProps, AutoAssignmentsResponse } from '../../common/ResponseTypes';
 
 export type AutoAssignmentRule = { id: number; categoryId: number } & (
   { percentage: true; amount: number } | { percentage: false | null; amountCents: MoneyCents }
 );
 
-export type AutoAssignmentsResponse = AutoAssignmentProps[]
 
 export interface AutoAssignmentInterface {
   id: number;

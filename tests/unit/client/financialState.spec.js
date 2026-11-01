@@ -1182,7 +1182,7 @@ formats', async ({ assert }) => {
       { id: 2, categoryId: 21, amount: 12.75, percentage: true },
       { id: 3, categoryId: 20, amount: '0.00', percentage: null },
     ] }
-    routes.set('get /api/v1/auto-assignments', async () => ({ body: [props] }))
+    routes.set('get /api/v1/auto-assignments', async () => ({ body: { data: [props] } }))
     await f.store.autoAssignments.load()
     const rule = f.store.autoAssignments.autoAssignemnts[0]
     assert.deepEqual(rule.categories.map(row => row.percentage ? row.amount : row.amountCents), [-
@@ -1197,8 +1197,8 @@ formats', async ({ assert }) => {
         { id: 1, categoryId: 20, amount: fixedWire, percentage: false },
         { id: 2, categoryId: 21, amount: 12.75, percentage: true },
       ] })
-      return { body: { ...props, name: 'Updated', categories: [{ id: 1, categoryId: 20,
-        percentage: false, amount: fixedWire }] } }
+      return { body: { data: { ...props, name: 'Updated', categories: [{ id: 1, categoryId: 20,
+        percentage: false, amount: fixedWire }] } } }
     })
     await rule.update(input)
     assert.strictEqual(rule.categories[0].amountCents, fixedCents)
@@ -1208,27 +1208,54 @@ formats', async ({ assert }) => {
         { id: 1, categoryId: 20, amount: fixedWire, percentage: false },
         { id: 2, categoryId: 21, amount: 12.75, percentage: true },
       ] })
-      return { body: { ...props, id: 2 } }
+      return { body: { data: { ...props, id: 2 } } }
     })
     await f.store.autoAssignments.add(input)
     assert.strictEqual(f.store.autoAssignments.autoAssignemnts.find(row => row.id === 2).categories[
       0].amountCents, -12)
     for (const amount of [1, '', '1.2', '-0.00', 'Infinity', '90071992547409.92']) {
-      routes.set('patch /api/v1/auto-assignments/1', async () => ({ body: { ...props, name:
+      routes.set('patch /api/v1/auto-assignments/1', async () => ({ body: { data: { ...props, name:
         'Invalid',
-        categories: [{ ...props.categories[0], amount }] } }))
+        categories: [{ ...props.categories[0], amount }] } } }))
       await assert.rejects(() => rule.update(input))
       assert.strictEqual(rule.name, 'Updated')
       assert.strictEqual(rule.categories[0].amountCents, fixedCents)
     }
   })
 
+  test('auto-assignment list accepts an empty wrapped collection', async ({ assert }) => {
+    routes.set('get /api/v1/auto-assignments', async () => ({ body: { data: [] } }))
+    await f.store.autoAssignments.load()
+    assert.isTrue(f.store.autoAssignments.initialized)
+    assert.lengthOf(f.store.autoAssignments.autoAssignemnts, 0)
+  })
+
+  test('bare auto-assignment responses reject without changing cached rules')
+    .with(['load', 'add', 'update']).run(async ({ assert }, action) => {
+      const props = { id: 1, name: 'Rule', searchStrings: [], categories: [{ id: 1,
+        categoryId: 20, percentage: false, amount: '0.10' }] }
+      routes.set('get /api/v1/auto-assignments', async () => ({ body: { data: [props] } }))
+      await f.store.autoAssignments.load()
+      const rule = f.store.autoAssignments.autoAssignemnts[0]
+      const input = { name: 'Changed', searchStrings: [], categories: rule.categories }
+      routes.set('get /api/v1/auto-assignments', async () => ({ body: [props] }))
+      routes.set('post /api/v1/auto-assignments', async () => ({ body: props }))
+      routes.set('patch /api/v1/auto-assignments/1', async () => ({ body: props }))
+      await assert.rejects(() => action === 'load' ? f.store.autoAssignments.load()
+        : action === 'add' ? f.store.autoAssignments.add(input) : rule.update(input))
+      assert.lengthOf(f.store.autoAssignments.autoAssignemnts, 1)
+      assert.strictEqual(f.store.autoAssignments.autoAssignemnts[0], rule)
+      assert.strictEqual(rule.name, 'Rule')
+      assert.strictEqual(rule.categories[0].amountCents, 10)
+    })
+
   test('invalid fixed-dollar auto-assignment cents reject before HTTP').with([NaN, Infinity, 0.1,
     Number.MAX_SAFE_INTEGER + 1])
     .run(async ({ assert }, amountCents) => {
-      routes.set('get /api/v1/auto-assignments', async () => ({ body: [{ id: 1, name: 'Rule',
+      routes.set('get /api/v1/auto-assignments', async () => ({ body: {
+        data: [{ id: 1, name: 'Rule',
         searchStrings: [],
-        categories: [{ id: 1, categoryId: 20, amount: '0.10', percentage: false }] }] }))
+        categories: [{ id: 1, categoryId: 20, amount: '0.10', percentage: false }] }] } }))
       await f.store.autoAssignments.load()
       routes.set('post /api/v1/auto-assignments', () => assert.fail('Invalid rule reached HTTP'))
       routes.set('patch /api/v1/auto-assignments/1', () => assert.fail('Invalid rule reached HTTP'))

@@ -82,17 +82,17 @@ test.group('Auto-assignment numeric precision PostgreSQL acceptance', () => {
           categories: [{ id: -1, categoryId: f.categories[0].id, amount: percentage ? 12.755 :
             '12.76', percentage }] })
       created.assertStatus(200)
-      const child = created.body().categories[0]
+      const child = created.body().data.categories[0]
       assert.strictEqual(child.amount, percentage ? 12.76 : '12.76')
       const raw = await db.from('auto_assignment_categories').where('id', child.id).first()
       assert.strictEqual(raw.amount, '12.76')
-      const patched = await client.patch(`/api/v1/auto-assignments/${created.body().id}`)
+      const patched = await client.patch(`/api/v1/auto-assignments/${created.body().data.id}`)
         .loginAs(f.user).accept('json').json({ name: 'Changed', searchStrings: ['Precision match'],
           categories: [{ id: child.id, categoryId: f.categories[0].id, amount: !percentage ? -
             0.125 : '-0.12', percentage: !percentage }] })
       patched.assertStatus(200)
-      assert.strictEqual(patched.body().categories[0].amount, !percentage ? -0.12 : '-0.12')
-      assert.strictEqual(patched.body().categories[0].percentage, !percentage)
+      assert.strictEqual(patched.body().data.categories[0].amount, !percentage ? -0.12 : '-0.12')
+      assert.strictEqual(patched.body().data.categories[0].percentage, !percentage)
       assert.strictEqual((await db.from('auto_assignment_categories').where('id', child.id).first())
         .amount, '-0.12')
       assert.deepEqual(await financialState(), before)
@@ -397,6 +397,6 @@ USING (${expression})`)
     }
     const response = await pending
     response.assertStatus(200)
-    assert.strictEqual(response.body().categories[0].amount, 12.76)
+    assert.strictEqual(response.body().data.categories[0].amount, 12.76)
   })
 })

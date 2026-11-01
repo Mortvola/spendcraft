@@ -1,3 +1,4 @@
+import type { ApiResponse } from '#common/ResponseTypes';
 import { autoAssignmentAmount } from '#services/autoAssignmentAmount'
 import type { HttpContext } from '@adonisjs/core/http'
 import db from '@adonisjs/lucid/services/db';
@@ -21,7 +22,7 @@ export default class AutoAssignmentsController {
     auth: {
       user,
     },
-  }: HttpContext): Promise<AutoAssignment | AutoAssignment[]> {
+  }: HttpContext): Promise<ApiResponse<AutoAssignment | AutoAssignment[]>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -41,14 +42,14 @@ export default class AutoAssignmentsController {
       await assignment.load('categories');
       // await assignment.load('searchStrings');
 
-      return assignment;
+      return { data: assignment };
     }
 
     const assignments = await budget.related('autoAssignment').query()
       .orderByRaw('lower(name) asc')
       .preload('categories')
 
-    return assignments;
+    return { data: assignments };
   }
 
    
@@ -57,7 +58,7 @@ export default class AutoAssignmentsController {
     auth: {
       user,
     },
-  }: HttpContext): Promise<AutoAssignment> {
+  }: HttpContext): Promise<ApiResponse<AutoAssignment>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -96,7 +97,7 @@ export default class AutoAssignmentsController {
 
       await trx.commit();
 
-      return autoAssignment;
+      return { data: autoAssignment };
     }
     catch (error) {
       await trx.rollback();
@@ -110,7 +111,7 @@ export default class AutoAssignmentsController {
     auth: {
       user,
     },
-  }: HttpContext): Promise<AutoAssignment> {
+  }: HttpContext): Promise<ApiResponse<AutoAssignment>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -178,7 +179,7 @@ export default class AutoAssignmentsController {
 
       await trx.commit();
 
-      return autoAssignment;
+      return { data: autoAssignment };
     }
     catch (error) {
       await trx.rollback();

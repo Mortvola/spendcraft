@@ -1,4 +1,5 @@
-import type { AutoAssignmentWriteRequest } from '../../common/ResponseTypes';
+import type { AutoAssignmentWriteRequest, AutoAssignmentResponse } from
+  '../../common/ResponseTypes';
 import { decodeCentFundingRules, encodeCentFundingRules, type CentFundingRule } from '../monetary';
 import Http from '@mortvola/http';
 import { observable, runInAction } from 'mobx';
@@ -57,7 +58,7 @@ class AutoAssignment implements AutoAssignmentInterface {
     searchStrings: string[],
     categories: AutoAssignmentRule[],
   }) {
-    const response = await Http.patch<AutoAssignmentWriteRequest, AutoAssignmentProps>(
+    const response = await Http.patch<AutoAssignmentWriteRequest, AutoAssignmentResponse>(
       `/api/v1/auto-assignments/${this.id}`, {
       name: props.name,
       searchStrings: props.searchStrings,
@@ -65,7 +66,8 @@ class AutoAssignment implements AutoAssignmentInterface {
     })
 
     if (response.ok) {
-      const body = await response.body();
+      const { data: body } = await response.body();
+      if (!body) throw new Error('Invalid auto-assignment response');
 
       const categories = decodeAutoAssignmentRules(body.categories);
       runInAction(() => {

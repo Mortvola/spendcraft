@@ -128,16 +128,18 @@ test.group('Auto-assignment isolation', (group) => {
       categories: [split(foreignChild, fixture.own.category.id), split(-1, fixture.own.category
         .id)] }).accept('json').loginAs(user)
     created.assertStatus(200)
+    assert.deepEqual(Object.keys(created.body()), ['data'])
     // POST ignores supplied child IDs and creates new children; it cannot select the foreign child.
-    assert.notEqual(created.body().categories[0].id, foreignChild)
+    assert.notEqual(created.body().data.categories[0].id, foreignChild)
     const updated = await client.patch(`/api/v1/auto-assignments/${ownId}`).json({ name:
       'Updated rule', searchStrings: ['first', 'second'],
       categories: [split(ownChild, fixture.own.category.id), split(-1, fixture.own.category.id)] })
         .accept('json').loginAs(user)
     updated.assertStatus(200)
-    assert.lengthOf(updated.body().categories, 2)
-    assert.deepEqual(updated.body().searchStrings, ['first', 'second'])
-    assert.equal(updated.body().categories[0].id, ownChild)
+    assert.deepEqual(Object.keys(updated.body()), ['data'])
+    assert.lengthOf(updated.body().data.categories, 2)
+    assert.deepEqual(updated.body().data.searchStrings, ['first', 'second'])
+    assert.equal(updated.body().data.categories[0].id, ownChild)
     const cleared = await client.patch(`/api/v1/auto-assignments/${ownId}`).json({ name:
       'Cleared rule', searchStrings: [], categories: [] }).accept('json').loginAs(user)
     cleared.assertStatus(200)
@@ -156,12 +158,15 @@ test.group('Auto-assignment isolation', (group) => {
     const own = await client.get(`/api/v1/auto-assignments/${ownId}`).accept('json').loginAs(fixture
       .shared)
     own.assertStatus(200)
+    assert.equal(own.body().data.id, ownId)
+    assert.deepEqual(Object.keys(own.body()), ['data'])
     const foreign = await client.get(`/api/v1/auto-assignments/${foreignId}`).accept('json')
       .loginAs(fixture.own.user)
     foreign.assertStatus(404)
     const list = await client.get('/api/v1/auto-assignments').accept('json').loginAs(fixture.shared)
     list.assertStatus(200)
-    const ids = list.body().map((row: { id: number }) => row.id)
+    assert.deepEqual(Object.keys(list.body()), ['data'])
+    const ids = list.body().data.map((row: { id: number }) => row.id)
     assert.include(ids, ownId)
     assert.notInclude(ids, foreignId)
   })
