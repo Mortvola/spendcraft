@@ -1,3 +1,5 @@
+import { RequestErrorCode } from '#common/ResponseTypes'
+import Group from '#models/Group'
 import { categoryRequest } from '../../helpers/categoryRequest.js'
 import { test } from '@japa/runner'
 import User from '#models/User'
@@ -106,6 +108,8 @@ test.group('Categories', (group) => {
       assert.isNotNull(user)
       assert.isNotNull(groupId)
 
+      const before = (await Group.findOrFail(groupId)).serialize()
+
       // This request should fail since the group contains a category
       const response = await client.delete(`/api/v1/groups/${groupId}`)
         .accept('json')
@@ -113,6 +117,10 @@ test.group('Categories', (group) => {
         .loginAs(user!)
 
       response.assertStatus(409)
+      assert.deepEqual(response.body(), { errors: [{ code: RequestErrorCode.HAS_CHILDREN,
+        message: 'Unable to delete the group because it contains one or more categories',
+      }] })
+      assert.deepEqual((await Group.findOrFail(groupId)).serialize(), before)
       response.assertAgainstApiSpec()
     })
 

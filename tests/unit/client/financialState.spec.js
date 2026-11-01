@@ -2395,18 +2395,40 @@ formats', async ({ assert }) => {
     assert.equal(f.other.transactions.transactions[0].date.toISODate(), before.date)
   })
 
-  test('Category in-use rejection preserves cache; successful delete removes only its Category',
-    async ({ assert }) => {
+  test('Category in-use rejection preserves cache; successful delete removes only its Category')
+    .with([
+      { code: 'HAS_CHILDREN', message: 'Category is in use' },
+      { code: 'HAS_CHILDREN', status: '409', detail: 'Category is in use' },
+    ]).run(async ({ assert }, error) => {
     const path = `/api/v1/groups/${f.category.group.id}/categories/${f.category.id}`
-    const error = { code: 'HAS_CHILDREN', status: '409', detail: 'Category is in use' }
     routes.set(`delete ${path}`, async () => ({ ok: false, body: { errors: [error] } }))
     const before = [...f.store.categoryTree.budget.children]
-    assert.deepEqual(await f.category.delete(), [error])
+    assert.deepEqual(await f.category.delete(), [{ field: '', message: 'Category is in use',
+      rule: 'HAS_CHILDREN' }])
     assert.deepEqual([...f.store.categoryTree.budget.children], before)
     routes.set(`delete ${path}`, async () => ({ body: {} }))
     await f.category.delete()
     assert.notInclude(f.store.categoryTree.budget.children, f.category)
     assert.include(f.store.categoryTree.budget.children, f.other)
+  })
+
+  test('Group deletion maps native and legacy errors and preserves the tree').with([
+    { code: 'HAS_CHILDREN', message: 'Group contains categories' },
+    { code: 'HAS_CHILDREN', status: '409', detail: 'Group contains categories' },
+  ]).run(async ({ assert }, error) => {
+    const parent = f.store.categoryTree.budget
+    const group = new state.Group({ id: 50, name: 'Child group', type: parent.type }, f.store)
+    state.runInAction(() => { parent.children.push(group); group.group = parent })
+    const before = [...parent.children]
+    const path = `/api/v1/groups/${group.id}`
+    routes.set(`delete ${path}`, async () => ({ ok: false, body: { errors: [error] } }))
+    assert.deepEqual(await group.delete(), [{ field: '', message: 'Group contains categories',
+      rule: 'HAS_CHILDREN' }])
+    assert.deepEqual([...parent.children], before)
+    routes.set(`delete ${path}`, async () => ({ body: {} }))
+    assert.isNull(await group.delete())
+    assert.notInclude(parent.children, group)
+    assert.include(parent.children, f.category)
   })
 
 })

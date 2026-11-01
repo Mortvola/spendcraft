@@ -6,7 +6,7 @@ import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import Category, { isCategory } from './Category';
 import {
-  ErrorProps, GroupProps, isErrorResponse,
+  ErrorProps, GroupProps,
   isAddCategoryResponse,
   GroupType,
   CategoryType,
@@ -196,13 +196,13 @@ class Group implements GroupInterface {
   }
 
   async delete (): Promise<null | ErrorProps[]> {
-    const response = await Http.delete(`/api/v1/groups/${this.id}`);
+    const response = await Http.delete<ApiResponse<void>>(`/api/v1/groups/${this.id}`);
 
     if (!response.ok) {
       const body = await response.body();
 
-      if (isErrorResponse(body)) {
-        return body.errors;
+      if (body.errors) {
+        return toFormErrors(body.errors);
       }
     }
     else {

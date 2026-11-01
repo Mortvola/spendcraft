@@ -387,8 +387,7 @@ class CategoriesController {
         return {
           errors: [{
             code: RequestErrorCode.HAS_CHILDREN,
-            status: '409',
-            detail: 'Unable to delete the group because it contains one or more categories',
+            message: 'Unable to delete the group because it contains one or more categories',
           }]
         }
       }
@@ -547,8 +546,7 @@ class CategoriesController {
         return {
           errors: [{
             code: RequestErrorCode.HAS_CHILDREN,
-            status: '409',
-            detail: 'Unable to delete the category because it contains one or more transactions',
+            message: 'Unable to delete the category because it contains one or more transactions',
           }]
         }
       }

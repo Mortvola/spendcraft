@@ -231,10 +231,16 @@ components:
                 description: The errors
                 items:
                   type: object
-                  required:
-                    - code
-                    - detail
+                  anyOf:
+                    - required: [message]
+                    - required: [detail]
                   properties:
+                    message:
+                      type: string
+                    field:
+                      type: string
+                    rule:
+                      type: string
                     code:
                       type: string
                     detail:

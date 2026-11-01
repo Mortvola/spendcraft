@@ -6,7 +6,7 @@ import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import { DateTime } from 'luxon';
 import {
-  CategoryProps, isErrorResponse, ErrorProps,
+  CategoryProps, ErrorProps,
   CategoryType,
   CategoryBalanceProps,
   ApiResponse,
@@ -201,13 +201,14 @@ class Category implements CategoryInterface {
       throw new Error('group is null')
     }
 
-    const response = await Http.delete(`/api/v1/groups/${this.group.id}/categories/${this.id}`);
+    const response = await Http.delete<ApiResponse<void>>(
+      `/api/v1/groups/${this.group.id}/categories/${this.id}`);
 
     if (!response.ok) {
       const body = await response.body();
 
-      if (isErrorResponse(body)) {
-        return body.errors;
+      if (body.errors) {
+        return toFormErrors(body.errors);
       }
     }
     else {

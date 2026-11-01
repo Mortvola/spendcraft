@@ -13,7 +13,7 @@ import Category from '#models/Category'
 import Transaction from '#models/Transaction'
 import { requestCategoryStorage } from '#services/categoryStorageBinding'
 import { validateStoredCategoryConservation } from '#services/transactionCategoryStorage'
-import { AccountType, CategoryType, TrackingType } from '#common/ResponseTypes'
+import { AccountType, CategoryType, TrackingType, RequestErrorCode } from '#common/ResponseTypes'
 
 let sequence = 0
 async function fixture() {
@@ -434,9 +434,9 @@ test.group('Decimal-string SQL membership and report compatibility', () => {
         .category.id}`).loginAs(f.user)
       removed.assertStatus(nonzero ? 409 : 204)
       if (nonzero) {
-        assert.equal(removed.body().errors[0].status, '409')
-        assert.equal(removed.body().errors[0].detail,
-          'Unable to delete the category because it contains one or more transactions')
+        assert.deepEqual(removed.body(), { errors: [{ code: RequestErrorCode.HAS_CHILDREN,
+          message: 'Unable to delete the category because it contains one or more transactions',
+        }] })
         assert.deepEqual(await snapshot(), before)
       }
       assert.deepEqual((await raw(target.id)).categories, allocations)
