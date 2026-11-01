@@ -142,8 +142,8 @@ FX>`
       const response = await client.get(`/api/v1/transaction/${association.transactionId}`).loginAs(
         f.user)
       response.assertStatus(200)
-      assert.deepEqual(response.body().taxes.map((tax: { amount: string }) => tax.amount), taxes
-        .map(tax => tax.amount))
+      assert.deepEqual(response.body().data.taxes.map((tax: { amount: string }) => tax.amount),
+        taxes.map(tax => tax.amount))
     })
 
   test('fractional OFX effects remain exact on import, replay and replacement')

@@ -486,8 +486,8 @@ test.group('Category deletion admission vs protected writers', (group) => {
           if (writer === 'plaid') return sync(client, f, 404)
           const response = await client.post(`/api/v1/account/${f.account.id}/ofx`).unsafeJson(ofx(
             )).type('text/plain').loginAs(f.user)
-          // Preserve the existing HTTP OFX catch/500 contract, not a new error architecture.
-          response.assertStatus(500)
+          // The shared error handler preserves the missing-category HTTP status.
+          response.assertStatus(404)
         })
         deepStrictEqual(await state(), before)
       } finally { restore() }

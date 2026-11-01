@@ -485,8 +485,8 @@ test('bills endpoint encodes debit totals and preserves null without changing ag
   })
   const response = await getBills({ auth: { user: { related: () => ({ query: () => ({
     firstOrFail: async () => budget }) }) } } })
-  assert.deepEqual(Array.from(response, bill => bill.debits), ['-12.50', '0.00', '-0.12', '0.30',
-    null])
+  assert.deepEqual(Array.from(response.data, bill => bill.debits),
+    ['-12.50', '0.00', '-0.12', '0.30', null])
   assert.deepEqual(bills.map(bill => bill.$extras.debits), totals)
 })
 

@@ -93,10 +93,12 @@ test.group('Transaction tax decimal-string PostgreSQL acceptance (prepared)', ()
         return
       }
       response.assertStatus(200)
-      if (Array.isArray(taxes)) assert.deepEqual(response.body().taxes, taxes)
-      else assert.isNull(response.body().taxes)
+      if (Array.isArray(taxes)) assert.deepEqual(response.body().data.taxes, taxes)
+      else assert.isNull(response.body().data.taxes)
       const model = await Transaction.findOrFail(f.target.id)
-      if (Array.isArray(taxes)) assert.deepEqual(model.serialize().taxes, response.body().taxes)
+      if (Array.isArray(taxes)) {
+        assert.deepEqual(model.serialize().taxes, response.body().data.taxes)
+      }
       assert.deepEqual(await allState(), before)
       // SQL column is NOT NULL; JSON null is the legacy optional value tested here.
       // Keep this sentinel out of later SQL jsonb_to_recordset report fixtures.
@@ -460,7 +462,7 @@ test.group('Tax storage lifecycle preservation', () => {
       assert.deepEqual((await raw(id)).taxes, taxes)
       const read = await client.get(`/api/v1/transaction/${id}`).loginAs(f.user)
       read.assertStatus(200)
-      assert.deepEqual(read.body().taxes.map((tax: { amount: string }) => tax.amount), ['1.00',
+      assert.deepEqual(read.body().data.taxes.map((tax: { amount: string }) => tax.amount), ['1.00',
         '0.30'])
     })
 
