@@ -1,9 +1,9 @@
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import {
-  ApiResponse, ErrorProps, isErrorResponse, isUserProps,
+  UserResponse, ErrorProps, isErrorResponse, isUserProps,
 } from '../../common/ResponseTypes';
-import { StoreInterface, UserInterface, type UserProps } from './Types';
+import { StoreInterface, UserInterface } from './Types';
 
 class User implements UserInterface {
   @observable
@@ -28,7 +28,7 @@ class User implements UserInterface {
   }
 
   async load(): Promise<void> {
-    const response = await Http.get<ApiResponse<UserProps>>('/api/v1/user');
+    const response = await Http.get<UserResponse>('/api/v1/user');
 
     if (response.ok) {
       const { data } = await response.body();
@@ -45,17 +45,17 @@ class User implements UserInterface {
   }
 
   async update(email: string): Promise<ErrorProps[] | null> {
-    const response = await Http.patch('/api/v1/user', { email });
+    const response = await Http.patch<{ email: string }, UserResponse>('/api/v1/user', { email });
 
     const body = await response.body();
 
     if (response.ok) {
+      const { data } = body;
+      if (!isUserProps(data)) throw new Error('Invalid user response');
       runInAction(() => {
-        if (isUserProps(body)) {
-          this.username = body.username;
-          this.email = body.email;
-          this.pendingEmail = body.pendingEmail ?? null;
-        }
+        this.username = data.username;
+        this.email = data.email;
+        this.pendingEmail = data.pendingEmail ?? null;
       });
 
       return null;
@@ -86,17 +86,17 @@ class User implements UserInterface {
   }
 
   async deletePendingEmail(): Promise<ErrorProps[] | null> {
-    const response = await Http.delete('/api/v1/user/pending-email');
+    const response = await Http.delete<UserResponse>('/api/v1/user/pending-email');
 
     const body = await response.body();
 
     if (response.ok) {
+      const { data } = body;
+      if (!isUserProps(data)) throw new Error('Invalid user response');
       runInAction(() => {
-        if (isUserProps(body)) {
-          this.username = body.username;
-          this.email = body.email;
-          this.pendingEmail = body.pendingEmail ?? null;
-        }
+        this.username = data.username;
+        this.email = data.email;
+        this.pendingEmail = data.pendingEmail ?? null;
       });
 
       return null;

@@ -599,10 +599,13 @@ export interface UserProps {
   roles: string[];
 }
 
+export type UserResponse = ApiResponse<UserProps>;
+
 export const isUserProps = (
   r: UserProps | unknown,
 ): r is UserProps => (
-  (r as UserProps).username !== undefined
+  typeof r === 'object' && r !== null
+  && (r as UserProps).username !== undefined
   && (r as UserProps).email !== undefined
 );
 

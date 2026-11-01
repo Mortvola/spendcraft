@@ -1304,6 +1304,39 @@ formats', async ({ assert }) => {
     assert.isNull(f.store.overview.bills[0].debitsCents)
   })
 
+  test('User mutations read wrapped profile data and preserve roles', async ({ assert }) => {
+    const user = f.store.user
+    const roles = user.roles.slice()
+    const props = { username: 'Profile', email: 'profile@example.com',
+      pendingEmail: 'pending@example.com', roles: ['different-role'] }
+    routes.set('patch /api/v1/user', async payload => {
+      assert.deepEqual(payload, { email: 'pending@example.com' })
+      return { body: { data: props } }
+    })
+    assert.isNull(await user.update('pending@example.com'))
+    assert.strictEqual(user.username, props.username)
+    assert.strictEqual(user.email, props.email)
+    assert.strictEqual(user.pendingEmail, props.pendingEmail)
+    routes.set('delete /api/v1/user/pending-email', async () => ({
+      body: { data: { ...props, pendingEmail: null } },
+    }))
+    assert.isNull(await user.deletePendingEmail())
+    assert.isNull(user.pendingEmail)
+    assert.deepEqual(user.roles, roles)
+  })
+
+  test('User mutations reject bare responses without changing profile state')
+    .with(['patch', 'delete']).run(async ({ assert }, method) => {
+      const user = f.store.user
+      const before = [user.username, user.email, user.pendingEmail]
+      const url = method === 'patch' ? '/api/v1/user' : '/api/v1/user/pending-email'
+      routes.set(`${method} ${url}`, async () => ({ body: { username: 'Wrong',
+        email: 'wrong@example.com', pendingEmail: null } }))
+      await assert.rejects(() => method === 'patch' ? user.update('wrong@example.com')
+        : user.deletePendingEmail(), 'Invalid user response')
+      assert.deepEqual([user.username, user.email, user.pendingEmail], before)
+    })
+
   test('bills accept an empty wrapper and reject a bare collection', async ({ assert }) => {
     routes.set('get /api/v1/bills', async () => ({ body: { data: [] } }))
     await f.store.overview.load()

@@ -33,7 +33,7 @@ export default class UsersController {
     auth: {
       user,
     },
-  }: HttpContext): Promise<User> {
+  }: HttpContext): Promise<ApiResponse<User>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -46,7 +46,7 @@ export default class UsersController {
 
     user.sendEmailAddressVerification();
 
-    return user;
+    return { data: user };
   }
 
    
@@ -67,7 +67,7 @@ export default class UsersController {
     auth: {
       user,
     },
-  }: HttpContext): Promise<User> {
+  }: HttpContext): Promise<ApiResponse<User>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -76,7 +76,7 @@ export default class UsersController {
 
     await user.save();
 
-    return user;
+    return { data: user };
   }
 
    
