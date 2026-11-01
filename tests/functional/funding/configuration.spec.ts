@@ -107,12 +107,17 @@ test.group('Funding configuration validation regression', (group) => {
             : ['nonnumeric', 'numeric strings'].includes(scenario.name) ? 'number' :
               'fundingPercentageTotal'
           const field = writer.startsWith('category') ? 'fundingCategories' :
-            'categories.*.fundingCategories'
-          assert.deepEqual(response.body().errors.map((error: { code: string, source: {
-            pointer: string } }) => ({ rule: error.code, field: error.source.pointer })),
-            Array.from({ length: scenario.name === 'numeric strings' ? 2 : 1 }, () => ({ rule,
-              field: ['nonnumeric', 'numeric strings'].includes(scenario
-              .name) ? `${field}.*.amount` : field })))
+            'categories.0.fundingCategories'
+          assert.deepEqual(response.body().errors.map((error: { rule: string, field: string }) =>
+            ({ rule: error.rule, field: error.field })),
+            Array.from({ length: scenario.name === 'numeric strings' ? 2 : 1 }, (_, index) => ({
+              rule, field: ['nonnumeric', 'numeric strings'].includes(scenario.name)
+                ? `${field}.${index}.amount` : field })))
+          for (const error of response.body().errors) {
+            assert.isString(error.message)
+            assert.notProperty(error, 'detail')
+            assert.notProperty(error, 'source')
+          }
           assert.deepEqual(await Promise.all([db.from('categories').where('group_id', f.group.id)
             .orderBy('id'),
             db.from('transactions').where('application_id', f.budget.id).orderBy('id')]), before)

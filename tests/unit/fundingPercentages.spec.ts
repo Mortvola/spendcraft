@@ -1,6 +1,5 @@
 import { test } from '@japa/runner'
 import vine from '@vinejs/vine'
-import { JSONAPIErrorReporter } from '#app/validation/JSONAPIErrorReporter'
 import { fundingPercentageUnits, validateFundingPercentages } from '#common/fundingPercentages'
 import { fundingPercentagesRule } from '#app/validation/fundingPercentages'
 
@@ -81,10 +80,28 @@ test.group('Exact funding percentage validation', () => {
     { amount: 100, percentage: 'bad', rule: 'boolean', field: 'fundingCategories.0.percentage' },
   ]).run(async ({ assert }, scenario) => {
     const [error] = await schema.tryValidate({ fundingCategories: [{ categoryId: 1,
-      ...scenario }] }, { errorReporter: () => new JSONAPIErrorReporter() })
+      ...scenario }] })
     assert.isNotNull(error)
-    assert.deepEqual(error?.messages.map(({ code, source }: { code: string, source: {
-      pointer: string } }) => ({ rule: code, field: source.pointer })),
-      [{ rule: scenario.rule, field: scenario.field.replace('.0.', '.*.') }])
+    assert.deepEqual(error?.messages.map(({ rule, field }: { rule: string, field: string }) =>
+      ({ rule, field })), [{ rule: scenario.rule, field: scenario.field }])
+    for (const message of error?.messages ?? []) {
+      assert.isString(message.message)
+      assert.notProperty(message, 'detail')
+      assert.notProperty(message, 'source')
+    }
   })
+})
+
+test('native Vine errors identify individual array entries and retain rule metadata', async ({
+  assert }) => {
+  const validator = vine.compile(vine.object({ categories: vine.array(vine.object({
+    amount: vine.number().min(1),
+  })) }))
+  const [error] = await validator.tryValidate({ categories: [{ amount: 0 }, { amount: -1 }] })
+  assert.isNotNull(error)
+  assert.deepEqual(error?.messages.map(({ field, rule, meta }: { field: string, rule: string,
+    meta: unknown }) => ({ field, rule, meta })), [
+    { field: 'categories.0.amount', rule: 'min', meta: { min: 1 } },
+    { field: 'categories.1.amount', rule: 'min', meta: { min: 1 } },
+  ])
 })

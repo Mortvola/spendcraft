@@ -12,9 +12,6 @@ import vine, { SimpleMessagesProvider, VineDate, VineNumber } from '@vinejs/vine
 import { FieldContext } from '@vinejs/vine/types';
 import { VineDbSearchOptions } from '@adonisjs/lucid/types/vine';
 import { DateTime } from 'luxon';
-import { JSONAPIErrorReporter } from '#app/validation/JSONAPIErrorReporter';
-
-vine.errorReporter = () => new JSONAPIErrorReporter()
 
 vine.messagesProvider = new SimpleMessagesProvider({
   'username.unique': 'An account with the requested username already exists',
