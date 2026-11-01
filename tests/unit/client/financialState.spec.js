@@ -658,6 +658,32 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.strictEqual(f.category.balanceCents, 0)
   })
 
+  test('form mutations preserve native and legacy errors without changing cached state').with([
+    { message: 'Required', field: 'name', rule: 'required' },
+    { detail: 'Required', source: { pointer: 'name' }, code: 'required' },
+    { message: 'Unable to save' },
+  ]).run(async ({ assert }, error) => {
+    const expected = [{ field: error.field ?? error.source?.pointer ?? '',
+      message: error.message ?? error.detail, rule: error.rule ?? error.code ?? '' }]
+    const group = f.store.categoryTree.budget
+    const before = [...group.children]
+    for (const [method, path, run] of [
+      ['post', '/api/v1/groups', () => f.store.categoryTree.addGroup('New group', null)],
+      ['patch', `/api/v1/groups/${group.id}`, () => group.update({ name: 'New name',
+        parentGroupId: null })],
+      ['post', `/api/v1/groups/${group.id}/categories`, () => group.addCategory({
+        name: 'New Category', group, type: state.CategoryType.Regular })],
+      ['patch', `/api/v1/groups/${group.id}/categories/${f.category.id}`, () => f.category
+        .update({ name: 'New name', group, type: state.CategoryType.Regular })],
+    ]) {
+      routes.set(`${method} ${path}`, async () => ({ ok: false, body: { errors: [error] } }))
+      assert.deepEqual(await run(), expected)
+      assert.deepEqual([...group.children], before)
+      assert.equal(f.category.name, 'Category 20')
+      assert.equal(f.category.balanceCents, 0)
+    }
+  })
+
   test('Category CREATE/PATCH format cents while keeping percentages numeric').with([
     { operation: 'create', fundingAmountCents: 1235, expected: '12.35' },
     { operation: 'patch', fundingAmountCents: 1235, expected: '12.35' },

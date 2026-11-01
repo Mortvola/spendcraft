@@ -1,3 +1,4 @@
+import { toFormErrors } from '../apiErrors';
 import { parseMoneyCents } from '../../common/moneyCents';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
@@ -392,11 +393,7 @@ class CategoryTree implements CategoryTreeInterface {
 
     if (!response.ok) {
       if (body.errors) {
-        return body.errors.map((error) => ({
-          field: error.source?.pointer ?? '',
-          message: error.detail,
-          rule: error.code,
-        }));
+        return toFormErrors(body.errors);
       }
     }
     else {

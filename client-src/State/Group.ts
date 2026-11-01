@@ -1,3 +1,4 @@
+import { toFormErrors } from '../apiErrors';
 import { formatMoneyCents, parseMoneyCents, addMoneyCents, type MoneyCents } from
   '../../common/moneyCents';
 import { encodeCentFundingRules } from '../monetary';
@@ -124,11 +125,7 @@ class Group implements GroupInterface {
 
     if (!response.ok) {
       if (body.errors) {
-        return body.errors.map((error) => ({
-          field: error.source?.pointer ?? '',
-          message: error.detail,
-          rule: error.code,
-        }));
+        return toFormErrors(body.errors);
       }
     }
     else {
@@ -172,11 +169,7 @@ class Group implements GroupInterface {
 
     if (!response.ok) {
       if (body.errors) {
-        return body.errors.map((error) => ({
-          field: error.source?.pointer ?? 'Unknown',
-          message: error.detail,
-          rule: error.code,
-        }));
+        return toFormErrors(body.errors);
       }
     }
     else {

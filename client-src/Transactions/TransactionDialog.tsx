@@ -1,3 +1,4 @@
+import { toFormErrors } from '../apiErrors';
 import React, { useMemo } from 'react';
 import {
   Field, FieldProps,
@@ -17,7 +18,7 @@ import MoneyCentsAmount from '../MoneyCentsAmount';
 import { AccountInterface, TransactionInterface } from '../State/Types';
 import AmountInput from '../AmountInput';
 import useMediaQuery from '../MediaQuery';
-import { AccountType, ApiError, ErrorProps, isApiErrorArray, isErrorPropsArray, RequestErrorCode,
+import { AccountType, ApiError, RequestErrorCode,
   TrackingType, TransactionType } from '../../common/ResponseTypes';
 import styles from './TransactionDialog.module.scss';
 import PurchaseLocation from './PurchaseLocation';
@@ -100,7 +101,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
       return { ...split, amountCents: amountCents < 0 ? subtractMoneyCents(zero, cents) : cents };
     });
 
-    let errors: ErrorProps[] | ApiError[] | null;
+    let errors: ApiError[] | null;
     if (transaction) {
       errors = await transaction.updateTransaction({
         name: values.name,
@@ -129,7 +130,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
     }
 
     if (errors) {
-      const error = errors.find((e) => (e as ApiError).code === RequestErrorCode.INCORRECT_VERSION)
+      const error = errors.find((e) => e.code === RequestErrorCode.INCORRECT_VERSION)
 
       if (error) {
         setShow(false);
@@ -137,17 +138,8 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
         if (onReload) {
           onReload();
         }
-      } else if (isErrorPropsArray(errors)) {
-        setFormErrors(setErrors, errors)
-      } else if (isApiErrorArray(errors)) {
-        const errorProps = errors.map((e) => ({
-          // TODO: fix this line so it no longer needs the ''.
-          field: e.source?.pointer ?? '',
-          message: e.detail,
-          rule: e.code,
-        }))
-
-        setFormErrors(setErrors, errorProps)
+      } else {
+        setFormErrors(setErrors, toFormErrors(errors));
       }
     }
     else {

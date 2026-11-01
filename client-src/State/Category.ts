@@ -1,3 +1,4 @@
+import { toFormErrors } from '../apiErrors';
 import { formatMoneyCents, parseMoneyCents, addMoneyCents, type MoneyCents } from
   '../../common/moneyCents';
 import { decodeCentFundingRules, encodeCentFundingRules, type CentFundingRule } from '../monetary';
@@ -133,11 +134,7 @@ class Category implements CategoryInterface {
 
     if (!response.ok) {
       if (body.errors) {
-        return body.errors.map((error) => ({
-          field: error.source?.pointer ?? '',
-          message: error.detail,
-          rule: error.code,
-        }));
+        return toFormErrors(body.errors);
       }
     }
     else {
