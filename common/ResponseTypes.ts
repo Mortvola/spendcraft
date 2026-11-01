@@ -639,15 +639,17 @@ export interface UnlinkedAccountProps {
 //   amount: number,
 // }
 
-export interface AddTransactionResponse {
+export interface AddTransactionData {
   categories: CategoryBalanceProps[],
   transaction: TransactionProps,
   acctBalances: AccountBalanceProps[],
 }
 
-export const isAddTransactionResponse = (r: unknown): r is AddTransactionResponse => (
-  (r as AddTransactionResponse).categories !== undefined
-  && Array.isArray((r as AddTransactionResponse).categories)
+export type AddTransactionResponse = ApiResponse<AddTransactionData>;
+export type TransactionResponse = ApiResponse<TransactionProps>;
+
+export const isAddTransactionData = (r: unknown): r is AddTransactionData => (
+  typeof r === 'object' && r !== null && 'categories' in r && Array.isArray(r.categories)
 )
 
 // export interface CategoryBalanceProps2 {

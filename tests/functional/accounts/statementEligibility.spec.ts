@@ -44,7 +44,7 @@ test.group('Statement transaction eligibility', (group) => {
       .json(transactionRequest({ date, name: 'Eligibility movement', amount, categories: [] }))
         .accept('json').loginAs(fixture.user)
     response.assertStatus(200)
-    const transaction = await Transaction.findOrFail(response.body().transaction.id)
+    const transaction = await Transaction.findOrFail(response.body().data.transaction.id)
     const row = await AccountTransaction.findByOrFail('transactionId', transaction.id)
     return { transaction, row }
   }

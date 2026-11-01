@@ -290,8 +290,8 @@ test.group('Transaction split cents', group => {
         useEffect: callback => effects.push(callback) }, DateTime, TransactionFields:
           'duplicateFields',
       ModalHeader: 'header', ModalBody: 'body', ModalFooter: 'footer',
-      Http: { get: async () => ({ ok: true, body: async () => ({ date: '2025-01-01',
-        accountTransaction: { name: 'Peer', amount: '90071992547409.91' } }) }) },
+      Http: { get: async () => ({ ok: true, body: async () => ({ data: { date: '2025-01-01',
+        accountTransaction: { name: 'Peer', amount: '90071992547409.91' } } }) }) },
     })
     const modal = view({ transaction: { duplicateOfTransactionId: 8, amountCents: 30 }, setShow: (
       ) => undefined })
@@ -432,8 +432,9 @@ test.group('Transaction split cents', group => {
       useCallback: callback => callback, transaction: { id: 7 }, URL, URLSearchParams,
       window: { location: { href: 'https://example.test/' } }, isCategoryTreeBalanceResponse,
       setBalances: value => { loaded = value },
-      Http: { get: async value => { url = value; return { ok: true, body: async () => [{ id: 20,
-        balance: '90071992547409.91' }] } } },
+      Http: { get: async value => { url = value; return { ok: true,
+        body: async () => ({ data: [{ id: 20,
+        balance: '90071992547409.91' }] }) } } },
     })
     view('2025-01-01')
     await new Promise(resolve => setImmediate(resolve))

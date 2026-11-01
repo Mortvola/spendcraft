@@ -121,8 +121,8 @@ test.group('Transaction budget isolation', (group) => {
     const response = await client.get(`/api/v1/transaction/${fixture.own.transaction.id}`).accept(
       'json').loginAs(user)
     response.assertStatus(200)
-    assert.equal(response.body().id, fixture.own.transaction.id)
-    assert.equal(response.body().accountTransaction.name, 'own private purchase')
+    assert.equal(response.body().data.id, fixture.own.transaction.id)
+    assert.equal(response.body().data.accountTransaction.name, 'own private purchase')
   })
 
   test('foreign transaction read returns not found without financial data', async ({ client,

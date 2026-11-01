@@ -8,7 +8,7 @@ import { DateTime } from 'luxon';
 import Transaction from '../State/Transaction';
 import MoneyCentsAmount from '../MoneyCentsAmount';
 import { parseMoneyCents, type MoneyCents } from '../../common/moneyCents';
-import { TransactionProps } from '../../common/ResponseTypes';
+import { TransactionResponse } from '../../common/ResponseTypes';
 
 interface TransactionPropsType {
   name?: string,
@@ -43,11 +43,12 @@ const DuplicateDialog: React.FC<PropsType & ModalProps> = ({
   const [otherTransaction, setOtherTransaction] = React.useState<TransactionPropsType | null>(null);
   React.useEffect(() => {
     (async () => {
-      const response = await Http.get<TransactionProps>(`/api/v1/transaction/${transaction
+      const response = await Http.get<TransactionResponse>(`/api/v1/transaction/${transaction
         .duplicateOfTransactionId}`);
 
       if (response.ok) {
-        const body = await response.body();
+        const { data: body } = await response.body();
+        if (!body) throw new Error('Invalid transaction response');
 
         setOtherTransaction({
           name: body.accountTransaction.name,

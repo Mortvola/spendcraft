@@ -1626,10 +1626,25 @@ formats', async ({ assert }) => {
         'estimated_tax_payments', amountCents }] }))
     })
 
+  test('Transaction CREATE rejects a bare response without changing cached state', async ({
+    assert }) => {
+    const before = [f.account.balanceCents, f.category.balanceCents]
+    const transactions = f.account.transactions.transactions.slice()
+    routes.set('post /api/v1/account/10/transactions', async () => ({ body: {
+      transaction: f.transactionProps(), categories: [{ id: 20, balance: '-10.00' }],
+      acctBalances: [{ id: 10, balance: '90.00' }],
+    } }))
+    await assert.rejects(() => f.account.addTransaction({ date: '2025-02-10',
+      amountCents: parseMoneyCents('-10.00'), name: 'Purchase', categories: [
+        { categoryId: 20, amountCents: parseMoneyCents('-10.00') }] }))
+    assert.deepEqual([f.account.balanceCents, f.category.balanceCents], before)
+    assert.deepEqual(f.account.transactions.transactions, transactions)
+  })
+
   test('account creation applies returned balances and inserts transaction', async ({ assert }) => {
-    routes.set('post /api/v1/account/10/transactions', async () => ({ body: { transaction: f
+    routes.set('post /api/v1/account/10/transactions', async () => ({ body: { data: { transaction: f
       .transactionProps(), categories: [{ id: 20, balance: '-10.00' }], acctBalances: [{ id: 10,
-      balance: '90.00' }] } }))
+      balance: '90.00' }] } } }))
     await f.account.addTransaction({ date: '2025-02-10', amountCents: parseMoneyCents('-10.00'),
       name: 'Purchase', categories: [{ categoryId: 20, amountCents: parseMoneyCents('-10.00') }] })
     assert.equal(f.account.balanceCents, 9000); assert.equal(f.category.balanceCents, -1000)

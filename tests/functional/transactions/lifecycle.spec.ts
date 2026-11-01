@@ -90,12 +90,12 @@ test.group('Ordinary transaction lifecycle', (group) => {
       created.assertStatus(200)
       assert.strictEqual((await Account.findOrFail(fixture.account.id)).balanceCents,
         parseMoneyCents(encodeMonetaryAmount(negative ? -0.3 : 0.3)))
-      assert.strictEqual(created.body().acctBalances[0].balance, negative ? '-0.30' : '0.30')
+      assert.strictEqual(created.body().data.acctBalances[0].balance, negative ? '-0.30' : '0.30')
       assert.strictEqual((await Category.findOrFail(category.id)).balanceCents, parseMoneyCents(
         encodeMonetaryAmount(negative ? -0.3 : 0.3)))
-      assert.strictEqual(created.body().categories.find((row: { id: number }) => row.id ===
+      assert.strictEqual(created.body().data.categories.find((row: { id: number }) => row.id ===
         category.id).balance, negative ? '-0.30' : '0.30')
-      const id = created.body().transaction.id
+      const id = created.body().data.transaction.id
       const removed = await client.delete(`/api/v1/transaction/${id}`).accept('json')
         .loginAs(fixture.user)
       removed.assertStatus(200)
@@ -274,7 +274,7 @@ test.group('Ordinary transaction lifecycle', (group) => {
             { categoryId: fixture.first.id, amount: sign > 0 ? '0.10' : '-0.10' }] })
         .loginAs(fixture.user)
       created.assertStatus(200)
-      const id: number = created.body().transaction.id
+      const id: number = created.body().data.transaction.id
       assert.strictEqual((await Category.findOrFail(fixture.first.id)).balanceCents,
         parseMoneyCents(encodeMonetaryAmount(sign * 0.3)))
       for (const [version, value] of ['0.40', '0.20'].entries()) {
@@ -314,7 +314,7 @@ test.group('Ordinary transaction lifecycle', (group) => {
       .json({ date: '2025-03-01', name: 'Empty excluded', amount: '0.20', principle: '0.00',
         categories: [] }).loginAs(fixture.user)
     created.assertStatus(200)
-    const id: number = created.body().transaction.id
+    const id: number = created.body().data.transaction.id
     assert.strictEqual((await Category.findOrFail(unassigned.id)).balanceCents, parseMoneyCents(
       '0.30'))
     await db.from('transactions').where('id', id).update({ categories: '[]' })
@@ -366,7 +366,7 @@ test.group('Ordinary transaction lifecycle', (group) => {
           amount: sign > 0 ? '0.30' : '-0.30', principle: sign > 0 ? '0.20' : '-0.20',
           categories: [] }).loginAs(fixture.user)
       created.assertStatus(200)
-      const id: number = created.body().transaction.id
+      const id: number = created.body().data.transaction.id
       assert.strictEqual((await Account.findOrFail(fixture.account.id)).balanceCents,
         parseMoneyCents(encodeMonetaryAmount(sign * 0.3)))
       const stored = await db.from('transactions').where('id', id).firstOrFail()
@@ -423,11 +423,11 @@ test.group('Ordinary transaction lifecycle', (group) => {
       date: '2025-03-01', name: 'Loan payment', amount: '12.35', principle: '10.25', categories: [],
     }).accept('json').loginAs(fixture.user)
     created.assertStatus(200)
-    const id = created.body().transaction.id
+    const id = created.body().data.transaction.id
     let model = await AccountTransaction.findByOrFail('transactionId', id)
     assert.strictEqual(model.amountCents, parseMoneyCents('12.35'))
     assert.strictEqual(model.principalCents, parseMoneyCents('10.25'))
-    assert.strictEqual(created.body().transaction.accountTransaction.principle, '10.25')
+    assert.strictEqual(created.body().data.transaction.accountTransaction.principle, '10.25')
     assert.strictEqual((await Account.findOrFail(fixture.account.id)).balanceCents,
       parseMoneyCents('120.25'))
     const updated = await client.patch(`/api/v1/transaction/${id}`).json({
@@ -477,7 +477,7 @@ test.group('Ordinary transaction lifecycle', (group) => {
       .json(transactionRequest({ date: '2025-03-01', name: 'Created purchase', amount,
         categories })).accept('json').loginAs(fixture.user)
     response.assertStatus(200)
-    const transaction = await Transaction.findOrFail(response.body().transaction.id)
+    const transaction = await Transaction.findOrFail(response.body().data.transaction.id)
     const accountTransaction = await AccountTransaction.findByOrFail('transactionId', transaction
       .id)
     assert.deepEqual(transaction.categories, categoryAllocationsToCents(categories))
@@ -577,7 +577,7 @@ test.group('Ordinary transaction lifecycle', (group) => {
       .json(transactionRequest({ date: '2025-03-01', name: 'Conserving purchase', amount,
         categories })).accept('json').loginAs(fixture.user)
     response.assertStatus(200)
-    const transaction = await Transaction.findOrFail(response.body().transaction.id)
+    const transaction = await Transaction.findOrFail(response.body().data.transaction.id)
     const accountTransaction = await AccountTransaction.findByOrFail('transactionId', transaction
       .id)
     assert.equal(accountTransaction.amountCents, parseMoneyCents(encodeMonetaryAmount(amount)))

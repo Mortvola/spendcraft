@@ -92,7 +92,7 @@ test.group('Account transaction creation isolation', (group) => {
         { categoryId: fixture.own.category.id, amount: 15 }] }))
       .accept('json').loginAs(actor === 'owner' ? fixture.own.user : fixture.shared)
     response.assertStatus(200)
-    const row = await Transaction.findOrFail(response.body().transaction.id)
+    const row = await Transaction.findOrFail(response.body().data.transaction.id)
     assert.equal(row.budgetId, fixture.own.budget.id)
     assert.deepEqual(row.categories,
       categoryAllocationsToCents([{ categoryId: fixture.own.category.id, amount: 15 }]))
@@ -148,7 +148,7 @@ test.group('Account transaction creation isolation', (group) => {
       .json(transactionRequest({ date: '2025-03-01', name: 'Split purchase', amount: 15,
         categories })).accept('json').loginAs(fixture.shared)
     response.assertStatus(200)
-    assert.deepEqual((await Transaction.findOrFail(response.body().transaction.id)).categories,
+    assert.deepEqual((await Transaction.findOrFail(response.body().data.transaction.id)).categories,
       categoryAllocationsToCents(categories))
     assert.equal((await Category.findOrFail(fixture.own.category.id)).balanceCents,
       parseMoneyCents('35.00'))
@@ -167,7 +167,7 @@ test.group('Account transaction creation isolation', (group) => {
       encodeMonetaryAmount(before + 15)))
     assert.equal((await Account.findOrFail(fixture.own.account.id)).balanceCents,
       parseMoneyCents('115.00'))
-    assert.equal((await Transaction.findOrFail(response.body().transaction.id)).categories[0]
+    assert.equal((await Transaction.findOrFail(response.body().data.transaction.id)).categories[0]
       .categoryId, unassigned.id)
   })
 
@@ -181,7 +181,7 @@ test.group('Account transaction creation isolation', (group) => {
           .id, budgetId: fixture.foreign.budget.id }))
       .accept('json').loginAs(fixture.own.user)
     response.assertStatus(200)
-    const row = await Transaction.findOrFail(response.body().transaction.id)
+    const row = await Transaction.findOrFail(response.body().data.transaction.id)
     const accountRow = await AccountTransaction.findByOrFail('transactionId', row.id)
     assert.equal(row.budgetId, fixture.own.budget.id)
     assert.isNull(row.duplicateOfTransactionId)

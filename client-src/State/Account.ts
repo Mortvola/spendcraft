@@ -5,7 +5,7 @@ import Http from '@mortvola/http';
 import { DateTime } from 'luxon';
 import {
   AccountProps, AddTransactionResponse, ErrorProps,
-  isAddTransactionResponse, TrackingType, AccountType,
+  isAddTransactionData, TrackingType, AccountType,
   isErrorResponse, ApiResponse, CategoryProps,
 } from '../../common/ResponseTypes';
 import {
@@ -218,9 +218,9 @@ class Account implements AccountInterface {
     });
 
     if (response.ok) {
-      const body = await response.body();
+      const { data: body } = await response.body();
 
-      if (isAddTransactionResponse(body)) {
+      if (isAddTransactionData(body)) {
         const balanceCents = parseMoneyCents(body.acctBalances[0].balance);
         const transaction = new Transaction(this.store, body.transaction);
         runInAction(() => {

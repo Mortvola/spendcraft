@@ -53,7 +53,8 @@ test.group('Transaction Category decimal-string storage (prepared)', () => {
         .json(transactionRequest({ date: '2025-02-01', name: 'Cent storage', amount, categories: [{
           categoryId: f.category.id, amount }] }))
       response.assertStatus(200)
-      const row = response.body().transaction
+      assert.deepEqual(Object.keys(response.body()), ['data'])
+      const row = response.body().data.transaction
       assert.strictEqual(row.categories[0].amount, amount.toFixed(2))
       assert.strictEqual(row.accountTransaction.amount, amount.toFixed(2))
       assert.strictEqual((await raw(row.id)).categories[0].amount, amount.toFixed(2))
@@ -81,8 +82,10 @@ test.group('Transaction Category decimal-string storage (prepared)', () => {
         return
       }
       response.assertStatus(200)
-      assert.strictEqual(response.body().accountTransaction.amount, '0.30')
-      assert.deepEqual(response.body().categories.map((row: { amount: string }) => row.amount), [
+      assert.deepEqual(Object.keys(response.body()), ['data'])
+      assert.strictEqual(response.body().data.accountTransaction.amount, '0.30')
+      assert.deepEqual(response.body().data.categories.map((row: { amount: string }) => row.amount),
+        [
         '0.10', '0.20'])
       assert.deepEqual(await snapshot(), before)
     })
@@ -125,9 +128,10 @@ test.group('Transaction Category decimal-string storage (prepared)', () => {
       .json(transactionRequest({ date: '2025-02-01', name: 'Half tie', amount: -1.12,
         categories: [{ categoryId: f.category.id, amount: -1.125 }] }))
     response.assertStatus(200)
-    assert.strictEqual(response.body().transaction.accountTransaction.amount, '-1.12')
-    assert.strictEqual(response.body().transaction.categories[0].amount, '-1.12')
-    assert.strictEqual((await raw(response.body().transaction.id)).categories[0].amount, '-1.12')
+    assert.strictEqual(response.body().data.transaction.accountTransaction.amount, '-1.12')
+    assert.strictEqual(response.body().data.transaction.categories[0].amount, '-1.12')
+    assert.strictEqual((await raw(response.body().data.transaction.id)).categories[0].amount,
+      '-1.12')
     assert.strictEqual((await Category.findOrFail(f.category.id)).balanceCents, parseMoneyCents(
       '-1.12'))
   })
@@ -250,7 +254,7 @@ test.group('Transaction Category decimal-string storage (prepared)', () => {
         .json(transactionRequest({ date: '2025-02-01', name: 'Eligible deletion', amount: 1,
           categories: [{ categoryId: f.category.id, amount: 1 }] }))
       created.assertStatus(200)
-      const id = created.body().transaction.id
+      const id = created.body().data.transaction.id
       assert.strictEqual((await raw(id)).categories[0].amount, '1.00')
       const path = kind === 'transaction' ? `/api/v1/transaction/${id}` : kind === 'account'
         ? `/api/v1/institution/${f.institution.id}/accounts/${f.account

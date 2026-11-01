@@ -46,7 +46,7 @@ test.group('Account/Category eligibility correction (prepared)', () => {
       date, amount, name: 'Boundary create', categories: [{ categoryId: f.category.id, amount }],
     })).loginAs(f.user)
     response.assertStatus(200)
-    const transaction = await Transaction.findOrFail(response.body().transaction.id)
+    const transaction = await Transaction.findOrFail(response.body().data.transaction.id)
     const link = await AccountTransaction.findByOrFail('transactionId', transaction.id)
     assert.equal(link.amountCents, parseMoneyCents(encodeMonetaryAmount(amount)))
     assert.deepEqual(transaction.categories,
@@ -97,7 +97,7 @@ test.group('Account/Category eligibility correction (prepared)', () => {
         amount: 10 }],
     })).loginAs(f.user)
     created.assertStatus(200)
-    const id: number = created.body().transaction.id
+    const id: number = created.body().data.transaction.id
     const categories = [{ categoryId: f.category.id, amount: 7 }, { categoryId: f.category.id,
       amount: 13 }]
     const replacement = await client.patch(`/api/v1/transaction/${id}`).json(transactionRequest({
@@ -154,7 +154,7 @@ test.group('Additional PATCH effect isolation (prepared)', () => {
         amount: 10 }],
     })).loginAs(f.user)
     created.assertStatus(200)
-    const id: number = created.body().transaction.id
+    const id: number = created.body().data.transaction.id
     const snapshot = () => Promise.all([
       db.from('accounts').where('id', f.account.id),
       db.from('transactions').where('application_id', f.budget.id).orderBy('id'),
@@ -241,7 +241,8 @@ test.group('Eligibility verification edge cases', () => {
       })).loginAs(f.user)
       created.assertStatus(200)
       const unassigned = await f.budget.getUnassignedCategory()
-      const response = await client.patch(`/api/v1/transaction/${created.body().transaction.id}`)
+      const response = await client.patch(
+        `/api/v1/transaction/${created.body().data.transaction.id}`)
         .json(transactionRequest({ version: 0,
         date: entering ? dates[1] : dates[0], amount: -20,
         categories: [{ categoryId: unassigned.id, amount: -20 }],

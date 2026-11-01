@@ -173,7 +173,7 @@ export default class AccountsController {
       user,
     },
     logger,
-  }: HttpContext): Promise<AddedTransaction | undefined> {
+  }: HttpContext): Promise<ApiResponse<AddedTransaction> | undefined> {
     if (!user) {
       throw new Error('user not defined');
     }
@@ -301,7 +301,7 @@ export default class AccountsController {
         acctBalances: [{ id: account.id, balance: formatMoneyCents(account.balanceCents) }],
       };
 
-      return result;
+      return { data: result };
     }
     catch (error) {
       await trx.rollback();

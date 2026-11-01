@@ -42,7 +42,7 @@ export default class TransactionsController {
   public async get({
     request,
     auth: { user },
-  }: HttpContext): Promise<Transaction> {
+  }: HttpContext): Promise<ApiResponse<Transaction>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -57,7 +57,7 @@ export default class TransactionsController {
 
     await transaction.load('accountTransaction');
 
-    return transaction;
+    return { data: transaction };
   }
 
 
