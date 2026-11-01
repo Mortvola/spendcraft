@@ -12,7 +12,8 @@ import {
   AccountType,
   AddInstitutionResponse, AddOfflineAccountResponse, type AddOnlineAccountsResponse, ApiResponse,
     CategoryBalanceProps,
-  InstitutionProps, InstitutionSyncResponse, TrackingType, UnlinkedAccountProps, LinkTokenResponse,
+  InstitutionSyncResponse, TrackingType, UnlinkedAccountProps, LinkTokenResponse,
+  InstitutionResponse, OfflineInstitutionResponse, InstitutionAccountsResponse,
 } from '#common/ResponseTypes';
 import Transaction from '#app/Models/Transaction';
 import AccountTransaction from '#app/Models/AccountTransaction';
@@ -275,7 +276,7 @@ class InstitutionController {
       user,
     },
     logger,
-  }: HttpContext): Promise<InstitutionProps> {
+  }: HttpContext): Promise<InstitutionResponse> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -296,13 +297,13 @@ class InstitutionController {
 
       await trx.commit();
 
-      return {
+      return { data: {
         id: institution.id,
         plaidInstitutionId: institution.institutionId,
         name: institution.name,
         syncDate: institution.syncDate?.toISO() ?? null,
         accounts: accountsResponse.accounts,
-      };
+      } };
     }
     catch (error) {
       logger.error(error);
@@ -317,7 +318,7 @@ class InstitutionController {
       user,
     },
     logger,
-  }: HttpContext): Promise<{ name: string }> {
+  }: HttpContext): Promise<OfflineInstitutionResponse> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -341,9 +342,9 @@ class InstitutionController {
 
       await trx.commit();
     
-      return {
+      return { data: {
         name: institution.name,
-      }
+      } }
     }
     catch (error) {
       logger.error(error);
@@ -396,7 +397,7 @@ class InstitutionController {
   }
 
    
-  async get({ request, auth: { user } }: HttpContext): Promise<UnlinkedAccountProps[]> {
+  async get({ request, auth: { user } }: HttpContext): Promise<InstitutionAccountsResponse> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -407,7 +408,7 @@ class InstitutionController {
     const accounts: UnlinkedAccountProps[] = await InstitutionController
       .getUnconnectedAccounts(inst);
 
-    return accounts;
+    return { data: accounts };
   }
 
   // private static async insertStartingBalance(

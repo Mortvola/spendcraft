@@ -6,7 +6,7 @@ import Account from './Account';
 import {
   UnlinkedAccountProps, InstitutionProps, AccountBalanceProps, ErrorProps,
   TrackingType, isDeleteAccountResponse, isLinkTokenData, LinkTokenResponse,
-  InstitutionSyncResponse, AddInstitutionResponse,
+  InstitutionSyncResponse, InstitutionResponse, OfflineInstitutionResponse,
   AddOfflineAccountResponse, AddOfflineAccountRequest,
   ApiResponse,
 } from '../../common/ResponseTypes';
@@ -130,11 +130,12 @@ class Institution implements InstitutionInterface {
   }
 
   async update(): Promise<Institution | null> {
-    const response = await Http.post<null, AddInstitutionResponse>(`/api/v1/institution/${this
+    const response = await Http.post<null, InstitutionResponse>(`/api/v1/institution/${this
       .id}`);
 
     if (response.ok) {
-      const body = await response.body();
+      const { data: body } = await response.body();
+      if (!body) throw new Error('Invalid institution response');
       // let institution = new Institution(
       //   this.store,
       //   {
@@ -177,13 +178,16 @@ class Institution implements InstitutionInterface {
   }
 
   async updateOfflineInstitution (name: string): Promise<void> {
-    const response = await Http.patch(`/api/v1/institution/${this.id}`, {
+    const response = await Http.patch<{ name: string }, OfflineInstitutionResponse>(
+      `/api/v1/institution/${this.id}`, {
       name,
     });
 
     if (response.ok) {
+      const { data } = await response.body();
+      if (!data || typeof data.name !== 'string') throw new Error('Invalid institution response');
       runInAction(() => {
-        this.name = name;
+        this.name = data.name;
       });
     }
   }

@@ -179,8 +179,7 @@ test.group('Institution isolation', (group) => {
       if (scenario.path === 'create') request.json({ publicToken: 'test-public-token',
         institutionId: 'test-provider-bank' })
       const response = await request
-      const returned = scenario.path === 'create' ? response.body().data?.accounts : response.body()
-        .accounts
+      const returned = response.body().data?.accounts
       if (Array.isArray(returned)) {
         assert.isFalse(returned.some((account: { id: number }) => account.id === collider.account
           .id))
@@ -210,7 +209,7 @@ test.group('Institution isolation', (group) => {
         institutionId: 'test-provider-bank' })
       const response = await request
       response.assertStatus(200)
-      const body = scenario.path === 'create' ? response.body().data : response.body()
+      const body = response.body().data
       assert.lengthOf(body.accounts, 1)
       const account = await Account.findOrFail(body.accounts[0].id)
       assert.equal(account.institutionId, body.id)
@@ -235,7 +234,7 @@ test.group('Institution isolation', (group) => {
       const response = await client.post(`/api/v1/institution/${fixture.own.institution.id}`)
         .accept('json').loginAs(actor === 'owner' ? fixture.own.user : fixture.shared)
       response.assertStatus(200)
-      assert.deepEqual(response.body().accounts.map((account: { id: number }) => account.id), [
+      assert.deepEqual(response.body().data.accounts.map((account: { id: number }) => account.id), [
         fixture.own.account.id, fixture.own.account.id])
       assert.deepEqual(await state(), before)
     })
@@ -302,6 +301,7 @@ test.group('Institution isolation', (group) => {
     const response = await client.patch(`/api/v1/institution/${fixture.own.institution.id}`).json({
       name: 'Renamed own institution' }).accept('json').loginAs(user)
     response.assertStatus(200)
+    assert.deepEqual(response.body(), { data: { name: 'Renamed own institution' } })
     assert.equal((await Institution.findOrFail(fixture.own.institution.id)).name,
       'Renamed own institution')
     const created = await client.post(`/api/v1/institution/${fixture.own.institution.id}/accounts`)
@@ -314,6 +314,24 @@ test.group('Institution isolation', (group) => {
     assert.equal((await Institution.findOrFail(fixture.foreign.institution.id)).name,
       'foreign bank')
     assert.deepEqual(fake.calls, [])
+  })
+
+  test('available accounts use wrapped collections, including an empty result', async ({ client,
+    assert }) => {
+    fake.accounts = [providerAccount('unlinked-wrapper-test')]
+    const before = await state()
+    const path = `/api/v1/institution/${fixture.own.institution.id}/accounts`
+    const listed = await client.get(path).accept('json').loginAs(fixture.shared)
+    listed.assertStatus(200)
+    assert.deepEqual(Object.keys(listed.body()), ['data'])
+    assert.lengthOf(listed.body().data, 1)
+    assert.equal(listed.body().data[0].plaidAccountId, 'unlinked-wrapper-test')
+    assert.isString(listed.body().data[0].balances.current)
+    fake.accounts = []
+    const empty = await client.get(path).accept('json').loginAs(fixture.shared)
+    empty.assertStatus(200)
+    assert.deepEqual(empty.body(), { data: [] })
+    assert.deepEqual(await state(), before)
   })
 
   test('new-institution link token uses the wrapper without an existing access token', async ({
@@ -333,8 +351,12 @@ test.group('Institution isolation', (group) => {
     const prefix = `/api/v1/institution/${fixture.own.institution.id}`
     const listed = await client.get(`${prefix}/accounts`).accept('json').loginAs(fixture.shared)
     listed.assertStatus(200)
+    assert.deepEqual(Object.keys(listed.body()), ['data'])
+    assert.isArray(listed.body().data)
     const refreshed = await client.post(prefix).accept('json').loginAs(fixture.shared)
     refreshed.assertStatus(200)
+    assert.deepEqual(Object.keys(refreshed.body()), ['data'])
+    assert.equal(refreshed.body().data.id, fixture.own.institution.id)
     const linked = await client.get(`${prefix}/link-token`).accept('json').loginAs(fixture.shared)
     linked.assertStatus(200)
     assert.deepEqual(linked.body(), { data: { linkToken: 'test-link-token' } })

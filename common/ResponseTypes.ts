@@ -902,3 +902,7 @@ export interface WebhookLogProps {
 
 export type TransactionLogsResponse = ApiResponse<TransactionLogProps[]>;
 export type PlaidLogsResponse = ApiResponse<(PlaidLogProps | WebhookLogProps)[]>;
+
+export type InstitutionResponse = ApiResponse<InstitutionProps>;
+export type OfflineInstitutionResponse = ApiResponse<{ name: string }>;
+export type InstitutionAccountsResponse = ApiResponse<UnlinkedAccountProps[]>;

@@ -1304,6 +1304,35 @@ formats', async ({ assert }) => {
     assert.isNull(f.store.overview.bills[0].debitsCents)
   })
 
+  test('Institution updates unwrap returned names and account collections', async ({ assert }) => {
+    routes.set('patch /api/v1/institution/1', async payload => {
+      assert.deepEqual(payload, { name: 'Updated' })
+      return { body: { data: { name: 'Updated' } } }
+    })
+    await f.institution.updateOfflineInstitution('Updated')
+    assert.strictEqual(f.institution.name, 'Updated')
+    routes.set('post /api/v1/institution/1', async () => ({ body: { data: {
+      ...f.institutionProps, accounts: [f.accountProps, { ...f.accountProps, id: 11,
+        name: 'New Account', balance: '0.30' }],
+    } } }))
+    assert.strictEqual(await f.institution.update(), f.institution)
+    assert.strictEqual(f.institution.accounts.find(row => row.id === 10), f.account)
+    assert.strictEqual(f.institution.accounts.find(row => row.id === 11).balanceCents, 30)
+  })
+
+  test('Institution update receivers reject bare responses without changing cached state')
+    .with(['post', 'patch']).run(async ({ assert }, method) => {
+      const name = f.institution.name
+      const accounts = f.institution.accounts.slice()
+      routes.set(`${method} /api/v1/institution/1`, async () => ({ body: {
+        ...f.institutionProps, name: 'Wrong',
+      } }))
+      await assert.rejects(() => method === 'post' ? f.institution.update()
+        : f.institution.updateOfflineInstitution('Wrong'), 'Invalid institution response')
+      assert.strictEqual(f.institution.name, name)
+      assert.deepEqual(f.institution.accounts, accounts)
+    })
+
   test('link-token receivers unwrap new and update-mode tokens').with(['new', 'update'])
     .run(async ({ assert }, mode) => {
       const url = mode === 'new' ? '/api/v1/user/link-token'
