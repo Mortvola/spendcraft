@@ -53,14 +53,14 @@ test.group('Statement transaction eligibility', (group) => {
     const response = await client.post(`/api/v1/account/${fixture.account.id}/statements`)
       .json(statementRequest(period)).accept('json').loginAs(fixture.user)
     response.assertStatus(200)
-    return { response, statement: await Statement.findOrFail(response.body().id) }
+    return { response, statement: await Statement.findOrFail(response.body().data.id) }
   }
 
   async function totals(client: ApiClient, id: number) {
     const response = await client.get(`/api/v1/account/${fixture.account.id}/statements`).accept(
       'json').loginAs(fixture.user)
     response.assertStatus(200)
-    return response.body().find((row: { id: number }) => row.id === id)
+    return response.body().data.find((row: { id: number }) => row.id === id)
   }
 
   test('snapshot persistence and CREATE/PATCH/list totals retain exact cents', async ({ client,
@@ -72,13 +72,13 @@ test.group('Statement transaction eligibility', (group) => {
       .json({ ...period, startingBalance: '0.10', endingBalance: '0.30' })
       .accept('json').loginAs(fixture.user)
     created.assertStatus(200)
-    const statement = await Statement.findOrFail(created.body().id)
+    const statement = await Statement.findOrFail(created.body().data.id)
     assert.strictEqual(statement.startingBalanceCents, parseMoneyCents('0.10'))
     assert.strictEqual(statement.endingBalanceCents, parseMoneyCents('0.30'))
     const stored = await db.from('statements').where('id', statement.id).firstOrFail()
     assert.strictEqual(stored.starting_balance, '0.10')
     assert.strictEqual(stored.ending_balance, '0.30')
-    for (const response of [created.body(), await totals(client, statement.id)]) {
+    for (const response of [created.body().data, await totals(client, statement.id)]) {
       assert.strictEqual(response.startingBalance, '0.10')
       assert.strictEqual(response.endingBalance, '0.30')
       assert.strictEqual(response.credits, '0.30')
@@ -90,9 +90,9 @@ test.group('Statement transaction eligibility', (group) => {
     const patched = await client.patch(`/api/v1/statements/${statement.id}`)
       .json({ endingBalance: '0.00' }).accept('json').loginAs(fixture.user)
     patched.assertStatus(200)
-    assert.strictEqual(patched.body().endingBalance, '0.00')
-    assert.strictEqual(patched.body().credits, '0.30')
-    assert.strictEqual(patched.body().debits, '-0.10')
+    assert.strictEqual(patched.body().data.endingBalance, '0.00')
+    assert.strictEqual(patched.body().data.credits, '0.30')
+    assert.strictEqual(patched.body().data.debits, '-0.10')
     assert.strictEqual((await fixture.account.refresh()).balanceCents, parseMoneyCents(
       encodeMonetaryAmount(balance)))
   })
@@ -141,16 +141,17 @@ test.group('Statement transaction eligibility', (group) => {
     assert.deepEqual(after[2].find((row) => row.id === deleted.row.id), before[2].find((row) => row
       .id === deleted.row.id))
     assert.isNull((await AccountTransaction.findOrFail(deleted.row.id)).statementId)
-    assert.strictEqual(response.body().credits, '40.00')
-    assert.strictEqual(response.body().debits, '-10.00')
-    assert.strictEqual(Number(response.body().startingBalance) + Number(response.body().credits) +
-      Number(response.body().debits), 130)
+    assert.strictEqual(response.body().data.credits, '40.00')
+    assert.strictEqual(response.body().data.debits, '-10.00')
+    assert.strictEqual(Number(response.body().data.startingBalance)
+      + Number(response.body().data.credits) +
+      Number(response.body().data.debits), 130)
     const reconciled = await client.patch(`/api/v1/statements/${statement.id}`).json(
       statementRequest({ reconcile: 'All' })).accept('json').loginAs(fixture.user)
     reconciled.assertStatus(200)
     assert.isNull((await AccountTransaction.findOrFail(deleted.row.id)).statementId)
-    assert.strictEqual(reconciled.body().credits, '40.00')
-    assert.strictEqual(reconciled.body().debits, '-10.00')
+    assert.strictEqual(reconciled.body().data.credits, '40.00')
+    assert.strictEqual(reconciled.body().data.debits, '-10.00')
   })
 
   test('a period containing only deleted transactions has zero create/list totals', async ({ client,
@@ -165,8 +166,8 @@ test.group('Statement transaction eligibility', (group) => {
     assert.strictEqual(listed.credits, '0.00')
     assert.strictEqual(listed.debits, '0.00')
     assert.deepEqual(await state(), before)
-    assert.strictEqual(response.body().credits, '0.00')
-    assert.strictEqual(response.body().debits, '0.00')
+    assert.strictEqual(response.body().data.credits, '0.00')
+    assert.strictEqual(response.body().data.debits, '0.00')
   })
 
   test('soft deletion preserves an existing link but removes its accounting contribution', async ({
@@ -190,8 +191,8 @@ test.group('Statement transaction eligibility', (group) => {
       { reconcile: 'All' })).accept('json').loginAs(fixture.user)
     response.assertStatus(200)
     assert.deepEqual(await state(), before)
-    assert.strictEqual(response.body().credits, '40.00')
-    assert.strictEqual(response.body().debits, '0.00')
+    assert.strictEqual(response.body().data.credits, '40.00')
+    assert.strictEqual(response.body().data.debits, '0.00')
   })
 
   test('creation includes assigned pending amounts and posting preserves their links/totals',
@@ -202,8 +203,8 @@ test.group('Statement transaction eligibility', (group) => {
     await pending.row.merge({ pending: true }).save()
     const { response, statement } = await createStatement(client)
     assert.equal((await AccountTransaction.findOrFail(pending.row.id)).statementId, statement.id)
-    assert.strictEqual(response.body().credits, '40.00')
-    assert.strictEqual(response.body().debits, '-10.00')
+    assert.strictEqual(response.body().data.credits, '40.00')
+    assert.strictEqual(response.body().data.debits, '-10.00')
     const listed = await totals(client, statement.id)
     assert.strictEqual(listed.credits, '40.00')
     assert.strictEqual(listed.debits, '-10.00')
@@ -230,15 +231,15 @@ test.group('Statement transaction eligibility', (group) => {
     first.assertStatus(200)
     assert.equal((await AccountTransaction.findOrFail(active.row.id)).statementId, statement.id)
     assert.isNull((await AccountTransaction.findOrFail(pending.row.id)).statementId)
-    assert.strictEqual(first.body().credits, '40.00')
-    assert.strictEqual(first.body().debits, '0.00')
+    assert.strictEqual(first.body().data.credits, '40.00')
+    assert.strictEqual(first.body().data.debits, '0.00')
     await pending.row.merge({ pending: false }).save()
     const posted = await client.patch(`/api/v1/statements/${statement.id}`).json(statementRequest({
       reconcile: 'All' })).accept('json').loginAs(fixture.user)
     posted.assertStatus(200)
     assert.equal((await AccountTransaction.findOrFail(pending.row.id)).statementId, statement.id)
-    assert.strictEqual(posted.body().credits, '40.00')
-    assert.strictEqual(posted.body().debits, '-10.00')
+    assert.strictEqual(posted.body().data.credits, '40.00')
+    assert.strictEqual(posted.body().data.debits, '-10.00')
   })
 
   test('manual reconciliation supports a pending recipient independently of bulk All', async ({
@@ -268,7 +269,7 @@ test.group('Statement transaction eligibility', (group) => {
     response.assertStatus(200)
     assert.deepEqual(await state(), before)
     assert.equal((await AccountTransaction.findOrFail(assigned.row.id)).statementId, statement.id)
-    assert.strictEqual(response.body().credits, '20.00')
+    assert.strictEqual(response.body().data.credits, '20.00')
     assert.sameMembers(await register(client), [])
     assert.sameMembers(await register(client, true), [assigned.transaction.id])
   })

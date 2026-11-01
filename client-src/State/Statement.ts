@@ -1,7 +1,7 @@
 import Http from '@mortvola/http';
 import { DateTime } from 'luxon';
 import { observable, runInAction } from 'mobx';
-import { ApiError, StatementProps, UpdateStatementProps, TrackingType } from
+import { ApiError, StatementProps, StatementResponse, UpdateStatementProps, TrackingType } from
   '../../common/ResponseTypes';
 import { StatementInterface, StatementsInterface, StatementUpdateValues } from './Types';
 
@@ -151,11 +151,12 @@ class Statement implements StatementInterface {
         taxableInterest: formatMoneyCents(update.data.taxableInterestCents),
       },
     };
-    const response = await Http.patch<UpdateStatementProps, StatementProps>(
+    const response = await Http.patch<UpdateStatementProps, StatementResponse>(
       `/api/v1/statements/${this.id}`, payload)
 
     if (response.ok) {
-      const props = await response.body()
+      const { data: props } = await response.body()
+      if (!props) throw new Error('Invalid statement response');
 
       this.apply(props);
       runInAction(() => {

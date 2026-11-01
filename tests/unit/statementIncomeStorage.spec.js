@@ -284,7 +284,7 @@ test.group('Statement income production controllers (no database)', () => {
         startingBalance: '0.10', endingBalance: '0.30' }, {
         create, totals: { credits: '0.30', debits: '-0.10' },
       })
-      const response = await f.operation
+      const { data: response } = await f.operation
       assert.strictEqual(response.startingBalance, '0.10')
       assert.strictEqual(response.endingBalance, '0.30')
       assert.strictEqual(response.credits, '0.30')
@@ -312,7 +312,7 @@ test.group('Statement income production controllers (no database)', () => {
     assert }) => {
     const f = await lifecycle({ startDate: '2026-01-01', endDate: '2026-01-31', startingBalance:
       '100.00', endingBalance: '200.00', data: data('12.35') }, { create: true })
-    const response = await f.operation
+    const { data: response } = await f.operation
     assert.deepEqual(JSON.parse(f.writes[0].data), data('12.35')); assert.deepEqual(response.data,
       data('12.35'))
     assert.equal(response.startingBalance, '100.00'); assert.equal(response.endingBalance, '200.00')
@@ -321,7 +321,8 @@ test.group('Statement income production controllers (no database)', () => {
   test('real data PATCH preserves financial balances and unrelated JSON under Budget transaction')
     .with([TrackingType.Transactions, TrackingType.Balances])
     .run(async ({ assert }, tracking) => {
-      const f = await lifecycle({ data: data('-0.12') }, { tracking }), response = await f.operation
+      const f = await lifecycle({ data: data('-0.12') }, { tracking })
+      const { data: response } = await f.operation
       assert.deepEqual(JSON.parse(f.writes[0].data), { ...data('-0.12'), note: 'preserve' })
       assert.deepEqual(response.data, data('-0.12')); assert.equal(Number(formatMoneyCents(
         f.account.balanceCents)), 200)
@@ -390,7 +391,7 @@ test(
   const get = await controllerMethod('getStatements', { budgetAccounts: () => chain(account) })
   const rows = await get({ request: { params: () => ({ acctId: 2 }) }, auth: { user: {
     budgetId: 3 } } })
-  const [response] = JSON.parse(JSON.stringify(rows))
+  const [response] = JSON.parse(JSON.stringify(rows)).data
   assert.strictEqual(response.startingBalance, '100.00')
   assert.strictEqual(response.endingBalance, '200.00')
   assert.strictEqual(response.credits, '0.30')

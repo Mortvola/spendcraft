@@ -121,8 +121,8 @@ test.group('Statement reconciliation period characterization', (group) => {
           else debits += Number(formatMoneyCents(row.amountCents))
         }
       }
-      assert.equal(response.body().startDate, dates.startDate)
-      assert.equal(response.body().endDate, dates.endDate)
+      assert.equal(response.body().data.startDate, dates.startDate)
+      assert.equal(response.body().data.endDate, dates.endDate)
       assert.equal((await Account.findOrFail(fixture.account.id)).balanceCents, parseMoneyCents(
         '300.00'))
       const after = await state()
@@ -132,8 +132,8 @@ test.group('Statement reconciliation period characterization', (group) => {
         row) => row.id === fixture.neighbor.id))
       assert.deepEqual(actualAssignments, expectedAssignments, `${workflow}/${period
         .name}: exact persisted assignments`)
-      assert.equal(response.body().credits, credits.toFixed(2))
-      assert.equal(response.body().debits, debits.toFixed(2))
+      assert.equal(response.body().data.credits, credits.toFixed(2))
+      assert.equal(response.body().data.debits, debits.toFixed(2))
     })
   }
 

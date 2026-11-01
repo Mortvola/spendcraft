@@ -159,7 +159,8 @@ test.group('Account, history and statement budget isolation', (group) => {
       limit: 20, offset: 0 }).accept('json').loginAs(fixture.shared)
     response.assertStatus(200)
     if (resource === 'transactions') assert.strictEqual(response.body().data.balance, '123.45')
-    if (resource === 'statements') assert.equal(response.body()[0].id, fixture.own.statement.id)
+    if (resource === 'statements') assert.equal(response.body().data[0].id,
+      fixture.own.statement.id)
   })
 
   test('shared-budget user can update an account', async ({ client, assert }) => {
@@ -200,7 +201,7 @@ test.group('Account, history and statement budget isolation', (group) => {
     const response = await client.post(`/api/v1/account/${fixture.own.account.id}/statements`).json(
       statementRequest(statementBody)).accept('json').loginAs(fixture.shared)
     response.assertStatus(200)
-    const statement = await Statement.findOrFail(response.body().id)
+    const statement = await Statement.findOrFail(response.body().data.id)
     assert.equal(statement.accountId, fixture.own.account.id)
     assert.equal(Number(formatMoneyCents(statement.endingBalanceCents)), 999)
   })

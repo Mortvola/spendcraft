@@ -273,11 +273,13 @@ export type UpdateStatementProps = Partial<{
 }>
 
 
-export interface AddStatementResponse extends StatementProps {
+export interface AddStatementData extends StatementProps {
   transactions: number[],
 }
 
-export type StatementsResponse = StatementProps[]
+export type AddStatementResponse = ApiResponse<AddStatementData>
+export type StatementResponse = ApiResponse<StatementProps>
+export type StatementsResponse = ApiResponse<StatementProps[]>
 
 export enum TransactionType {
   REGULAR_TRANSACTION = 0,

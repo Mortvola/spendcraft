@@ -76,7 +76,7 @@ test.group('Accounts', (group) => {
         .loginAs(user!)
 
       response.assertStatus(200)
-      const statement = await Statement.findOrFail(response.body().id)
+      const statement = await Statement.findOrFail(response.body().data.id)
       assert.equal(Number(formatMoneyCents(statement.endingBalanceCents)), 150.10)
       assert.equal((await Account.findOrFail(statement.accountId)).balanceCents,
         parseMoneyCents('150.10'))

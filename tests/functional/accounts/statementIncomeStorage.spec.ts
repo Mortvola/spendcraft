@@ -59,10 +59,11 @@ test.group('Statement income decimal-string PostgreSQL acceptance', group => {
         data: income(value.amount),
     })).accept('json').loginAs(f.user)
     response.assertStatus(200)
-    const stored = await db.from('statements').where('id', response.body().id).firstOrFail()
+    assert.deepEqual(Object.keys(response.body()), ['data'])
+    const stored = await db.from('statements').where('id', response.body().data.id).firstOrFail()
     for (const field of statementIncomeFields) {
       assert.strictEqual(stored.data[field], value.stored)
-      assert.strictEqual(response.body().data[field], value.stored)
+      assert.strictEqual(response.body().data.data[field], value.stored)
       const result = await db.rawQuery(
         'SELECT jsonb_typeof(data->?::text) AS kind FROM statements WHERE id=?', [field, stored.id])
       assert.equal(result.rows[0].kind, 'string')
@@ -78,9 +79,10 @@ test.group('Statement income decimal-string PostgreSQL acceptance', group => {
       const response = await client.patch(`/api/v1/statements/${f.statement.id}`).json(
         statementRequest({ data: income(12.345) })).accept('json').loginAs(f.user)
       response.assertStatus(200)
+      assert.deepEqual(Object.keys(response.body()), ['data'])
       const after = await raw()
       for (const field of statementIncomeFields) { assert.strictEqual(after.data[field], '12.35');
-        assert.strictEqual(response.body().data[field], '12.35') }
+        assert.strictEqual(response.body().data.data[field], '12.35') }
       assert.deepEqual(after.data.note, old.data.note)
       assert.equal(after.starting_balance, old.starting_balance); assert.equal(after.ending_balance,
         old.ending_balance)
@@ -94,7 +96,8 @@ test.group('Statement income decimal-string PostgreSQL acceptance', group => {
     const list = await client.get(`/api/v1/account/${f.account.id}/statements`).accept('json')
       .loginAs(f.user)
     list.assertStatus(200)
-    const item = list.body().find((row: { id: number }) => row.id === f.statement.id)
+    assert.deepEqual(Object.keys(list.body()), ['data'])
+    const item = list.body().data.find((row: { id: number }) => row.id === f.statement.id)
     assert.strictEqual(item.data.shortTermCapitalGains, '1.00')
     assert.strictEqual(item.data.dividends, '2.00')
     assert.deepEqual(await raw(), before)
@@ -156,7 +159,7 @@ test.group('Statement income decimal-string PostgreSQL acceptance', group => {
     const response = await client.patch(`/api/v1/statements/${f.statement.id}`).json(
       statementRequest({ startDate: '2026-01-02', data: null })).accept('json').loginAs(f.user)
     response.assertStatus(200); assert.isNull((await raw()).data)
-    assert.deepEqual(response.body().data, encodeStatementIncome(income(0)))
+    assert.deepEqual(response.body().data.data, encodeStatementIncome(income(0)))
   })
   test('CREATE/PATCH reject numeric or noncanonical monetary fields without mutation')
     .with(['create', 'patch'].flatMap(operation => ['startingBalance', 'endingBalance',

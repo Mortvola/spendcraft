@@ -255,7 +255,7 @@ export * from ${source('common/ResponseTypes.ts')};
     routes.set('patch /api/v1/statements/30', async payload => {
       assert.strictEqual(payload.endingBalance, '0.30')
       assert.strictEqual(payload.data.dividends, '0.30')
-      return { body: response }
+      return { body: { data: response } }
     })
     await f.statement.update({ endingBalanceCents: parseMoneyCents('0.30'), data: {
       shortTermCapitalGainsCents: -12, longTermCapitalGainsCents: 0, dividendsCents: 30,
@@ -282,7 +282,7 @@ export * from ${source('common/ResponseTypes.ts')};
       dividendsCents: cents, taxableInterestCents: cents }
     routes.set('patch /api/v1/statements/30', async payload => {
       assert.deepEqual(payload.data, data)
-      return { body: { ...f.statementProps, data } }
+      return { body: { data: { ...f.statementProps, data } } }
     })
     await f.statement.update({ data: input })
     assert.strictEqual(f.statement.shortTermGainsCents, cents)
@@ -329,8 +329,8 @@ export * from ${source('common/ResponseTypes.ts')};
     1, '', '1.2', '1e2', '01.00', '-0.00', 'NaN', 'Infinity', '90071992547409.92',
   ]).run(async ({ assert }, amount) => {
     const before = f.statement.endingBalanceCents
-    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps,
-      endingBalance: '75.00', data: { dividends: amount } } }))
+    routes.set('patch /api/v1/statements/30', async () => ({ body: { data: { ...f.statementProps,
+      endingBalance: '75.00', data: { dividends: amount } } } }))
     await assert.rejects(() => f.statement.update({ endingBalanceCents: parseMoneyCents('75.00') }))
     assert.strictEqual(f.statement.endingBalanceCents, before)
   })
@@ -371,7 +371,7 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.deepEqual(props, before)
     routes.set('patch /api/v1/statements/30', async payload => {
       assert.strictEqual(payload.endingBalance, '0.29')
-      return { body: { ...props, endingBalance: '0.29' } }
+      return { body: { data: { ...props, endingBalance: '0.29' } } }
     })
     await f.statement.update({ endingBalanceCents: parseMoneyCents('0.29') })
     assert.strictEqual(f.statement.reconciliationDifferenceCents, 1)
@@ -1400,8 +1400,8 @@ formats', async ({ assert }) => {
     async ({ assert }) => {
     state.runInAction(() => { f.account.tracking = state.TrackingType.Balances; f.account
       .balanceCents = parseMoneyCents('90.00') })
-    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps,
-      endingBalance: '75.00' } }))
+    routes.set('patch /api/v1/statements/30', async () => ({ body: { data: { ...f.statementProps,
+      endingBalance: '75.00' } } }))
     routes.set('get /api/v1/connected-accounts', async () => ({ body: { data: [{ ...f
       .institutionProps, accounts: [{ ...f.accountProps, tracking: state.TrackingType.Balances,
       balance: '75.00' }] }] } }))
@@ -1414,8 +1414,9 @@ formats', async ({ assert }) => {
   test('bulk reconciliation refreshes loaded transaction statement membership', async ({
     assert }) => {
     const cached = transactions()
-    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, debits:
-      '-10.00' } }))
+    routes.set('patch /api/v1/statements/30', async () => ({ body: {
+      data: { ...f.statementProps, debits:
+      '-10.00' } } }))
     routes.set('get /api/v1/transactions?t=40', async () => ({ body: { data: { transactions: [f
       .transactionProps(-10, 30)], balance: '0.00' } } }))
     await f.statement.update({ reconcile: 'All' })
@@ -1596,7 +1597,7 @@ formats', async ({ assert }) => {
       assert.strictEqual(payload.endingBalance, '90.00')
       assert.deepEqual(payload.data, { shortTermCapitalGains: '0.00', longTermCapitalGains: '0.00',
         dividends: '0.00', taxableInterest: '0.00' })
-      return { body: { ...f.statementProps, id: 31, transactions: [40] } }
+      return { body: { data: { ...f.statementProps, id: 31, transactions: [40] } } }
     })
     await f.account.statements.addStatement('2025-02-01', '2025-02-28', parseMoneyCents('100.00'),
       parseMoneyCents('90.00'), 0, 0, 0, 0)
@@ -1806,16 +1807,33 @@ formats', async ({ assert }) => {
     async ({ assert }) => {
     state.runInAction(() => { f.account.tracking = state.TrackingType.Balances; f.account
       .balanceCents = parseMoneyCents('90.00') })
-    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps,
-      endingBalance: '75.00' } }))
+    routes.set('patch /api/v1/statements/30', async () => ({ body: { data: { ...f.statementProps,
+      endingBalance: '75.00' } } }))
     routes.set('get /api/v1/connected-accounts', async () => ({ ok: false, body: {} }))
     await assert.rejects(() => f.statement.update({ endingBalanceCents: parseMoneyCents('75.00') }))
     assert.equal(f.statement.endingBalanceCents, 7500); assert.equal(f.account.balanceCents, 9000)
   })
 
+  test('Statement endpoints reject bare responses without mutating cached state', async ({
+    assert }) => {
+    const before = f.account.statements.statements.slice()
+    const endingBalance = f.statement.endingBalanceCents
+    routes.set('get /api/v1/account/10/statements', async () => ({ body: [f.statementProps] }))
+    await assert.rejects(() => f.account.statements.load(), 'Invalid statements response')
+    routes.set('patch /api/v1/statements/30', async () => ({ body: f.statementProps }))
+    await assert.rejects(() => f.statement.update({ endingBalanceCents: parseMoneyCents('1.00') }))
+    routes.set('post /api/v1/account/10/statements', async () => ({ body: { ...f.statementProps,
+      id: 31, transactions: [40] } }))
+    await assert.rejects(() => f.account.statements.addStatement('2025-02-01', '2025-02-28',
+      parseMoneyCents('0.00'), parseMoneyCents('0.00'), 0, 0, 0, 0))
+    assert.deepEqual(f.account.statements.statements, before)
+    assert.strictEqual(f.statement.endingBalanceCents, endingBalance)
+  })
+
   test('statement refresh preserves selected shared statement identity', async ({ assert }) => {
-    routes.set('get /api/v1/account/10/statements', async () => ({ body: [{ ...f.statementProps,
-      debits: '-25.00' }] }))
+    routes.set('get /api/v1/account/10/statements', async () => ({ body: {
+      data: [{ ...f.statementProps,
+      debits: '-25.00' }] } }))
     await f.account.statements.load()
     assert.strictEqual(f.account.statements.statements[0], f.statement)
     assert.strictEqual(f.store.uiState.selectedStatement, f.statement)
@@ -1828,8 +1846,9 @@ formats', async ({ assert }) => {
     routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: { ...f
       .transactionProps(-12.25, 30), version: 1 }, categories: [{ id: 20, balance: '-12.25' }],
       acctBalances: [{ id: 10, balance: '87.75' }] } } }))
-    routes.set('get /api/v1/account/10/statements', async () => ({ body: [{ ...f.statementProps,
-      debits: '-12.25' }] }))
+    routes.set('get /api/v1/account/10/statements', async () => ({ body: {
+      data: [{ ...f.statementProps,
+      debits: '-12.25' }] } }))
     await cached.account.updateTransaction({ amountCents: parseMoneyCents('-12.25') })
     assert.equal(f.statement.debitsCents, -1225)
     assert.equal(cached.category.amountCents, -1225)
@@ -1848,8 +1867,9 @@ formats', async ({ assert }) => {
 
   test('bulk reconciliation None uses authoritative membership', async ({ assert }) => {
     const cached = transactions(f.transactionProps(-10, 30))
-    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, debits:
-      '0.00' } }))
+    routes.set('patch /api/v1/statements/30', async () => ({ body: {
+      data: { ...f.statementProps, debits:
+      '0.00' } } }))
     routes.set('get /api/v1/transactions?t=40', async () => ({ body: { data: { transactions: [f
       .transactionProps(-10, null)], balance: '0.00' } } }))
     await f.statement.update({ reconcile: 'None' })
@@ -1859,8 +1879,9 @@ formats', async ({ assert }) => {
   test('reconciliation refresh rejection propagates and leaves cached membership intact', async ({
     assert }) => {
     const cached = transactions()
-    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, debits:
-      '-10.00' } }))
+    routes.set('patch /api/v1/statements/30', async () => ({ body: {
+      data: { ...f.statementProps, debits:
+      '-10.00' } } }))
     routes.set('get /api/v1/transactions?t=40', async () => ({ ok: false, body: {} }))
     await assert.rejects(() => f.statement.update({ reconcile: 'All' }))
     assert.equal(cached.account.statementId, null); assert.equal(cached.category.statementId, null)
@@ -1869,7 +1890,8 @@ formats', async ({ assert }) => {
 
   test('malformed statement success cannot partially mutate financial state', async ({ assert }) =>
     {
-    routes.set('patch /api/v1/statements/30', async () => ({ body: { id: 30, credits: 200 } }))
+    routes.set('patch /api/v1/statements/30', async () => ({ body: {
+      data: { id: 30, credits: 200 } } }))
     await assert.rejects(() => f.statement.update({ endingBalanceCents: parseMoneyCents('75.00') }))
     assert.equal(f.statement.creditsCents, 0); assert.equal(f.statement.endingBalanceCents, 9000)
   })
@@ -1916,8 +1938,8 @@ formats', async ({ assert }) => {
   test('combined statement date change and reconciliation uses server-returned membership', async ({
     assert }) => {
     const cached = transactions()
-    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps,
-      startDate: '2025-01-01', debits: '-10.00' } }))
+    routes.set('patch /api/v1/statements/30', async () => ({ body: { data: { ...f.statementProps,
+      startDate: '2025-01-01', debits: '-10.00' } } }))
     routes.set('get /api/v1/transactions?t=40', async () => ({ body: { data: { transactions: [f
       .transactionProps(-10, 30)], balance: '0.00' } } }))
     await f.statement.update({ startDate: '2025-01-01', reconcile: 'All' })
@@ -1927,8 +1949,8 @@ formats', async ({ assert }) => {
 
   test('date-only statement edit preserves existing assignment semantics', async ({ assert }) => {
     const cached = transactions(f.transactionProps(-10, 30))
-    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps,
-      startDate: '2025-02-15', debits: '-10.00' } }))
+    routes.set('patch /api/v1/statements/30', async () => ({ body: { data: { ...f.statementProps,
+      startDate: '2025-02-15', debits: '-10.00' } } }))
     await f.statement.update({ startDate: '2025-02-15' })
     assert.equal(cached.account.statementId, 30); assert.equal(cached.category.statementId, 30)
     assert.lengthOf(calls, 1)
@@ -1938,8 +1960,8 @@ formats', async ({ assert }) => {
     async ({ assert }) => {
     state.runInAction(() => { f.account.tracking = state.TrackingType.Balances; f.account
       .balanceCents = parseMoneyCents('90.00') })
-    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps,
-      endingBalance: '75.00' } }))
+    routes.set('patch /api/v1/statements/30', async () => ({ body: { data: { ...f.statementProps,
+      endingBalance: '75.00' } } }))
     routes.set('get /api/v1/connected-accounts', async () => ({ body: {} }))
     await assert.rejects(() => f.statement.update({ endingBalanceCents: parseMoneyCents('75.00') }))
     assert.equal(f.statement.endingBalanceCents, 7500); assert.equal(f.account.balanceCents, 9000)
@@ -1951,8 +1973,9 @@ formats', async ({ assert }) => {
       endDate: '2025-03-31', endingBalance: '120.00' }, f.account.statements)
     state.runInAction(() => { f.account.statements.statements = [newer, f.statement]; f.account
       .tracking = state.TrackingType.Balances; f.account.balanceCents = parseMoneyCents('120.00') })
-    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, endDate:
-      '2025-04-30' } }))
+    routes.set('patch /api/v1/statements/30', async () => ({ body: {
+      data: { ...f.statementProps, endDate:
+      '2025-04-30' } } }))
     accountsResponse(90)
     await f.statement.update({ endDate: '2025-04-30' })
     assert.strictEqual(f.account.statements.statements[0], f.statement)
@@ -1963,9 +1986,10 @@ formats', async ({ assert }) => {
     assert }) => {
     state.runInAction(() => { f.account.tracking = state.TrackingType.Balances; f.account
       .balanceCents = parseMoneyCents('90.00') })
-    routes.set('post /api/v1/account/10/statements', async () => ({ body: { ...f.statementProps,
+    routes.set('post /api/v1/account/10/statements', async () => ({ body: {
+      data: { ...f.statementProps,
       id: 31, startDate: '2025-03-01', endDate: '2025-03-31', endingBalance: '75.00',
-      transactions: [] } }))
+      transactions: [] } } }))
     accountsResponse(75)
     await f.account.statements.addStatement('2025-03-01', '2025-03-31', parseMoneyCents('90.00'),
       parseMoneyCents('75.00'), 0, 0, 0, 0)
@@ -1975,8 +1999,9 @@ formats', async ({ assert }) => {
 
   test('malformed statement creation does not partially insert a financial record', async ({
     assert }) => {
-    routes.set('post /api/v1/account/10/statements', async () => ({ body: { ...f.statementProps,
-      id: 31 } }))
+    routes.set('post /api/v1/account/10/statements', async () => ({ body: {
+      data: { ...f.statementProps,
+      id: 31 } } }))
     transactions()
     await assert.rejects(() => f.account.statements.addStatement('2025-02-01', '2025-02-28',
       parseMoneyCents('100.00'), parseMoneyCents('90.00'), 0, 0, 0, 0))
@@ -2033,8 +2058,9 @@ formats', async ({ assert }) => {
     const cached = transactions()
     state.runInAction(() => { f.account.transactions.appendTransactions([{ ...f.transactionProps(),
       id: 41 }]) })
-    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, debits:
-      '-20.00' } }))
+    routes.set('patch /api/v1/statements/30', async () => ({ body: {
+      data: { ...f.statementProps, debits:
+      '-20.00' } } }))
     const returned = f.transactionProps(-10, 30)
     routes.set('get /api/v1/transactions?t=40&t=41', async () => ({ body: { data: {
       transactions: failure === 'missing' ? [returned] : [returned, returned], balance:

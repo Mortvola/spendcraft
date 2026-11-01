@@ -26,7 +26,7 @@ class Statements implements StatementsInterface {
       .id}/statements`);
 
     if (!response.ok) throw new Error('Unable to refresh statements');
-    const body = await response.body();
+    const { data: body } = await response.body();
     if (!Array.isArray(body)) throw new Error('Invalid statements response');
     // Validate the complete response before changing shared cached instances.
     for (const props of body) {
@@ -80,7 +80,8 @@ class Statements implements StatementsInterface {
     });
 
     if (response.ok) {
-      const props = await response.body();
+      const { data: props } = await response.body();
+      if (!props) throw new Error('Invalid statement creation response');
       const statement = new Statement(props, this);
       statement.apply(props);
       if (!Array.isArray(props.transactions) || !props.transactions.every(Number.isFinite)) {

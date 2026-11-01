@@ -108,7 +108,7 @@ test.group('Statement DELETE persisted-state characterization', () => {
       const listed = await client.get(`/api/v1/account/${f.account.id}/statements`).accept('json')
         .loginAs(f.user)
       listed.assertStatus(200)
-      assert.lengthOf(listed.body(), neighbor ? 1 : 0)
+      assert.lengthOf(listed.body().data, neighbor ? 1 : 0)
       const register = await client.get(`/api/v1/account/${f.account.id}/transactions`)
         .qs({ limit: 50, offset: 0, pending: false }).accept('json').loginAs(f.user)
       register.assertStatus(200)

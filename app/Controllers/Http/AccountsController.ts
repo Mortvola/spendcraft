@@ -11,7 +11,7 @@ import {
   TransactionsResponse, CategoryBalanceProps, TransactionProps, TransactionType,
     AccountBalanceProps, TrackingType,
   ApiResponse,
-  AddStatementResponse,
+  AddStatementResponse, AddStatementData, StatementResponse,
   StatementProps,
   AccountType,
 } from '#common/ResponseTypes';
@@ -486,7 +486,7 @@ export default class AccountsController {
     auth: {
       user,
     },
-  }: HttpContext): Promise<Statement[]> {
+  }: HttpContext): Promise<ApiResponse<Statement[]>> {
     if (!user) {
       throw new Error('user not defined');
     }
@@ -511,7 +511,7 @@ export default class AccountsController {
           })
       })
 
-    return statements
+    return { data: statements }
   }
 
   public async addStatement({
@@ -601,7 +601,7 @@ export default class AccountsController {
         .where('amount', '<', 0)
         .whereHas('transaction', query => query.where('deleted', false))
 
-      const response: AddStatementResponse = {
+      const response: AddStatementData = {
         id: statement.id,
         startDate,
         endDate,
@@ -618,7 +618,7 @@ export default class AccountsController {
         transactions: acctTransactions.map((acctTransaction) => acctTransaction.transactionId)
       };
       await trx.commit()
-      return response
+      return { data: response }
     }
     catch (error) {
       logger.error(error)
@@ -633,7 +633,7 @@ export default class AccountsController {
       user,
     },
     logger,
-  }: HttpContext): Promise<StatementProps | undefined> {
+  }: HttpContext): Promise<StatementResponse | undefined> {
     if (!user) {
       throw new Error('user not defined');
     }
@@ -759,7 +759,7 @@ export default class AccountsController {
       };
 
       await trx.commit()
-      return response
+      return { data: response }
     }
     catch (error) {
       logger.error(error)

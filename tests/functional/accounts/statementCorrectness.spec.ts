@@ -95,8 +95,8 @@ test.group('Manual statement correctness', (group) => {
       assert.deepEqual(after[1].filter((row) => neighbors.some((neighbor) => neighbor.id === row
         .id)), before[1])
       assert.deepEqual([after[0], ...after.slice(2)], [before[0], ...before.slice(2)])
-      assert.strictEqual(response.body().credits, '0.00')
-      assert.strictEqual(response.body().debits, '0.00')
+      assert.strictEqual(response.body().data.credits, '0.00')
+      assert.strictEqual(response.body().data.debits, '0.00')
     })
 
   test('balance-tracked creation copies the latest statement ending balance')
@@ -142,8 +142,8 @@ test.group('Manual statement correctness', (group) => {
     for (const row of [before, after]) assert.isNull((await AccountTransaction.findOrFail(row.id))
       .statementId)
     assert.equal((await AccountTransaction.findOrFail(linked.id)).statementId, previous.id)
-    assert.strictEqual(response.body().credits, '10.00')
-    assert.strictEqual(response.body().debits, '-4.00')
+    assert.strictEqual(response.body().data.credits, '10.00')
+    assert.strictEqual(response.body().data.debits, '-4.00')
     const result = await state()
     assert.deepEqual([result[0], result[2], result[4]], [snapshot[0], snapshot[2], snapshot[4]])
   })
@@ -157,11 +157,11 @@ test.group('Manual statement correctness', (group) => {
     const statement = await Statement.query().where('accountId', fixture.account.id).firstOrFail()
     assert.equal((await AccountTransaction.findOrFail(pending.id)).statementId, statement.id)
     assert.isNull((await AccountTransaction.findOrFail(deleted.id)).statementId)
-    assert.strictEqual(response.body().credits, '10.00')
+    assert.strictEqual(response.body().data.credits, '10.00')
     const listed = await client.get(`/api/v1/account/${fixture.account.id}/statements`).accept(
       'json').loginAs(fixture.user)
     listed.assertStatus(200)
-    assert.strictEqual(listed.body()[0].credits, '10.00')
+    assert.strictEqual(listed.body().data[0].credits, '10.00')
   })
 
   test('partial PATCH preserves omitted dates and balances')
@@ -196,15 +196,17 @@ test.group('Manual statement correctness', (group) => {
       response.assertStatus(200)
       assert.deepEqual(persisted.data, field === 'data' ? { ...investmentData,
         dividends: 9 } : investmentData)
-      assert.equal(response.body().startDate, persisted.startDate.toISODate())
-      assert.equal(response.body().endDate, persisted.endDate.toISODate())
-      assert.equal(response.body().startingBalance, formatMoneyCents(
+      assert.equal(response.body().data.startDate, persisted.startDate.toISODate())
+      assert.equal(response.body().data.endDate, persisted.endDate.toISODate())
+      assert.equal(response.body().data.startingBalance, formatMoneyCents(
         persisted.startingBalanceCents))
-      assert.equal(response.body().endingBalance, formatMoneyCents(persisted.endingBalanceCents))
-      assert.deepEqual(response.body().data, Object.fromEntries(Object.entries(persisted.data ?? {})
+      assert.equal(response.body().data.endingBalance,
+        formatMoneyCents(persisted.endingBalanceCents))
+      assert.deepEqual(response.body().data.data,
+        Object.fromEntries(Object.entries(persisted.data ?? {})
         .map(([key, value]) => [key, typeof value === 'number' ? value.toFixed(2) : value])))
-      assert.equal(response.body().credits, field === 'reconcile-all' ? '10.00' : '0.00')
-      assert.strictEqual(response.body().debits, '0.00')
+      assert.equal(response.body().data.credits, field === 'reconcile-all' ? '10.00' : '0.00')
+      assert.strictEqual(response.body().data.debits, '0.00')
     })
 
 
@@ -217,9 +219,10 @@ test.group('Manual statement correctness', (group) => {
     const persisted = await Statement.findOrFail(statement.id)
     assert.isNull(persisted.data)
     assert.equal(Number(formatMoneyCents(persisted.endingBalanceCents)), 250)
-    assert.equal(response.body().startDate, february.startDate)
-    assert.equal(response.body().endDate, february.endDate)
-    assert.deepEqual(response.body().data, { shortTermCapitalGains: '0.00', longTermCapitalGains:
+    assert.equal(response.body().data.startDate, february.startDate)
+    assert.equal(response.body().data.endDate, february.endDate)
+    assert.deepEqual(response.body().data.data, { shortTermCapitalGains: '0.00',
+      longTermCapitalGains:
       '0.00', dividends: '0.00', taxableInterest: '0.00' })
   })
 
@@ -239,9 +242,9 @@ test.group('Manual statement correctness', (group) => {
     assert.deepEqual(persisted.data, data)
     assert.equal(persisted.startDate.toISODate(), february.startDate)
     assert.equal(persisted.endDate.toISODate(), february.endDate)
-    assert.strictEqual(response.body().startingBalance, '0.00')
-    assert.strictEqual(response.body().endingBalance, '0.00')
-    assert.deepEqual(response.body().data, Object.fromEntries(Object.entries(data).map(([key,
+    assert.strictEqual(response.body().data.startingBalance, '0.00')
+    assert.strictEqual(response.body().data.endingBalance, '0.00')
+    assert.deepEqual(response.body().data.data, Object.fromEntries(Object.entries(data).map(([key,
       value]) => [key, value.toFixed(2)])))
     const after = await state()
     assert.deepEqual([after[0], ...after.slice(2)], [before[0], ...before.slice(2)])
