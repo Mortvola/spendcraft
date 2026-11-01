@@ -2,6 +2,49 @@ openapi: 3.0.4
 info:
   title: SpendCraft API
   version: 0.1.0
+  description: |
+    ## Response contract
+
+    The `/api/v1/*` endpoints use `application/json` with the lightweight SpendCraft API envelope.
+    Shared response types are defined in `common/ResponseTypes.ts`.
+
+    Successful responses containing data use `{ "data": ... }`. The data may be an object,
+    collection or report matrix, according to the endpoint. Successful commands without response
+    data return HTTP 204 with no body; clients should not attempt to parse a JSON body for them.
+
+    Failures use the appropriate HTTP error status and an `errors` array:
+
+    ```json
+    {
+      "errors": [
+        { "message": "Amount is required", "field": "amount", "rule": "required" }
+      ]
+    }
+    ```
+
+    Each error requires a human-readable `message`. Optional fields are:
+
+    - `field`: the input field path, including concrete array indexes such as `categories.0.amount`.
+    - `rule`: the failed Vine validation rule.
+    - `code`: an application or framework identifier, such as `INCORRECT_VERSION`.
+    - `meta` and `index`: additional validation metadata when supplied by Vine.
+
+    Validation failures return HTTP 422. General errors need not identify a field or rule.
+    HTTP status is carried by the response, not repeated inside error objects. Unexpected server
+    failures return a generic message while diagnostic details remain in server-side reporting.
+
+    ## Monetary values
+
+    Monetary amounts use `DecimalMoneyString`: canonical two-decimal strings such as `"12.50"`,
+    `"-0.30"` and `"0.00"`. Percentage-mode values, interest rates, IDs and counts remain numeric
+    where defined by their endpoint types. Plaid diagnostic payloads retain provider data types.
+
+    ## Intentional exceptions
+
+    - Browser pages, including email-verification pages, return HTML.
+    - Webhook acknowledgments follow their provider contract; successful `/wh` requests return
+      HTTP 204 without a response envelope.
+    - `/vapidPublicKey`, outside `/api/v1`, returns the raw public-key string expected by its client.
 
 paths:
   /api/v1/register:
