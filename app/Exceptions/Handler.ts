@@ -48,8 +48,24 @@ export default class HttpExceptionHandler extends ExceptionHandler {
    * The method is used for handling errors and returning
    * response to the client
    */
-  async handle(error: unknown, ctx: HttpContext) {
-    return super.handle(error, ctx)
+  async handle(error: unknown, ctx: HttpContext): Promise<unknown> {
+    const path = ctx.request.url();
+    if (path !== '/api/v1' && !path.startsWith('/api/v1/')) {
+      return super.handle(error, ctx);
+    }
+
+    const httpError = this.toHttpError(error);
+    if (httpError.code === 'E_VALIDATION_ERROR' && 'messages' in httpError) {
+      return this.renderValidationErrorAsJSON(httpError, ctx);
+    }
+
+    const serverError = httpError.status >= 500;
+    return ctx.response.status(httpError.status).type('json').send({
+      errors: [{
+        message: serverError ? 'Internal server error' : httpError.message,
+        ...(!serverError && typeof httpError.code === 'string' ? { code: httpError.code } : {}),
+      }],
+    });
   }
 
     /**

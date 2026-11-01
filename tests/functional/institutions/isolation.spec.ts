@@ -260,7 +260,8 @@ test.group('Institution isolation', (group) => {
     .run(async ({ client, assert }, operation) => {
       const id = operation.target === 'foreign' ? fixture.foreign.institution.id : 2147483647
       const before = await state()
-      const request = client[operation.method](`/api/v1/institution/${id}${operation.suffix}`)
+      const request = client.request(`/api/v1/institution/${id}${operation.suffix}`,
+        operation.method.toUpperCase())
         .accept('json').loginAs(fixture.own.user)
       if (operation.body) request.json(operation.body)
       const response = await request
