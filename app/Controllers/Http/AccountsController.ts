@@ -426,11 +426,9 @@ export default class AccountsController {
 
   public async uploadOfx({
     request,
-    response,
     auth: {
       user,
     },
-    logger,
   }: HttpContext): Promise<void> {
     if (!user) {
       throw new Error('user not defined');
@@ -466,18 +464,8 @@ export default class AccountsController {
       await trx.commit();
     }
     catch (error) {
-      logger.error(error);
       await trx.rollback();
-
-      response.status(500);
-
-      if (error instanceof Error) {
-        response.send({
-          errors: [{
-            message: error.message,
-          }],
-        })
-      }
+      throw error;
     }
   }
 

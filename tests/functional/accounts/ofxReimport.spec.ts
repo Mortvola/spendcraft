@@ -1,3 +1,5 @@
+import Handler from '#exceptions/Handler'
+import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
 import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { formatMoneyCents, parseMoneyCents } from '#common/moneyCents'
 import { transactionRequest } from '../../helpers/transactionRequest.js'
@@ -270,20 +272,71 @@ FX>`
     })
 
   test('late Pool persistence failure rolls back accounting, provider and full import state',
-    async ({ client, assert }) => {
+    async ({ client, assert, cleanup }) => {
     const f = await fixture()
     ;(await upload(client, f)).assertStatus(200)
     await categorize(client, f, true)
     const before = await state(f)
     const pool = await f.budget.getFundingPoolCategory()
+    const injected = new Error('Injected late Pool persistence failure')
+    let captured: TransactionClientContract | undefined
+    const events: string[] = []
+    const transaction = db.transaction.bind(db)
+    const capture = mock.method(db, 'transaction', async () => {
+      const trx = await transaction(); captured = trx
+      const rollback = trx.rollback.bind(trx)
+      mock.method(trx, 'rollback', async () => {
+        await rollback(); events.push('rollback completed')
+      })
+      return trx
+    })
+    cleanup(() => capture.mock.restore())
+    const handle = Handler.prototype.handle
+    const observe = mock.method(Handler.prototype, 'handle', async function (this: Handler,
+      ...args: Parameters<typeof handle>) {
+      assert.strictEqual(args[0], injected)
+      assert.isTrue(captured?.isCompleted)
+      events.push('shared handler')
+      return handle.apply(this, args)
+    })
+    cleanup(() => observe.mock.restore())
     const save = Category.prototype.save
     const failure = mock.method(Category.prototype, 'save', async function (this: Category) {
-      if (this.id === pool.id) throw new Error('Injected late Pool persistence failure')
+      if (this.id === pool.id) throw injected
       return save.call(this)
     })
     try {
-      ;(await upload(client, f, 15, '2025-02-11', 115)).assertStatus(500)
+      const response = await upload(client, f, 15, '2025-02-11', 115)
+      response.assertStatus(500)
+      assert.deepEqual(response.body(), { errors: [{ message: 'Internal server error' }] })
+      assert.deepEqual(events, ['rollback completed', 'shared handler'])
       assert.deepEqual(await state(f), before)
     } finally { failure.mock.restore() }
   })
+  test('missing OFX data preserves HTTP 400 and rolls back before responding', async ({ client,
+    assert, cleanup }) => {
+    const f = await fixture()
+    const before = await state(f)
+    let captured: TransactionClientContract | undefined
+    const transaction = db.transaction.bind(db)
+    const capture = mock.method(db, 'transaction', async () => {
+      captured = await transaction()
+      return captured
+    })
+    cleanup(() => capture.mock.restore())
+    const handle = Handler.prototype.handle
+    const observe = mock.method(Handler.prototype, 'handle', async function (this: Handler,
+      ...args: Parameters<typeof handle>) {
+      assert.isTrue(captured?.isCompleted)
+      return handle.apply(this, args)
+    })
+    cleanup(() => observe.mock.restore())
+    const response = await client.post(`/api/v1/account/${f.account.id}/ofx`).type('text/plain')
+      .accept('json').loginAs(f.user)
+    response.assertStatus(400)
+    assert.equal(response.body().errors[0].message, 'missing ofx data')
+    assert.equal(observe.mock.callCount(), 1)
+    assert.deepEqual(await state(f), before)
+  })
+
 })
