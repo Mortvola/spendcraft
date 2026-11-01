@@ -1,3 +1,4 @@
+import User from '#models/User'
 import { mock } from 'node:test'
 import { JwtGuard } from '#app/auth/guards/JwtGuard'
 import { errors } from '@adonisjs/auth'
@@ -81,5 +82,63 @@ test.group('Refresh token error responses', () => {
     assert.equal(response.body().errors[0].field, 'data.refresh')
     assert.equal(response.body().errors[0].rule, 'required')
     assert.equal(refresh.mock.callCount(), 0)
+  })
+})
+
+test.group('Login error responses', () => {
+  test('invalid credentials return the existing field messages with HTTP 401', async ({ client,
+    assert, cleanup }) => {
+    const verify = mock.method(User, 'verifyCredentials', async () => {
+      throw new errors.E_INVALID_CREDENTIALS('Invalid user credentials')
+    })
+    const generate = mock.method(JwtGuard.prototype, 'generate', async () => {
+      throw new Error('Tokens must not be generated for invalid credentials')
+    })
+    cleanup(() => { verify.mock.restore(); generate.mock.restore() })
+    const response = await client.post('/api/v1/login').json({ username: 'invalid-user',
+      password: 'invalid-password' }).accept('json')
+    response.assertStatus(401)
+    assert.deepEqual(response.body(), { errors: [
+      { field: 'username', message: 'The username or password does not match our records.' },
+      { field: 'password', message: 'The username or password does not match our records.' },
+    ] })
+    assert.equal(generate.mock.callCount(), 0)
+  })
+
+  test('unexpected verification and token errors reach the safe HTTP 500 handler')
+    .with(['verification', 'token generation']).run(async ({ client, assert, cleanup }, phase) => {
+      const user = new User()
+      const failure = new Error('Private database or signing-key diagnostic')
+      const verify = mock.method(User, 'verifyCredentials', async () => {
+        if (phase === 'verification') throw failure
+        return user
+      })
+      const generate = mock.method(JwtGuard.prototype, 'generate', async () => { throw failure })
+      cleanup(() => { verify.mock.restore(); generate.mock.restore() })
+      const response = await client.post('/api/v1/login').json({ username: 'test-user',
+        password: 'test-password' }).accept('json')
+      response.assertStatus(500)
+      assert.deepEqual(response.body(), { errors: [{ message: 'Internal server error' }] })
+      assert.equal(generate.mock.callCount(), phase === 'verification' ? 0 : 1)
+    })
+
+  test('successful login preserves the token response', async ({ client, assert, cleanup }) => {
+    const user = new User()
+    const verify = mock.method(User, 'verifyCredentials', async (username: string,
+      password: string) => {
+      assert.equal(username, 'test-user')
+      assert.equal(password, 'test-password')
+      return user
+    })
+    const generate = mock.method(JwtGuard.prototype, 'generate', async (authenticated: User) => {
+      assert.strictEqual(authenticated, user)
+      return { accessToken: 'access-token', refreshToken: 'refresh-token' }
+    })
+    cleanup(() => { verify.mock.restore(); generate.mock.restore() })
+    const response = await client.post('/api/v1/login').json({ username: 'test-user',
+      password: 'test-password' }).accept('json')
+    response.assertStatus(200)
+    assert.deepEqual(response.body(), { data: { access: 'access-token',
+      refresh: 'refresh-token' } })
   })
 })
