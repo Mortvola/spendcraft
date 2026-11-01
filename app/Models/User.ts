@@ -10,7 +10,7 @@ import {
 } from '@adonisjs/lucid/orm';
 import { InstitutionProps } from '#common/ResponseTypes';
 import { sha256 } from 'js-sha256';
-import * as jwt from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import env from '#start/env';
 // import mail from '@adonisjs/mail/services/main';
 import Budget from '#app/Models/Budget';

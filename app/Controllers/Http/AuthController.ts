@@ -1,4 +1,4 @@
-import * as jwt from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import { HttpContext } from '@adonisjs/core/http';
 import logger from '@adonisjs/core/services/logger';
 import mail from '@adonisjs/mail/services/main';
@@ -38,7 +38,7 @@ export default class AuthController {
       if (payload.id === user.id) {
         if (!user.activated) {
           user.activated = true;
-          user.save();
+          await user.save();
 
           return view.render('emailVerified');
         }
@@ -122,7 +122,7 @@ export default class AuthController {
   public async logout({ auth, request }: HttpContext) : Promise<void> {
     const payload = await request.validateUsing(logout);
 
-    auth.use('jwt').revoke(payload.data.refresh);
+    await auth.use('jwt').revoke(payload.data.refresh);
   }
 
   public async requestCode({ request, response }: HttpContext) : Promise<void> {
@@ -134,7 +134,7 @@ export default class AuthController {
       user.oneTimePassCode = User.generatePassCode();
       await user.save();
 
-      mail.send(new RequestCodeNotification(user));
+      await mail.send(new RequestCodeNotification(user));
 
       response.header('content-type', 'application/json');
     }
@@ -193,6 +193,7 @@ export default class AuthController {
     }
     else {
       response.status(422)
+      return { errors: [{ field: 'code', message: 'This code is not valid.' }] };
     }
   }
 

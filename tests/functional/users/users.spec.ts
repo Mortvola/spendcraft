@@ -60,10 +60,10 @@ test.group('Users', () => {
         assert.isString(response.body().data.access)
         assert.isString(response.body().data.refresh)
         assert.equal(response.body().data.username, user.username)
-      } else if (scenario === 'expired' || scenario === 'wrong') {
+      } else {
         assert.deepEqual(response.body(), { errors: [{ field: 'code', message:
           scenario === 'expired' ? 'This code has expired.' : 'This code is not valid.' }] })
-      } else assert.equal(response.text(), '')
+      }
       await user.refresh()
       if (scenario === 'valid' || scenario === 'missing-code') assert.isNull(user.oneTimePassCode)
       else assert.equal(user.oneTimePassCode?.code, 'ABCD')

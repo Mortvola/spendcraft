@@ -397,13 +397,6 @@ export interface ErrorProps {
   rule: string;
 }
 
-export const isErrorPropsArray = (r: unknown): r is ErrorProps[] => (
-  Array.isArray(r)
-  && (r[0] as ErrorProps).field !== undefined
-  && (r[0] as ErrorProps).message !== undefined
-  && (r[0] as ErrorProps).rule !== undefined
-)
-
 interface ErrorResponse {
   errors: ApiError[];
 }

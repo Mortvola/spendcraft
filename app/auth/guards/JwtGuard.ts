@@ -180,7 +180,7 @@ export class JwtGuard<UserProvider extends JwtUserProviderContract<unknown>>
     const redisKey = `jwt_refresh:${refreshToken}`
 
     // Remove refresh token from store
-    redis.del(redisKey)
+    return redis.del(redisKey)
   }
 
   /**
