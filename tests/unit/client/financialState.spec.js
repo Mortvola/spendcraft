@@ -658,13 +658,13 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.strictEqual(f.category.balanceCents, 0)
   })
 
-  test('form mutations preserve native and legacy errors without changing cached state').with([
+  test('form errors preserve validation messages, application codes and cached state').with([
     { message: 'Required', field: 'name', rule: 'required' },
-    { detail: 'Required', source: { pointer: 'name' }, code: 'required' },
+    { message: 'Required', field: 'name', code: 'required' },
     { message: 'Unable to save' },
   ]).run(async ({ assert }, error) => {
-    const expected = [{ field: error.field ?? error.source?.pointer ?? '',
-      message: error.message ?? error.detail, rule: error.rule ?? error.code ?? '' }]
+    const expected = [{ field: error.field ?? '',
+      message: error.message, rule: error.rule ?? error.code ?? '' }]
     const group = f.store.categoryTree.budget
     const before = [...group.children]
     for (const [method, path, run] of [
@@ -2383,7 +2383,7 @@ formats', async ({ assert }) => {
     const before = { date: cached.date.toISODate(), categories: cached.categories.map((row) => ({
       ...row })) }
     routes.set('patch /api/v1/category-transfer/40', async () => ({ ok: false, body: {
-      errors: [{ status: '422', detail: 'Unsupported replacement target' }],
+      errors: [{ message: 'Unsupported replacement target' }],
       data: { transaction: { ...props, date: '2025-04-01' }, balances: [{ id: 20, balance:
         '999.00' }] },
     } }))
@@ -2395,11 +2395,9 @@ formats', async ({ assert }) => {
     assert.equal(f.other.transactions.transactions[0].date.toISODate(), before.date)
   })
 
-  test('Category in-use rejection preserves cache; successful delete removes only its Category')
-    .with([
-      { code: 'HAS_CHILDREN', message: 'Category is in use' },
-      { code: 'HAS_CHILDREN', status: '409', detail: 'Category is in use' },
-    ]).run(async ({ assert }, error) => {
+  test('Category in-use rejection preserves cache; successful delete removes only its Category',
+    async ({ assert }) => {
+    const error = { code: 'HAS_CHILDREN', message: 'Category is in use' }
     const path = `/api/v1/groups/${f.category.group.id}/categories/${f.category.id}`
     routes.set(`delete ${path}`, async () => ({ ok: false, body: { errors: [error] } }))
     const before = [...f.store.categoryTree.budget.children]
@@ -2412,10 +2410,8 @@ formats', async ({ assert }) => {
     assert.include(f.store.categoryTree.budget.children, f.other)
   })
 
-  test('Group deletion maps native and legacy errors and preserves the tree').with([
-    { code: 'HAS_CHILDREN', message: 'Group contains categories' },
-    { code: 'HAS_CHILDREN', status: '409', detail: 'Group contains categories' },
-  ]).run(async ({ assert }, error) => {
+  test('Group deletion maps errors and preserves the tree', async ({ assert }) => {
+    const error = { code: 'HAS_CHILDREN', message: 'Group contains categories' }
     const parent = f.store.categoryTree.budget
     const group = new state.Group({ id: 50, name: 'Child group', type: parent.type }, f.store)
     state.runInAction(() => { parent.children.push(group); group.group = parent })

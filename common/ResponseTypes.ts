@@ -413,21 +413,14 @@ export enum RequestErrorCode {
   HAS_CHILDREN = 'HAS_CHILDREN',
 }
 
-/** Native AdonisJS errors and legacy SpendCraft errors coexist during migration. */
-export type ApiError = {
+export interface ApiError {
+  message: string,
   field?: string,
   rule?: string,
   code?: string,
-  status?: string,
   meta?: Record<string, unknown>,
   index?: string | number,
-  source?: {
-    pointer: string,
-  },
-} & (
-  | { message: string, detail?: string }
-  | { message?: string, detail: string }
-);
+}
 
 export interface ApiResponse<T> {
   data?: T,
@@ -437,19 +430,14 @@ export interface ApiResponse<T> {
 export const isApiErrorArray = (value: unknown): value is ApiError[] => (
   Array.isArray(value) && value.every((error: unknown) => {
     if (typeof error !== 'object' || error === null) return false;
-    if (!('message' in error && typeof error.message === 'string')
-      && !('detail' in error && typeof error.detail === 'string')) return false;
-    for (const key of ['message', 'detail', 'field', 'rule', 'code', 'status']) {
+    if (!('message' in error) || typeof error.message !== 'string') return false;
+    for (const key of ['field', 'rule', 'code']) {
       if (key in error && typeof Reflect.get(error, key) !== 'string') return false;
     }
     if ('meta' in error && (typeof error.meta !== 'object' || error.meta === null
       || Array.isArray(error.meta))) return false;
     if ('index' in error && typeof error.index !== 'string'
       && typeof error.index !== 'number') return false;
-    if ('source' in error) {
-      if (typeof error.source !== 'object' || error.source === null
-        || !('pointer' in error.source) || typeof error.source.pointer !== 'string') return false;
-    }
     return true;
   })
 )

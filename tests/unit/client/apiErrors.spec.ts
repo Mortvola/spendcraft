@@ -5,12 +5,11 @@ import { toFormErrors } from '../../../client-src/apiErrors.ts'
 const errors: ApiError[] = [
   { field: 'amount', message: 'Amount is required', rule: 'required', meta: { label: 'Amount' } },
   { message: 'Unable to save' },
-  { code: 'INVALID_AMOUNT', status: '422', detail: 'Invalid amount',
-    source: { pointer: 'amount' } },
-  { code: 'INCORRECT_VERSION', status: '409', detail: 'Reload the transaction' },
+  { code: 'INVALID_AMOUNT', message: 'Invalid amount', field: 'amount' },
+  { code: 'INCORRECT_VERSION', message: 'Reload the transaction' },
 ]
 
-test('API errors accept native, legacy, general and mixed collections', ({ assert }) => {
+test('API errors accept validation, application and general errors', ({ assert }) => {
   assert.isTrue(isApiErrorArray(errors))
   assert.isTrue(isApiErrorArray([]))
   for (const error of errors) assert.isTrue(isApiErrorArray([error]))
@@ -19,7 +18,7 @@ test('API errors accept native, legacy, general and mixed collections', ({ asser
 test('API errors reject malformed payloads and inspect every entry').with([
   null, undefined, {}, 'error', [null], [{}], [{ message: 1 }], [{ detail: false }],
   [{ message: 'Invalid', field: 1 }], [{ message: 'Invalid', rule: false }],
-  [{ detail: 'Invalid', source: null }], [{ detail: 'Invalid', source: {} }],
+  [{ detail: 'Legacy error', code: 'INVALID', status: '422', source: { pointer: 'amount' } }],
   [{ message: 'Invalid', code: 123 }], [errors[0], null], [errors[0], {}],
   [{ message: 'Invalid', meta: null }], [{ message: 'Invalid', meta: [] }],
   [{ message: 'Invalid', index: false }],
@@ -27,7 +26,7 @@ test('API errors reject malformed payloads and inspect every entry').with([
   assert.isFalse(isApiErrorArray(value))
 })
 
-test('form errors preserve native fields and messages with legacy fallbacks', ({ assert }) => {
+test('form errors preserve fields and messages without mutating API errors', ({ assert }) => {
   const before = structuredClone(errors)
   assert.deepEqual(toFormErrors(errors), [
     { field: 'amount', message: 'Amount is required', rule: 'required' },
@@ -39,9 +38,9 @@ test('form errors preserve native fields and messages with legacy fallbacks', ({
   assert.deepEqual(errors, before)
 })
 
-test('native error properties take precedence during transition', ({ assert }) => {
+test('validation rules take precedence over application codes', ({ assert }) => {
   assert.deepEqual(toFormErrors([{ field: 'name', message: 'Required', rule: 'required',
-    detail: 'Legacy message', code: 'LEGACY', source: { pointer: 'oldName' } }]), [
+    code: 'INVALID_NAME' }]), [
     { field: 'name', message: 'Required', rule: 'required' },
   ])
 })

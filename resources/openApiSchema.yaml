@@ -231,9 +231,7 @@ components:
                 description: The errors
                 items:
                   type: object
-                  anyOf:
-                    - required: [message]
-                    - required: [detail]
+                  required: [message]
                   properties:
                     message:
                       type: string
@@ -243,15 +241,6 @@ components:
                       type: string
                     code:
                       type: string
-                    detail:
-                      type: string
-                    source:
-                      type: object
-                      required:
-                        - pointer
-                      properties:
-                        pointer:
-                          type: string
 
     AddAccountsResponse:
       description: Add accounts response
