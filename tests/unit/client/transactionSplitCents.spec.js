@@ -280,6 +280,26 @@ test.group('Transaction split cents', group => {
     assert.strictEqual(changed, '0.125')
   })
 
+  test('Institution information dialog unwraps the original Plaid payload', async ({ assert }) => {
+    let loaded, requested
+    const payload = { institution_id: 'provider-test', name: 'Provider bank',
+      products: ['transactions'], status: { health_incidents: [] }, diagnosticAmount: 0.1 }
+    const view = await expression('client-src/AccountView/InstitutionInfoDialog.tsx',
+      'InstitutionInfoDialog', {
+      useState: initial => [initial, value => { if (initial === null) loaded = value }],
+      Header: 'header', Footer: 'footer', Modal: { Body: 'body' }, DateTime,
+      Http: { get: async url => {
+        requested = url
+        return { ok: true, body: async () => ({ data: payload }) }
+      } },
+    })
+    view({ institution: { id: 7 }, setShow: () => assert.fail('Unexpected dialog close') })
+    await new Promise(resolve => setImmediate(resolve))
+    assert.strictEqual(requested, '/api/v1/institution/7/info')
+    assert.strictEqual(loaded, payload)
+    assert.strictEqual(typeof loaded.diagnosticAmount, 'number')
+  })
+
   test('duplicate comparison retains canonical API amounts as cents', async ({ assert }) => {
     let loaded
     const effects = []

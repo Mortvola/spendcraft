@@ -14,6 +14,7 @@ import {
     CategoryBalanceProps,
   InstitutionSyncResponse, TrackingType, UnlinkedAccountProps, LinkTokenResponse,
   InstitutionResponse, OfflineInstitutionResponse, InstitutionAccountsResponse,
+  InstitutionInfoResponse,
 } from '#common/ResponseTypes';
 import Transaction from '#app/Models/Transaction';
 import AccountTransaction from '#app/Models/AccountTransaction';
@@ -855,7 +856,7 @@ class InstitutionController {
   }
 
    
-  public async info({ request, auth: { user } }: HttpContext): Promise<Plaid.Institution> {
+  public async info({ request, auth: { user } }: HttpContext): Promise<InstitutionInfoResponse> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -863,9 +864,9 @@ class InstitutionController {
     const institution = await budgetInstitutions(user.budgetId).where('id', request.params().instId)
       .firstOrFail();
 
-    const plaidInstitution = institution.getPlaidInstition();
+    const plaidInstitution = await institution.getPlaidInstition();
 
-    return plaidInstitution;
+    return { data: plaidInstitution };
   }
 
    

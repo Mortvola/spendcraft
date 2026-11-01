@@ -421,7 +421,10 @@ test.group('Institution isolation', (group) => {
     const response = await client.get(`/api/v1/institution/${fixture.own.institution.id}/info`)
       .accept('json').loginAs(fixture.shared)
     response.assertStatus(200)
-    assert.equal(response.body().institution_id, 'provider-own')
+    assert.deepEqual(Object.keys(response.body()), ['data'])
+    assert.deepEqual(response.body().data, { institution_id: 'provider-own',
+      name: 'Test provider bank', products: [], country_codes: ['US'], routing_numbers: [],
+      oauth: false, connection_availability: Plaid.InstitutionConnectionAvailability.Supported })
     assert.deepEqual(fake.calls, [{ method: 'getInstitutionById', resource: 'provider-own' }])
   })
 

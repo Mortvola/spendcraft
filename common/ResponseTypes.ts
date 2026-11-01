@@ -1,3 +1,5 @@
+import type { Institution as PlaidInstitution } from 'plaid';
+
 /** Canonical two-decimal monetary string, e.g. "12.50". */
 export type DecimalMoneyString = string;
 
@@ -911,3 +913,5 @@ export type InstitutionAccountsResponse = ApiResponse<UnlinkedAccountProps[]>;
 
 export type DeleteInstitutionResponse = ApiResponse<CategoryBalanceProps[]>;
 export type DeleteAccountResponse = ApiResponse<CategoryBalanceProps[]>;
+
+export type InstitutionInfoResponse = ApiResponse<PlaidInstitution>;

@@ -4,6 +4,7 @@ import * as Plaid from 'plaid';
 import { DateTime } from 'luxon';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import Http from '@mortvola/http';
+import type { InstitutionInfoResponse } from '../../common/ResponseTypes';
 import { SubmitButton } from '@mortvola/forms';
 import { InstitutionInterface } from '../State/Types';
 import styles from './InstitutionInfoDialog.module.scss';
@@ -50,11 +51,12 @@ const InstitutionInfoDialog: React.FC<PropsType & ModalProps> = ({
     setInfoInitialized(true);
 
     (async () => {
-      const response = await Http.get<InstitutionInfo>(`/api/v1/institution/${institution
+      const response = await Http.get<InstitutionInfoResponse>(`/api/v1/institution/${institution
         .id}/info`);
 
       if (response.ok) {
-        const institutionInfo = await response.body();
+        const { data: institutionInfo } = await response.body();
+        if (!institutionInfo) throw new Error('Invalid institution information response');
         setInfo(institutionInfo);
       }
     })();
