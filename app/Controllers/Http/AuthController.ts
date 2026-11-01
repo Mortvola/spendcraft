@@ -115,9 +115,13 @@ export default class AuthController {
         },
       });
     }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    catch (error) {
-      response.status(401)
+    catch {
+      response.status(401).type('json').send({
+        errors: [{
+          message: 'Your session has expired. Please sign in again.',
+          code: 'E_UNAUTHORIZED_ACCESS',
+        }],
+      });
     }
   }
 
