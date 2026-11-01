@@ -2049,12 +2049,15 @@ formats', async ({ assert }) => {
       assert.equal(f.account.balanceCents, 10000)
     })
 
-  test('rejected transaction edit leaves cached financial state unchanged', async ({ assert }) => {
+  test('rejected transaction edit preserves errors and cached financial state').with([
+    { message: 'Rejected' },
+    { code: 'INCORRECT_VERSION', message: 'Reload the transaction' },
+  ]).run(async ({ assert }, error) => {
     const cached = transactions()
-    routes.set('patch /api/v1/transaction/40', async () => ({ ok: false, body: { errors: [{
-      message: 'Rejected' }] } }))
-    assert.isArray(await cached.account.updateTransaction({ amountCents: parseMoneyCents(
-      '-75.00') }))
+    routes.set('patch /api/v1/transaction/40', async () => ({ ok: false, body: { errors: [
+      error] } }))
+    assert.deepEqual(await cached.account.updateTransaction({ amountCents: parseMoneyCents(
+      '-75.00') }), [error])
     assert.equal(cached.account.amountCents, -1000); assert.equal(cached.category.amountCents, -
       1000)
     assert.equal(f.account.balanceCents, 9000); assert.equal(f.category.balanceCents, -1000)

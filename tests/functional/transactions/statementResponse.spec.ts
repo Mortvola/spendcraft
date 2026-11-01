@@ -12,7 +12,7 @@ import Category from '#models/Category'
 import Handler from '#exceptions/Handler'
 import transactionFields from '#app/Controllers/Http/transactionFields'
 import { DateTime } from 'luxon'
-import { AccountType, TrackingType, TransactionType } from '#common/ResponseTypes'
+import { AccountType, TrackingType, TransactionType, RequestErrorCode } from '#common/ResponseTypes'
 import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
 
 let sequence = 0
@@ -98,8 +98,9 @@ test.group('Transaction Statement response commit boundary', () => {
       transactionRequest({ version: 99,
       name: 'Updated', statementId: data.statementId })).accept('json').loginAs(data.user)
     response.assertStatus(409)
-    assert.equal(response.body().errors[0].detail,
-      'The version of the transaction does not match the version stored in the database.')
+    assert.deepEqual(response.body(), { errors: [{ code: RequestErrorCode.INCORRECT_VERSION,
+      message: 'The version of the transaction does not match the version stored in the database.',
+    }] })
     assert.equal(commitCalls, 0)
     assert.isTrue(captured?.isCompleted)
     assert.deepEqual((await Transaction.findOrFail(data.transaction.id)).serialize(), before)
