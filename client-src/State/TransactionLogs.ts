@@ -22,7 +22,8 @@ class TransactionLogs {
       throw new Error('invalid response');
     }
 
-    const body = await response.body();
+    const { data: body } = await response.body();
+    if (!Array.isArray(body)) throw new Error('Invalid logs response');
 
     if (body) {
       runInAction(() => {

@@ -15,7 +15,7 @@ import {
   GroupType,
   UpdateStatementProps,
   TransactionProps,
-  TransactionLogChanges,
+  PlaidLogProps, WebhookLogProps,
 } from '../../common/ResponseTypes'
 import SystemIds from './SystemIds';
 import type Statement from './Statement';
@@ -640,15 +640,8 @@ export interface AutoAssignmentInterface {
   delete(): Promise<void>;
 }
 
-export interface TransactionLogProps {
-  id: number;
-  createdAt: string;
-  message: string;
-  transactionId: number;
-  changes?: TransactionLogChanges | null;
-}
-
-export type TransactionLogsResponse = TransactionLogProps[]
+export type { TransactionLogProps, TransactionLogsResponse, PlaidLogProps, WebhookLogProps,
+  PlaidLogsResponse } from '../../common/ResponseTypes';
 
 export interface TransactionLogInterface {
   id: number;
@@ -660,35 +653,14 @@ export interface TransactionLogInterface {
   date: DateTime,
 }
 
-export interface PlaidLogProps {
-  id: number,
-  type: string,
-  createdAt: string;
-  request: string;
-  response: unknown;
-  status: number;
-  institutionId: string;
-}
-
 export const isPlaidLogProps = (r : unknown): r is PlaidLogProps => (
   (r as PlaidLogProps).type === 'Request'
 )
-
-export interface WebhookLogProps {
-  id: number,
-  type: string,
-  createdAt: string;
-  request: {
-    webhook_type: string;
-    webhook_code: string;
-  };
-}
 
 export const isWebhookLogProps = (r : unknown): r is WebhookLogProps => (
   (r as WebhookLogProps).type === 'Webhook'
 )
 
-export type PlaidLogsResponse = (PlaidLogProps | WebhookLogProps )[]
 
 export interface PlaidLogInterface {
   id: number;

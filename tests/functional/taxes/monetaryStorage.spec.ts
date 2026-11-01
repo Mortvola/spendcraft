@@ -155,7 +155,8 @@ transaction_logs WHERE id=?", [log.id])).rows[0]
       old: 0.13, new: -0.12 })
     const response = await client.get('/api/v1/transaction-logs').accept('json').loginAs(f.user);
       response.assertStatus(200)
-    const item = response.body().find((entry: { id: number }) => entry.id === log.id)
+    assert.deepEqual(Object.keys(response.body()), ['data'])
+    const item = response.body().data.find((entry: { id: number }) => entry.id === log.id)
     assert.deepEqual(item.changes.amount, { old: '0.13', new: '-0.12' }); assert.deepEqual(item
       .changes.unrelated, { amount: 1.005 })
     const column = await db.rawQuery(
@@ -220,6 +221,6 @@ WHERE id IN (?,?) ORDER BY id', [nullable.id, absent.id])).rows
       .findOrFail(tax.id)).data.taxableInterest, 1)
     const list = await client.get('/api/v1/transaction-logs').accept('json').loginAs(foreign.user);
       list.assertStatus(200)
-    assert.isFalse(list.body().some((entry: { id: number }) => entry.id === log.id))
+    assert.isFalse(list.body().data.some((entry: { id: number }) => entry.id === log.id))
   })
 })

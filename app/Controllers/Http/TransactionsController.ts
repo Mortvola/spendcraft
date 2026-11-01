@@ -783,7 +783,7 @@ export default class TransactionsController {
     auth: {
       user,
     },
-  }: HttpContext): Promise<TransactionLog[]> {
+  }: HttpContext): Promise<ApiResponse<TransactionLog[]>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -792,6 +792,6 @@ export default class TransactionsController {
 
     const logs = await budget.related('transactionLog').query().orderBy('createdAt', 'desc');
 
-    return logs;
+    return { data: logs };
   }
 }

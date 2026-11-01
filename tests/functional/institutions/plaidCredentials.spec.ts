@@ -131,8 +131,17 @@ test.group('Plaid diagnostic credential protection', () => {
       'audit-admin@example.com', password: 'testPassw0rd', roles: ['ADMIN'] })
     await PlaidWrapper.log('/admin-test', { access_token: sentinel, request_id:
       'safe-admin-request' }, 200)
+    const payload = { webhook_type: 'TRANSACTIONS', webhook_code: 'WRAPPER_CHECK', amount: 0.1 }
+    const webhook = await WebhookLog.create({ request: payload })
     const response = await client.get('/api/v1/admin/plaid-logs').loginAs(user)
     response.assertStatus(200)
+    assert.deepEqual(Object.keys(response.body()), ['data'])
+    assert.isArray(response.body().data)
+    const rows = response.body().data
+    assert.deepEqual(rows.find((row: { id: number, type: string }) => row.id === webhook.id
+      && row.type === 'Webhook').request, payload)
+    const timestamps = rows.map((row: { createdAt: string }) => Date.parse(row.createdAt))
+    assert.deepEqual(timestamps, [...timestamps].sort((a, b) => b - a))
     assert.notInclude(JSON.stringify(response.body()), sentinel)
     assert.include(JSON.stringify(response.body()), 'safe-admin-request')
   })

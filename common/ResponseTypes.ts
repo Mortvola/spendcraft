@@ -871,3 +871,34 @@ export interface UpdateLoanRequest {
 export type BillsResponse = ApiResponse<BillProps[]>;
 export type CategoryBalancesResponse = ApiResponse<CategoryBalanceProps[]>;
 export type AccountBalancesResponse = ApiResponse<AccountBalancePoint[]>;
+
+export interface TransactionLogProps {
+  id: number;
+  createdAt: string;
+  message: string;
+  transactionId: number;
+  changes?: TransactionLogChanges | null;
+}
+
+export interface PlaidLogProps {
+  id: number,
+  type: string,
+  createdAt: string;
+  request: string;
+  response: unknown;
+  status: number;
+  institutionId: string;
+}
+
+export interface WebhookLogProps {
+  id: number,
+  type: string,
+  createdAt: string;
+  request: {
+    webhook_type: string;
+    webhook_code: string;
+  };
+}
+
+export type TransactionLogsResponse = ApiResponse<TransactionLogProps[]>;
+export type PlaidLogsResponse = ApiResponse<(PlaidLogProps | WebhookLogProps)[]>;

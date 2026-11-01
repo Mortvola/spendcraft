@@ -1304,6 +1304,43 @@ formats', async ({ assert }) => {
     assert.isNull(f.store.overview.bills[0].debitsCents)
   })
 
+  test('log collections unwrap data while preserving order and diagnostic types', async ({
+    assert }) => {
+    const changes = { amount: { old: '0.10', new: '0.20' } }
+    routes.set('get /api/v1/transaction-logs', async () => ({ body: { data: [
+      { id: 2, createdAt: '2026-01-02T00:00:00Z', message: 'New', transactionId: 40, changes },
+      { id: 1, createdAt: '2026-01-01T00:00:00Z', message: 'Old', transactionId: 40 },
+    ] } }))
+    await f.store.transactionLogs.load()
+    assert.deepEqual(f.store.transactionLogs.logs.map(row => row.id), [2, 1])
+    assert.deepEqual(changes.amount, { old: '0.10', new: '0.20' })
+    const response = { balance: 0.1, nested: { amount: '12.34' } }
+    const request = { webhook_type: 'TRANSACTIONS', webhook_code: 'SYNC_UPDATES_AVAILABLE' }
+    routes.set('get /api/v1/admin/plaid-logs', async () => ({ body: { data: [
+      { id: 2, type: 'Webhook', createdAt: '2026-01-02T00:00:00Z', request },
+      { id: 1, type: 'Request', createdAt: '2026-01-01T00:00:00Z', request: '/sync',
+        response, status: 200, institutionId: 'test' },
+    ] } }))
+    await f.store.plaidLogs.load()
+    assert.deepEqual(f.store.plaidLogs.logs.map(row => row.type), ['Webhook', 'Request'])
+    assert.deepEqual(f.store.plaidLogs.logs[1].response, response)
+    assert.strictEqual(typeof f.store.plaidLogs.logs[1].response.balance, 'number')
+    assert.deepEqual(f.store.plaidLogs.logs[0].request, request)
+  })
+
+  test('log collections accept empty wrappers and reject bare responses')
+    .with(['transactionLogs', 'plaidLogs']).run(async ({ assert }, key) => {
+      const url = key === 'transactionLogs' ? '/api/v1/transaction-logs'
+        : '/api/v1/admin/plaid-logs'
+      routes.set(`get ${url}`, async () => ({ body: { data: [] } }))
+      await f.store[key].load()
+      assert.isTrue(f.store[key].initialized)
+      assert.lengthOf(f.store[key].logs, 0)
+      routes.set(`get ${url}`, async () => ({ body: [] }))
+      await assert.rejects(() => f.store[key].load(), 'Invalid logs response')
+      assert.lengthOf(f.store[key].logs, 0)
+    })
+
   test('User mutations read wrapped profile data and preserve roles', async ({ assert }) => {
     const user = f.store.user
     const roles = user.roles.slice()
