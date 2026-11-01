@@ -12,7 +12,7 @@ import {
   AccountType,
   AddInstitutionResponse, AddOfflineAccountResponse, type AddOnlineAccountsResponse, ApiResponse,
     CategoryBalanceProps,
-  InstitutionProps, InstitutionSyncResponse, TrackingType, UnlinkedAccountProps,
+  InstitutionProps, InstitutionSyncResponse, TrackingType, UnlinkedAccountProps, LinkTokenResponse,
 } from '#common/ResponseTypes';
 import Transaction from '#app/Models/Transaction';
 import AccountTransaction from '#app/Models/AccountTransaction';
@@ -753,11 +753,10 @@ class InstitutionController {
    
   public async linkToken({
     request,
-    response,
     auth: {
       user,
     },
-  }: HttpContext): Promise<void> {
+  }: HttpContext): Promise<LinkTokenResponse> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -792,7 +791,7 @@ class InstitutionController {
       redirect_uri: redirect,
     });
 
-    response.json({ linkToken: linkTokenResponse.link_token });
+    return { data: { linkToken: linkTokenResponse.link_token } };
   }
 
   public async unlink({ request, auth: { user }, logger}: HttpContext): Promise<void> {

@@ -8,7 +8,7 @@ import {
   AccountBalanceProps, AddInstitutionProps, AddInstitutionResponse, AddOfflineInstitutionRequest,
   ApiResponse,
   ErrorProps, isDeleteInstitutionResponse,
-  isInstitutionsResponse, isLinkTokenResponse, TrackingType,
+  isInstitutionsResponse, isLinkTokenData, LinkTokenResponse, TrackingType,
 } from '../../common/ResponseTypes';
 import {
   AccountInterface, AccountsInterface, InstitutionInterface, StoreInterface,
@@ -137,15 +137,13 @@ class Accounts implements AccountsInterface {
   }
 
   async linkInstitution(): Promise<void> {
-    const response = await Http.get('/api/v1/user/link-token');
+    const response = await Http.get<LinkTokenResponse>('/api/v1/user/link-token');
 
     if (response.ok) {
-      const body = await response.body();
-
+      const { data } = await response.body();
+      if (!isLinkTokenData(data)) throw new Error('Invalid link-token response');
       runInAction(() => {
-        if (isLinkTokenResponse(body)) {
-          this.store.uiState.plaid = new Plaid(body.linkToken);
-        }
+        this.store.uiState.plaid = new Plaid(data.linkToken);
       });
     }
   }

@@ -5,7 +5,7 @@ import { DateTime } from 'luxon';
 import Account from './Account';
 import {
   UnlinkedAccountProps, InstitutionProps, AccountBalanceProps, ErrorProps,
-  TrackingType, isDeleteAccountResponse, isLinkTokenResponse,
+  TrackingType, isDeleteAccountResponse, isLinkTokenData, LinkTokenResponse,
   InstitutionSyncResponse, AddInstitutionResponse,
   AddOfflineAccountResponse, AddOfflineAccountRequest,
   ApiResponse,
@@ -71,18 +71,16 @@ class Institution implements InstitutionInterface {
   }
 
   async relink(): Promise<void> {
-    const response = await Http.get(`/api/v1/institution/${this.id}/link-token`);
+    const response = await Http.get<LinkTokenResponse>(`/api/v1/institution/${this.id}/link-token`);
 
     if (!response.ok) {
       throw new Error('invalid response');
     }
 
-    const body = await response.body();
-
+    const { data } = await response.body();
+    if (!isLinkTokenData(data)) throw new Error('Invalid link-token response');
     runInAction(() => {
-      if (isLinkTokenResponse(body)) {
-        this.store.uiState.plaid = new Plaid(body.linkToken, this);
-      }
+      this.store.uiState.plaid = new Plaid(data.linkToken, this);
     });
   }
 

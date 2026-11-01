@@ -316,6 +316,17 @@ test.group('Institution isolation', (group) => {
     assert.deepEqual(fake.calls, [])
   })
 
+  test('new-institution link token uses the wrapper without an existing access token', async ({
+    client, assert }) => {
+    const before = await state()
+    const response = await client.get('/api/v1/user/link-token').accept('json')
+      .loginAs(fixture.shared)
+    response.assertStatus(200)
+    assert.deepEqual(response.body(), { data: { linkToken: 'test-link-token' } })
+    assert.deepEqual(fake.calls, [{ method: 'createLinkToken', resource: null }])
+    assert.deepEqual(await state(), before)
+  })
+
   test('authorized listing, refresh and Link token use only the own institution', async ({ client,
     assert }) => {
     const before = await state()
@@ -326,7 +337,7 @@ test.group('Institution isolation', (group) => {
     refreshed.assertStatus(200)
     const linked = await client.get(`${prefix}/link-token`).accept('json').loginAs(fixture.shared)
     linked.assertStatus(200)
-    assert.equal(linked.body().linkToken, 'test-link-token')
+    assert.deepEqual(linked.body(), { data: { linkToken: 'test-link-token' } })
     assert.deepEqual(fake.calls, [{ method: 'getAccounts', resource: fixture.own.institution.id },
       { method: 'getAccounts', resource: fixture.own.institution.id }, { method: 'createLinkToken',
         resource: 'test-token-own' }])

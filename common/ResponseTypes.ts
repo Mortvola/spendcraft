@@ -566,14 +566,14 @@ export interface InstitutionSyncResponse {
   categories: CategoryProps[];
 }
 
-interface LinkTokenProps {
+export interface LinkTokenData {
   linkToken: string;
 }
 
-export const isLinkTokenResponse = (
-  r: LinkTokenProps | unknown,
-): r is LinkTokenProps => (
-  (r as LinkTokenProps).linkToken !== undefined
+export type LinkTokenResponse = ApiResponse<LinkTokenData>;
+
+export const isLinkTokenData = (r: unknown): r is LinkTokenData => (
+  typeof r === 'object' && r !== null && 'linkToken' in r && typeof r.linkToken === 'string'
 );
 
 // Read-only points from the existing Transaction-derived account chart endpoint.

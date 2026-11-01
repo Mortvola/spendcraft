@@ -12,6 +12,12 @@ import { inject } from '@adonisjs/core';
 import { UserService } from '#services/userService';
 import { Exception } from '@adonisjs/core/exceptions';
 
+type VerifyCodeResponse = {
+  data: { access: string; refresh: string; username: string };
+} | {
+  errors: { field: string; message: string }[];
+};
+
 export default class AuthController {
   @inject()
   public async register({ request }: HttpContext, userService: UserService) : Promise<void> {
@@ -136,7 +142,8 @@ export default class AuthController {
     }
   }
 
-  public async verifyCode({ auth, request, response }: HttpContext): Promise<void> {
+  public async verifyCode({ auth, request, response }: HttpContext):
+    Promise<VerifyCodeResponse | undefined> {
     const requestData = await request.validateUsing(verifyCode);
 
     const user = await User.findBy('email', requestData.email);
@@ -151,12 +158,12 @@ export default class AuthController {
 
           response.status(422)
 
-          response.json({
+          return {
             errors: [{
               field: 'code',
               message: 'This code has expired.',
             }],
-          })
+          };
         }
         else {
           user.oneTimePassCode = null;
@@ -165,25 +172,25 @@ export default class AuthController {
           const token = await auth.use('jwt').generate(user);
 
           response.header('content-type', 'application/json');
-          response.send({
+          return {
             data: {
               access: token.accessToken,
               refresh: token.refreshToken,
               username: user.username,
             },
-          });
+          };
         }
       }
       else {
         console.log(`code does not match: ${requestData.code}, ${user.oneTimePassCode.code}`)
         response.status(422)
 
-        response.json({
+        return {
           errors: [{
             field: 'code',
             message: 'This code is not valid.',
           }],
-        });
+        };
       }
     }
     else {

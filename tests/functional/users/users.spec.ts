@@ -1,3 +1,5 @@
+import User from '#models/User'
+import { DateTime } from 'luxon'
 import Budget from '#models/Budget'
 import db from '@adonisjs/lucid/services/db'
 import { test } from '@japa/runner'
@@ -38,6 +40,36 @@ test.group('Users', () => {
     assert.isNull(user.pendingEmail)
     assert.deepEqual(await db.from('users').where('id', other.id).firstOrFail(), before)
   })
+
+  test('code verification preserves response bodies, statuses and one-time-code behavior')
+    .with(['valid', 'expired', 'wrong', 'missing-code', 'missing-user'])
+    .run(async ({ client, assert }, scenario) => {
+      const budget = await Budget.create({})
+      const user = await budget.related('users').create({ username: `verify-${scenario}`,
+        email: `verify-${scenario}@example.com`, password,
+        oneTimePassCode: scenario === 'missing-code' ? null : { code: 'ABCD',
+          expires: scenario === 'expired' ? DateTime.now().minus({ minutes: 1 })
+            : DateTime.now().plus({ minutes: 10 }) } })
+      const response = await client.post('/api/v1/code-verify').accept('json').json({
+        email: scenario === 'missing-user' ? 'missing-verification@example.com' : user.email,
+        code: scenario === 'wrong' ? 'WRONG' : 'abcd',
+      })
+      response.assertStatus(scenario === 'valid' ? 200 : 422)
+      if (scenario === 'valid') {
+        assert.deepEqual(Object.keys(response.body()), ['data'])
+        assert.isString(response.body().data.access)
+        assert.isString(response.body().data.refresh)
+        assert.equal(response.body().data.username, user.username)
+      } else if (scenario === 'expired' || scenario === 'wrong') {
+        assert.deepEqual(response.body(), { errors: [{ field: 'code', message:
+          scenario === 'expired' ? 'This code has expired.' : 'This code is not valid.' }] })
+      } else assert.equal(response.text(), '')
+      await user.refresh()
+      if (scenario === 'valid' || scenario === 'missing-code') assert.isNull(user.oneTimePassCode)
+      else assert.equal(user.oneTimePassCode?.code, 'ABCD')
+      assert.equal(user.email, `verify-${scenario}@example.com`)
+      assert.exists(await User.find(user.id))
+    })
 
   test('register invalid password test - "{password}"')
     .with([

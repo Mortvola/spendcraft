@@ -1304,6 +1304,30 @@ formats', async ({ assert }) => {
     assert.isNull(f.store.overview.bills[0].debitsCents)
   })
 
+  test('link-token receivers unwrap new and update-mode tokens').with(['new', 'update'])
+    .run(async ({ assert }, mode) => {
+      const url = mode === 'new' ? '/api/v1/user/link-token'
+        : `/api/v1/institution/${f.institution.id}/link-token`
+      routes.set(`get ${url}`, async () => ({ body: { data: { linkToken: 'test-token' } } }))
+      await (mode === 'new' ? f.store.accounts.linkInstitution() : f.institution.relink())
+      assert.strictEqual(f.store.uiState.plaid.linkToken, 'test-token')
+      assert.strictEqual(f.store.uiState.plaid.institution, mode === 'new' ? null
+        : f.institution)
+    })
+
+  test('link-token receivers reject bare or malformed responses without replacing UI state')
+    .with(['new', 'update']).run(async ({ assert }, mode) => {
+      const before = f.store.uiState.plaid
+      const url = mode === 'new' ? '/api/v1/user/link-token'
+        : `/api/v1/institution/${f.institution.id}/link-token`
+      for (const body of [{ linkToken: 'bare' }, {}, { data: null }, { data: { linkToken: 1 } }]) {
+        routes.set(`get ${url}`, async () => ({ body }))
+        await assert.rejects(() => mode === 'new' ? f.store.accounts.linkInstitution()
+          : f.institution.relink(), 'Invalid link-token response')
+        assert.strictEqual(f.store.uiState.plaid, before)
+      }
+    })
+
   test('log collections unwrap data while preserving order and diagnostic types', async ({
     assert }) => {
     const changes = { amount: { old: '0.10', new: '0.20' } }

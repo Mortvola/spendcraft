@@ -1,5 +1,5 @@
 import { HttpContext } from '@adonisjs/core/http';
-import { ApiResponse, InstitutionProps } from '#common/ResponseTypes';
+import { ApiResponse, InstitutionProps, LinkTokenResponse } from '#common/ResponseTypes';
 import env from '#start/env'
 import User from '#app/Models/User';
 import * as Plaid from 'plaid';
@@ -95,7 +95,7 @@ export default class UsersController {
   }
 
    
-  async getLinkToken({ auth: { user }, response }: HttpContext): Promise<void> {
+  async getLinkToken({ auth: { user } }: HttpContext): Promise<LinkTokenResponse> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -118,7 +118,7 @@ export default class UsersController {
       redirect_uri: redirect,
     });
 
-    response.json({ linkToken: linkTokenResponse.link_token });
+    return { data: { linkToken: linkTokenResponse.link_token } };
   }
 
    
