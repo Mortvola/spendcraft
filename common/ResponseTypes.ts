@@ -560,11 +560,13 @@ interface AccountSyncProps {
   plaidBalance: DecimalMoneyString | null;
 }
 
-export interface InstitutionSyncResponse {
+export interface InstitutionSyncData {
   syncDate: string;
   accounts: AccountSyncProps[];
   categories: CategoryProps[];
 }
+
+export type InstitutionSyncResponse = ApiResponse<InstitutionSyncData>;
 
 export interface LinkTokenData {
   linkToken: string;
@@ -677,12 +679,12 @@ export const isCategoryTreeBalanceResponse = (r: unknown): r is CategoryTreeBala
   && isCategoryTreeBalanceProps(r[0])
 )
 
-export const isDeleteInstitutionResponse = (r: unknown): r is CategoryBalanceProps[] => (
+export const isDeleteInstitutionData = (r: unknown): r is CategoryBalanceProps[] => (
   Array.isArray(r)
   && (r.length === 0 || isCategoryBalance(r[0]))
 )
 
-export const isDeleteAccountResponse = (r: unknown): r is CategoryBalanceProps[] => (
+export const isDeleteAccountData = (r: unknown): r is CategoryBalanceProps[] => (
   Array.isArray(r)
   && (r.length === 0 || isCategoryBalance(r[0]))
 )
@@ -906,3 +908,6 @@ export type PlaidLogsResponse = ApiResponse<(PlaidLogProps | WebhookLogProps)[]>
 export type InstitutionResponse = ApiResponse<InstitutionProps>;
 export type OfflineInstitutionResponse = ApiResponse<{ name: string }>;
 export type InstitutionAccountsResponse = ApiResponse<UnlinkedAccountProps[]>;
+
+export type DeleteInstitutionResponse = ApiResponse<CategoryBalanceProps[]>;
+export type DeleteAccountResponse = ApiResponse<CategoryBalanceProps[]>;

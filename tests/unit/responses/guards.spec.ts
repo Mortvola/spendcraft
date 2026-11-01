@@ -2,7 +2,7 @@ import { test } from '@japa/runner'
 import {
   AccountType, TrackingType,
   isUpdateCategoryTransferResponse, isDeleteTransactionResponse,
-  isInsertCategoryTransferResponse, isDeleteInstitutionResponse, isDeleteAccountResponse,
+  isInsertCategoryTransferResponse, isDeleteInstitutionData, isDeleteAccountData,
   isAddOnlineAccountsResponse, isInstitutionsResponse, isAccountBalanceSeries,
   isCategoryTreeBalanceResponse,
 } from '#common/ResponseTypes'
@@ -35,9 +35,9 @@ const categoryGuards: {
     name: 'isInsertCategoryTransferResponse', guard: isInsertCategoryTransferResponse,
     response: (balances) => ({ balances, transaction: { id: 5 } }),
   },
-  { name: 'isDeleteInstitutionResponse', guard: isDeleteInstitutionResponse, response: (rows) =>
+  { name: 'isDeleteInstitutionData', guard: isDeleteInstitutionData, response: (rows) =>
     rows },
-  { name: 'isDeleteAccountResponse', guard: isDeleteAccountResponse, response: (rows) => rows },
+  { name: 'isDeleteAccountData', guard: isDeleteAccountData, response: (rows) => rows },
 ]
 
 for (const { name, guard, response } of categoryGuards) {
@@ -57,7 +57,7 @@ for (const { name, guard, response } of categoryGuards) {
       assert.throws(() => guard(response([null])), TypeError)
     })
     test('preserves top-level null behavior', ({ assert }) => {
-      if (name === 'isDeleteInstitutionResponse' || name === 'isDeleteAccountResponse') {
+      if (name === 'isDeleteInstitutionData' || name === 'isDeleteAccountData') {
         assert.isFalse(guard(null))
       } else {
         assert.throws(() => guard(null), TypeError)

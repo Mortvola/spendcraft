@@ -1304,6 +1304,56 @@ formats', async ({ assert }) => {
     assert.isNull(f.store.overview.bills[0].debitsCents)
   })
 
+  test('Institution sync unwraps its result and applies existing balance updates', async ({
+    assert }) => {
+    routes.set('post /api/v1/institution/1/accounts/1/transactions/sync', async () => ({
+      body: { data: { syncDate: '2026-01-02T00:00:00Z', accounts: [],
+        categories: [{ id: 20, balance: '0.30' }] } },
+    }))
+    assert.isTrue(await f.institution.sync(1))
+    assert.strictEqual(f.category.balanceCents, 30)
+    assert.strictEqual(f.institution.syncDate.toUTC().toISO(), '2026-01-02T00:00:00.000Z')
+    assert.isFalse(f.institution.refreshing)
+  })
+
+  test('Institution and Account deletion unwrap balances and remove only the selected entity')
+    .with(['account', 'institution']).run(async ({ assert }, target) => {
+      const url = target === 'account' ? '/api/v1/institution/1/accounts/10'
+        : '/api/v1/institution/1'
+      routes.set(`delete ${url}`, async () => ({ body: { data: [{ id: 20, balance: '0.20' }] } }))
+      if (target === 'account') {
+        await f.institution.deleteAccount(f.account)
+        assert.lengthOf(f.institution.accounts, 0)
+        assert.lengthOf(f.store.accounts.institutions, 1)
+      } else {
+        await f.store.accounts.deleteInstitution(f.institution)
+        assert.lengthOf(f.store.accounts.institutions, 0)
+      }
+      assert.strictEqual(f.category.balanceCents, 20)
+    })
+
+  test('Institution deletion accepts an empty wrapped balance collection', async ({ assert }) => {
+    const balance = f.category.balanceCents
+    routes.set('delete /api/v1/institution/1', async () => ({ body: { data: [] } }))
+    await f.store.accounts.deleteInstitution(f.institution)
+    assert.lengthOf(f.store.accounts.institutions, 0)
+    assert.strictEqual(f.category.balanceCents, balance)
+  })
+
+  test('sync and deletion reject bare responses without applying financial or entity changes')
+    .with(['sync', 'account', 'institution']).run(async ({ assert }, target) => {
+      const before = f.category.balanceCents
+      const url = target === 'sync' ? '/api/v1/institution/1/accounts/1/transactions/sync'
+        : target === 'account' ? '/api/v1/institution/1/accounts/10' : '/api/v1/institution/1'
+      routes.set(`${target === 'sync' ? 'post' : 'delete'} ${url}`, async () => ({ body: [] }))
+      await assert.rejects(() => target === 'sync' ? f.institution.sync(1)
+        : target === 'account' ? f.institution.deleteAccount(f.account)
+          : f.store.accounts.deleteInstitution(f.institution))
+      assert.strictEqual(f.category.balanceCents, before)
+      assert.lengthOf(f.store.accounts.institutions, 1)
+      assert.strictEqual(f.institution.accounts[0], f.account)
+    })
+
   test('Institution updates unwrap returned names and account collections', async ({ assert }) => {
     routes.set('patch /api/v1/institution/1', async payload => {
       assert.deepEqual(payload, { name: 'Updated' })

@@ -682,7 +682,7 @@ class InstitutionController {
       user,
     },
     logger,
-  }: HttpContext): Promise<(AccountSyncResult | null)[]> {
+  }: HttpContext): Promise<ApiResponse<(AccountSyncResult | null)[]>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -707,7 +707,7 @@ class InstitutionController {
 
       await trx.commit();
 
-      return result;
+      return { data: result };
     }
     catch (error) {
       await trx.rollback();
@@ -723,7 +723,7 @@ class InstitutionController {
       user,
     },
     logger,
-  }: HttpContext): Promise<InstitutionSyncResponse | null> {
+  }: HttpContext): Promise<InstitutionSyncResponse> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -738,11 +738,11 @@ class InstitutionController {
 
       await trx.commit();
 
-      return {
+      return { data: {
         syncDate: institution.syncDate?.toISO() ?? '',
         accounts: [],
         categories: [],
-      };
+      } };
     }
     catch (error) {
       await trx.rollback();
@@ -871,7 +871,7 @@ class InstitutionController {
    
   public async deleteAccount(
     { request, auth: { user }, logger }: HttpContext,
-  ): Promise<CategoryBalanceProps[]> {
+  ): Promise<ApiResponse<CategoryBalanceProps[]>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -890,7 +890,7 @@ class InstitutionController {
 
       await trx.commit();
 
-      return result;
+      return { data: result };
     }
     catch (error) {
       await trx.rollback();
@@ -996,7 +996,7 @@ class InstitutionController {
    
   public async delete(
     { request, auth: { user }, logger }: HttpContext,
-  ): Promise<CategoryBalanceProps[]> {
+  ): Promise<ApiResponse<CategoryBalanceProps[]>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -1029,7 +1029,7 @@ class InstitutionController {
 
       await trx.commit();
 
-      return result;
+      return { data: result };
     }
     catch (error) {
       await trx.rollback();

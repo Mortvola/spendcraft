@@ -5,10 +5,10 @@ import { DateTime } from 'luxon';
 import Account from './Account';
 import {
   UnlinkedAccountProps, InstitutionProps, AccountBalanceProps, ErrorProps,
-  TrackingType, isDeleteAccountResponse, isLinkTokenData, LinkTokenResponse,
+  TrackingType, isDeleteAccountData, isLinkTokenData, LinkTokenResponse,
   InstitutionSyncResponse, InstitutionResponse, OfflineInstitutionResponse,
   AddOfflineAccountResponse, AddOfflineAccountRequest,
-  ApiResponse,
+  ApiResponse, DeleteAccountResponse,
 } from '../../common/ResponseTypes';
 import { AccountInterface, InstitutionInterface, StoreInterface } from './Types';
 import Plaid from './Plaid';
@@ -106,7 +106,8 @@ class Institution implements InstitutionInterface {
       `/api/v1/institution/${institutionId}/accounts/${this.id}/transactions/sync`);
 
     if (response.ok) {
-      const body = await response.body();
+      const { data: body } = await response.body();
+      if (!body) throw new Error('Invalid institution sync response');
 
       runInAction(() => {
         const { categories, syncDate } = body;
@@ -284,12 +285,14 @@ class Institution implements InstitutionInterface {
   }
 
   async deleteAccount(account: AccountInterface): Promise<void> {
-    const response = await Http.delete(`/api/v1/institution/${this.id}/accounts/${account.id}`);
+    const response = await Http.delete<DeleteAccountResponse>(
+      `/api/v1/institution/${this.id}/accounts/${account.id}`);
 
     if (response.ok) {
-      const body = await response.body();
+      const { data: body } = await response.body();
+      if (!isDeleteAccountData(body)) throw new Error('Invalid account deletion response');
 
-      if (isDeleteAccountResponse(body)) {
+      if (isDeleteAccountData(body)) {
         runInAction(() => {
           this.removeAccount(account);
 

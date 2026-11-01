@@ -281,7 +281,8 @@ test.group('Plaid sync characterization', (group) => {
         .taxes, taxes)
       const response = await client.get(`/api/v1/transaction/${transaction.id}`).loginAs(f.user)
       response.assertStatus(200)
-      assert.deepEqual(response.body().taxes.map((tax: { amount: string }) => tax.amount), taxes
+      assert.deepEqual(response.body().data.taxes.map((tax: { amount: string }) => tax.amount),
+        taxes
         .map(tax => tax.amount))
     })
 

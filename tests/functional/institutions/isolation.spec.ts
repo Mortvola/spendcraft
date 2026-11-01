@@ -373,6 +373,9 @@ test.group('Institution isolation', (group) => {
       .id}/accounts/${fixture.foreign.account.id}/transactions/sync`)
       .accept('json').loginAs(actor === 'owner' ? fixture.own.user : fixture.shared)
     response.assertStatus(200)
+    assert.deepEqual(Object.keys(response.body()), ['data'])
+    assert.deepEqual(response.body().data.accounts, [])
+    assert.deepEqual(response.body().data.categories, [])
     assert.deepEqual(fake.calls, [{ method: 'syncTransactions', resource: fixture.own.institution
       .id }])
     assert.equal((await Institution.findOrFail(fixture.own.institution.id)).cursor, 'test-cursor')
@@ -388,6 +391,7 @@ test.group('Institution isolation', (group) => {
     const response = await client.post('/api/v1/institutions/sync').accept('json').loginAs(fixture
       .shared)
     response.assertStatus(200)
+    assert.deepEqual(response.body(), { data: [] })
     assert.deepEqual(fake.calls, [{ method: 'syncTransactions', resource: fixture.own.institution
       .id }])
     assert.equal((await Institution.findOrFail(fixture.own.institution.id)).cursor, 'test-cursor')
@@ -463,7 +467,8 @@ test.group('Institution isolation', (group) => {
           parseMoneyCents(encodeMonetaryAmount(sign * 0.1)))
         assert.lengthOf(await Account.query().where('institutionId', f.institution.id), 0)
       }
-      assert.strictEqual(response.body().find((row: { id: number }) => row.id === f.category.id)
+      assert.strictEqual(response.body().data.find((row: { id: number }) => row.id === f.category
+        .id)
         .balance, sign > 0 ? '0.10' : '-0.10')
       assert.isNull(await Account.find(f.account.id))
       assert.deepEqual(await db.from('categories').where('id', fixture.foreign.category.id)

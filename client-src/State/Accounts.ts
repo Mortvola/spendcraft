@@ -7,7 +7,7 @@ import Plaid from './Plaid';
 import {
   AccountBalanceProps, AddInstitutionProps, AddInstitutionResponse, AddOfflineInstitutionRequest,
   ApiResponse,
-  ErrorProps, isDeleteInstitutionResponse,
+  ErrorProps, isDeleteInstitutionData, DeleteInstitutionResponse,
   isInstitutionsResponse, isLinkTokenData, LinkTokenResponse, TrackingType,
 } from '../../common/ResponseTypes';
 import {
@@ -254,12 +254,14 @@ class Accounts implements AccountsInterface {
   }
 
   async deleteInstitution(institution: InstitutionInterface): Promise<void> {
-    const response = await Http.delete(`/api/v1/institution/${institution.id}`);
+    const response = await Http.delete<DeleteInstitutionResponse>(
+      `/api/v1/institution/${institution.id}`);
 
     if (response.ok) {
-      const body = await response.body();
+      const { data: body } = await response.body();
+      if (!isDeleteInstitutionData(body)) throw new Error('Invalid institution deletion response');
 
-      if (isDeleteInstitutionResponse(body)) {
+      if (isDeleteInstitutionData(body)) {
         runInAction(() => {
           const index = this.institutions.findIndex((i) => i.id === institution.id);
 

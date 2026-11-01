@@ -595,7 +595,7 @@ for (const failure of [undefined, 'budget', 'cascade']) {
       assert.equal(events.at(-1), 'rollback'); assert.notInclude(events, 'commit')
       if (failure === 'budget') assert.notInclude(events, 'institution')
     } else {
-      assert.strictEqual(await operation, balances)
+      assert.strictEqual((await operation).data, balances)
       assert.deepEqual(events, ['acquired', 'institution', 'account', 'cascade', 'commit'])
     }
   })
@@ -658,7 +658,7 @@ for (const scenario of ['offline', 'online', 'budget-failure', 'remote-failure',
       if (scenario === 'budget-failure') assert.notInclude(events, 'institution')
       if (scenario === 'remote-failure') assert.notInclude(events, 'cascade')
     } else {
-      assert.strictEqual(await operation, balances)
+      assert.strictEqual((await operation).data, balances)
       assert.deepEqual(events, ['acquired', 'institution', 'accounts', ...(scenario === 'online' ? [
         'remote'] : []), 'cascade', 'delete', 'commit'])
     }
@@ -778,7 +778,7 @@ for (const scenario of ['success', 'missing', 'save-failure']) {
     assert.deepEqual(events, [])
     release()
     if (scenario === 'success') {
-      assert.equal((await operation).name, 'Renamed')
+      assert.equal((await operation).data.name, 'Renamed')
       assert.deepEqual(events, ['acquired', 'institution', 'save', 'commit'])
     } else {
       await assert.rejects(() => operation, scenario === 'missing' ? 'not found' : 'save failed')
