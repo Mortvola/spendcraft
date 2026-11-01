@@ -684,6 +684,29 @@ export * from ${source('common/ResponseTypes.ts')};
     }
   })
 
+  test('User and Account mutations map validated error envelopes without changing state').with([
+    { message: 'Required', field: 'email', rule: 'required' },
+    { message: 'Request rejected', code: 'E_REQUEST_REJECTED' },
+  ]).run(async ({ assert }, error) => {
+    const user = f.store.user
+    const before = { username: user.username, email: user.email, pendingEmail: user.pendingEmail,
+      balance: f.account.balanceCents }
+    const expected = [{ field: error.field ?? '', message: error.message,
+      rule: error.rule ?? error.code ?? '' }]
+    for (const [method, path, run] of [
+      ['patch', '/api/v1/user', () => user.update('new@example.com')],
+      ['post', '/api/v1/user/pending-email/resend', () => user.resendVerificationLink()],
+      ['delete', '/api/v1/user/pending-email', () => user.deletePendingEmail()],
+      ['post', '/api/v1/account/10/transactions', () => f.account.addTransaction({
+        amountCents: parseMoneyCents('1.00'), categories: [] })],
+    ]) {
+      routes.set(`${method} ${path}`, async () => ({ ok: false, body: { errors: [error] } }))
+      assert.deepEqual(await run(), expected)
+      assert.deepEqual({ username: user.username, email: user.email,
+        pendingEmail: user.pendingEmail, balance: f.account.balanceCents }, before)
+    }
+  })
+
   test('Category CREATE/PATCH format cents while keeping percentages numeric').with([
     { operation: 'create', fundingAmountCents: 1235, expected: '12.35' },
     { operation: 'patch', fundingAmountCents: 1235, expected: '12.35' },

@@ -1,5 +1,5 @@
 import { test } from '@japa/runner'
-import { isApiErrorArray, type ApiError } from '../../../common/ResponseTypes.ts'
+import { isApiErrorArray, isErrorResponse, type ApiError } from '../../../common/ResponseTypes.ts'
 import { toFormErrors } from '../../../client-src/apiErrors.ts'
 
 const errors: ApiError[] = [
@@ -43,4 +43,24 @@ test('validation rules take precedence over application codes', ({ assert }) => 
     code: 'INVALID_NAME' }]), [
     { field: 'name', message: 'Required', rule: 'required' },
   ])
+})
+
+test('error response guard accepts validation, general, application and empty errors', ({
+  assert }) => {
+  for (const value of [[], errors, ...errors.map(error => [error])]) {
+    const response = { errors: value }
+    assert.isTrue(isErrorResponse(response))
+    if (!isErrorResponse(response)) throw new Error('Expected valid error response')
+    assert.strictEqual(response.errors, value)
+  }
+})
+
+test('error response guard rejects malformed envelopes and every invalid entry').with([
+  null, undefined, false, 1, 'error', [], {}, { errors: null }, { errors: {} },
+  { errors: 'error' }, { errors: [null] }, { errors: [{}] },
+  { errors: [{ message: 1 }] }, { errors: [{ detail: 'Legacy error' }] },
+  { errors: [errors[0], { message: 'Invalid', field: 1 }] },
+  { errors: [errors[0], null] },
+]).run(({ assert }, value) => {
+  assert.isFalse(isErrorResponse(value))
 })

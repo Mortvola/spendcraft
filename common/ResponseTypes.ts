@@ -405,7 +405,7 @@ export const isErrorPropsArray = (r: unknown): r is ErrorProps[] => (
 )
 
 interface ErrorResponse {
-  errors: ErrorProps[];
+  errors: ApiError[];
 }
 
 export enum RequestErrorCode {
@@ -442,8 +442,9 @@ export const isApiErrorArray = (value: unknown): value is ApiError[] => (
   })
 )
 
-export const isErrorResponse = (r:  | unknown): r is ErrorResponse => (
-  (r as ErrorResponse).errors !== undefined
+export const isErrorResponse = (value: unknown): value is ErrorResponse => (
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+  && 'errors' in value && isApiErrorArray(value.errors)
 );
 
 export interface UpdateTransactionResponse {

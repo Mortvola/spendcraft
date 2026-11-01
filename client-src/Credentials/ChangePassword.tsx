@@ -1,3 +1,4 @@
+import { toFormErrors } from '../apiErrors';
 import React from 'react';
 import {
   Form, Formik, FormikHelpers, FormikState,
@@ -47,7 +48,7 @@ const ChangePassword: React.FC<PropsType> = ({
       const body = await response.body();
 
       if (isErrorResponse(body)) {
-        setFormErrors(setErrors, body.errors);
+        setFormErrors(setErrors, toFormErrors(body.errors));
       }
     }
   }

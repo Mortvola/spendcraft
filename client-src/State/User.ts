@@ -1,3 +1,4 @@
+import { toFormErrors } from '../apiErrors';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import {
@@ -62,7 +63,7 @@ class User implements UserInterface {
     }
 
     if (isErrorResponse(body)) {
-      return body.errors;
+      return toFormErrors(body.errors);
     }
 
     throw new Error('invalid response');
@@ -79,7 +80,7 @@ class User implements UserInterface {
     }
 
     if (isErrorResponse(body)) {
-      return body.errors;
+      return toFormErrors(body.errors);
     }
 
     throw new Error('invalid response');
@@ -103,7 +104,7 @@ class User implements UserInterface {
     }
 
     if (isErrorResponse(body)) {
-      return body.errors;
+      return toFormErrors(body.errors);
     }
 
     throw new Error('invalid response');

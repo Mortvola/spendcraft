@@ -1,3 +1,4 @@
+import { toFormErrors } from '../apiErrors';
 import { formatMoneyCents, parseMoneyCents, addMoneyCents, type MoneyCents } from
   '../../common/moneyCents';
 import { observable, runInAction } from 'mobx';
@@ -237,7 +238,7 @@ class Account implements AccountInterface {
       const body = await response.body()
 
       if (isErrorResponse(body)) {
-        return body.errors;
+        return toFormErrors(body.errors);
       }
     }
 
