@@ -42,8 +42,8 @@ test.group('Deprecated BalanceHistory production boundary (no database)', () => 
     })
     const result = await method({ request: { params: () => ({ acctId: '10' }) }, auth: { user: {
       budgetId: 1 } } })
-    assert.equal(queries, 1); assert.equal(result[0].balance, '100.00')
+    assert.equal(queries, 1); assert.equal(result.data[0].balance, '100.00')
     assert.equal(Number(formatMoneyCents(account.balanceCents)), 100)
-    assert.notProperty(result[0], 'id')
+    assert.notProperty(result.data[0], 'id')
   })
 })

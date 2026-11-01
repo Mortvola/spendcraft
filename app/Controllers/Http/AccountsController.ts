@@ -10,7 +10,7 @@ import Transaction from '#app/Models/Transaction';
 import {
   TransactionsResponse, CategoryBalanceProps, TransactionProps, TransactionType,
     AccountBalanceProps, TrackingType,
-  ApiResponse,
+  ApiResponse, AccountBalancesResponse,
   AddStatementResponse, AddStatementData, StatementResponse,
   StatementProps,
   AccountType,
@@ -104,8 +104,8 @@ export default class AccountsController {
     };
   }
 
-  public async balances({ request, auth: { user } }: HttpContext): Promise<{ date: string,
-    balance: string }[]> {
+  public async balances({ request, auth: { user } }: HttpContext):
+    Promise<AccountBalancesResponse> {
     if (!user) {
       throw new Error('user not defined');
     }
@@ -161,10 +161,10 @@ export default class AccountsController {
 
     const results = await db.rawQuery(query) as { rows: { date: string, balance: string}[] }
 
-    return results.rows.map((result) => ({
+    return { data: results.rows.map((result) => ({
       date: result.date,
       balance: encodeMonetaryAmount(result.balance),
-    }));
+    })) };
   }
 
   public async addTransaction({

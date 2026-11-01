@@ -122,7 +122,7 @@ direction`)
           .loginAs(user)
         baseline.assertStatus(200)
         const rows: { id?: number, categoryId?: number, balance?: string, amount?: string }[] =
-          aggregate === 'balances' ? baseline.body() : baseline.body().data
+          baseline.body().data
         const first = rows.find((row) => (row.id ?? row.categoryId) === own.first.id)
         const second = rows.find((row) => (row.id ?? row.categoryId) === own.second.id)
         assert.equal(aggregate === 'balances' ? first?.balance : first?.amount, aggregate ===
@@ -175,9 +175,9 @@ direction`)
       const response = await client.get(path('balances')).qs({ date: '2025-03-01' })
         .loginAs(a.user)
       response.assertStatus(200)
-      assert.deepEqual(response.body().find((row: { id: number }) => row.id === a.first.id),
+      assert.deepEqual(response.body().data.find((row: { id: number }) => row.id === a.first.id),
         { id: a.first.id, balance: sign > 0 ? '0.10' : '-0.10' })
-      assert.deepEqual(response.body().find((row: { id: number }) => row.id === a.second.id),
+      assert.deepEqual(response.body().data.find((row: { id: number }) => row.id === a.second.id),
         { id: a.second.id, balance: sign > 0 ? '-0.10' : '0.10' })
       assert.deepEqual(await state(), before)
     })
@@ -235,7 +235,8 @@ direction`)
       const before = await state()
       const response = await client.get('/api/v1/bills').loginAs(a.shared)
       response.assertStatus(200)
-      assert.sameDeepMembers(response.body(), [{ id: a.first.id, debits: '-0.30' },
+      assert.deepEqual(Object.keys(response.body()), ['data'])
+      assert.sameDeepMembers(response.body().data, [{ id: a.first.id, debits: '-0.30' },
         { id: a.second.id, debits: null }])
       assert.deepEqual(await state(), before)
     })
@@ -252,7 +253,7 @@ direction`)
     // also enforce ownership when the exclusion is its only matching condition.
     const balances = await Category.balances(a.budget, '2025-03-01', historical.id)
     assert.deepEqual(balances.map((row) => ({ id: row.id,
-      balance: formatMoneyCents(row.balanceCents) })), baseline.body())
+      balance: formatMoneyCents(row.balanceCents) })), baseline.body().data)
     assert.deepEqual(await state(), before)
   })
 
@@ -266,7 +267,7 @@ splits')
       const query = { date: '2025-03-01', id: transaction.id }
       const baseline = await client.get(path('balances')).qs(query).accept('json').loginAs(a.user)
       baseline.assertStatus(200)
-      const rows: { id: number, balance: string }[] = baseline.body()
+      const rows: { id: number, balance: string }[] = baseline.body().data
       assert.equal(rows.find((row) => row.id === a.first.id)?.balance, encodeMonetaryAmount(scenario
         .balances[0]))
       assert.equal(rows.find((row) => row.id === a.second.id)?.balance, encodeMonetaryAmount(

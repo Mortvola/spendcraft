@@ -1284,23 +1284,43 @@ formats', async ({ assert }) => {
 
   test('Overview bill reloads decode cents before replacing cached bills', async ({ assert }) => {
     const response = [{ id: 20, debits: '-0.30' }]
-    routes.set('get /api/v1/bills', async () => ({ body: response }))
+    routes.set('get /api/v1/bills', async () => ({ body: { data: response } }))
     await f.store.overview.load()
     assert.strictEqual(f.store.overview.bills[0].debitsCents, -30)
     assert.strictEqual(f.store.overview.bills[0].category, f.category)
     assert.strictEqual(response[0].debits, '-0.30')
     assert.isTrue(f.store.overview.initialized)
-    routes.set('get /api/v1/bills', async () => ({ body: [{ id: 20, debits: '0.10' }] }))
+    routes.set('get /api/v1/bills', async () => ({ body: { data: [{ id: 20, debits: '0.10' }] } }))
     await f.store.overview.load()
     assert.strictEqual(f.store.overview.bills[0].debitsCents, 10)
-    routes.set('get /api/v1/bills', async () => ({ body: [{ id: 20, debits: '0.20' }, { id: 20,
-      debits: '1.2' }] }))
+    routes.set('get /api/v1/bills', async () => ({ body: {
+      data: [{ id: 20, debits: '0.20' }, { id: 20,
+      debits: '1.2' }] } }))
     await assert.rejects(() => f.store.overview.load())
     assert.lengthOf(f.store.overview.bills, 1)
     assert.strictEqual(f.store.overview.bills[0].debitsCents, 10)
-    routes.set('get /api/v1/bills', async () => ({ body: [{ id: 20, debits: null }] }))
+    routes.set('get /api/v1/bills', async () => ({ body: { data: [{ id: 20, debits: null }] } }))
     await f.store.overview.load()
     assert.isNull(f.store.overview.bills[0].debitsCents)
+  })
+
+  test('bills accept an empty wrapper and reject a bare collection', async ({ assert }) => {
+    routes.set('get /api/v1/bills', async () => ({ body: { data: [] } }))
+    await f.store.overview.load()
+    assert.lengthOf(f.store.overview.bills, 0)
+    assert.isTrue(f.store.overview.initialized)
+    routes.set('get /api/v1/bills', async () => ({ body: [{ id: 20, debits: '0.10' }] }))
+    await assert.rejects(() => f.store.overview.load(), 'Invalid bills response')
+    assert.lengthOf(f.store.overview.bills, 0)
+  })
+
+  test('account chart rejects a bare collection without changing cached state', async ({
+    assert }) => {
+    routes.set('get /api/v1/account/10/balances', async () => ({ body: [] }))
+    await assert.rejects(() => f.store.accountBalanceSeries.load(f.account),
+      'Invalid account chart response')
+    assert.isNull(f.store.accountBalanceSeries.account)
+    assert.lengthOf(f.store.accountBalanceSeries.points, 0)
   })
 
   test('Category balance strings decode before updating cached balances', ({ assert }) => {
@@ -1758,8 +1778,9 @@ formats', async ({ assert }) => {
 
   test('read-only transaction chart loads points without observation IDs or Account mutation',
     async ({ assert }) => {
-    routes.set('get /api/v1/account/10/balances', async () => ({ body: [{ date: '2025-02-10',
-      balance: '95.00' }] }))
+    routes.set('get /api/v1/account/10/balances', async () => ({ body: {
+      data: [{ date: '2025-02-10',
+      balance: '95.00' }] } }))
     await f.store.accountBalanceSeries.load(f.account)
     const point = f.store.accountBalanceSeries.points[0]
     assert.equal(point.balanceCents, 9500); assert.equal(point.date.toISODate(), '2025-02-10')
@@ -1775,7 +1796,7 @@ formats', async ({ assert }) => {
     async ({ assert }) => {
     const source = [{ date: '2025-02-10', balance: '90071992547409.91' }, { date: '2025-02-09',
       balance: '-0.30' }]
-    routes.set('get /api/v1/account/10/balances', async () => ({ body: source }))
+    routes.set('get /api/v1/account/10/balances', async () => ({ body: { data: source } }))
     await f.store.accountBalanceSeries.load(f.account)
     assert.deepEqual(f.store.accountBalanceSeries.points.map(p => p.balanceCents), [Number
       .MAX_SAFE_INTEGER, -30])
@@ -1788,14 +1809,15 @@ formats', async ({ assert }) => {
       balance: '0.00', pendingBalance: '0.00', plaidBalance: null, startDate: '2025-01-01',
         rate: 0 })
     for (const balance of [1, '1.2', '-0.00', 'Infinity', '90071992547409.92']) {
-      routes.set('get /api/v1/account/11/balances', async () => ({ body: [{ date: '2025-02-10',
-        balance: '0.10' }, { date: '2025-02-09', balance }] }))
+      routes.set('get /api/v1/account/11/balances', async () => ({ body: {
+      data: [{ date: '2025-02-10',
+        balance: '0.10' }, { date: '2025-02-09', balance }] } }))
       await assert.rejects(() => f.store.accountBalanceSeries.load(account))
       assert.strictEqual(f.store.accountBalanceSeries.points[0].balanceCents, Number
         .MAX_SAFE_INTEGER)
       assert.strictEqual(f.store.accountBalanceSeries.account, f.account)
     }
-    routes.set('get /api/v1/account/11/balances', async () => ({ body: [] }))
+    routes.set('get /api/v1/account/11/balances', async () => ({ body: { data: [] } }))
     await f.store.accountBalanceSeries.load(account)
     assert.lengthOf(f.store.accountBalanceSeries.points, 0)
     assert.strictEqual(f.store.accountBalanceSeries.account, account)
@@ -1804,7 +1826,7 @@ formats', async ({ assert }) => {
   test('rejected or malformed chart request leaves cache and Account unchanged')
     .with(['rejected', 'malformed']).run(async ({ assert }, result) => {
       routes.set('get /api/v1/account/10/balances', async () => ({ ok: result !== 'rejected',
-        body: [null] }))
+        body: { data: [null] } }))
       await assert.rejects(() => f.store.accountBalanceSeries.load(f.account))
       assert.lengthOf(f.store.accountBalanceSeries.points, 0)
       assert.isNull(f.store.accountBalanceSeries.account)

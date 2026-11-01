@@ -80,8 +80,9 @@ test.group('BalanceHistory runtime deprecation (prepared)', () => {
     assert.equal((await Account.findOrFail(f.account.id)).balanceCents, parseMoneyCents('110.00'))
     const chart = await client.get(`/api/v1/account/${f.account.id}/balances`).loginAs(f.user)
     chart.assertStatus(200)
-    assert.strictEqual(chart.body()[0].balance, '110.00')
-    assert.notProperty(chart.body()[0], 'id')
+    assert.deepEqual(Object.keys(chart.body()), ['data'])
+    assert.strictEqual(chart.body().data[0].balance, '110.00')
+    assert.notProperty(chart.body().data[0], 'id')
     const target = await f.account.related('accountTransactions').query().whereHas('transaction', (
       query) => query.where('type', 5)).firstOrFail()
     ;(await client.patch(`/api/v1/transaction/${target.transactionId}`).json(transactionRequest({

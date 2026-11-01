@@ -862,3 +862,7 @@ export interface UpdateLoanRequest {
   startDate: string;
   startingBalance: DecimalMoneyString;
 }
+
+export type BillsResponse = ApiResponse<BillProps[]>;
+export type CategoryBalancesResponse = ApiResponse<CategoryBalanceProps[]>;
+export type AccountBalancesResponse = ApiResponse<AccountBalancePoint[]>;

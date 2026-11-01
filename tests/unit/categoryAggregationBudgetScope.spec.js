@@ -240,9 +240,10 @@ async function billTotals(values) {
     compilerOptions: { target: ts.ScriptTarget.ES2022 },
   }).outputText, { DateTime, CategoryType, parseMoneyCents, formatMoneyCents,
     Category: { query: () => ({ whereHas() { return this }, where: async () => bills }) } })
-  return run({ auth: { user: { related: () => ({ query: () => ({
+  const response = await run({ auth: { user: { related: () => ({ query: () => ({
     firstOrFail: async () => budget,
   }) }) } } })
+  return response.data
 }
 
 test('Bill debit totals format exact cents and preserve nulls, IDs and empty results',

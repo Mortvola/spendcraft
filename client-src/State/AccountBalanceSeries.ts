@@ -2,7 +2,7 @@ import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import { parseMoneyCents, type MoneyCents } from '../../common/moneyCents';
 import { DateTime } from 'luxon';
-import { isAccountBalanceSeries } from '../../common/ResponseTypes';
+import { isAccountBalanceSeries, type AccountBalancesResponse } from '../../common/ResponseTypes';
 import { AccountBalanceSeriesInterface, AccountInterface } from './Types';
 
 // Read-only chart data derived by the server from existing Transactions.
@@ -16,9 +16,10 @@ class AccountBalanceSeries implements AccountBalanceSeriesInterface {
 
   async load(account: AccountInterface): Promise<void> {
     if (account === this.account) return;
-    const response = await Http.get(`/api/v1/account/${account.id}/balances`);
+    const response = await Http.get<AccountBalancesResponse>(
+      `/api/v1/account/${account.id}/balances`);
     if (!response.ok) throw new Error('Unable to load account chart');
-    const body = await response.body();
+    const { data: body } = await response.body();
     if (!isAccountBalanceSeries(body)) throw new Error('Invalid account chart response');
     const points = body.map((point) => ({ date: DateTime.fromISO(point.date),
       balanceCents: parseMoneyCents(point.balance) }));

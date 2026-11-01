@@ -18,7 +18,8 @@ import MoneyCentsAmount from '../MoneyCentsAmount';
 import Transaction from '../State/Transaction';
 import { type CategoryBalanceInterface } from '../State/Types';
 import { useStores } from '../State/Store';
-import { isCategoryTreeBalanceResponse, TransactionType } from '../../common/ResponseTypes';
+import { isCategoryTreeBalanceResponse, CategoryBalancesResponse, TransactionType } from
+  '../../common/ResponseTypes';
 
 interface PropsType {
   transaction?: Transaction,
@@ -49,12 +50,12 @@ const RebalanceDialog: React.FC<PropsType & ModalProps> = ({
       url.search = (new URLSearchParams(params)).toString();
 
       (async () => {
-        const response = await Http.get(url.toString());
+        const response = await Http.get<CategoryBalancesResponse>(url.toString());
 
         if (response.ok) {
-          const body = await response.body();
+          const { data: body } = await response.body();
 
-          if (isCategoryTreeBalanceResponse(body)) {
+          if (Array.isArray(body) && (body.length === 0 || isCategoryTreeBalanceResponse(body))) {
             setBalances(body.map((row) => ({ id: row.id, balanceCents: parseMoneyCents(row
               .balance) })));
           }

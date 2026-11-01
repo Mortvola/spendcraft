@@ -802,7 +802,7 @@ class CategoriesController {
     auth: {
       user,
     },
-  }: HttpContext): Promise<CategoryBalanceProps[]> {
+  }: HttpContext): Promise<ApiResponse<CategoryBalanceProps[]>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -817,7 +817,8 @@ class CategoriesController {
 
     const balances = await Category.balances(budget, date, id !== undefined ? parseInt(id,
       10) : id);
-    return balances.map((row) => ({ id: row.id, balance: formatMoneyCents(row.balanceCents) }));
+    return { data: balances.map((row) => ({ id: row.id,
+      balance: formatMoneyCents(row.balanceCents) })) };
   }
 
   static getGoalDate(goalDate?: DateTime | null, recurrence = 1): DateTime | null {
@@ -841,7 +842,7 @@ class CategoriesController {
     auth: {
       user,
     },
-  }: HttpContext): Promise<BillProps[]> {
+  }: HttpContext): Promise<ApiResponse<BillProps[]>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -875,11 +876,11 @@ class CategoriesController {
       bill.$extras.debits = debits[0].$extras.debits;
     }
 
-    return bills.map<BillProps>((bill) => ({
+    return { data: bills.map<BillProps>((bill) => ({
       id: bill.id,
       debits: bill.$extras.debits !== null
         ? formatMoneyCents(parseMoneyCents(bill.$extras.debits ?? '0.00')) : null,
-    }));
+    })) };
   }
 }
 

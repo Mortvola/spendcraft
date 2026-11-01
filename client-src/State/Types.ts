@@ -11,7 +11,6 @@ import {
   AccountBalanceProps,
   CategoryBalanceProps,
   AccountProps,
-  BillProps,
   StatementProps,
   GroupType,
   UpdateStatementProps,
@@ -720,7 +719,7 @@ export interface WebhookLogInterface {
   };
 }
 
-export type BillsResponse = BillProps[]
+export type { BillsResponse } from '../../common/ResponseTypes';
 
 export interface BillInterface {
   debitsCents: MoneyCents | null;

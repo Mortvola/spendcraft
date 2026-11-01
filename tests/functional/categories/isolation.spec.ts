@@ -282,7 +282,8 @@ test.group('Group/category/transfer isolation', (group) => {
     const balances = await client.get(`/api/v1/category-balances?date=2025-03-01&id=${fixture.own
       .transaction.id}`).accept('json').loginAs(fixture.shared)
     balances.assertStatus(200)
-    assert.deepEqual(balances.body().find((row: { id: number }) => row.id === fixture.own.category
+    assert.deepEqual(balances.body().data.find((row: { id: number }) => row.id === fixture.own
+      .category
       .id), { id: fixture.own.category.id, balance: '110.00' })
     const created = await client.post('/api/v1/category-transfer').json(categoryTransferRequest(
       transferBody([fixture.own.category.id, fixture.own.otherCategory.id], [fixture.own.category
