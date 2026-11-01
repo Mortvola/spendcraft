@@ -73,7 +73,7 @@ test('Category report preserves filters and counts while sorting and displaying 
     Http: { get: async url => {
       assert.strictEqual(url,
         '/api/v1/reports/category?startDate=2026-01-01&endDate=2026-01-31&c=10')
-      return { ok: true, body: async () => response }
+      return { ok: true, body: async () => ({ data: response }) }
     } },
   })
   const tree = Report()

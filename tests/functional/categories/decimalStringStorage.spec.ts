@@ -463,11 +463,12 @@ test.group('Decimal-string SQL membership and report compatibility', () => {
       const response = await client.get(`/api/v1/reports/${report}`).qs({ c: f.category.id })
         .loginAs(f.user)
       response.assertStatus(200)
-      if (report === 'income-vs-expenses') assert.deepEqual(response.body(), [['2025-02', '0.00',
+      if (report === 'income-vs-expenses') assert
+        .deepEqual(response.body().data, [['2025-02', '0.00',
         '0.00', '0.00']])
-      if (report === 'category') { assert.equal(response.body()[0].sum, '0.30'); assert.equal(
-        response.body()[0].count, 2) }
-      if (report === 'funding-history') assert.deepEqual(response.body().find((row: {
+      if (report === 'category') { assert.equal(response.body().data[0].sum, '0.30'); assert.equal(
+        response.body().data[0].count, 2) }
+      if (report === 'funding-history') assert.deepEqual(response.body().data.find((row: {
         categoryId: number }) => row.categoryId === f.category.id).history,
         [{ year: 2025, month: 2, amount: '0.30' }])
       assert.deepEqual(await snapshot(), before)

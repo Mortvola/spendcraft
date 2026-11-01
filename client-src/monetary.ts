@@ -1,8 +1,8 @@
 import { addMoneyCents, moneyCentsFromInteger, formatMoneyCents, parseMoneyCents,
   type MoneyCents } from '../common/moneyCents.js';
 import type { CategoryReportRow, CategoryTransferProps, CategoryTransferRequest, DecimalMoneyString,
-  FundingRuleResponse, FundingHistoryReportResponse, FundingHistoryReportRow,
-  IncomeVsExpensesReportResponse, NetworthReportResponse, PayeeReportRow } from
+  FundingRuleResponse, FundingHistoryReportData, FundingHistoryReportRow,
+  IncomeVsExpensesReportData, NetworthReportData, PayeeReportRow } from
   '../common/ResponseTypes.js';
 
 export type CentFundingRule = { id?: number; categoryId: number } & (
@@ -39,7 +39,7 @@ export type FundingHistoryCentsRow = Omit<FundingHistoryReportRow, 'history'> & 
   history: FundingHistoryCentsItem[] | null };
 
 export function decodeFundingHistoryReport(
-  rows: FundingHistoryReportResponse): FundingHistoryCentsRow[] {
+  rows: FundingHistoryReportData): FundingHistoryCentsRow[] {
   return rows.map(row => ({ ...row, history: row.history === null ? null : row.history.map(({
     amount, ...entry }) => ({
     ...entry, amountCents: parseMoneyCents(amount),
@@ -63,7 +63,7 @@ export type IncomeVsExpensesCentsRow = [month: string, incomeCents: MoneyCents,
   expensesCents: MoneyCents, netCents: MoneyCents];
 
 export function decodeIncomeVsExpensesReport(
-  rows: IncomeVsExpensesReportResponse): IncomeVsExpensesCentsRow[] {
+  rows: IncomeVsExpensesReportData): IncomeVsExpensesCentsRow[] {
   return rows.map(([month, income, expenses, net]) => [month, parseMoneyCents(income),
     parseMoneyCents(expenses), parseMoneyCents(net)]);
 }
@@ -82,7 +82,7 @@ export function decodePayeeReport(rows: readonly PayeeReportRow[]): PayeeCentsRe
 
 export type NetworthCentsReport = (string | MoneyCents)[][];
 
-export function decodeNetworthReport(rows: NetworthReportResponse): NetworthCentsReport {
+export function decodeNetworthReport(rows: NetworthReportData): NetworthCentsReport {
   return rows.map((row, index) => row.map((cell, column) => index === 0 ||
     column === 0 ? cell : parseMoneyCents(cell)));
 }

@@ -692,7 +692,7 @@ export const isDeleteAccountData = (r: unknown): r is CategoryBalanceProps[] => 
 )
 
 /** Header row and dates are text; subsequent numeric columns are monetary strings. */
-export type NetworthReportResponse = string[][];
+export type NetworthReportData = string[][];
 
 export interface PayeeReportRow {
   rowNumber: string;
@@ -710,7 +710,7 @@ export interface CategoryReportRow {
   count: number;
 }
 
-export type IncomeVsExpensesReportResponse = [string, DecimalMoneyString, DecimalMoneyString,
+export type IncomeVsExpensesReportData = [string, DecimalMoneyString, DecimalMoneyString,
   DecimalMoneyString][];
 
 export interface FundingHistoryReportRow {
@@ -722,8 +722,18 @@ export interface FundingHistoryReportRow {
   history: { year: number, month: number, amount: DecimalMoneyString }[] | null;
 }
 
-export type FundingHistoryReportResponse = FundingHistoryReportRow[];
-export type BudgetProgressReportResponse = [string, DecimalMoneyString, number[]][];
+export type FundingHistoryReportData = FundingHistoryReportRow[];
+export type BudgetProgressReportData = [string, DecimalMoneyString, number[]][];
+
+export type NetworthReportResponse = ApiResponse<NetworthReportData>;
+export type PayeeReportResponse = ApiResponse<PayeeReportRow[]>;
+export type CategoryReportResponse = ApiResponse<CategoryReportRow[]>;
+export type IncomeVsExpensesReportResponse = ApiResponse<IncomeVsExpensesReportData>;
+export type FundingHistoryReportResponse = ApiResponse<FundingHistoryReportData>;
+export type BudgetProgressReportResponse = ApiResponse<BudgetProgressReportData>;
+export type ReportResponse = ApiResponse<NetworthReportData | PayeeReportRow[] |
+  CategoryReportRow[] | IncomeVsExpensesReportData | FundingHistoryReportData |
+  BudgetProgressReportData>;
 
 // export enum PendingQueryFlag {
 //   NoPending = 0,
@@ -813,7 +823,7 @@ export interface TaxCategoriesProps {
 }
 
 /** Validate the row-based net worth report returned by the API. */
-export const isNetworthReport = (value: unknown): value is NetworthReportResponse => (
+export const isNetworthReport = (value: unknown): value is NetworthReportData => (
   Array.isArray(value)
   && value.every((row: unknown) => (
     Array.isArray(row)

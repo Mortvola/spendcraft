@@ -59,8 +59,8 @@ test.group('Net-worth history independence', (group) => {
       history: history.map((row) => ({ date: row.date.toISODate(), balance: row.balance })),
       transactions: transactions.map((row) => ({ date: row.transaction.date.toISODate(),
          amount: Number(formatMoneyCents(row.amountCents)), type: row.transaction.type })),
-      report: response.body() }))
-    return response.body()
+      report: response.body().data }))
+    return response.body().data
   }
 
   test('fractional transaction and Statement histories retain exact cents through gaps')
@@ -87,7 +87,7 @@ test.group('Net-worth history independence', (group) => {
       const before = await db.from('accounts').orderBy('id')
       const response = await client.get('/api/v1/reports/networth').loginAs(f.user)
       response.assertStatus(200)
-      const body: string[][] = response.body()
+      const body: string[][] = response.body().data
       assert.sameMembers(body[0], ['date', f.account.name, statementAccount.name])
       const cashColumn = body[0].indexOf(f.account.name)
       const statementColumn = body[0].indexOf(statementAccount.name)
@@ -183,7 +183,7 @@ test.group('Net-worth history independence', (group) => {
     await movement(f, f.account.startDate, 100, TransactionType.STARTING_BALANCE)
     const response = await client.get('/api/v1/reports/networth').accept('json').loginAs(f.user)
     response.assertStatus(200)
-    assert.deepEqual(response.body(), [['date', 'Transaction account'], [f.account.startDate
+    assert.deepEqual(response.body().data, [['date', 'Transaction account'], [f.account.startDate
       .toISODate(), '100.00']])
   })
 

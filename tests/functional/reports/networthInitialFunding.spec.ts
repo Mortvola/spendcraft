@@ -59,8 +59,8 @@ test.group('Net-worth opening snapshots', (group) => {
       transactions: associations.map((row) => ({ amount: Number(formatMoneyCents(
         row.amountCents)), date: row.transaction.date
         .toISODate(), type: row.transaction.type })),
-      report: status === 200 ? response.body() : null }))
-    return response.body()
+      report: status === 200 ? response.body().data : null }))
+    return response.body().data
   }
 
   test('Initial Funding provides signed opening snapshots; zero provides no date')
@@ -164,7 +164,7 @@ test.group('Net-worth opening snapshots', (group) => {
     await f.account.delete()
     const response = await client.get('/api/v1/reports/networth').accept('json').loginAs(f.user)
     response.assertStatus(200)
-    assert.deepEqual(response.body(), [['date']])
+    assert.deepEqual(response.body().data, [['date']])
     assert.equal((await f.institution.related('accounts').query()).length, 0)
   })
   test('signed movements evolve the opening balance')

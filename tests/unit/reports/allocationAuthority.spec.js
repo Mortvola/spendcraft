@@ -236,7 +236,7 @@ test('report endpoints encode only monetary values without changing calculation 
     '10-2026' }) },
     auth: { user: { related: () => ({ query: () => ({ firstOrFail: async () => ({
       id: 1 }) }) }) } } })
-  assert.deepEqual(JSON.parse(JSON.stringify(rows)), scenario.expected)
+  assert.deepEqual(JSON.parse(JSON.stringify(rows)), { data: scenario.expected })
   assert.deepEqual(scenario.rows, before)
 })
 

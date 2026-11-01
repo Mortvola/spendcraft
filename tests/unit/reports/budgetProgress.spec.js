@@ -38,7 +38,7 @@ async function harness(initialResponse) {
       useEffect: callback => { effect = callback },
     observer: c => c, DateTime, parseMoneyCents, formatMoneyCents, useStores: () => ({}),
     Http: { get: async url => { requests.push(url); return { ok: true, body: async () =>
-      response } } },
+      ({ data: response }) } } },
     console: { log: error => errors.push(error) },
     Formik: 'form', ReportControls: 'controls', MonthSelector: 'month', Chart: 'chart', PleaseWait:
       'wait',

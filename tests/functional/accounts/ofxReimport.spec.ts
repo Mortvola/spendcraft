@@ -185,8 +185,8 @@ FX>`
     const categoryReport = await client.get('/api/v1/reports/category').qs({ c: nominal
       .categoryId }).loginAs(f.user)
     categoryReport.assertStatus(200)
-    assert.equal(categoryReport.body()[0].sum, Number(formatMoneyCents(nominal.amountCents)))
-    assert.equal(categoryReport.body()[0].count, 1)
+    assert.equal(categoryReport.body().data[0].sum, Number(formatMoneyCents(nominal.amountCents)))
+    assert.equal(categoryReport.body().data[0].count, 1)
 
   })
 

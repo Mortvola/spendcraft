@@ -3,7 +3,8 @@ import { decodePayeeReport, type PayeeCentsReportRow, decodeNetworthReport,
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 
-import { isNetworthReport, type PayeeReportRow } from '../../common/ResponseTypes';
+import { isNetworthReport, type PayeeReportRow,
+  type NetworthReportResponse, type PayeeReportResponse } from '../../common/ResponseTypes';
 
 const isPayeeReport = (r: unknown): r is PayeeReportRow[] => (
   Array.isArray(r)
@@ -30,10 +31,10 @@ class Reports {
   async loadReport(reportType: string): Promise<void> {
     switch (reportType) {
       case 'netWorth': {
-        const response = await Http.get('/api/v1/reports/networth');
+        const response = await Http.get<NetworthReportResponse>('/api/v1/reports/networth');
 
         if (response.ok) {
-          const body = await response.body();
+          const { data: body } = await response.body();
 
           if (isNetworthReport(body)) {
             const decoded = decodeNetworthReport(body);
@@ -48,10 +49,10 @@ class Reports {
       }
 
       case 'payee': {
-        const response = await Http.get('/api/v1/reports/payee');
+        const response = await Http.get<PayeeReportResponse>('/api/v1/reports/payee');
 
         if (response.ok) {
-          const body = await response.body();
+          const { data: body } = await response.body();
 
           if (isPayeeReport(body)) {
             const decoded = decodePayeeReport(body);

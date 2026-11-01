@@ -60,7 +60,7 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
       const empty = await client.get('/api/v1/reports/budget-progress').qs({ m: '2-2025' })
         .loginAs(own.user)
       empty.assertStatus(200)
-      assert.deepEqual(empty.body(), [])
+      assert.deepEqual(empty.body().data, [])
       const add = async (domain: typeof own, amount: number, type: number, date: string,
         categories = [{ categoryId: domain.category.id, amount: encodeMonetaryAmount(amount) }]) =>
         {
@@ -108,7 +108,7 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
       const response = await client.get('/api/v1/reports/budget-progress').qs({ m: '2-2025' })
         .loginAs(own.user)
       response.assertStatus(200)
-      assert.deepEqual(response.body(), [['2025-02-02', '0.30', [first, zero]],
+      assert.deepEqual(response.body().data, [['2025-02-02', '0.30', [first, zero]],
         ['2025-02-03', '-0.10', [second]], ['2025-02-04', '0.00', [third]]])
       assert.deepEqual(await snapshot(own.budget.id), before)
     })
@@ -138,14 +138,14 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
         const response = await client.get(`/api/v1/reports/${report}`).qs({ ...filters,
           startDate: '2025-02-01', endDate: '2025-02-28' }).loginAs(f.user)
         response.assertStatus(200)
-        assert.deepEqual(response.body(), [{ rowNumber: '1', count: 3,
+        assert.deepEqual(response.body().data, [{ rowNumber: '1', count: 3,
           sum: sign > 0 ? '0.10' : '-0.10', ...(report === 'payee' ? { name: 'Exact shop',
             paymentChannel: 'online' } : { groupName: f.group.name, categoryName: f.category.name })
         }])
         const empty = await client.get(`/api/v1/reports/${report}`).qs({ ...filters,
           startDate: '2025-03-01', endDate: '2025-03-31' }).loginAs(f.user)
         empty.assertStatus(200)
-        assert.deepEqual(empty.body(), [])
+        assert.deepEqual(empty.body().data, [])
       }
       assert.deepEqual(await snapshot(f.budget.id), before)
     })
@@ -170,16 +170,16 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
       const before = await snapshot(own.budget.id)
       const response = await client.get('/api/v1/reports/funding-history').loginAs(own.user)
       response.assertStatus(200)
-      const row = response.body().find((item: { categoryId: number }) => item.categoryId ===
+      const row = response.body().data.find((item: { categoryId: number }) => item.categoryId ===
         own.category.id)
       assert.sameDeepMembers(row.history, [{ year: 2025, month: 1, amount: '-0.10' },
         { year: 2025, month: 2, amount: '0.10' }])
       assert.strictEqual(row.groupId, own.group.id)
       assert.strictEqual(row.groupName, own.group.name)
       assert.strictEqual(row.categoryName, own.category.name)
-      assert.isNull(response.body().find((item: { categoryId: number }) => item.categoryId ===
+      assert.isNull(response.body().data.find((item: { categoryId: number }) => item.categoryId ===
         empty.id).history)
-      assert.isFalse(response.body().some((item: { categoryId: number }) => item.categoryId ===
+      assert.isFalse(response.body().data.some((item: { categoryId: number }) => item.categoryId ===
         foreign.category.id))
       assert.deepEqual(await snapshot(own.budget.id), before)
     })
@@ -206,11 +206,13 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
         .loginAs(f.user)
       response.assertStatus(200)
       if (report === 'category') {
-        if (!scenario.count) assert.deepEqual(response.body(), [])
-        else { assert.equal(response.body()[0].sum, encodeMonetaryAmount(scenario.amount)); assert
-          .equal(response.body()[0].count, scenario.count) }
+        if (!scenario.count) assert.deepEqual(response.body().data, [])
+        else { assert.equal(response.body().data[0].sum,
+          encodeMonetaryAmount(scenario.amount)); assert
+          .equal(response.body().data[0].count, scenario.count) }
       } else {
-        const row = response.body().find((item: { categoryId: number }) => item.categoryId === f
+        const row = response.body().data
+          .find((item: { categoryId: number }) => item.categoryId === f
           .category.id)
         if (!scenario.count) assert.isNull(row.history)
         else assert.deepEqual(row.history, [{ year: 2025, month: 2, amount: encodeMonetaryAmount(
@@ -233,8 +235,8 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
         .loginAs(f.user)
       response.assertStatus(200)
       const included = report === 'category' ? [0, 5].includes(scenario.type) : scenario.type === 2
-      if (report === 'category') assert.equal(response.body().length, included ? 1 : 0)
-      else assert.equal(response.body().find((r: { categoryId: number }) => r.categoryId === f
+      if (report === 'category') assert.equal(response.body().data.length, included ? 1 : 0)
+      else assert.equal(response.body().data.find((r: { categoryId: number }) => r.categoryId === f
         .category.id).history !== null, included)
     })
 
@@ -251,8 +253,9 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
       const response = await client.get(`/api/v1/reports/${report}`).qs({ c: own.category.id })
         .loginAs(own.user)
       response.assertStatus(200)
-      if (report === 'category') assert.deepEqual(response.body(), [])
-      else assert.isNull(response.body().find((r: { categoryId: number }) => r.categoryId === own
+      if (report === 'category') assert.deepEqual(response.body().data, [])
+      else assert.isNull(response.body().data
+        .find((r: { categoryId: number }) => r.categoryId === own
         .category.id).history)
       assert.notInclude(response.text(), foreign.category.name)
       assert.deepEqual(await Promise.all([snapshot(own.budget.id), snapshot(foreign.budget.id)]),
@@ -273,9 +276,10 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
       const response = await client.get(`/api/v1/reports/${report}`).qs({ c: f.category.id })
         .loginAs(f.user)
       response.assertStatus(200)
-      if (report === 'category') { assert.equal(response.body()[0].sum, encodeMonetaryAmount(7));
-        assert.equal(response.body()[0].count, 1) }
-      else assert.equal(response.body().find((r: { categoryId: number }) => r.categoryId === f
+      if (report === 'category') { assert
+        .equal(response.body().data[0].sum, encodeMonetaryAmount(7));
+        assert.equal(response.body().data[0].count, 1) }
+      else assert.equal(response.body().data.find((r: { categoryId: number }) => r.categoryId === f
         .category.id).history[0].amount, encodeMonetaryAmount(7))
     })
 
@@ -305,7 +309,7 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
           .loginAs(f.user)
         elapsed = performance.now() - started
         response.assertStatus(200)
-        const rows = response.body()
+        const rows = response.body().data
         if (report === 'category') { assert.equal(rows[0].sum, encodeMonetaryAmount(260)); assert
           .equal(rows[0].count, 26) }
         else assert.equal(rows.find((r: { categoryId: number }) => r.categoryId === f.category.id)
@@ -337,8 +341,10 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
         const response = await client.get(`/api/v1/reports/${report}`).qs({ c: f.category.id })
           .loginAs(f.user)
         response.assertStatus(200)
-        if (report === 'category') assert.equal(response.body()[0].sum, encodeMonetaryAmount(10))
-        else assert.equal(response.body().find((r: { categoryId: number }) => r.categoryId === f
+        if (report === 'category') assert
+          .equal(response.body().data[0].sum, encodeMonetaryAmount(10))
+        else assert.equal(response.body().data
+          .find((r: { categoryId: number }) => r.categoryId === f
           .category.id).history[0].amount, encodeMonetaryAmount(10))
       })
   }
@@ -362,10 +368,10 @@ accountless nominal rows', async ({ client, assert }) => {
     const response = await client.get('/api/v1/reports/category').qs({ c: [f.category.id, other
       .id] }).loginAs(f.user)
     response.assertStatus(200)
-    assert.deepEqual(response.body().map((r: { categoryName: string, sum: string,
+    assert.deepEqual(response.body().data.map((r: { categoryName: string, sum: string,
       count: number }) => [r.categoryName, r.sum, r.count]),
       [['A current', '4.00', 1], ['B current', '55.00', 3]])
-    for (const row of response.body()) {
+    for (const row of response.body().data) {
       assert.deepEqual(Object.keys(row).sort(), ['categoryName', 'count', 'groupName', 'rowNumber',
         'sum'])
       assert.isString(row.sum); assert.isNumber(row.count)
@@ -398,9 +404,11 @@ accountless nominal rows', async ({ client, assert }) => {
     const before = await snapshot(f.budget.id)
     const response = await client.get('/api/v1/reports/funding-history').loginAs(f.user)
     response.assertStatus(200)
-    assert.deepEqual(response.body().find((r: { categoryId: number }) => r.categoryId === f.category
+    assert.deepEqual(response.body().data
+      .find((r: { categoryId: number }) => r.categoryId === f.category
       .id).history, [{ year: 2025, month: 1, amount: encodeMonetaryAmount(2) }])
-    assert.deepEqual(response.body().find((r: { categoryId: number }) => r.categoryId === unassigned
+    assert.deepEqual(response.body().data
+      .find((r: { categoryId: number }) => r.categoryId === unassigned
       .id).history, [{ year: 2025, month: 1, amount: encodeMonetaryAmount(1) }])
     assert.deepEqual(await snapshot(f.budget.id), before)
   })
@@ -418,13 +426,15 @@ Unassigned', async ({ client, assert }) => {
       c: [f.category.id, unassigned.id], startDate: '2025-02-01', endDate: '2025-02-01',
     }).loginAs(f.user)
     response.assertStatus(200)
-    assert.equal(response.body().find((r: { categoryName: string }) => r.categoryName === f.category
+    assert.equal(response.body().data
+      .find((r: { categoryName: string }) => r.categoryName === f.category
       .name).count, 2)
-    assert.equal(response.body().find((r: { categoryName: string }) => r.categoryName === unassigned
+    assert.equal(response.body().data
+      .find((r: { categoryName: string }) => r.categoryName === unassigned
       .name).sum, encodeMonetaryAmount(-5))
     const excluded = await client.get('/api/v1/reports/category').qs({ c: f.category.id, startDate:
       '2025-02-02' }).loginAs(f.user)
-    excluded.assertStatus(200); assert.deepEqual(excluded.body(), [])
+    excluded.assertStatus(200); assert.deepEqual(excluded.body().data, [])
   })
 
   test('Funding History reads generated net rows without recalculating rules').with([
@@ -437,7 +447,8 @@ Unassigned', async ({ client, assert }) => {
       .category.id, amount: encodeMonetaryAmount(scenario.amount) }] })
     const response = await client.get('/api/v1/reports/funding-history').loginAs(f.user)
     response.assertStatus(200)
-    assert.equal(response.body().find((r: { categoryId: number }) => r.categoryId === f.category.id)
+    assert.equal(response.body().data
+      .find((r: { categoryId: number }) => r.categoryId === f.category.id)
       .history[0].amount, encodeMonetaryAmount(scenario.amount))
   })
 
@@ -452,9 +463,11 @@ Unassigned', async ({ client, assert }) => {
     ] })
     const response = await client.get('/api/v1/reports/funding-history').loginAs(f.user)
     response.assertStatus(200)
-    assert.isUndefined(response.body().find((r: { categoryId: number }) => r.categoryId === pool
+    assert.isUndefined(response.body().data
+      .find((r: { categoryId: number }) => r.categoryId === pool
       .id))
-    assert.deepEqual(response.body().find((r: { categoryId: number }) => r.categoryId === f.category
+    assert.deepEqual(response.body().data
+      .find((r: { categoryId: number }) => r.categoryId === f.category
       .id).history,
       [{ year: 2025, month: 2, amount: encodeMonetaryAmount(2) }])
   })

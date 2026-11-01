@@ -154,7 +154,7 @@ test.group('Opening snapshot Statements', (group) => {
     assert.lengthOf(await BalanceHistory.query().where('accountId', id), 0)
     const report = await client.get('/api/v1/reports/networth').accept('json').loginAs(f.user)
     report.assertStatus(200)
-    const data: (string | number | null)[][] = report.body()
+    const data: (string | number | null)[][] = report.body().data
     const column = data[0].indexOf('Statement-only report account')
     assert.isAbove(column, 0)
     assert.isTrue(data.slice(1).some((row) => row[0] === '2001-01-01' && row[column] === '125.25'))

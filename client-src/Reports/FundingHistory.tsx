@@ -18,7 +18,8 @@ const FundingHistory: React.FC = () => {
         '/api/v1/reports/funding-history');
 
       if (response.ok) {
-        const responseRows = await response.body();
+        const { data: responseRows } = await response.body();
+        if (!Array.isArray(responseRows)) throw new Error('Invalid report response');
         const body = decodeFundingHistoryReport(responseRows);
         body.sort((a, b) => {
           if (a.groupType === GroupType.NoGroup) {

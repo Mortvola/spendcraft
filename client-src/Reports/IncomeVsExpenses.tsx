@@ -15,7 +15,8 @@ const IncomeVsExpenses: React.FC = () => {
         '/api/v1/reports/income-vs-expenses');
 
       if (response.ok) {
-        const body = await response.body();
+        const { data: body } = await response.body();
+        if (!Array.isArray(body)) throw new Error('Invalid report response');
 
         setData(decodeIncomeVsExpensesReport(body));
       }

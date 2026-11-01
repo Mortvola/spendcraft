@@ -32,7 +32,8 @@ const BudgetProgress: React.FC = observer(() => {
           `/api/v1/reports/budget-progress?m=${value}`);
 
         if (response.ok) {
-          const body = await response.body();
+          const { data: body } = await response.body();
+          if (!Array.isArray(body)) throw new Error('Invalid report response');
 
           const date = DateTime.fromFormat(value, 'M-yyyy');
 

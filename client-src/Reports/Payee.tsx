@@ -10,7 +10,8 @@ import { useStores } from '../State/Store';
 import useSortableTable from './SortableTable';
 import ReportControls from './ReportControls';
 import styles from './Payee.module.scss';
-import { TrackingType, type PayeeReportRow } from '../../common/ResponseTypes';
+import { TrackingType, type PayeeReportRow, type PayeeReportResponse }
+  from '../../common/ResponseTypes';
 
 const Payee: React.FC = () => {
   const { accounts } = useStores();
@@ -52,10 +53,10 @@ const Payee: React.FC = () => {
       }
     })
 
-    const response = await Http.get(`/api/v1/reports/payee?${qp}`);
+    const response = await Http.get<PayeeReportResponse>(`/api/v1/reports/payee?${qp}`);
 
     if (response.ok) {
-      const body = await response.body();
+      const { data: body } = await response.body();
 
       const isPayeeReport = (r: unknown): r is PayeeReportRow[] => (
         Array.isArray(r)

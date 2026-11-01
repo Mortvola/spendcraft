@@ -6,11 +6,9 @@ import Budget from '#app/Models/Budget';
 import Account from '#models/Account';
 import Category from '#models/Category';
 import { Exception } from '@adonisjs/core/exceptions';
-import { type BudgetProgressReportResponse, type NetworthReportResponse, type PayeeReportRow,
-  type CategoryReportRow,
-  type IncomeVsExpensesReportResponse, type FundingHistoryReportResponse,
-    type FundingHistoryReportRow, AccountType, CategoryType, TrackingType, TransactionType } from
-    '#common/ResponseTypes';
+import { type BudgetProgressReportData, type ReportResponse, type PayeeReportRow,
+  type CategoryReportRow, type FundingHistoryReportRow, AccountType, CategoryType, TrackingType,
+  TransactionType } from '#common/ResponseTypes';
 import { DateTime } from 'luxon';
 
 type NetworthReportType = (string | MoneyCents)[][];
@@ -56,9 +54,7 @@ class ReportController {
   public async get({
     request,
     auth: { user },
-  }: HttpContext): Promise<NetworthReportResponse | PayeeReportRow[] | CategoryReportRow[
-    ] | IncomeVsExpensesReportResponse | FundingHistoryReportResponse |
-      BudgetProgressReportResponse> {
+  }: HttpContext): Promise<ReportResponse> {
     if (!user) {
       throw new Error('user not defined');
     }
@@ -68,11 +64,11 @@ class ReportController {
     switch (request.params().report) {
       case 'networth': {
         const rows = await ReportController.networth(budget);
-        return rows.map((row, index) => row.map((cell, column) => {
+        return { data: rows.map((row, index) => row.map((cell, column) => {
           if (index === 0 || column === 0) return String(cell);
           if (typeof cell !== 'number') throw new Error('Invalid Net Worth monetary cell');
           return formatMoneyCents(cell);
-        }));
+        })) };
       }
 
       case 'payee': {
@@ -89,7 +85,7 @@ class ReportController {
             .firstOrFail();
         }
         const rows = await ReportController.payee(budget, startDate, endDate, pc, accountIds);
-        return rows.map((row) => ({ ...row, sum: formatMoneyCents(row.sum) }));
+        return { data: rows.map((row) => ({ ...row, sum: formatMoneyCents(row.sum) })) };
       }
 
       case 'category': {
@@ -105,21 +101,21 @@ class ReportController {
             .firstOrFail();
         }
         const rows = await ReportController.category(budget, startDate, endDate, categoryIds);
-        return rows.map((row) => ({ ...row, sum: formatMoneyCents(row.sum) }));
+        return { data: rows.map((row) => ({ ...row, sum: formatMoneyCents(row.sum) })) };
       }
 
       case 'income-vs-expenses': {
         const rows = await ReportController.incomeVsExpenses(budget);
-        return rows.map(([month, income, expenses, net]) => [month,
-          formatMoneyCents(income), formatMoneyCents(expenses), formatMoneyCents(net)]);
+        return { data: rows.map(([month, income, expenses, net]) => [month,
+          formatMoneyCents(income), formatMoneyCents(expenses), formatMoneyCents(net)]) };
       }
 
       case 'funding-history': {
         const rows = await ReportController.fundingHistory(budget);
-        return rows.map((row) => ({ ...row,
+        return { data: rows.map((row) => ({ ...row,
           history: row.history === null ? null : row.history.map((entry) => ({ ...entry,
             amount: formatMoneyCents(entry.amount) })),
-        }));
+        })) };
       }
 
       case 'budget-progress': {
@@ -129,8 +125,9 @@ class ReportController {
         const startDate = DateTime.fromFormat(`1-${m}`, 'd-M-yyyy');
         const endDate = startDate.endOf('month');
         const rows = await ReportController.budgetProgress(budget, startDate, endDate);
-        return rows.map<BudgetProgressReportResponse[number]>(([date, balance, transactions]) => [
-          date, formatMoneyCents(balance), transactions]);
+        return { data: rows.map<BudgetProgressReportData[number]>(([date, balance,
+          transactions]) => [
+          date, formatMoneyCents(balance), transactions]) };
       }
 
       default:

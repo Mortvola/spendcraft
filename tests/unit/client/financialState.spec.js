@@ -820,33 +820,35 @@ cent fields', async ({ assert }) => {
   test('report state decodes monetary cells without changing counts, dates or response data',
     async ({ assert }) => {
     const networth = [['date', 'Cash', 'Credit'], ['2026-10-01', '12.50', '-0.30']]
-    routes.set('get /api/v1/reports/networth', async () => ({ body: networth }))
+    routes.set('get /api/v1/reports/networth', async () => ({ body: { data: networth } }))
     await f.store.reports.loadReport('netWorth')
     assert.deepEqual(f.store.reports.data, [['date', 'Cash', 'Credit'], ['2026-10-01', 1250, -30]])
     assert.strictEqual(networth[1][1], '12.50')
-    routes.set('get /api/v1/reports/networth', async () => ({ body: [['date', 'Cash'], [
-      '2026-10-02', '0.10']] }))
+    routes.set('get /api/v1/reports/networth', async () => ({ body: { data: [['date', 'Cash'], [
+      '2026-10-02', '0.10']] } }))
     await f.store.reports.loadReport('netWorth')
     assert.deepEqual(f.store.reports.data, [['date', 'Cash'], ['2026-10-02', 10]])
-    routes.set('get /api/v1/reports/networth', async () => ({ body: [['date', 'Cash'], [
-      '2026-10-03', '1.2']] }))
+    routes.set('get /api/v1/reports/networth', async () => ({ body: { data: [['date', 'Cash'], [
+      '2026-10-03', '1.2']] } }))
     await assert.rejects(() => f.store.reports.loadReport('netWorth'))
     assert.deepEqual(f.store.reports.data, [['date', 'Cash'], ['2026-10-02', 10]])
     const payee = [{ rowNumber: '1', name: 'Shop', paymentChannel: 'online', sum: '-12.50',
       count: 3 }]
-    routes.set('get /api/v1/reports/payee', async () => ({ body: payee }))
+    routes.set('get /api/v1/reports/payee', async () => ({ body: { data: payee } }))
     await f.store.reports.loadReport('payee')
     assert.deepEqual(f.store.reports.data, [{ rowNumber: '1', name: 'Shop', paymentChannel:
       'online', sumCents: -1250, count: 3 }])
     assert.strictEqual(payee[0].sum, '-12.50')
-    routes.set('get /api/v1/reports/payee', async () => ({ body: [{ ...payee[0], sum:
-      '90071992547409.91' }] }))
+    routes.set('get /api/v1/reports/payee', async () => ({ body: { data: [{ ...payee[0], sum:
+      '90071992547409.91' }] } }))
     await f.store.reports.loadReport('payee')
     assert.strictEqual(f.store.reports.data[0].sumCents, Number.MAX_SAFE_INTEGER)
-    routes.set('get /api/v1/reports/payee', async () => ({ body: [{ ...payee[0], sum: '1.2' }] }))
+    routes.set('get /api/v1/reports/payee', async () => ({
+      body: { data: [{ ...payee[0], sum: '1.2' }] },
+    }))
     await assert.rejects(() => f.store.reports.loadReport('payee'))
     assert.strictEqual(f.store.reports.data[0].sumCents, Number.MAX_SAFE_INTEGER)
-    routes.set('get /api/v1/reports/payee', async () => ({ body: [] }))
+    routes.set('get /api/v1/reports/payee', async () => ({ body: { data: [] } }))
     await f.store.reports.loadReport('payee')
     assert.deepEqual(f.store.reports.data, [])
   })

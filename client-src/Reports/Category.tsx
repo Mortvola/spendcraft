@@ -11,7 +11,8 @@ import useSortableTable from './SortableTable';
 import { isGroup } from '../State/Group';
 import ReportControls from './ReportControls';
 import styles from './Category.module.scss';
-import { CategoryType, type CategoryReportRow } from '../../common/ResponseTypes';
+import { CategoryType, type CategoryReportRow, type CategoryReportResponse }
+  from '../../common/ResponseTypes';
 
 const Category: React.FC = () => {
   const { categoryTree: { budget } } = useStores();
@@ -33,10 +34,10 @@ const Category: React.FC = () => {
       }
     })
 
-    const response = await Http.get(`/api/v1/reports/category?${qp}`);
+    const response = await Http.get<CategoryReportResponse>(`/api/v1/reports/category?${qp}`);
 
     if (response.ok) {
-      const body = await response.body();
+      const { data: body } = await response.body();
 
       const isCategoryReport = (r: unknown): r is CategoryReportRow[] => (
         Array.isArray(r)

@@ -115,7 +115,7 @@ test.group('Report filter security', (group) => {
       const response = await client.get('/api/v1/reports/networth').accept('json').loginAs(user)
       assert.deepEqual(await state(), before)
       response.assertStatus(200)
-      assert.deepEqual(response.body(), [['date', name, name], [date.toISODate(), '100.00',
+      assert.deepEqual(response.body().data, [['date', name, name], [date.toISODate(), '100.00',
         '200.00']])
       assert.notInclude(response.text(), 'FOREIGN PRIVATE ACCOUNT')
       assert.notInclude(response.text(), '987654')
@@ -140,8 +140,8 @@ test.group('Report filter security', (group) => {
         const response = await client.get(`/api/v1/reports/${report}`).qs(filters(ids)).accept(
           'json').loginAs(user)
         response.assertStatus(200)
-        assert.lengthOf(response.body(), scenario === 'owner-multiple' ? 2 : 1)
-        for (const row of response.body()) assert.strictEqual(row.sum, '10.00')
+        assert.lengthOf(response.body().data, scenario === 'owner-multiple' ? 2 : 1)
+        for (const row of response.body().data) assert.strictEqual(row.sum, '10.00')
         assert.notInclude(response.text(), 'foreign private purchase')
         assert.notInclude(response.text(), 'foreign category')
       })
@@ -170,8 +170,8 @@ test.group('Report filter security', (group) => {
         const before = await state()
         const response = await client.get(`/api/v1/reports/${report}`).qs(filters(values)).accept(
           'json').loginAs(fixture.own.user)
-        if (Array.isArray(response.body())) {
-          assert.isFalse(response.body().some((row: Record<string, unknown>) => row.name ===
+        if (Array.isArray(response.body().data)) {
+          assert.isFalse(response.body().data.some((row: Record<string, unknown>) => row.name ===
             'foreign private purchase' || row.categoryName === 'foreign category'))
         }
         response.assertStatus(422)
@@ -186,7 +186,7 @@ test.group('Report filter security', (group) => {
         const response = await client.get(`/api/v1/reports/${report}`).qs(scenario ===
           'empty' ? filters([]) : {}).accept('json').loginAs(fixture.own.user)
         response.assertStatus(200)
-        assert.deepEqual(response.body(), [])
+        assert.deepEqual(response.body().data, [])
       })
 
     test(`${report}: filter SQL binds account/category IDs`, async ({ client, assert }) => {
